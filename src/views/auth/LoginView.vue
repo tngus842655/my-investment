@@ -107,7 +107,7 @@ const signIn = async () => {
             />
           </v-form>
 
-          <v-btn color="primary" size="large" block class="mt-4" @click="signIn"> 로그인 </v-btn>
+          <v-btn color="success" size="large" block class="mt-4" @click="signIn"> 로그인 </v-btn>
 
           <v-btn variant="text" block class="mt-2" @click="signUp"> 회원가입 </v-btn>
         </v-card>
