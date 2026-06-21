@@ -47,7 +47,7 @@ const signUp = async () => {
     return
   }
 
-  showMessage('회원가입이 완료되었습니다.', 'success')
+  showMessage('회원가입이 완료되었습니다. 이메일 인증 후 로그인해주세요.', 'success')
 }
 
 const signIn = async () => {
