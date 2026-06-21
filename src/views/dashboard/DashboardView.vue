@@ -12,6 +12,17 @@ const targetAsset = ref(0)
 const currentAsset = ref(0)
 const investmentPrincipal = ref(0)
 
+const snackbar = ref(false)
+const snackbarText = ref('')
+const snackbarColor = ref<'success' | 'error' | 'warning'>('success')
+const showMessage = (message: string, color: 'success' | 'error' | 'warning' = 'success') => {
+  snackbarText.value = message
+  snackbarColor.value = color
+  snackbar.value = true
+}
+
+const confirmDialog = ref(false)
+
 const progressRate = computed(() => {
   if (!targetAsset.value) return 0
 
@@ -63,16 +74,31 @@ const loadDashboard = async () => {
   }
 }
 
-const moveToOnboarding = () => {
-  router.push('/onboarding')
+const moveToGoalSettings = () => {
+  router.push('/goalSettings')
+}
+
+const logout = async () => {
+  const { error } = await supabase.auth.signOut()
+
+  if (error) {
+    showMessage('로그아웃 중 오류가 발생했습니다.', 'error')
+    return
+  }
+
+  router.replace('/')
 }
 
 const moveToPortfolio = () => {
-  router.push('/portfolio')
+  showMessage('보유자산 관리는 구현중입니다.', 'warning')
+  return
+  // router.push('/portfolio')
 }
 
 const moveToTransactions = () => {
-  router.push('/transactions')
+  showMessage('거래내역 관리는 구현중입니다.', 'warning')
+  return
+  //router.push('/transactions')
 }
 
 onMounted(() => {
@@ -89,8 +115,17 @@ onMounted(() => {
         <div class="text-subtitle-1 text-grey-darken-1">FIRE 목표 달성 현황</div>
       </div>
 
-      <v-btn color="primary" variant="outlined" prepend-icon="mdi-pencil" @click="moveToOnboarding">
+      <v-btn
+        color="primary"
+        variant="outlined"
+        prepend-icon="mdi-pencil"
+        @click="moveToGoalSettings"
+      >
         목표 수정
+      </v-btn>
+
+      <v-btn color="error" variant="text" prepend-icon="mdi-logout" @click="confirmDialog = true">
+        로그아웃
       </v-btn>
     </div>
 
@@ -217,5 +252,32 @@ onMounted(() => {
     <v-overlay :model-value="loading" class="align-center justify-center">
       <v-progress-circular indeterminate size="64" />
     </v-overlay>
+
+    <v-dialog v-model="confirmDialog" max-width="320">
+      <v-card rounded="xl">
+        <v-card-title class="text-center pt-6"> 로그아웃 </v-card-title>
+
+        <v-card-text class="text-center"> 정말 로그아웃 하시겠습니까? </v-card-text>
+
+        <v-divider />
+
+        <v-card-actions>
+          <v-btn variant="text" block @click="confirmDialog = false"> 취소 </v-btn>
+
+          <v-btn color="error" block @click="logout"> 로그아웃 </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
+
+  <v-snackbar
+    v-model="snackbar"
+    :color="snackbarColor"
+    timeout="3000"
+    location="top"
+    rounded="lg"
+    elevation="10"
+  >
+    {{ snackbarText }}
+  </v-snackbar>
 </template>

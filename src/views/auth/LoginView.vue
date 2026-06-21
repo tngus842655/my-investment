@@ -9,13 +9,11 @@ const form = ref()
 
 const email = ref('')
 const password = ref('')
+const showPassword = ref(false)
 
 const snackbar = ref(false)
 const snackbarText = ref('')
 const snackbarColor = ref<'success' | 'error' | 'warning'>('success')
-
-const showPassword = ref(false)
-
 const showMessage = (message: string, color: 'success' | 'error' | 'warning' = 'success') => {
   snackbarText.value = message
   snackbarColor.value = color
@@ -83,7 +81,7 @@ const signIn = async () => {
   const hasAsset = !!assetResult.data
 
   if (!hasGoal || !hasAsset) {
-    router.push('/onboarding')
+    router.push('/goalSettings')
     return
   }
 
