@@ -1,128 +1,221 @@
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
+import { formatCurrencyWithShort } from '@/utils/numberFormat'
 
 const router = useRouter()
 
-const signOut = async () => {
-  await supabase.auth.signOut()
-  router.push('/')
+const loading = ref(true)
+
+const targetAsset = ref(0)
+const currentAsset = ref(0)
+const investmentPrincipal = ref(0)
+
+const progressRate = computed(() => {
+  if (!targetAsset.value) return 0
+
+  return Math.min(Math.round((currentAsset.value / targetAsset.value) * 100), 100)
+})
+
+const profitAmount = computed(() => {
+  return currentAsset.value - investmentPrincipal.value
+})
+
+const profitRate = computed(() => {
+  if (!investmentPrincipal.value) return 0
+
+  return Number(
+    (((currentAsset.value - investmentPrincipal.value) / investmentPrincipal.value) * 100).toFixed(
+      2,
+    ),
+  )
+})
+
+const loadDashboard = async () => {
+  loading.value = true
+
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) return
+
+    const [goalResult, assetResult] = await Promise.all([
+      supabase.from('investment_goals').select('*').eq('user_id', user.id).maybeSingle(),
+
+      supabase.from('asset_summary').select('*').eq('user_id', user.id).maybeSingle(),
+    ])
+
+    if (goalResult.data) {
+      targetAsset.value = goalResult.data.target_asset ?? 0
+    }
+
+    if (assetResult.data) {
+      currentAsset.value = assetResult.data.current_asset ?? 0
+      investmentPrincipal.value = assetResult.data.investment_principal ?? 0
+    }
+  } catch (error) {
+    console.error(error)
+  } finally {
+    loading.value = false
+  }
 }
+
+const moveToOnboarding = () => {
+  router.push('/onboarding')
+}
+
+const moveToPortfolio = () => {
+  router.push('/portfolio')
+}
+
+const moveToTransactions = () => {
+  router.push('/transactions')
+}
+
+onMounted(() => {
+  loadDashboard()
+})
 </script>
 
 <template>
-  <v-container fluid class="dashboard-page pa-6">
-    <!-- 상단 -->
-    <v-row class="mb-4">
-      <v-col cols="12">
-        <v-card rounded="xl" elevation="4">
-          <v-card-text class="d-flex justify-space-between align-center">
-            <div>
-              <div class="text-h5 font-weight-bold">MY INVESTMENT</div>
-              <div class="text-grey">투자 현황 대시보드</div>
-            </div>
+  <v-container class="pa-6">
+    <div class="d-flex justify-space-between align-center mb-6">
+      <div>
+        <div class="text-h4 font-weight-bold">MY INVESTMENT</div>
 
-            <v-btn color="error" variant="outlined" @click="signOut"> 로그아웃 </v-btn>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
+        <div class="text-subtitle-1 text-grey-darken-1">FIRE 목표 달성 현황</div>
+      </div>
 
-    <!-- 요약 카드 -->
+      <v-btn color="primary" variant="outlined" prepend-icon="mdi-pencil" @click="moveToOnboarding">
+        목표 수정
+      </v-btn>
+    </div>
+
+    <!-- 현재자산 / 목표자산 -->
+
     <v-row>
-      <v-col cols="12" md="4">
-        <v-card color="primary" rounded="xl">
+      <v-col cols="12" md="6">
+        <v-card rounded="xl" elevation="3">
           <v-card-text>
-            <div class="text-overline">총 자산</div>
+            <div class="text-grey">현재 자산</div>
 
-            <div class="text-h4 font-weight-bold">1.52억</div>
-
-            <div>+2.3%</div>
+            <div class="text-h6 font-weight-bold mt-2">
+              {{ formatCurrencyWithShort(currentAsset) }}
+            </div>
           </v-card-text>
         </v-card>
       </v-col>
 
-      <v-col cols="12" md="4">
-        <v-card color="success" rounded="xl">
+      <v-col cols="12" md="6">
+        <v-card rounded="xl" elevation="3">
           <v-card-text>
-            <div class="text-overline">월 투자금</div>
+            <div class="text-grey">목표 자산</div>
 
-            <div class="text-h4 font-weight-bold">500만</div>
-
-            <div>자동 적립중</div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-
-      <v-col cols="12" md="4">
-        <v-card color="deep-purple" rounded="xl">
-          <v-card-text>
-            <div class="text-overline">FIRE 달성률</div>
-
-            <div class="text-h4 font-weight-bold">15.2%</div>
-
-            <div>목표 10억</div>
+            <div class="text-h6 font-weight-bold mt-2">
+              {{ formatCurrencyWithShort(targetAsset) }}
+            </div>
           </v-card-text>
         </v-card>
       </v-col>
     </v-row>
 
-    <!-- 보유종목 -->
+    <!-- 목표 달성률 -->
+
+    <v-card rounded="xl" elevation="3" class="mt-4">
+      <v-card-text>
+        <div class="d-flex justify-space-between mb-2">
+          <span>목표 달성률</span>
+          <span>{{ progressRate }}%</span>
+        </div>
+
+        <v-progress-linear :model-value="progressRate" height="20" rounded color="success" />
+      </v-card-text>
+    </v-card>
+
+    <!-- 투자원금 / 평가손익 -->
+
     <v-row class="mt-2">
-      <v-col cols="12" md="8">
-        <v-card rounded="xl">
-          <v-card-title> 보유 종목 </v-card-title>
+      <v-col cols="6">
+        <v-card rounded="xl" elevation="3">
+          <v-card-text>
+            <div class="text-grey">투자 원금</div>
 
-          <v-table>
-            <thead>
-              <tr>
-                <th>종목</th>
-                <th>평가금액</th>
-                <th>수익률</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr>
-                <td>QQQM</td>
-                <td>102,000,000</td>
-                <td class="text-success">+12.3%</td>
-              </tr>
-
-              <tr>
-                <td>BTC</td>
-                <td>25,000,000</td>
-                <td class="text-success">+7.8%</td>
-              </tr>
-
-              <tr>
-                <td>은 ETF</td>
-                <td>5,000,000</td>
-                <td class="text-error">-1.4%</td>
-              </tr>
-            </tbody>
-          </v-table>
+            <div class="text-h6 font-weight-bold mt-2">
+              {{ formatCurrencyWithShort(investmentPrincipal) }}
+            </div>
+          </v-card-text>
         </v-card>
       </v-col>
 
-      <v-col cols="12" md="4">
-        <v-card rounded="xl">
-          <v-card-title> 목표 진행률 </v-card-title>
-
+      <v-col cols="6">
+        <v-card rounded="xl" elevation="3">
           <v-card-text>
-            <v-progress-linear model-value="15.2" color="success" height="20" rounded />
+            <div class="text-grey">평가 손익</div>
 
-            <div class="mt-4 text-center text-h6">1.52억 / 10억</div>
+            <div
+              class="text-h6 font-weight-bold mt-2"
+              :class="profitAmount >= 0 ? 'text-success' : 'text-error'"
+            >
+              {{ profitAmount >= 0 ? '+' : '-' }}
+              {{ formatCurrencyWithShort(Math.abs(profitAmount)) }}
+            </div>
           </v-card-text>
         </v-card>
       </v-col>
     </v-row>
+
+    <!-- 수익률 -->
+
+    <v-row>
+      <v-col cols="12">
+        <v-card rounded="xl" elevation="3">
+          <v-card-text>
+            <div class="text-grey">수익률</div>
+
+            <div
+              class="text-h4 font-weight-bold mt-2"
+              :class="profitRate >= 0 ? 'text-success' : 'text-error'"
+            >
+              {{ profitRate }} %
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- 메뉴 버튼 -->
+
+    <v-row class="mt-4">
+      <v-col cols="12" md="6">
+        <v-btn
+          block
+          color="primary"
+          size="large"
+          prepend-icon="mdi-chart-line"
+          @click="moveToPortfolio"
+        >
+          보유자산 관리
+        </v-btn>
+      </v-col>
+
+      <v-col cols="12" md="6">
+        <v-btn
+          block
+          color="secondary"
+          size="large"
+          prepend-icon="mdi-swap-horizontal"
+          @click="moveToTransactions"
+        >
+          거래내역 관리
+        </v-btn>
+      </v-col>
+    </v-row>
+
+    <v-overlay :model-value="loading" class="align-center justify-center">
+      <v-progress-circular indeterminate size="64" />
+    </v-overlay>
   </v-container>
 </template>
-
-<style scoped>
-.dashboard-page {
-  background: #f8fafc;
-  min-height: 100vh;
-}
-</style>

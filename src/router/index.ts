@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { supabase } from '@/services/supabase'
 
 import LoginView from '@/views/auth/LoginView.vue'
+import OnboardingView from '@/views/dashboard/OnboardingView.vue'
 import DashboardView from '@/views/dashboard/DashboardView.vue'
 
 const router = createRouter({
@@ -13,7 +14,11 @@ const router = createRouter({
       name: 'login',
       component: LoginView,
     },
-
+    {
+      path: '/onboarding',
+      name: 'onboarding',
+      component: OnboardingView,
+    },
     {
       path: '/dashboard',
       name: 'dashboard',

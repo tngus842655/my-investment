@@ -65,6 +65,28 @@ const signIn = async () => {
     return
   }
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return
+  }
+
+  const [goalResult, assetResult] = await Promise.all([
+    supabase.from('investment_goals').select('id').eq('user_id', user.id).maybeSingle(),
+
+    supabase.from('asset_summary').select('id').eq('user_id', user.id).maybeSingle(),
+  ])
+
+  const hasGoal = !!goalResult.data
+  const hasAsset = !!assetResult.data
+
+  if (!hasGoal || !hasAsset) {
+    router.push('/onboarding')
+    return
+  }
+
   router.push('/dashboard')
 }
 </script>
