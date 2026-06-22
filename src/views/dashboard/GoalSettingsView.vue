@@ -151,14 +151,14 @@ onMounted(loadData)
           variant="text"
           size="small"
           class="mr-2"
-          style="color: rgba(255, 255, 255, 0.85)"
+          style="color: rgb(var(--v-theme-on-surface))"
           @click="cancel"
         />
         <div>
           <div class="text-h5 font-weight-bold text-white">
             {{ isEditMode ? '목표 수정' : '투자 시작하기' }}
           </div>
-          <div class="text-body-2 mt-1" style="color: rgba(255, 255, 255, 0.7)">
+          <div class="text-body-2 text-medium-emphasis mt-1">
             {{
               isEditMode
                 ? 'FIRE 목표와 투자 계획을 수정합니다'
@@ -264,7 +264,7 @@ onMounted(loadData)
         </div>
 
         <template v-if="estimatedPreview">
-          <v-divider class="my-3" style="border-color: rgba(255, 255, 255, 0.2)" />
+          <v-divider class="my-3" />
           <div class="d-flex align-center ga-2">
             <v-icon size="15" color="amber-darken-2">mdi-rocket-launch-outline</v-icon>
             <div class="text-caption text-medium-emphasis">
@@ -316,7 +316,13 @@ onMounted(loadData)
         {{ isEditMode ? '수정하기' : '시작하기' }}
       </v-btn>
 
-      <v-btn variant="text" block style="color: rgba(255, 255, 255, 0.7)" @click="cancel">
+      <v-btn
+        variant="tonal"
+        block
+        rounded="lg"
+        style="background: rgba(0, 0, 0, 0.1); color: rgba(var(--v-theme-on-surface), 0.75)"
+        @click="cancel"
+      >
         {{ isEditMode ? '취소' : '로그아웃' }}
       </v-btn>
     </div>
@@ -325,16 +331,17 @@ onMounted(loadData)
 
 <style scoped>
 .glass-card {
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(0, 0, 0, 0.07);
   border-radius: 20px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease;
 }
 
-:deep(.v-theme--dark) .glass-card {
-  background: rgba(17, 46, 45, 0.82);
-  border-color: rgba(79, 200, 194, 0.18);
+.v-theme--dark .glass-card {
+  background: rgb(var(--v-theme-surface));
+  border-color: rgba(93, 214, 207, 0.15);
 }
 
 .field-label {

@@ -6,6 +6,7 @@ import PortfolioAddDialog from './PortfolioAddDialog.vue'
 import type { PortfolioForm, PortfolioAsset } from '@/types/portfolio'
 import { showMessage } from '@/composables/useSnackbar'
 import { getStockPrice, getExchangeRate } from '@/services/market'
+import { getTickerLabel } from '@/utils/tickerNames'
 
 const router = useRouter()
 const loading = ref(false)
@@ -17,17 +18,27 @@ interface PortfolioViewItem extends PortfolioAsset {
   profitAmount?: number
   profitAmountKrw?: number
   profitRate?: number
+  isPriceFallback?: boolean // 현재가 조회 실패 시 true
 }
 
 const portfolios = ref<PortfolioViewItem[]>([])
 const exchangeRate = ref<number | null>(null)
 
+// ── 스와이프 상태 ─────────────────────────────────
 const swipedId = ref<string | null>(null)
-const touchStartX = ref(0)
-const touchStartY = ref(0)
 const SWIPE_THRESHOLD = 40
 const ACTION_WIDTH = 128
 
+// ── 드래그앤드롭 상태 ─────────────────────────────
+const isDragMode = ref(false) // 드래그 모드 활성화 여부
+const draggingId = ref<string | null>(null) // 현재 드래그 중인 카드 id
+const dragOverId = ref<string | null>(null) // 현재 hover 중인 카드 id
+const longPressTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const LONG_PRESS_DURATION = 500 // 롱프레스 인식 시간 (ms)
+const dragStartY = ref(0)
+const isSavingOrder = ref(false)
+
+// ── 환율 조회 ─────────────────────────────────────
 const fetchExchangeRate = async (): Promise<number> => {
   try {
     const rate = await getExchangeRate('USD', 'KRW')
@@ -45,11 +56,9 @@ const fetchExchangeRate = async (): Promise<number> => {
 const totalEvaluationAmountKrw = computed(() =>
   portfolios.value.reduce((sum, item) => sum + (item.evaluationAmountKrw ?? 0), 0),
 )
-
 const totalProfitAmountKrw = computed(() =>
   portfolios.value.reduce((sum, item) => sum + (item.profitAmountKrw ?? 0), 0),
 )
-
 const totalProfitRate = computed(() => {
   const totalCost = portfolios.value.reduce((sum, item) => {
     const costKrw =
@@ -62,6 +71,7 @@ const totalProfitRate = computed(() => {
   return (totalProfitAmountKrw.value / totalCost) * 100
 })
 
+// ── 포트폴리오 로드 ───────────────────────────────
 const loadPortfolios = async () => {
   loading.value = true
   try {
@@ -74,7 +84,7 @@ const loadPortfolios = async () => {
       .from('portfolios')
       .select('*')
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
+      .order('sort_order', { ascending: true })
 
     if (error) {
       showMessage(error.message, 'error')
@@ -85,29 +95,47 @@ const loadPortfolios = async () => {
 
     const [rate, ...prices] = await Promise.all([
       fetchExchangeRate(),
-      ...items.map((item) => getStockPrice(item.ticker).catch(() => null)),
+      ...items.map((item) =>
+        getStockPrice(item.ticker, item.asset_type, item.currency).catch(() => null),
+      ),
     ])
 
     portfolios.value = items.map((item, i) => {
-      const currentPrice = prices[i] ?? null
-      if (!currentPrice) return { ...item }
+      const currentPrice = prices[i] && prices[i]! > 0 ? prices[i] : null
 
-      const evaluationAmount = currentPrice * item.quantity
-      const profitAmount = (currentPrice - item.avg_price) * item.quantity
+      // 암호화폐 + KRW: Finnhub은 USD로 반환하므로 환율 곱해서 KRW 현재가로 변환
+      const isCryptoKrw = item.asset_type === '암호화폐' && item.currency === 'KRW'
+      const currentPriceInCurrency = currentPrice
+        ? isCryptoKrw
+          ? currentPrice * rate
+          : currentPrice
+        : null
+
+      const price = currentPriceInCurrency ?? item.avg_price
+      const isPriceFallback = currentPriceInCurrency === null
+
+      const evaluationAmount = price * item.quantity
+      const profitAmount = isPriceFallback ? 0 : (price - item.avg_price) * item.quantity
+      // 암호화폐 KRW는 이미 KRW로 변환됐으므로 추가 환율 변환 불필요
       const evaluationAmountKrw =
-        item.currency === 'USD' ? evaluationAmount * rate : evaluationAmount
-      const profitAmountKrw = item.currency === 'USD' ? profitAmount * rate : profitAmount
-      const profitRate =
-        item.avg_price > 0 ? ((currentPrice - item.avg_price) / item.avg_price) * 100 : 0
+        item.currency === 'USD' && !isCryptoKrw ? evaluationAmount * rate : evaluationAmount
+      const profitAmountKrw =
+        item.currency === 'USD' && !isCryptoKrw ? profitAmount * rate : profitAmount
+      const profitRate = isPriceFallback
+        ? 0
+        : item.avg_price > 0
+          ? ((price - item.avg_price) / item.avg_price) * 100
+          : 0
 
       return {
         ...item,
-        currentPrice,
+        currentPrice: currentPriceInCurrency ?? undefined,
         evaluationAmount,
         evaluationAmountKrw,
         profitAmount,
         profitAmountKrw,
         profitRate,
+        isPriceFallback,
       }
     })
   } catch (error) {
@@ -118,45 +146,183 @@ const loadPortfolios = async () => {
   }
 }
 
-const isDragging = ref(false)
+// ── 롱프레스 핸들러 ───────────────────────────────
+const onCardLongPressStart = (e: TouchEvent | MouseEvent, id: string) => {
+  // 드래그 모드면 무시
+  if (isDragMode.value) return
+  // 스와이프 열려있으면 무시
+  if (swipedId.value) {
+    swipedId.value = null
+    return
+  }
 
-const onDragStart = (clientX: number, clientY: number) => {
-  touchStartX.value = clientX
-  touchStartY.value = clientY
-  isDragging.value = true
+  const clientY = e instanceof TouchEvent ? (e.touches[0]?.clientY ?? 0) : e.clientY
+  dragStartY.value = clientY
+
+  longPressTimer.value = setTimeout(() => {
+    isDragMode.value = true
+    draggingId.value = id
+    swipedId.value = null
+    // 진동 피드백 (모바일)
+    if (navigator.vibrate) navigator.vibrate(40)
+  }, LONG_PRESS_DURATION)
 }
 
-const onDragEnd = (clientX: number, clientY: number, id: string) => {
-  if (!isDragging.value) return
-  isDragging.value = false
-
-  const dx = touchStartX.value - clientX
-  const dy = Math.abs(touchStartY.value - clientY)
-  if (dy > 10 && dy > Math.abs(dx)) return
-
-  if (dx > SWIPE_THRESHOLD) {
-    swipedId.value = id
-  } else if (dx < -SWIPE_THRESHOLD / 2) {
-    if (swipedId.value === id) swipedId.value = null
+const onCardLongPressEnd = () => {
+  if (longPressTimer.value) {
+    clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
   }
 }
 
-const onTouchStart = (e: TouchEvent) => {
-  onDragStart(e.touches[0]?.clientX ?? 0, e.touches[0]?.clientY ?? 0)
+// 롱프레스 중 손가락/마우스가 너무 많이 움직이면 취소
+// 마우스는 클릭 시 약간 움직이므로 터치보다 임계값을 크게 설정
+const onCardLongPressMove = (e: TouchEvent | MouseEvent) => {
+  if (isDragMode.value) return
+  const clientY = e instanceof TouchEvent ? (e.touches[0]?.clientY ?? 0) : e.clientY
+  const threshold = e instanceof TouchEvent ? 8 : 6
+  if (Math.abs(clientY - dragStartY.value) > threshold) {
+    onCardLongPressEnd()
+  }
 }
-const onTouchEnd = (e: TouchEvent, id: string) => {
-  onDragEnd(e.changedTouches[0]?.clientX ?? 0, e.changedTouches[0]?.clientY ?? 0, id)
+
+// ── 드래그 중 이동 핸들러 (window 레벨에서 처리) ──
+const onWindowMouseMove = (e: MouseEvent) => {
+  onCardLongPressMove(e)
+  if (!isDragMode.value || !draggingId.value) return
+  e.preventDefault()
+
+  const clientY = e.clientY
+  const cards = document.querySelectorAll('.portfolio-card-wrap')
+  let targetId: string | null = null
+
+  cards.forEach((card) => {
+    const rect = card.getBoundingClientRect()
+    if (clientY > rect.top && clientY < rect.bottom) {
+      targetId = (card as HTMLElement).dataset.id ?? null
+    }
+  })
+
+  if (targetId && targetId !== draggingId.value) {
+    dragOverId.value = targetId
+    reorderItems(draggingId.value, targetId)
+  }
 }
-const onMouseDown = (e: MouseEvent) => {
-  onDragStart(e.clientX, e.clientY)
+
+const onDragMove = (e: TouchEvent, id: string) => {
+  if (!isDragMode.value || draggingId.value !== id) return
+  e.preventDefault()
+
+  const clientY = e.touches[0]?.clientY ?? 0
+  const cards = document.querySelectorAll('.portfolio-card-wrap')
+  let targetId: string | null = null
+
+  cards.forEach((card) => {
+    const rect = card.getBoundingClientRect()
+    if (clientY > rect.top && clientY < rect.bottom) {
+      targetId = (card as HTMLElement).dataset.id ?? null
+    }
+  })
+
+  if (targetId && targetId !== draggingId.value) {
+    dragOverId.value = targetId
+    reorderItems(draggingId.value, targetId)
+  }
 }
-const onMouseUp = (e: MouseEvent, id: string) => {
-  onDragEnd(e.clientX, e.clientY, id)
+
+// 배열 순서 변경
+const reorderItems = (fromId: string, toId: string) => {
+  const list = [...portfolios.value]
+  const fromIdx = list.findIndex((p) => p.id === fromId)
+  const toIdx = list.findIndex((p) => p.id === toId)
+  if (fromIdx === -1 || toIdx === -1) return
+  const moved = list.splice(fromIdx, 1)[0]
+  if (!moved) return
+  list.splice(toIdx, 0, moved)
+  portfolios.value = list
 }
+
+// ── 드래그 종료 → Supabase 저장 ──────────────────
+const onDragEnd = async () => {
+  if (!isDragMode.value) return
+  isDragMode.value = false
+  draggingId.value = null
+  dragOverId.value = null
+  onCardLongPressEnd()
+
+  // 현재 순서를 sort_order로 저장
+  isSavingOrder.value = true
+  try {
+    const updates = portfolios.value.map((item, index) => ({
+      id: item.id,
+      sort_order: index,
+    }))
+
+    for (const update of updates) {
+      await supabase
+        .from('portfolios')
+        .update({ sort_order: update.sort_order })
+        .eq('id', update.id)
+    }
+  } catch (error) {
+    console.error(error)
+    showMessage('순서 저장 중 오류가 발생했습니다.', 'error')
+  } finally {
+    isSavingOrder.value = false
+  }
+}
+
+// ── 드래그 모드 취소 ──────────────────────────────
+const cancelDragMode = () => {
+  if (!isDragMode.value) return
+  isDragMode.value = false
+  draggingId.value = null
+  dragOverId.value = null
+  onCardLongPressEnd()
+  loadPortfolios() // 취소 시 원래 순서로 복구
+}
+
+// ── 기존 스와이프 핸들러 (드래그 모드 아닐 때만) ──
+const isDraggingSwipe = ref(false)
+const swipeTouchStartX = ref(0)
+const swipeTouchStartY = ref(0)
+
+const onSwipeTouchStart = (e: TouchEvent) => {
+  if (isDragMode.value) return
+  swipeTouchStartX.value = e.touches[0]?.clientX ?? 0
+  swipeTouchStartY.value = e.touches[0]?.clientY ?? 0
+  isDraggingSwipe.value = true
+}
+const onSwipeTouchEnd = (e: TouchEvent, id: string) => {
+  if (isDragMode.value || !isDraggingSwipe.value) return
+  isDraggingSwipe.value = false
+  const dx = swipeTouchStartX.value - (e.changedTouches[0]?.clientX ?? 0)
+  const dy = Math.abs(swipeTouchStartY.value - (e.changedTouches[0]?.clientY ?? 0))
+  if (dy > 10 && dy > Math.abs(dx)) return
+  if (dx > SWIPE_THRESHOLD) swipedId.value = id
+  else if (dx < -SWIPE_THRESHOLD / 2 && swipedId.value === id) swipedId.value = null
+}
+const onSwipeMouseDown = (e: MouseEvent) => {
+  if (isDragMode.value) return
+  swipeTouchStartX.value = e.clientX
+  swipeTouchStartY.value = e.clientY
+  isDraggingSwipe.value = true
+}
+const onSwipeMouseUp = (e: MouseEvent, id: string) => {
+  if (isDragMode.value || !isDraggingSwipe.value) return
+  isDraggingSwipe.value = false
+  const dx = swipeTouchStartX.value - e.clientX
+  const dy = Math.abs(swipeTouchStartY.value - e.clientY)
+  if (dy > 10 && dy > Math.abs(dx)) return
+  if (dx > SWIPE_THRESHOLD) swipedId.value = id
+  else if (dx < -SWIPE_THRESHOLD / 2 && swipedId.value === id) swipedId.value = null
+}
+
 const closeSwipe = () => {
   swipedId.value = null
 }
 
+// ── 다이얼로그 ────────────────────────────────────
 const dialog = ref(false)
 const editDialog = ref(false)
 const deleteDialog = ref(false)
@@ -167,7 +333,6 @@ const openDeleteDialog = (item: PortfolioViewItem) => {
   selectedPortfolio.value = item
   deleteDialog.value = true
 }
-
 const openEditDialog = (item: PortfolioViewItem) => {
   swipedId.value = null
   selectedPortfolio.value = item
@@ -183,7 +348,6 @@ const savePortfolio = async (item: PortfolioForm) => {
       showMessage('로그인이 필요합니다.', 'error')
       return
     }
-
     const { error } = await supabase.from('portfolios').insert({
       user_id: user.id,
       ticker: item.ticker,
@@ -191,13 +355,12 @@ const savePortfolio = async (item: PortfolioForm) => {
       quantity: item.quantity,
       avg_price: item.avg_price,
       currency: item.currency,
+      sort_order: portfolios.value.length, // 새 항목은 맨 뒤
     })
-
     if (error) {
       showMessage(error.message, 'error')
       return
     }
-
     showMessage('자산이 등록되었습니다.', 'success')
     await loadPortfolios()
   } catch (error) {
@@ -219,12 +382,10 @@ const updatePortfolio = async (item: PortfolioForm) => {
         currency: item.currency,
       })
       .eq('id', selectedPortfolio.value.id)
-
     if (error) {
       showMessage(error.message, 'error')
       return
     }
-
     showMessage('자산이 수정되었습니다.', 'success')
     editDialog.value = false
     await loadPortfolios()
@@ -241,12 +402,10 @@ const deletePortfolio = async () => {
       .from('portfolios')
       .delete()
       .eq('id', selectedPortfolio.value.id)
-
     if (error) {
       showMessage(error.message, 'error')
       return
     }
-
     showMessage('자산이 삭제되었습니다.', 'success')
     deleteDialog.value = false
     await loadPortfolios()
@@ -256,25 +415,66 @@ const deletePortfolio = async () => {
   }
 }
 
+// ── 포맷 유틸 ─────────────────────────────────────
 const formatKrw = (v: number) => Math.round(v).toLocaleString('ko-KR')
-const formatPrice = (v: number) =>
-  v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+// 평균단가/현재가 표시 — KRW는 금액이 크면 축약, USD는 소수점 처리
+const formatPrice = (v: number, currency: string) => {
+  if (currency === 'KRW') {
+    if (v >= 100000000) {
+      const eok = Math.floor(v / 100000000)
+      const remainder = Math.round((v % 100000000) / 1000000)
+      return remainder > 0 ? `${eok}억 ${remainder}백만` : `${eok}억`
+    }
+    if (v >= 10000) {
+      const man = Math.floor(v / 10000)
+      const remainder = Math.round(v % 10000)
+      return remainder > 0
+        ? `${man.toLocaleString()}만 ${remainder.toLocaleString()}`
+        : `${man.toLocaleString()}만`
+    }
+    return Math.round(v).toLocaleString('ko-KR')
+  }
+  // USD: 소수점 있을 때만 표시
+  return v % 1 === 0
+    ? v.toLocaleString('en-US')
+    : v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 const formatPercent = (v: number) => (v >= 0 ? '+' : '') + v.toFixed(2) + '%'
 const formatProfit = (v: number) => (v > 0 ? '+' : '') + formatKrw(v)
 const assetTypeColor = (type: string): string =>
-  ({ ETF: 'blue', 주식: 'purple', 채권: 'teal', 암호화폐: 'amber' })[type] ?? 'grey'
+  ({
+    국내주식: 'blue',
+    해외주식: 'purple',
+    ETF: 'teal',
+    암호화폐: 'amber',
+    현금: 'green',
+  })[type] ?? 'grey'
+
+const isRefreshing = ref(false)
+
+const refresh = async () => {
+  isRefreshing.value = true
+  await loadPortfolios()
+  isRefreshing.value = false
+}
 
 const onGlobalMouseUp = () => {
-  isDragging.value = false
+  isDraggingSwipe.value = false
+  if (isDragMode.value) onDragEnd()
 }
 
 onMounted(() => {
   loadPortfolios()
   window.addEventListener('mouseup', onGlobalMouseUp)
+  window.addEventListener('mousemove', onWindowMouseMove)
+  window.addEventListener('touchend', onDragEnd)
 })
-
 onUnmounted(() => {
   window.removeEventListener('mouseup', onGlobalMouseUp)
+  window.removeEventListener('mousemove', onWindowMouseMove)
+  window.removeEventListener('touchend', onDragEnd)
 })
 </script>
 
@@ -288,16 +488,43 @@ onUnmounted(() => {
         </div>
         <div class="text-body-2 text-medium-emphasis">실시간 평가금액 기준</div>
       </div>
-      <v-btn
-        color="primary"
-        prepend-icon="mdi-plus"
-        rounded="lg"
-        elevation="0"
-        class="glass-btn-primary"
-        @click="dialog = true"
-      >
-        자산 추가
-      </v-btn>
+      <div class="d-flex ga-2 align-center">
+        <v-fade-transition>
+          <v-chip
+            v-if="isDragMode"
+            size="small"
+            color="primary"
+            variant="tonal"
+            @click="cancelDragMode"
+          >
+            <v-icon start size="14">mdi-close</v-icon>
+            순서 변경 중
+          </v-chip>
+        </v-fade-transition>
+        <v-chip v-if="isSavingOrder" size="small" color="primary" variant="tonal">
+          저장 중...
+        </v-chip>
+        <v-btn
+          icon="mdi-refresh"
+          variant="outlined"
+          size="small"
+          rounded="circle"
+          elevation="0"
+          :loading="isRefreshing"
+          style="border-color: rgba(var(--v-theme-on-surface), 0.15)"
+          @click="refresh"
+        />
+        <v-btn
+          v-if="!isDragMode"
+          color="primary"
+          prepend-icon="mdi-plus"
+          rounded="lg"
+          elevation="0"
+          @click="dialog = true"
+        >
+          자산 추가
+        </v-btn>
+      </div>
     </div>
 
     <!-- 스켈레톤 로딩 -->
@@ -339,7 +566,7 @@ onUnmounted(() => {
           {{ formatKrw(totalEvaluationAmountKrw)
           }}<span class="text-body-1 font-weight-regular">원</span>
         </div>
-        <v-divider style="border-color: rgba(255, 255, 255, 0.3)" class="mb-3" />
+        <v-divider class="mb-3" />
         <div class="d-flex align-center ga-4">
           <div>
             <div class="text-caption text-medium-emphasis">총 손익</div>
@@ -367,16 +594,22 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="text-caption text-disabled text-right mb-2 pr-1">← 밀어서 수정/삭제</div>
-
+      <!-- 힌트 -->
       <!-- 자산 카드 목록 -->
       <div
         v-for="item in portfolios"
         :key="item.id"
-        class="swipe-wrap mb-2"
+        class="portfolio-card-wrap mb-2"
+        :data-id="item.id"
+        :class="{
+          'is-dragging': draggingId === item.id,
+          'is-drag-over': dragOverId === item.id && draggingId !== item.id,
+          'drag-mode': isDragMode,
+        }"
         @click="swipedId && swipedId !== item.id ? closeSwipe() : undefined"
       >
-        <div class="swipe-actions">
+        <!-- 스와이프 액션 (드래그 모드 아닐 때만) -->
+        <div v-if="!isDragMode" class="swipe-actions">
           <button class="action-btn action-edit" @click.stop="openEditDialog(item)">
             <v-icon size="18">mdi-pencil-outline</v-icon>
             <span>수정</span>
@@ -387,23 +620,73 @@ onUnmounted(() => {
           </button>
         </div>
 
+        <!-- 카드 본체 -->
         <div
           class="swipe-card"
-          :style="swipedId === item.id ? `transform: translateX(-${ACTION_WIDTH}px)` : ''"
-          @touchstart.passive="onTouchStart"
-          @touchend.passive="(e) => onTouchEnd(e, item.id)"
-          @mousedown="onMouseDown"
-          @mouseup="(e) => onMouseUp(e, item.id)"
+          :style="
+            !isDragMode && swipedId === item.id ? `transform: translateX(-${ACTION_WIDTH}px)` : ''
+          "
+          @touchstart.passive="
+            (e) => {
+              onCardLongPressStart(e, item.id)
+              onSwipeTouchStart(e)
+            }
+          "
+          @touchmove.passive="
+            (e) => {
+              onCardLongPressMove(e)
+              onDragMove(e, item.id)
+            }
+          "
+          @touchend.passive="
+            (e) => {
+              onCardLongPressEnd()
+              onSwipeTouchEnd(e, item.id)
+            }
+          "
+          @mousedown="
+            (e) => {
+              onCardLongPressStart(e, item.id)
+              onSwipeMouseDown(e)
+            }
+          "
+          @mouseup="
+            (e) => {
+              onCardLongPressEnd()
+              onSwipeMouseUp(e, item.id)
+            }
+          "
         >
           <div
             class="glass-card asset-card pa-3"
             :class="(item.profitAmountKrw ?? 0) >= 0 ? 'border-success-left' : 'border-error-left'"
           >
+            <!-- 상단: 종목명 + 타입 + 통화 + 수익률 + 드래그 핸들 -->
             <div class="d-flex justify-space-between align-center mb-2">
               <div class="d-flex align-center ga-2">
-                <span class="text-body-1 font-weight-bold">{{ item.ticker }}</span>
+                <v-icon
+                  v-if="isDragMode"
+                  size="18"
+                  style="color: rgba(var(--v-theme-on-surface), 0.35); cursor: grab"
+                >
+                  mdi-drag-vertical
+                </v-icon>
+                <div>
+                  <template v-if="getTickerLabel(item.ticker).showTicker">
+                    <span class="text-body-1 font-weight-bold">{{
+                      getTickerLabel(item.ticker).name
+                    }}</span>
+                    <span class="ticker-sub ml-1">{{ item.ticker }}</span>
+                  </template>
+                  <template v-else>
+                    <span class="text-body-1 font-weight-bold">{{ item.ticker }}</span>
+                  </template>
+                </div>
                 <v-chip :color="assetTypeColor(item.asset_type)" size="x-small" variant="tonal">
                   {{ item.asset_type }}
+                </v-chip>
+                <v-chip size="x-small" variant="tonal" color="grey">
+                  {{ item.currency }}
                 </v-chip>
               </div>
               <v-chip
@@ -415,6 +698,7 @@ onUnmounted(() => {
               </v-chip>
             </div>
 
+            <!-- 수량 / 평균단가 / 현재가 -->
             <div class="d-flex ga-4 mb-2">
               <div>
                 <div class="text-caption text-medium-emphasis">수량</div>
@@ -423,19 +707,25 @@ onUnmounted(() => {
               <div>
                 <div class="text-caption text-medium-emphasis">평균단가</div>
                 <div class="text-caption font-weight-bold">
-                  {{ formatPrice(item.avg_price) }} {{ item.currency }}
+                  {{ formatPrice(item.avg_price, item.currency) }}
                 </div>
               </div>
               <div>
                 <div class="text-caption text-medium-emphasis">현재가</div>
                 <div class="text-caption font-weight-bold">
-                  {{ formatPrice(item.currentPrice ?? 0) }} {{ item.currency }}
+                  <template v-if="item.isPriceFallback">
+                    <span style="color: rgba(var(--v-theme-on-surface), 0.35)">조회 실패</span>
+                  </template>
+                  <template v-else>
+                    {{ formatPrice(item.currentPrice ?? 0, item.currency) }}
+                  </template>
                 </div>
               </div>
             </div>
 
-            <v-divider style="border-color: rgba(255, 255, 255, 0.3)" class="mb-2" />
+            <v-divider class="mb-2" />
 
+            <!-- 평가금액 + 평가손익 -->
             <div class="d-flex justify-space-between align-center">
               <div>
                 <div class="text-caption text-medium-emphasis">평가금액</div>
@@ -495,26 +785,63 @@ onUnmounted(() => {
 
 <style scoped>
 .glass-card {
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(0, 0, 0, 0.07);
   border-radius: 20px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease;
 }
 
 .v-theme--dark .glass-card {
-  background: rgba(17, 46, 45, 0.8);
-  border-color: rgba(79, 200, 194, 0.18);
+  background: rgb(var(--v-theme-surface));
+  border-color: rgba(93, 214, 207, 0.15);
 }
 
-.glass-btn-primary {
-  backdrop-filter: blur(8px);
+.ticker-sub {
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(var(--v-theme-on-surface), 0.45);
 }
 
-.swipe-wrap {
+/* ── 스와이프 래퍼 ── */
+.portfolio-card-wrap {
   position: relative;
   overflow: hidden;
   border-radius: 20px;
+  transition: transform 0.2s ease;
+}
+
+/* ── 드래그 중인 카드 ── */
+.portfolio-card-wrap.is-dragging {
+  opacity: 0.5;
+  transform: scale(0.97);
+  z-index: 10;
+}
+
+/* ── 드롭 대상 카드 (위치 표시) ── */
+.portfolio-card-wrap.is-drag-over {
+  transform: translateY(-4px);
+}
+.portfolio-card-wrap.is-drag-over::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 12px;
+  right: 12px;
+  height: 3px;
+  background: rgb(var(--v-theme-primary));
+  border-radius: 99px;
+  z-index: 10;
+}
+
+/* ── 드래그 모드일 때 카드 커서 변경 ── */
+.portfolio-card-wrap.drag-mode {
+  cursor: grab;
+  user-select: none;
+}
+.portfolio-card-wrap.drag-mode:active {
+  cursor: grabbing;
 }
 
 .swipe-actions {
@@ -540,11 +867,9 @@ onUnmounted(() => {
   color: #fff;
   transition: filter 0.15s;
 }
-
 .action-btn:active {
   filter: brightness(0.9);
 }
-
 .action-edit {
   background: #0e8a82;
   border-radius: 20px 0 0 20px;
@@ -565,11 +890,19 @@ onUnmounted(() => {
   border-left: 3px solid transparent !important;
   border-radius: 20px !important;
 }
-
 .border-success-left {
   border-left-color: rgb(var(--v-theme-success)) !important;
 }
 .border-error-left {
   border-left-color: rgb(var(--v-theme-error)) !important;
+}
+
+.glass-dialog {
+  background: rgb(var(--v-theme-surface)) !important;
+  border: 1px solid rgba(0, 0, 0, 0.07) !important;
+}
+.v-theme--dark .glass-dialog {
+  background: rgba(13, 46, 45, 0.92) !important;
+  border-color: rgba(79, 200, 194, 0.2) !important;
 }
 </style>

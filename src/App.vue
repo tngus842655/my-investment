@@ -1,9 +1,16 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 import { useTheme } from 'vuetify'
 import GlobalSnackbar from '@/components/common/GlobalSnackbar.vue'
+import { useAppTheme } from '@/composables/useAppTheme'
 
 const theme = useTheme()
+const { initTheme } = useAppTheme()
+
+onMounted(() => {
+  initTheme()
+})
 </script>
 
 <template>
@@ -19,12 +26,10 @@ const theme = useTheme()
 }
 
 .app-bg.light {
-  background: linear-gradient(175deg, #4fc8c2 0%, #8ed4cc 42%, #f0ceba 100%);
-  background-attachment: fixed;
+  background: #f0f7f6;
 }
 
 .app-bg.dark {
-  background: linear-gradient(175deg, #0d3d3b 0%, #133a38 50%, #1f2a30 100%);
-  background-attachment: fixed;
+  background: #0f1e1d;
 }
 </style>

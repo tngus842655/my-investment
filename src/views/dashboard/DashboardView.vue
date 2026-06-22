@@ -5,8 +5,10 @@ import { supabase } from '@/services/supabase'
 import { getExchangeRate } from '@/services/market'
 import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
+import { useAppTheme } from '@/composables/useAppTheme'
 
 const router = useRouter()
+const { isDark, toggleTheme } = useAppTheme()
 const loading = ref(true)
 
 const targetAsset = ref(0)
@@ -114,6 +116,15 @@ onMounted(loadDashboard)
       <span class="section-eyebrow">MY INVESTMENT</span>
       <div class="d-flex ga-2">
         <v-btn
+          :icon="isDark() ? 'mdi-weather-sunny' : 'mdi-weather-night'"
+          variant="outlined"
+          size="small"
+          rounded="circle"
+          elevation="0"
+          class="glass-btn"
+          @click="toggleTheme"
+        />
+        <v-btn
           icon="mdi-pencil-outline"
           variant="outlined"
           size="small"
@@ -146,10 +157,22 @@ onMounted(loadDashboard)
       <div class="glass-card pa-5 mb-3">
         <div class="field-label mb-1">현재 자산</div>
         <div class="hero-amount font-weight-medium mb-1">
-          {{ formatShortMoney(currentAsset) }}원
+          {{ currentAsset > 0 ? formatShortMoney(currentAsset) + '원' : '-' }}
         </div>
         <div class="text-body-2 mb-5" style="color: rgba(var(--v-theme-on-surface), 0.5)">
-          {{ Math.round(currentAsset).toLocaleString('ko-KR') }}원
+          <template v-if="currentAsset > 0">
+            {{ Math.round(currentAsset).toLocaleString('ko-KR') }}원
+          </template>
+          <template v-else>
+            <span
+              class="d-inline-flex align-center ga-1"
+              style="cursor: pointer; color: rgb(var(--v-theme-primary))"
+              @click="router.push('/portfolio')"
+            >
+              <v-icon size="13">mdi-plus-circle-outline</v-icon>
+              보유자산을 추가하면 현재 자산이 집계됩니다
+            </span>
+          </template>
         </div>
 
         <div class="progress-label-row mb-2">
@@ -175,22 +198,18 @@ onMounted(loadDashboard)
       </div>
 
       <!-- 스탯 2개 -->
-      <v-row class="mb-3" style="gap: 0">
-        <v-col cols="6" class="pa-1">
-          <div class="stat-card">
-            <div class="stat-label">월 투자금</div>
-            <div class="stat-value">
-              {{ monthlyInvestment > 0 ? formatShortMoney(monthlyInvestment) : '-' }}
-            </div>
+      <div class="stat-grid mb-3">
+        <div class="stat-card">
+          <div class="stat-label">월 투자금</div>
+          <div class="stat-value">
+            {{ monthlyInvestment > 0 ? formatShortMoney(monthlyInvestment) : '-' }}
           </div>
-        </v-col>
-        <v-col cols="6" class="pa-1">
-          <div class="stat-card">
-            <div class="stat-label">잔여 목표</div>
-            <div class="stat-value text-error">{{ formatShortMoney(remainingAsset) }}</div>
-          </div>
-        </v-col>
-      </v-row>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">잔여 목표</div>
+          <div class="stat-value text-error">{{ formatShortMoney(remainingAsset) }}</div>
+        </div>
+      </div>
 
       <!-- FIRE 달성 카드 -->
       <div class="glass-card pa-4 mb-5">
@@ -215,7 +234,7 @@ onMounted(loadDashboard)
           <div class="text-body-2 mb-3" style="color: rgba(var(--v-theme-on-surface), 0.55)">
             약 {{ estimatedDate.durationStr }} 후
           </div>
-          <v-divider style="border-color: rgba(255, 255, 255, 0.25)" class="mb-3" />
+          <v-divider class="mb-3" />
           <div class="text-caption text-disabled">
             현재 자산 기준 · 월
             {{
@@ -301,28 +320,27 @@ onMounted(loadDashboard)
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(0, 0, 0, 0.07);
   border-radius: 20px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease;
 }
 
 .v-theme--dark .glass-card {
-  background: rgba(17, 46, 45, 0.8);
-  border-color: rgba(79, 200, 194, 0.18);
+  background: rgb(var(--v-theme-surface));
+  border-color: rgba(93, 214, 207, 0.15);
 }
 
 .glass-btn {
-  background: rgba(255, 255, 255, 0.45) !important;
-  border-color: rgba(255, 255, 255, 0.7) !important;
+  background: rgb(var(--v-theme-surface)) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.15) !important;
   color: rgb(var(--v-theme-on-surface)) !important;
-  backdrop-filter: blur(8px);
 }
 
 .v-theme--dark .glass-btn {
-  background: rgba(17, 46, 45, 0.6) !important;
-  border-color: rgba(79, 200, 194, 0.25) !important;
+  border-color: rgba(93, 214, 207, 0.25) !important;
 }
 
 .field-label {
@@ -373,18 +391,24 @@ onMounted(loadDashboard)
   border-color: rgba(17, 46, 45, 0.9);
 }
 
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
 .stat-card {
-  background: rgba(255, 255, 255, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(0, 0, 0, 0.07);
   border-radius: 16px;
   padding: 14px 16px;
   height: 100%;
-  backdrop-filter: blur(8px);
 }
 
 .v-theme--dark .stat-card {
-  background: rgba(17, 46, 45, 0.65);
-  border-color: rgba(79, 200, 194, 0.15);
+  background: rgb(var(--v-theme-surface));
+  border-color: rgba(93, 214, 207, 0.15);
 }
 
 .stat-label {

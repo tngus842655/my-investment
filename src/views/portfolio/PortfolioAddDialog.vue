@@ -47,6 +47,7 @@ const currencyHint = computed(() => {
   if (assetType.value === '해외주식') return '해외주식은 USD로 고정됩니다'
   if (assetType.value === '국내주식') return '국내주식은 KRW로 고정됩니다'
   if (assetType.value === '현금') return '현금은 KRW로 고정됩니다'
+  if (assetType.value === '암호화폐') return '업비트 등 KRW 거래소는 KRW, 바이낸스 등은 USD'
   return ''
 })
 

@@ -33,12 +33,10 @@ const signUp = async () => {
       email: email.value,
       password: password.value,
     })
-
     if (error) {
       showMessage(getErrorMessage(error.code), 'warning')
       return
     }
-
     showMessage('회원가입이 완료되었습니다. 이메일 인증 후 로그인해주세요.', 'success')
   } finally {
     loading.value = false
@@ -55,7 +53,6 @@ const signIn = async () => {
       email: email.value,
       password: password.value,
     })
-
     if (error) {
       showMessage(getErrorMessage(error.code), 'warning')
       return
@@ -75,7 +72,6 @@ const signIn = async () => {
       router.push('/goalSettings')
       return
     }
-
     router.push('/dashboard')
   } finally {
     loading.value = false
@@ -95,45 +91,43 @@ const onKeydown = (e: KeyboardEvent) => {
         <div class="logo-icon mx-auto mb-3">
           <v-icon icon="mdi-chart-line" size="26" color="primary" />
         </div>
-        <div class="text-h5 font-weight-bold text-white">MY INVESTMENT</div>
-        <div class="text-body-2 mt-1" style="color: rgba(255, 255, 255, 0.7)">
-          나만의 FIRE 목표 관리 플랫폼
-        </div>
+        <div class="text-h5 font-weight-bold">MY INVESTMENT</div>
+        <div class="text-body-2 text-medium-emphasis mt-1">나만의 FIRE 목표 관리 플랫폼</div>
       </div>
 
       <!-- 로그인 카드 -->
-      <div class="glass-card pa-6">
-        <v-form ref="form" @keydown="onKeydown">
-          <div class="field-label mb-1">이메일</div>
-          <v-text-field
-            v-model="email"
-            type="email"
-            :rules="emailRules"
-            placeholder="example@email.com"
-            variant="outlined"
-            density="comfortable"
-            class="mb-3 glass-field"
-            hide-details="auto"
-            autocomplete="email"
-          />
+      <v-card rounded="xl" elevation="0" border class="pa-2">
+        <v-card-text class="pa-4">
+          <v-form ref="form" @keydown="onKeydown">
+            <div class="field-label mb-1">이메일</div>
+            <v-text-field
+              v-model="email"
+              type="email"
+              :rules="emailRules"
+              placeholder="example@email.com"
+              variant="outlined"
+              density="comfortable"
+              class="mb-3"
+              hide-details="auto"
+              autocomplete="email"
+            />
+            <div class="field-label mb-1">비밀번호</div>
+            <v-text-field
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              :rules="passwordRules"
+              placeholder="6자 이상 입력"
+              :append-inner-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
+              @click:append-inner="showPassword = !showPassword"
+              variant="outlined"
+              density="comfortable"
+              hide-details="auto"
+              autocomplete="current-password"
+            />
+          </v-form>
+        </v-card-text>
 
-          <div class="field-label mb-1">비밀번호</div>
-          <v-text-field
-            v-model="password"
-            :type="showPassword ? 'text' : 'password'"
-            :rules="passwordRules"
-            placeholder="6자 이상 입력"
-            :append-inner-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
-            @click:append-inner="showPassword = !showPassword"
-            variant="outlined"
-            density="comfortable"
-            hide-details="auto"
-            autocomplete="current-password"
-            class="glass-field"
-          />
-        </v-form>
-
-        <div class="mt-5 d-flex flex-column ga-2">
+        <v-card-actions class="px-4 pb-4 pt-0 flex-column ga-2">
           <v-btn
             color="primary"
             size="large"
@@ -145,21 +139,12 @@ const onKeydown = (e: KeyboardEvent) => {
           >
             로그인
           </v-btn>
-
-          <v-divider class="my-1" style="border-color: rgba(255, 255, 255, 0.2)" />
-
-          <v-btn
-            variant="text"
-            block
-            size="default"
-            :disabled="loading"
-            style="color: rgba(255, 255, 255, 0.75)"
-            @click="signUp"
-          >
+          <v-divider class="w-100 my-1" />
+          <v-btn variant="text" block size="default" :disabled="loading" @click="signUp">
             회원가입
           </v-btn>
-        </div>
-      </div>
+        </v-card-actions>
+      </v-card>
     </div>
   </div>
 </template>
@@ -169,26 +154,11 @@ const onKeydown = (e: KeyboardEvent) => {
   width: 54px;
   height: 54px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: rgba(var(--v-theme-primary), 0.08);
+  border: 1px solid rgba(var(--v-theme-primary), 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.glass-card {
-  background: rgb(var(--v-theme-card-bg, 255 255 255 / 0.72));
-  background: v-bind("'var(--v-theme-card-bg, rgba(255,255,255,0.72))'");
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  border-radius: 20px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-.dark .glass-card {
-  background: rgba(17, 46, 45, 0.82);
-  border-color: rgba(79, 200, 194, 0.18);
 }
 
 .field-label {
