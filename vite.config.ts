@@ -10,6 +10,7 @@ export default defineConfig({
     vueDevTools(),
     VitePWA({
       registerType: 'autoUpdate',
+      includeAssets: ['icons/*.png'],
       manifest: {
         name: 'MY INVESTMENT',
         short_name: 'MY INVESTMENT',

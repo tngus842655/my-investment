@@ -89,7 +89,13 @@ const onKeydown = (e: KeyboardEvent) => {
       <!-- 로고 -->
       <div class="text-center mb-8">
         <div class="logo-icon mx-auto mb-3">
-          <v-icon icon="mdi-chart-line" size="26" color="primary" />
+          <img
+            :src="'/icons/icon-192.png'"
+            alt="MY INVESTMENT"
+            width="36"
+            height="36"
+            style="border-radius: 8px"
+          />
         </div>
         <div class="text-h5 font-weight-bold">MY INVESTMENT</div>
         <div class="text-body-2 text-medium-emphasis mt-1">나만의 FIRE 목표 관리 플랫폼</div>
