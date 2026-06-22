@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { getErrorMessage } from '@/utils/errorMessage'
+import { showMessage } from '@/composables/useSnackbar'
 
 const router = useRouter()
 const form = ref()
@@ -10,15 +11,6 @@ const form = ref()
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
-
-const snackbar = ref(false)
-const snackbarText = ref('')
-const snackbarColor = ref<'success' | 'error' | 'warning'>('success')
-const showMessage = (message: string, color: 'success' | 'error' | 'warning' = 'success') => {
-  snackbarText.value = message
-  snackbarColor.value = color
-  snackbar.value = true
-}
 
 const emailRules = [
   (v: string) => !!v || '이메일을 입력해주세요.',
@@ -134,17 +126,6 @@ const signIn = async () => {
       </v-col>
     </v-row>
   </v-container>
-
-  <v-snackbar
-    v-model="snackbar"
-    :color="snackbarColor"
-    timeout="3000"
-    location="top"
-    rounded="lg"
-    elevation="10"
-  >
-    {{ snackbarText }}
-  </v-snackbar>
 </template>
 
 <style scoped>

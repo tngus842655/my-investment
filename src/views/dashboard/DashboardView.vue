@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { formatCurrencyWithShort } from '@/utils/numberFormat'
+import { showMessage } from '@/composables/useSnackbar'
 
 const router = useRouter()
 
@@ -10,16 +11,9 @@ const loading = ref(true)
 
 const targetAsset = ref(0)
 const currentAsset = ref(0)
-const investmentPrincipal = ref(0)
 
-const snackbar = ref(false)
-const snackbarText = ref('')
-const snackbarColor = ref<'success' | 'error' | 'warning'>('success')
-const showMessage = (message: string, color: 'success' | 'error' | 'warning' = 'success') => {
-  snackbarText.value = message
-  snackbarColor.value = color
-  snackbar.value = true
-}
+const monthlyInvestment = ref(0)
+const targetDate = ref('')
 
 const confirmDialog = ref(false)
 
@@ -27,20 +21,6 @@ const progressRate = computed(() => {
   if (!targetAsset.value) return 0
 
   return Math.min(Math.round((currentAsset.value / targetAsset.value) * 100), 100)
-})
-
-const profitAmount = computed(() => {
-  return currentAsset.value - investmentPrincipal.value
-})
-
-const profitRate = computed(() => {
-  if (!investmentPrincipal.value) return 0
-
-  return Number(
-    (((currentAsset.value - investmentPrincipal.value) / investmentPrincipal.value) * 100).toFixed(
-      2,
-    ),
-  )
 })
 
 const loadDashboard = async () => {
@@ -53,19 +33,28 @@ const loadDashboard = async () => {
 
     if (!user) return
 
-    const [goalResult, assetResult] = await Promise.all([
+    const [goalResult, portfolioResult] = await Promise.all([
       supabase.from('investment_goals').select('*').eq('user_id', user.id).maybeSingle(),
 
-      supabase.from('asset_summary').select('*').eq('user_id', user.id).maybeSingle(),
+      supabase.from('portfolios').select('*').eq('user_id', user.id),
     ])
 
     if (goalResult.data) {
       targetAsset.value = goalResult.data.target_asset ?? 0
+      monthlyInvestment.value = goalResult.data.monthly_investment ?? 0
+      targetDate.value = goalResult.data.target_date ?? ''
     }
 
-    if (assetResult.data) {
-      currentAsset.value = assetResult.data.current_asset ?? 0
-      investmentPrincipal.value = assetResult.data.investment_principal ?? 0
+    if (portfolioResult.data) {
+      const usdRate = 1350
+
+      currentAsset.value = portfolioResult.data.reduce((sum, item) => {
+        const amount = item.quantity * item.avg_price
+
+        const krwAmount = item.currency === 'USD' ? amount * usdRate : amount
+
+        return sum + krwAmount
+      }, 0)
     }
   } catch (error) {
     console.error(error)
@@ -90,15 +79,11 @@ const logout = async () => {
 }
 
 const moveToPortfolio = () => {
-  showMessage('보유자산 관리는 구현중입니다.', 'warning')
-  return
-  // router.push('/portfolio')
+  router.push('/portfolio')
 }
 
 const moveToTransactions = () => {
-  showMessage('거래내역 관리는 구현중입니다.', 'warning')
-  return
-  //router.push('/transactions')
+  showMessage('서비스 준비중', 'warning')
 }
 
 onMounted(() => {
@@ -115,21 +100,21 @@ onMounted(() => {
         <div class="text-subtitle-1 text-grey-darken-1">FIRE 목표 달성 현황</div>
       </div>
 
-      <v-btn
-        color="primary"
-        variant="outlined"
-        prepend-icon="mdi-pencil"
-        @click="moveToGoalSettings"
-      >
-        목표 수정
-      </v-btn>
+      <div class="d-flex ga-2">
+        <v-btn
+          color="primary"
+          variant="outlined"
+          prepend-icon="mdi-pencil"
+          @click="moveToGoalSettings"
+        >
+          목표 수정
+        </v-btn>
 
-      <v-btn color="error" variant="text" prepend-icon="mdi-logout" @click="confirmDialog = true">
-        로그아웃
-      </v-btn>
+        <v-btn color="error" variant="text" prepend-icon="mdi-logout" @click="confirmDialog = true">
+          로그아웃
+        </v-btn>
+      </div>
     </div>
-
-    <!-- 현재자산 / 목표자산 -->
 
     <v-row>
       <v-col cols="12" md="6">
@@ -157,8 +142,6 @@ onMounted(() => {
       </v-col>
     </v-row>
 
-    <!-- 목표 달성률 -->
-
     <v-card rounded="xl" elevation="3" class="mt-4">
       <v-card-text>
         <div class="d-flex justify-space-between mb-2">
@@ -170,58 +153,39 @@ onMounted(() => {
       </v-card-text>
     </v-card>
 
-    <!-- 투자원금 / 평가손익 -->
-
     <v-row class="mt-2">
-      <v-col cols="6">
+      <v-col cols="12" md="6">
         <v-card rounded="xl" elevation="3">
           <v-card-text>
-            <div class="text-grey">투자 원금</div>
+            <div class="text-grey">월 투자금</div>
 
             <div class="text-h6 font-weight-bold mt-2">
-              {{ formatCurrencyWithShort(investmentPrincipal) }}
+              {{ monthlyInvestment > 0 ? formatCurrencyWithShort(monthlyInvestment) : '-' }}
             </div>
           </v-card-text>
         </v-card>
       </v-col>
 
-      <v-col cols="6">
+      <v-col cols="12" md="6">
         <v-card rounded="xl" elevation="3">
           <v-card-text>
-            <div class="text-grey">평가 손익</div>
+            <div class="text-grey">목표일</div>
 
-            <div
-              class="text-h6 font-weight-bold mt-2"
-              :class="profitAmount >= 0 ? 'text-success' : 'text-error'"
-            >
-              {{ profitAmount >= 0 ? '+' : '-' }}
-              {{ formatCurrencyWithShort(Math.abs(profitAmount)) }}
+            <div class="text-h6 font-weight-bold mt-2">
+              {{ targetDate || '-' }}
             </div>
           </v-card-text>
         </v-card>
       </v-col>
     </v-row>
 
-    <!-- 수익률 -->
+    <v-card rounded="xl" elevation="3" class="mt-4">
+      <v-card-text>
+        <div class="text-grey">예상 FIRE 달성일</div>
 
-    <v-row>
-      <v-col cols="12">
-        <v-card rounded="xl" elevation="3">
-          <v-card-text>
-            <div class="text-grey">수익률</div>
-
-            <div
-              class="text-h4 font-weight-bold mt-2"
-              :class="profitRate >= 0 ? 'text-success' : 'text-error'"
-            >
-              {{ profitRate }} %
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-
-    <!-- 메뉴 버튼 -->
+        <div class="text-h5 font-weight-bold mt-2 text-grey">준비중 🚀</div>
+      </v-card-text>
+    </v-card>
 
     <v-row class="mt-4">
       <v-col cols="12" md="6">
@@ -269,15 +233,4 @@ onMounted(() => {
       </v-card>
     </v-dialog>
   </v-container>
-
-  <v-snackbar
-    v-model="snackbar"
-    :color="snackbarColor"
-    timeout="3000"
-    location="top"
-    rounded="lg"
-    elevation="10"
-  >
-    {{ snackbarText }}
-  </v-snackbar>
 </template>

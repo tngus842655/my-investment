@@ -4,6 +4,7 @@ import { supabase } from '@/services/supabase'
 import LoginView from '@/views/auth/LoginView.vue'
 import GoalSettingsView from '@/views/dashboard/GoalSettingsView.vue'
 import DashboardView from '@/views/dashboard/DashboardView.vue'
+import PortfolioView from '@/views/portfolio/PortfolioView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -27,6 +28,14 @@ const router = createRouter({
         requiresAuth: true,
       },
     },
+    {
+      path: '/portfolio',
+      name: 'portfolio',
+      component: PortfolioView,
+      meta: {
+        requiresAuth: true,
+      },
+    }
   ],
 })
 
