@@ -12,7 +12,6 @@ const emit = defineEmits<{
   save: [PortfolioForm]
 }>()
 
-// 수정 모드 여부
 const isEditMode = computed(() => !!props.initialData)
 
 const ticker = ref('')
@@ -21,10 +20,43 @@ const quantity = ref('')
 const avgPrice = ref('')
 const currency = ref('KRW')
 
-const assetTypes = ['국내주식', '해외주식', 'ETF', '암호화폐', '현금']
+const assetTypes = ['국내주식', '해외주식', '암호화폐', '현금']
 const currencies = ['KRW', 'USD']
 
-// ── 다이얼로그가 열릴 때 초기값 세팅 ──────────────
+const tickerConfig = computed(() => {
+  switch (assetType.value) {
+    case '해외주식':
+      return { label: '티커', placeholder: 'AAPL', disabled: false }
+    case '국내주식':
+      return { label: '종목코드', placeholder: '005930', disabled: false }
+    case '암호화폐':
+      return { label: '코인 영문코드', placeholder: 'BTC', disabled: false }
+    case '현금':
+      return { label: '티커', placeholder: '-', disabled: true }
+    default:
+      return { label: '티커', placeholder: '', disabled: false }
+  }
+})
+
+const currencyLocked = computed(
+  () =>
+    assetType.value === '해외주식' || assetType.value === '국내주식' || assetType.value === '현금',
+)
+
+const currencyHint = computed(() => {
+  if (assetType.value === '해외주식') return '해외주식은 USD로 고정됩니다'
+  if (assetType.value === '국내주식') return '국내주식은 KRW로 고정됩니다'
+  if (assetType.value === '현금') return '현금은 KRW로 고정됩니다'
+  return ''
+})
+
+watch(assetType, (newType) => {
+  if (newType === '해외주식') currency.value = 'USD'
+  else if (newType === '국내주식' || newType === '현금') currency.value = 'KRW'
+  if (newType === '현금') ticker.value = '-'
+  else if (ticker.value === '-') ticker.value = ''
+})
+
 watch(dialog, (opened) => {
   if (!opened) return
   if (props.initialData) {
@@ -34,11 +66,10 @@ watch(dialog, (opened) => {
     avgPrice.value = addComma(String(props.initialData.avg_price))
     currency.value = props.initialData.currency
   } else {
-    reset(false) // 추가 모드면 초기화
+    reset(false)
   }
 })
 
-// ── 포맷 유틸 ─────────────────────────────────────
 const addComma = (value: string) => {
   const number = value.replace(/[^0-9.]/g, '')
   const parts = number.split('.')
@@ -54,28 +85,24 @@ const handleAvgPrice = (value: string) => {
   avgPrice.value = addComma(value)
 }
 
-// ── 유효성 ────────────────────────────────────────
 const isValid = computed(
   () =>
-    ticker.value.trim() &&
     assetType.value &&
+    (assetType.value === '현금' || ticker.value.trim()) &&
     Number(quantity.value) > 0 &&
     removeComma(avgPrice.value) > 0 &&
     currency.value,
 )
 
-// ── 저장 ─────────────────────────────────────────
 const save = () => {
   if (!isValid.value) return
-
   emit('save', {
-    ticker: ticker.value.trim().toUpperCase(),
+    ticker: assetType.value === '현금' ? 'CASH' : ticker.value.trim().toUpperCase(),
     asset_type: assetType.value,
     quantity: Number(quantity.value),
     avg_price: removeComma(avgPrice.value),
     currency: currency.value,
   })
-
   reset()
 }
 
@@ -93,32 +120,38 @@ const reset = (closeDialog = true) => {
 
 <template>
   <v-dialog v-model="dialog" max-width="500">
-    <v-card rounded="xl">
+    <v-card rounded="xl" class="glass-dialog">
       <v-card-title class="text-h5 font-weight-bold py-4">
         {{ isEditMode ? '자산 수정' : '자산 추가' }}
       </v-card-title>
 
       <v-card-text>
-        <v-text-field
-          v-model="ticker"
-          label="티커"
-          placeholder="QQQM"
-          prepend-inner-icon="mdi-finance"
-          variant="outlined"
-          :disabled="isEditMode"
-          :hint="isEditMode ? '티커는 수정할 수 없습니다.' : ''"
-          persistent-hint
-        />
-
+        <!-- 1. 자산유형 -->
         <v-select
           v-model="assetType"
           :items="assetTypes"
           label="자산유형"
           prepend-inner-icon="mdi-shape"
           variant="outlined"
-          class="mt-2"
+          :disabled="isEditMode"
+          :hint="isEditMode ? '자산유형은 수정할 수 없습니다.' : ''"
+          persistent-hint
         />
 
+        <!-- 2. 티커 / 종목코드 / 코인코드 -->
+        <v-text-field
+          v-model="ticker"
+          :label="tickerConfig.label"
+          :placeholder="tickerConfig.placeholder"
+          :disabled="tickerConfig.disabled || isEditMode"
+          prepend-inner-icon="mdi-finance"
+          variant="outlined"
+          class="mt-3"
+          :hint="isEditMode && assetType !== '현금' ? '티커/코드는 수정할 수 없습니다.' : ''"
+          persistent-hint
+        />
+
+        <!-- 3. 수량 -->
         <v-text-field
           v-model="quantity"
           label="수량"
@@ -126,25 +159,30 @@ const reset = (closeDialog = true) => {
           step="0.0001"
           prepend-inner-icon="mdi-counter"
           variant="outlined"
-          class="mt-2"
+          class="mt-3"
         />
 
+        <!-- 4. 평균단가 -->
         <v-text-field
           :model-value="avgPrice"
           @update:model-value="handleAvgPrice"
           label="평균단가"
           variant="outlined"
-          class="mt-2"
+          class="mt-3"
           :prepend-inner-icon="currency === 'USD' ? 'mdi-currency-usd' : 'mdi-currency-krw'"
         />
 
+        <!-- 5. 통화 -->
         <v-select
           v-model="currency"
           :items="currencies"
           label="통화"
           prepend-inner-icon="mdi-cash"
           variant="outlined"
-          class="mt-2"
+          class="mt-3"
+          :disabled="currencyLocked"
+          :hint="currencyHint"
+          persistent-hint
         />
       </v-card-text>
 
@@ -158,3 +196,17 @@ const reset = (closeDialog = true) => {
     </v-card>
   </v-dialog>
 </template>
+
+<style scoped>
+.glass-dialog {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border: 1px solid rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+
+.v-theme--dark .glass-dialog {
+  background: rgba(13, 46, 45, 0.92) !important;
+  border-color: rgba(79, 200, 194, 0.2) !important;
+}
+</style>

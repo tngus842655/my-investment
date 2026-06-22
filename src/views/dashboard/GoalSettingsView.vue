@@ -10,7 +10,7 @@ const router = useRouter()
 const targetAsset = ref('')
 const monthlyInvestment = ref('')
 const targetDate = ref('')
-const annualReturn = ref<number | null>(null) // null = 미설정
+const annualReturn = ref<number | null>(null)
 
 const loading = ref(false)
 const isEditMode = ref(false)
@@ -29,7 +29,6 @@ const handleMonthlyInvestment = (value: string) => {
   monthlyInvestment.value = addComma(value)
 }
 
-// 슬라이더용 - null이면 7로 표시
 const sliderValue = computed({
   get: () => annualReturn.value ?? 7,
   set: (v: number) => {
@@ -40,11 +39,10 @@ const sliderValue = computed({
 const targetAssetText = computed(() => formatShortMoney(removeComma(targetAsset.value)))
 const monthlyInvestmentText = computed(() => formatShortMoney(removeComma(monthlyInvestment.value)))
 
-// 복리 계산으로 예상 달성 기간 미리보기
 const estimatedPreview = computed(() => {
   const T = removeComma(targetAsset.value)
   const M = removeComma(monthlyInvestment.value)
-  const r = (annualReturn.value ?? 7) / 100 / 12 // 월 수익률
+  const r = (annualReturn.value ?? 7) / 100 / 12
 
   if (!T || !M) return null
 
@@ -52,7 +50,6 @@ const estimatedPreview = computed(() => {
   if (r === 0) {
     months = Math.ceil(T / M)
   } else {
-    // 복리 공식: n = log(1 + T*r/M) / log(1+r)  (초기 자산 0 가정 미리보기)
     months = Math.ceil(Math.log(1 + (T * r) / M) / Math.log(1 + r))
   }
 
@@ -60,11 +57,9 @@ const estimatedPreview = computed(() => {
 
   const years = Math.floor(months / 12)
   const remainMonths = months % 12
-
   const date = new Date()
   date.setMonth(date.getMonth() + months)
   const dateStr = date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })
-
   const durationStr =
     years > 0 ? `${years}년 ${remainMonths > 0 ? remainMonths + '개월' : ''}` : `${months}개월`
 
@@ -111,7 +106,7 @@ const save = async () => {
         target_asset: removeComma(targetAsset.value),
         monthly_investment: removeComma(monthlyInvestment.value),
         target_date: targetDate.value || null,
-        annual_return: annualReturn.value, // null이면 DB에 NULL 저장
+        annual_return: annualReturn.value,
       },
       { onConflict: 'user_id' },
     )
@@ -146,35 +141,36 @@ onMounted(loadData)
 </script>
 
 <template>
-  <v-container class="pa-4 pa-sm-6" style="max-width: 480px">
-    <!-- 헤더 -->
-    <div class="d-flex align-center mb-6">
-      <v-btn
-        v-if="isEditMode"
-        icon="mdi-arrow-left"
-        variant="text"
-        size="small"
-        class="mr-2"
-        @click="cancel"
-      />
-      <div>
-        <div class="text-h5 font-weight-bold">
-          {{ isEditMode ? '목표 수정' : '투자 시작하기' }}
-        </div>
-        <div class="text-body-2 text-medium-emphasis">
-          {{
-            isEditMode
-              ? 'FIRE 목표와 투자 계획을 수정합니다'
-              : '목표 자산과 투자 계획을 설정해주세요'
-          }}
+  <div class="fill-height pa-4 pa-sm-6 d-flex flex-column align-center">
+    <div style="width: 100%; max-width: 480px">
+      <!-- 헤더 -->
+      <div class="d-flex align-center mb-6">
+        <v-btn
+          v-if="isEditMode"
+          icon="mdi-arrow-left"
+          variant="text"
+          size="small"
+          class="mr-2"
+          style="color: rgba(255, 255, 255, 0.85)"
+          @click="cancel"
+        />
+        <div>
+          <div class="text-h5 font-weight-bold text-white">
+            {{ isEditMode ? '목표 수정' : '투자 시작하기' }}
+          </div>
+          <div class="text-body-2 mt-1" style="color: rgba(255, 255, 255, 0.7)">
+            {{
+              isEditMode
+                ? 'FIRE 목표와 투자 계획을 수정합니다'
+                : '목표 자산과 투자 계획을 설정해주세요'
+            }}
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- 목표 자산 -->
-    <v-card rounded="xl" elevation="0" border class="mb-3">
-      <v-card-text class="pa-4">
-        <div class="text-caption text-medium-emphasis font-weight-medium mb-3">
+      <!-- 목표 자산 -->
+      <div class="glass-card pa-4 mb-3">
+        <div class="field-label mb-3">
           <v-icon size="14" class="mr-1">mdi-target</v-icon>
           목표 자산 <span class="text-error">*</span>
         </div>
@@ -186,23 +182,23 @@ onMounted(loadData)
           density="comfortable"
           hide-details
           suffix="원"
+          class="glass-field"
         >
           <template #append-inner>
             <span
               v-if="targetAsset"
-              class="text-caption text-primary text-no-wrap font-weight-bold"
+              class="text-caption font-weight-bold"
+              style="color: rgb(var(--v-theme-primary)); white-space: nowrap"
             >
               {{ targetAssetText }}
             </span>
           </template>
         </v-text-field>
-      </v-card-text>
-    </v-card>
+      </div>
 
-    <!-- 월 투자금 -->
-    <v-card rounded="xl" elevation="0" border class="mb-3">
-      <v-card-text class="pa-4">
-        <div class="text-caption text-medium-emphasis font-weight-medium mb-3">
+      <!-- 월 투자금 -->
+      <div class="glass-card pa-4 mb-3">
+        <div class="field-label mb-3">
           <v-icon size="14" class="mr-1">mdi-cash-multiple</v-icon>
           월 투자금
           <span class="text-caption text-disabled ml-1">(선택)</span>
@@ -215,24 +211,24 @@ onMounted(loadData)
           density="comfortable"
           hide-details
           suffix="원"
+          class="glass-field"
         >
           <template #append-inner>
             <span
               v-if="monthlyInvestment"
-              class="text-caption text-primary text-no-wrap font-weight-bold"
+              class="text-caption font-weight-bold"
+              style="color: rgb(var(--v-theme-primary)); white-space: nowrap"
             >
               {{ monthlyInvestmentText }}
             </span>
           </template>
         </v-text-field>
-      </v-card-text>
-    </v-card>
+      </div>
 
-    <!-- 연평균 수익률 -->
-    <v-card rounded="xl" elevation="0" border class="mb-3">
-      <v-card-text class="pa-4">
+      <!-- 연평균 수익률 -->
+      <div class="glass-card pa-4 mb-3">
         <div class="d-flex justify-space-between align-center mb-1">
-          <div class="text-caption text-medium-emphasis font-weight-medium">
+          <div class="field-label">
             <v-icon size="14" class="mr-1">mdi-trending-up</v-icon>
             예상 연평균 수익률
           </div>
@@ -267,28 +263,31 @@ onMounted(loadData)
           <span class="text-caption text-disabled">30%</span>
         </div>
 
-        <!-- 미리보기 -->
         <template v-if="estimatedPreview">
-          <v-divider class="my-3" />
-          <div class="d-flex align-center gap-2">
-            <v-icon size="16" color="amber-darken-2">mdi-rocket-launch-outline</v-icon>
+          <v-divider class="my-3" style="border-color: rgba(255, 255, 255, 0.2)" />
+          <div class="d-flex align-center ga-2">
+            <v-icon size="15" color="amber-darken-2">mdi-rocket-launch-outline</v-icon>
             <div class="text-caption text-medium-emphasis">
               목표 달성까지 약
-              <strong class="text-primary">{{ estimatedPreview.durationStr }}</strong>
-              → <strong class="text-primary">{{ estimatedPreview.dateStr }}</strong> 예상
+              <strong style="color: rgb(var(--v-theme-primary))">{{
+                estimatedPreview.durationStr
+              }}</strong>
+              →
+              <strong style="color: rgb(var(--v-theme-primary))">{{
+                estimatedPreview.dateStr
+              }}</strong>
+              예상
             </div>
           </div>
-          <div class="text-caption text-disabled mt-1 ml-6">
+          <div class="text-caption text-disabled mt-1 ml-5">
             현재 자산 미포함 · 복리 기준 단순 추정
           </div>
         </template>
-      </v-card-text>
-    </v-card>
+      </div>
 
-    <!-- 목표일 -->
-    <v-card rounded="xl" elevation="0" border class="mb-6">
-      <v-card-text class="pa-4">
-        <div class="text-caption text-medium-emphasis font-weight-medium mb-3">
+      <!-- 목표일 -->
+      <div class="glass-card pa-4 mb-6">
+        <div class="field-label mb-3">
           <v-icon size="14" class="mr-1">mdi-calendar-outline</v-icon>
           목표일
           <span class="text-caption text-disabled ml-1">(선택)</span>
@@ -299,32 +298,48 @@ onMounted(loadData)
           variant="outlined"
           density="comfortable"
           hide-details
+          class="glass-field"
         />
-      </v-card-text>
-    </v-card>
+      </div>
 
-    <!-- 버튼 -->
-    <v-btn
-      color="primary"
-      size="large"
-      rounded="lg"
-      block
-      elevation="0"
-      :loading="loading"
-      class="mb-3"
-      @click="save"
-    >
-      {{ isEditMode ? '수정하기' : '시작하기' }}
-    </v-btn>
+      <!-- 버튼 -->
+      <v-btn
+        color="primary"
+        size="large"
+        rounded="lg"
+        block
+        elevation="0"
+        :loading="loading"
+        class="mb-3"
+        @click="save"
+      >
+        {{ isEditMode ? '수정하기' : '시작하기' }}
+      </v-btn>
 
-    <v-btn variant="text" block @click="cancel">
-      {{ isEditMode ? '취소' : '로그아웃' }}
-    </v-btn>
-  </v-container>
+      <v-btn variant="text" block style="color: rgba(255, 255, 255, 0.7)" @click="cancel">
+        {{ isEditMode ? '취소' : '로그아웃' }}
+      </v-btn>
+    </div>
+  </div>
 </template>
 
 <style scoped>
-.gap-2 {
-  gap: 8px;
+.glass-card {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+:deep(.v-theme--dark) .glass-card {
+  background: rgba(17, 46, 45, 0.82);
+  border-color: rgba(79, 200, 194, 0.18);
+}
+
+.field-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(var(--v-theme-on-surface), 0.6);
 }
 </style>

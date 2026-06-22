@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { getExchangeRate } from '@/services/market'
-import { formatCurrencyWithShort, formatShortMoney } from '@/utils/numberFormat'
+import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
 
 const router = useRouter()
@@ -24,13 +24,12 @@ const progressRate = computed(() => {
 
 const remainingAsset = computed(() => Math.max(targetAsset.value - currentAsset.value, 0))
 
-// 복리 계산 기반 FIRE 달성일 산출
 const estimatedDate = computed(() => {
   const T = targetAsset.value
   const C = currentAsset.value
   const M = monthlyInvestment.value
   if (annualReturn.value === null) return null
-  const r = annualReturn.value / 100 / 12 // 월 수익률
+  const r = annualReturn.value / 100 / 12
 
   if (!T || !M || C >= T) return null
 
@@ -38,9 +37,6 @@ const estimatedDate = computed(() => {
   if (r === 0) {
     months = Math.ceil((T - C) / M)
   } else {
-    // 현재 자산 C 포함 복리 공식
-    // T = C*(1+r)^n + M*((1+r)^n - 1)/r  를 n에 대해 풀면:
-    // n = log((T*r + M) / (C*r + M)) / log(1+r)
     const numerator = T * r + M
     const denominator = C * r + M
     if (denominator <= 0) return null
@@ -114,24 +110,25 @@ onMounted(loadDashboard)
 <template>
   <v-container class="pa-4 pa-sm-6">
     <!-- 헤더 -->
-    <div class="d-flex justify-space-between align-center mb-5">
-      <div>
-        <div class="text-h5 font-weight-bold">MY INVESTMENT</div>
-        <div class="text-body-2 text-medium-emphasis">FIRE 목표 달성 현황</div>
-      </div>
+    <div class="d-flex justify-space-between align-center mb-6">
+      <span class="section-eyebrow">MY INVESTMENT</span>
       <div class="d-flex ga-2">
         <v-btn
-          variant="tonal"
-          color="primary"
-          size="small"
           icon="mdi-pencil-outline"
+          variant="outlined"
+          size="small"
+          rounded="circle"
+          elevation="0"
+          class="glass-btn"
           @click="router.push('/goalSettings')"
         />
         <v-btn
-          variant="text"
-          color="error"
-          size="small"
           icon="mdi-logout"
+          variant="outlined"
+          size="small"
+          rounded="circle"
+          elevation="0"
+          class="glass-btn"
           @click="confirmDialog = true"
         />
       </div>
@@ -139,188 +136,148 @@ onMounted(loadDashboard)
 
     <!-- 스켈레톤 로딩 -->
     <template v-if="loading">
-      <v-skeleton-loader type="card" class="mb-3 rounded-xl" />
-      <v-skeleton-loader type="card" class="mb-3 rounded-xl" />
-      <v-skeleton-loader type="list-item-three-line" class="mb-3 rounded-xl" />
+      <v-skeleton-loader type="card" class="mb-3 rounded-xl glass-skeleton" />
+      <v-skeleton-loader type="card" class="mb-3 rounded-xl glass-skeleton" />
+      <v-skeleton-loader type="list-item-three-line" class="mb-3 rounded-xl glass-skeleton" />
     </template>
 
     <template v-else>
-      <!-- 자산 현황 요약 카드 -->
-      <v-card rounded="xl" elevation="0" border class="mb-3 overflow-hidden">
-        <div class="hero-bg px-4 pt-4 pb-3">
-          <div class="text-caption text-medium-emphasis font-weight-medium mb-1">현재 자산</div>
-          <div class="text-h4 font-weight-bold">
-            {{ formatCurrencyWithShort(currentAsset) }}
-          </div>
-          <div class="text-caption text-disabled mt-1">
-            USD/KRW {{ exchangeRate.toLocaleString('ko-KR') }}원 기준
+      <!-- 히어로 카드 -->
+      <div class="glass-card pa-5 mb-3">
+        <div class="field-label mb-1">현재 자산</div>
+        <div class="hero-amount font-weight-medium mb-1">
+          {{ formatShortMoney(currentAsset) }}원
+        </div>
+        <div class="text-body-2 mb-5" style="color: rgba(var(--v-theme-on-surface), 0.5)">
+          {{ Math.round(currentAsset).toLocaleString('ko-KR') }}원
+        </div>
+
+        <div class="progress-label-row mb-2">
+          <span class="text-caption font-weight-medium">{{ progressRate }}% 달성</span>
+          <span class="text-caption" style="color: rgba(var(--v-theme-on-surface), 0.5)">
+            목표 {{ formatShortMoney(targetAsset) }}
+          </span>
+        </div>
+
+        <div class="progress-track mb-2">
+          <div class="progress-fill" :style="{ width: Math.max(progressRate, 2) + '%' }">
+            <div class="progress-dot" />
           </div>
         </div>
 
-        <v-divider />
-
-        <!-- 목표 달성률 -->
-        <div class="px-4 py-3">
-          <div class="d-flex justify-space-between align-center mb-2">
-            <span class="text-caption text-medium-emphasis font-weight-medium">목표 달성률</span>
-            <span
-              class="text-caption font-weight-bold"
-              :class="progressRate >= 100 ? 'text-success' : 'text-primary'"
-            >
-              {{ progressRate }}%
-            </span>
-          </div>
-          <v-progress-linear
-            :model-value="progressRate"
-            height="8"
-            rounded
-            color="primary"
-            bg-color="grey-lighten-3"
-          />
-          <div class="d-flex justify-space-between mt-2">
-            <span class="text-caption text-disabled">0원</span>
-            <span class="text-caption text-disabled">{{ formatShortMoney(targetAsset) }}</span>
-          </div>
+        <div class="text-caption" style="color: rgba(var(--v-theme-on-surface), 0.55)">
+          목표까지
+          <span class="font-weight-medium" style="color: rgb(var(--v-theme-on-surface))">
+            {{ formatShortMoney(remainingAsset) }}
+          </span>
+          남음
         </div>
-      </v-card>
+      </div>
 
-      <!-- 목표/투자 정보 그리드 -->
-      <v-row dense class="mb-3">
-        <v-col cols="6">
-          <v-card rounded="xl" elevation="0" border height="100%">
-            <v-card-text class="pa-3">
-              <div class="text-caption text-medium-emphasis mb-1">목표 자산</div>
-              <div class="text-body-1 font-weight-bold">
-                {{ formatShortMoney(targetAsset) }}
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-        <v-col cols="6">
-          <v-card rounded="xl" elevation="0" border height="100%">
-            <v-card-text class="pa-3">
-              <div class="text-caption text-medium-emphasis mb-1">잔여 목표</div>
-              <div class="text-body-1 font-weight-bold text-error">
-                {{ formatShortMoney(remainingAsset) }}
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-        <v-col cols="6">
-          <v-card rounded="xl" elevation="0" border height="100%">
-            <v-card-text class="pa-3">
-              <div class="text-caption text-medium-emphasis mb-1">월 투자금</div>
-              <div class="text-body-1 font-weight-bold">
-                {{ monthlyInvestment > 0 ? formatShortMoney(monthlyInvestment) : '-' }}
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-        <v-col cols="6">
-          <v-card rounded="xl" elevation="0" border height="100%">
-            <v-card-text class="pa-3">
-              <div class="text-caption text-medium-emphasis mb-1">목표일</div>
-              <div class="text-body-1 font-weight-bold">
-                {{ targetDate || '-' }}
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
-
-      <!-- 예상 FIRE 달성일 -->
-      <v-card rounded="xl" elevation="0" border class="mb-5">
-        <v-card-text class="pa-3">
-          <div class="d-flex justify-space-between align-center mb-1">
-            <div class="d-flex align-center gap-2">
-              <v-icon size="18" color="amber-darken-2">mdi-rocket-launch-outline</v-icon>
-              <span class="text-caption text-medium-emphasis font-weight-medium"
-                >예상 FIRE 달성</span
-              >
+      <!-- 스탯 2개 -->
+      <v-row class="mb-3" style="gap: 0">
+        <v-col cols="6" class="pa-1">
+          <div class="stat-card">
+            <div class="stat-label">월 투자금</div>
+            <div class="stat-value">
+              {{ monthlyInvestment > 0 ? formatShortMoney(monthlyInvestment) : '-' }}
             </div>
-            <v-chip
-              size="x-small"
-              :color="annualReturn !== null ? 'primary' : 'default'"
-              variant="tonal"
-              @click="router.push('/goalSettings')"
-              style="cursor: pointer"
-            >
-              {{ annualReturn !== null ? '연 ' + annualReturn + '% 복리' : '수익률 미설정' }}
-            </v-chip>
           </div>
-          <template v-if="estimatedDate">
-            <div class="text-body-1 font-weight-bold mt-1">
-              {{ estimatedDate.dateStr }}
-              <span class="text-caption text-medium-emphasis ml-1"
-                >(약 {{ estimatedDate.durationStr }})</span
-              >
-            </div>
-            <div class="text-caption text-disabled mt-1">
-              현재 자산 + 월
-              {{
-                monthlyInvestment > 0 ? (monthlyInvestment / 10000).toLocaleString() + '만원' : '-'
-              }}
-              복리 기준
-            </div>
-          </template>
-          <template v-else>
-            <span v-if="annualReturn === null" class="text-body-2 text-medium-emphasis">
-              목표 수정에서 연평균 수익률을 설정해주세요
-            </span>
-            <span v-else class="text-body-2 text-medium-emphasis">
-              목표 및 월 투자금을 설정해주세요
-            </span>
-          </template>
-        </v-card-text>
-      </v-card>
-
-      <!-- 메뉴 버튼 -->
-      <v-row dense>
-        <v-col cols="12">
-          <v-card
-            rounded="xl"
-            elevation="0"
-            border
-            class="menu-card"
-            @click="router.push('/portfolio')"
-          >
-            <v-card-text class="pa-4 d-flex align-center gap-3">
-              <v-icon color="primary" size="24">mdi-chart-line</v-icon>
-              <div>
-                <div class="text-body-2 font-weight-bold">보유자산 관리</div>
-                <div class="text-caption text-medium-emphasis">실시간 평가금액 및 수익률 확인</div>
-              </div>
-              <v-spacer />
-              <v-icon color="medium-emphasis" size="18">mdi-chevron-right</v-icon>
-            </v-card-text>
-          </v-card>
         </v-col>
-        <v-col cols="12">
-          <v-card
-            rounded="xl"
-            elevation="0"
-            border
-            class="menu-card"
-            @click="showMessage('서비스 준비중', 'warning')"
-          >
-            <v-card-text class="pa-4 d-flex align-center gap-3">
-              <v-icon color="secondary" size="24">mdi-swap-horizontal</v-icon>
-              <div>
-                <div class="text-body-2 font-weight-bold">거래내역 관리</div>
-                <div class="text-caption text-medium-emphasis">매수/매도 내역 기록 및 조회</div>
-              </div>
-              <v-spacer />
-              <v-chip size="x-small" color="warning" variant="tonal">준비중</v-chip>
-            </v-card-text>
-          </v-card>
+        <v-col cols="6" class="pa-1">
+          <div class="stat-card">
+            <div class="stat-label">잔여 목표</div>
+            <div class="stat-value text-error">{{ formatShortMoney(remainingAsset) }}</div>
+          </div>
         </v-col>
       </v-row>
+
+      <!-- FIRE 달성 카드 -->
+      <div class="glass-card pa-4 mb-5">
+        <div class="d-flex justify-space-between align-center mb-3">
+          <div class="d-flex align-center ga-2">
+            <v-icon size="15" color="amber-darken-2">mdi-rocket-launch-outline</v-icon>
+            <span class="field-label">예상 FIRE 달성</span>
+          </div>
+          <v-chip
+            size="x-small"
+            :color="annualReturn !== null ? 'primary' : 'default'"
+            variant="tonal"
+            style="cursor: pointer"
+            @click="router.push('/goalSettings')"
+          >
+            {{ annualReturn !== null ? '연 ' + annualReturn + '% 복리' : '수익률 미설정' }}
+          </v-chip>
+        </div>
+
+        <template v-if="estimatedDate">
+          <div class="fire-date font-weight-medium mb-1">{{ estimatedDate.dateStr }}</div>
+          <div class="text-body-2 mb-3" style="color: rgba(var(--v-theme-on-surface), 0.55)">
+            약 {{ estimatedDate.durationStr }} 후
+          </div>
+          <v-divider style="border-color: rgba(255, 255, 255, 0.25)" class="mb-3" />
+          <div class="text-caption text-disabled">
+            현재 자산 기준 · 월
+            {{
+              monthlyInvestment > 0 ? (monthlyInvestment / 10000).toLocaleString() + '만원' : '-'
+            }}
+            복리 계산
+          </div>
+        </template>
+        <template v-else>
+          <div class="text-body-2 text-medium-emphasis">
+            {{
+              annualReturn === null
+                ? '목표 수정에서 연평균 수익률을 설정해주세요'
+                : '목표 및 월 투자금을 설정해주세요'
+            }}
+          </div>
+        </template>
+      </div>
+
+      <!-- 섹션 라벨 -->
+      <div class="section-eyebrow mb-2">메뉴</div>
+
+      <!-- 메뉴 리스트 -->
+      <div class="d-flex flex-column ga-2">
+        <div
+          class="glass-card menu-card pa-4 d-flex align-center ga-3"
+          @click="router.push('/portfolio')"
+        >
+          <div class="menu-icon">
+            <v-icon size="18" color="primary">mdi-chart-line</v-icon>
+          </div>
+          <div>
+            <div class="text-body-2 font-weight-medium">보유자산 관리</div>
+            <div class="text-caption text-medium-emphasis">실시간 평가금액 및 수익률 확인</div>
+          </div>
+          <v-spacer />
+          <v-icon size="16" style="color: rgba(var(--v-theme-on-surface), 0.35)"
+            >mdi-chevron-right</v-icon
+          >
+        </div>
+
+        <div
+          class="glass-card menu-card pa-4 d-flex align-center ga-3"
+          @click="showMessage('서비스 준비중', 'warning')"
+        >
+          <div class="menu-icon">
+            <v-icon size="18" color="primary">mdi-swap-horizontal</v-icon>
+          </div>
+          <div>
+            <div class="text-body-2 font-weight-medium">거래내역 관리</div>
+            <div class="text-caption text-medium-emphasis">매수/매도 내역 기록 및 조회</div>
+          </div>
+          <v-spacer />
+          <v-chip size="x-small" color="warning" variant="tonal">준비중</v-chip>
+        </div>
+      </div>
     </template>
   </v-container>
 
   <!-- 로그아웃 확인 다이얼로그 -->
   <v-dialog v-model="confirmDialog" max-width="320">
-    <v-card rounded="xl">
+    <v-card rounded="xl" class="glass-dialog">
       <v-card-title class="text-center pt-6">로그아웃</v-card-title>
       <v-card-text class="text-center text-medium-emphasis">
         정말 로그아웃 하시겠습니까?
@@ -335,23 +292,146 @@ onMounted(loadDashboard)
 </template>
 
 <style scoped>
-.hero-bg {
-  background: linear-gradient(135deg, rgba(var(--v-theme-primary), 0.05) 0%, transparent 60%);
+.section-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.v-theme--dark .glass-card {
+  background: rgba(17, 46, 45, 0.8);
+  border-color: rgba(79, 200, 194, 0.18);
+}
+
+.glass-btn {
+  background: rgba(255, 255, 255, 0.45) !important;
+  border-color: rgba(255, 255, 255, 0.7) !important;
+  color: rgb(var(--v-theme-on-surface)) !important;
+  backdrop-filter: blur(8px);
+}
+
+.v-theme--dark .glass-btn {
+  background: rgba(17, 46, 45, 0.6) !important;
+  border-color: rgba(79, 200, 194, 0.25) !important;
+}
+
+.field-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(var(--v-theme-on-surface), 0.55);
+}
+
+.hero-amount {
+  font-size: 32px;
+  line-height: 1.15;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.progress-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progress-track {
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(var(--v-theme-on-surface), 0.1);
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: rgb(var(--v-theme-primary));
+  position: relative;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgb(var(--v-theme-primary));
+  border: 2.5px solid rgba(255, 255, 255, 0.9);
+  position: absolute;
+  right: -6px;
+  top: -3px;
+}
+
+.v-theme--dark .progress-dot {
+  border-color: rgba(17, 46, 45, 0.9);
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 16px;
+  padding: 14px 16px;
+  height: 100%;
+  backdrop-filter: blur(8px);
+}
+
+.v-theme--dark .stat-card {
+  background: rgba(17, 46, 45, 0.65);
+  border-color: rgba(79, 200, 194, 0.15);
+}
+
+.stat-label {
+  font-size: 11px;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+  margin-bottom: 6px;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 500;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.fire-date {
+  font-size: 22px;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.menu-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(var(--v-theme-primary), 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .menu-card {
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.1s ease;
 }
 
 .menu-card:hover {
-  background-color: rgba(var(--v-theme-surface-variant), 0.5);
+  background: rgba(255, 255, 255, 0.82) !important;
+  transform: translateY(-1px);
 }
 
-.gap-2 {
-  gap: 8px;
+.v-theme--dark .menu-card:hover {
+  background: rgba(17, 46, 45, 0.92) !important;
 }
-.gap-3 {
-  gap: 12px;
+
+.glass-skeleton {
+  background: rgba(255, 255, 255, 0.4) !important;
 }
 </style>

@@ -22,14 +22,12 @@ interface PortfolioViewItem extends PortfolioAsset {
 const portfolios = ref<PortfolioViewItem[]>([])
 const exchangeRate = ref<number | null>(null)
 
-// 스와이프 상태 관리
-const swipedId = ref<string | null>(null) // 현재 열린 카드 id
+const swipedId = ref<string | null>(null)
 const touchStartX = ref(0)
 const touchStartY = ref(0)
-const SWIPE_THRESHOLD = 40 // px — 이 이상 좌로 밀면 액션 노출
-const ACTION_WIDTH = 128 // px — 액션 버튼 영역 너비
+const SWIPE_THRESHOLD = 40
+const ACTION_WIDTH = 128
 
-// 실시간 환율 조회 (USD/KRW) — Finnhub forex API 사용
 const fetchExchangeRate = async (): Promise<number> => {
   try {
     const rate = await getExchangeRate('USD', 'KRW')
@@ -120,7 +118,6 @@ const loadPortfolios = async () => {
   }
 }
 
-// ── 스와이프 핸들러 (Touch + Mouse 공통) ─────────
 const isDragging = ref(false)
 
 const onDragStart = (clientX: number, clientY: number) => {
@@ -144,28 +141,22 @@ const onDragEnd = (clientX: number, clientY: number, id: string) => {
   }
 }
 
-// Touch 이벤트
 const onTouchStart = (e: TouchEvent) => {
   onDragStart(e.touches[0]?.clientX ?? 0, e.touches[0]?.clientY ?? 0)
 }
 const onTouchEnd = (e: TouchEvent, id: string) => {
   onDragEnd(e.changedTouches[0]?.clientX ?? 0, e.changedTouches[0]?.clientY ?? 0, id)
 }
-
-// Mouse 이벤트 (PC)
 const onMouseDown = (e: MouseEvent) => {
   onDragStart(e.clientX, e.clientY)
 }
 const onMouseUp = (e: MouseEvent, id: string) => {
   onDragEnd(e.clientX, e.clientY, id)
 }
-
-// 다른 카드 열리면 기존 닫기
 const closeSwipe = () => {
   swipedId.value = null
 }
 
-// ── 다이얼로그 ───────────────────────────────────
 const dialog = ref(false)
 const editDialog = ref(false)
 const deleteDialog = ref(false)
@@ -265,17 +256,14 @@ const deletePortfolio = async () => {
   }
 }
 
-// ── 포맷 유틸 ────────────────────────────────────
 const formatKrw = (v: number) => Math.round(v).toLocaleString('ko-KR')
 const formatPrice = (v: number) =>
   v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const formatPercent = (v: number) => (v >= 0 ? '+' : '') + v.toFixed(2) + '%'
 const formatProfit = (v: number) => (v > 0 ? '+' : '') + formatKrw(v)
-
 const assetTypeColor = (type: string): string =>
   ({ ETF: 'blue', 주식: 'purple', 채권: 'teal', 암호화폐: 'amber' })[type] ?? 'grey'
 
-// 마우스가 카드 밖에서 떼질 경우 드래그 상태 초기화
 const onGlobalMouseUp = () => {
   isDragging.value = false
 }
@@ -291,12 +279,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- 바깥 클릭 시 스와이프 닫기 -->
   <v-container class="pa-4 pa-sm-6" @click.self="closeSwipe">
     <!-- 헤더 -->
     <div class="d-flex justify-space-between align-center mb-5">
       <div>
-        <div class="text-h5 font-weight-bold">보유자산</div>
+        <div class="text-h5 font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">
+          보유자산
+        </div>
         <div class="text-body-2 text-medium-emphasis">실시간 평가금액 기준</div>
       </div>
       <v-btn
@@ -304,6 +293,7 @@ onUnmounted(() => {
         prepend-icon="mdi-plus"
         rounded="lg"
         elevation="0"
+        class="glass-btn-primary"
         @click="dialog = true"
       >
         자산 추가
@@ -312,18 +302,20 @@ onUnmounted(() => {
 
     <!-- 스켈레톤 로딩 -->
     <template v-if="loading">
-      <v-skeleton-loader
+      <div
         v-for="n in 3"
         :key="n"
-        type="list-item-three-line"
-        class="mb-2 rounded-xl"
+        class="glass-card mb-2"
+        style="height: 120px; border-radius: 20px"
       />
     </template>
 
     <!-- 빈 상태 -->
     <template v-else-if="portfolios.length === 0">
-      <v-card rounded="xl" elevation="0" border class="py-12 text-center">
-        <v-icon size="48" color="grey-lighten-1" class="mb-4">mdi-chart-line-variant</v-icon>
+      <div class="glass-card py-12 text-center">
+        <v-icon size="48" color="primary" class="mb-4" style="opacity: 0.4"
+          >mdi-chart-line-variant</v-icon
+        >
         <div class="text-h6 font-weight-medium text-medium-emphasis">자산이 없습니다</div>
         <div class="text-body-2 text-disabled mt-1">자산 추가 버튼으로 첫 자산을 등록하세요.</div>
         <v-btn
@@ -336,36 +328,33 @@ onUnmounted(() => {
         >
           자산 추가
         </v-btn>
-      </v-card>
+      </div>
     </template>
 
-    <!-- 포트폴리오 목록 -->
     <template v-else>
       <!-- 총 요약 카드 -->
-      <v-card rounded="xl" elevation="0" border class="mb-4 overflow-hidden">
-        <div class="summary-header px-4 pt-4 pb-3">
-          <div class="text-caption text-medium-emphasis font-weight-medium mb-1">총 평가자산</div>
-          <div class="text-h5 font-weight-bold">
-            {{ formatKrw(totalEvaluationAmountKrw) }}
-            <span class="text-body-1 font-weight-regular">원</span>
-          </div>
+      <div class="glass-card pa-4 mb-4">
+        <div class="text-caption text-medium-emphasis font-weight-medium mb-1">총 평가자산</div>
+        <div class="text-h5 font-weight-medium mb-3" style="color: rgb(var(--v-theme-on-surface))">
+          {{ formatKrw(totalEvaluationAmountKrw)
+          }}<span class="text-body-1 font-weight-regular">원</span>
         </div>
-        <v-divider />
-        <div class="d-flex px-4 py-2 gap-6 align-center">
+        <v-divider style="border-color: rgba(255, 255, 255, 0.3)" class="mb-3" />
+        <div class="d-flex align-center ga-4">
           <div>
             <div class="text-caption text-medium-emphasis">총 손익</div>
             <div
-              class="text-body-2 font-weight-bold"
+              class="text-body-2 font-weight-medium"
               :class="totalProfitAmountKrw >= 0 ? 'text-success' : 'text-error'"
             >
-              {{ formatProfit(totalProfitAmountKrw) }} 원
+              {{ formatProfit(totalProfitAmountKrw) }}원
             </div>
           </div>
-          <v-divider vertical style="height: 28px" />
+          <v-divider vertical style="height: 28px; border-color: rgba(255, 255, 255, 0.3)" />
           <div>
             <div class="text-caption text-medium-emphasis">수익률</div>
             <div
-              class="text-body-2 font-weight-bold"
+              class="text-body-2 font-weight-medium"
               :class="totalProfitRate >= 0 ? 'text-success' : 'text-error'"
             >
               {{ formatPercent(totalProfitRate) }}
@@ -373,22 +362,20 @@ onUnmounted(() => {
           </div>
           <v-spacer />
           <div v-if="exchangeRate" class="text-caption text-disabled">
-            USD {{ formatKrw(exchangeRate) }}원
+            USD {{ Math.round(exchangeRate).toLocaleString('ko-KR') }}원
           </div>
         </div>
-      </v-card>
+      </div>
 
-      <!-- 힌트 문구 -->
       <div class="text-caption text-disabled text-right mb-2 pr-1">← 밀어서 수정/삭제</div>
 
-      <!-- 자산 카드 목록 (스와이프) -->
+      <!-- 자산 카드 목록 -->
       <div
         v-for="item in portfolios"
         :key="item.id"
         class="swipe-wrap mb-2"
         @click="swipedId && swipedId !== item.id ? closeSwipe() : undefined"
       >
-        <!-- 뒤에 깔리는 액션 버튼 -->
         <div class="swipe-actions">
           <button class="action-btn action-edit" @click.stop="openEditDialog(item)">
             <v-icon size="18">mdi-pencil-outline</v-icon>
@@ -400,109 +387,100 @@ onUnmounted(() => {
           </button>
         </div>
 
-        <!-- 카드 본체 -->
         <div
           class="swipe-card"
-          :class="{ 'is-open': swipedId === item.id }"
           :style="swipedId === item.id ? `transform: translateX(-${ACTION_WIDTH}px)` : ''"
           @touchstart.passive="onTouchStart"
           @touchend.passive="(e) => onTouchEnd(e, item.id)"
           @mousedown="onMouseDown"
           @mouseup="(e) => onMouseUp(e, item.id)"
         >
-          <v-card
-            rounded="xl"
-            elevation="0"
-            border
-            class="asset-card"
+          <div
+            class="glass-card asset-card pa-3"
             :class="(item.profitAmountKrw ?? 0) >= 0 ? 'border-success-left' : 'border-error-left'"
           >
-            <v-card-text class="pa-3">
-              <!-- 상단: 티커 + 타입 + 수익률 칩 -->
-              <div class="d-flex justify-space-between align-center mb-2">
-                <div class="d-flex align-center gap-2">
-                  <span class="text-body-1 font-weight-bold">{{ item.ticker }}</span>
-                  <v-chip :color="assetTypeColor(item.asset_type)" size="x-small" variant="tonal">
-                    {{ item.asset_type }}
-                  </v-chip>
-                </div>
-                <v-chip
-                  :color="(item.profitRate ?? 0) >= 0 ? 'success' : 'error'"
-                  size="x-small"
-                  variant="tonal"
-                >
-                  {{ formatPercent(item.profitRate ?? 0) }}
+            <div class="d-flex justify-space-between align-center mb-2">
+              <div class="d-flex align-center ga-2">
+                <span class="text-body-1 font-weight-bold">{{ item.ticker }}</span>
+                <v-chip :color="assetTypeColor(item.asset_type)" size="x-small" variant="tonal">
+                  {{ item.asset_type }}
                 </v-chip>
               </div>
+              <v-chip
+                :color="(item.profitRate ?? 0) >= 0 ? 'success' : 'error'"
+                size="x-small"
+                variant="tonal"
+              >
+                {{ formatPercent(item.profitRate ?? 0) }}
+              </v-chip>
+            </div>
 
-              <!-- 수량 / 평균단가 / 현재가 — 한 줄 -->
-              <div class="d-flex gap-4 mb-2">
-                <div>
-                  <div class="text-caption text-medium-emphasis">수량</div>
-                  <div class="text-caption font-weight-bold">{{ item.quantity }}</div>
-                </div>
-                <div>
-                  <div class="text-caption text-medium-emphasis">평균단가</div>
-                  <div class="text-caption font-weight-bold">
-                    {{ formatPrice(item.avg_price) }} {{ item.currency }}
-                  </div>
-                </div>
-                <div>
-                  <div class="text-caption text-medium-emphasis">현재가</div>
-                  <div class="text-caption font-weight-bold">
-                    {{ formatPrice(item.currentPrice ?? 0) }} {{ item.currency }}
-                  </div>
+            <div class="d-flex ga-4 mb-2">
+              <div>
+                <div class="text-caption text-medium-emphasis">수량</div>
+                <div class="text-caption font-weight-bold">{{ item.quantity }}</div>
+              </div>
+              <div>
+                <div class="text-caption text-medium-emphasis">평균단가</div>
+                <div class="text-caption font-weight-bold">
+                  {{ formatPrice(item.avg_price) }} {{ item.currency }}
                 </div>
               </div>
-
-              <v-divider class="mb-2" />
-
-              <!-- 하단: 평가금액 + 평가손익 -->
-              <div class="d-flex justify-space-between align-center">
-                <div>
-                  <div class="text-caption text-medium-emphasis">평가금액</div>
-                  <div class="text-body-2 font-weight-bold text-primary">
-                    {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원
-                  </div>
-                </div>
-                <div class="text-right">
-                  <div class="text-caption text-medium-emphasis">평가손익</div>
-                  <div
-                    class="text-body-2 font-weight-bold"
-                    :class="(item.profitAmountKrw ?? 0) >= 0 ? 'text-success' : 'text-error'"
-                  >
-                    {{ formatProfit(item.profitAmountKrw ?? 0) }}원
-                  </div>
+              <div>
+                <div class="text-caption text-medium-emphasis">현재가</div>
+                <div class="text-caption font-weight-bold">
+                  {{ formatPrice(item.currentPrice ?? 0) }} {{ item.currency }}
                 </div>
               </div>
-            </v-card-text>
-          </v-card>
+            </div>
+
+            <v-divider style="border-color: rgba(255, 255, 255, 0.3)" class="mb-2" />
+
+            <div class="d-flex justify-space-between align-center">
+              <div>
+                <div class="text-caption text-medium-emphasis">평가금액</div>
+                <div class="text-body-2 font-weight-bold text-primary">
+                  {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-caption text-medium-emphasis">평가손익</div>
+                <div
+                  class="text-body-2 font-weight-bold"
+                  :class="(item.profitAmountKrw ?? 0) >= 0 ? 'text-success' : 'text-error'"
+                >
+                  {{ formatProfit(item.profitAmountKrw ?? 0) }}원
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </template>
 
-    <!-- 뒤로가기 -->
-    <v-btn class="mt-4" variant="text" prepend-icon="mdi-arrow-left" @click="router.back()">
+    <v-btn
+      class="mt-4"
+      variant="text"
+      prepend-icon="mdi-arrow-left"
+      style="color: rgba(var(--v-theme-on-surface), 0.7)"
+      @click="router.back()"
+    >
       뒤로가기
     </v-btn>
   </v-container>
 
-  <!-- 자산 추가 다이얼로그 -->
   <PortfolioAddDialog v-model="dialog" @save="savePortfolio" />
-
-  <!-- 자산 수정 다이얼로그 (추가와 같은 컴포넌트 재사용, initial-data prop 전달) -->
   <PortfolioAddDialog
     v-model="editDialog"
     :initial-data="selectedPortfolio"
     @save="updatePortfolio"
   />
 
-  <!-- 삭제 확인 다이얼로그 -->
   <v-dialog v-model="deleteDialog" max-width="320">
-    <v-card rounded="xl">
+    <v-card rounded="xl" class="glass-dialog">
       <v-card-title class="text-center pt-6">자산 삭제</v-card-title>
       <v-card-text class="text-center text-medium-emphasis">
-        <strong class="text-high-emphasis">{{ selectedPortfolio?.ticker }}</strong
+        <strong>{{ selectedPortfolio?.ticker }}</strong
         >을(를) 삭제하시겠습니까?<br />
         <span class="text-caption">이 작업은 되돌릴 수 없습니다.</span>
       </v-card-text>
@@ -516,14 +494,29 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* ── 스와이프 래퍼 ── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.v-theme--dark .glass-card {
+  background: rgba(17, 46, 45, 0.8);
+  border-color: rgba(79, 200, 194, 0.18);
+}
+
+.glass-btn-primary {
+  backdrop-filter: blur(8px);
+}
+
 .swipe-wrap {
   position: relative;
   overflow: hidden;
-  border-radius: 16px; /* xl */
+  border-radius: 20px;
 }
 
-/* ── 뒤에 깔리는 액션 버튼 영역 ── */
 .swipe-actions {
   position: absolute;
   right: 0;
@@ -553,15 +546,14 @@ onUnmounted(() => {
 }
 
 .action-edit {
-  background: #1976d2;
-  border-radius: 16px 0 0 16px;
+  background: #0e8a82;
+  border-radius: 20px 0 0 20px;
 }
 .action-delete {
   background: #d32f2f;
-  border-radius: 0 16px 16px 0;
+  border-radius: 0 20px 20px 0;
 }
 
-/* ── 카드 본체 슬라이드 ── */
 .swipe-card {
   position: relative;
   z-index: 1;
@@ -569,9 +561,9 @@ onUnmounted(() => {
   will-change: transform;
 }
 
-/* ── 자산 카드 ── */
 .asset-card {
   border-left: 3px solid transparent !important;
+  border-radius: 20px !important;
 }
 
 .border-success-left {
@@ -579,21 +571,5 @@ onUnmounted(() => {
 }
 .border-error-left {
   border-left-color: rgb(var(--v-theme-error)) !important;
-}
-
-/* ── 요약 카드 배경 ── */
-.summary-header {
-  background: linear-gradient(135deg, rgba(var(--v-theme-primary), 0.04) 0%, transparent 60%);
-}
-
-/* ── 유틸 ── */
-.gap-2 {
-  gap: 8px;
-}
-.gap-4 {
-  gap: 16px;
-}
-.gap-6 {
-  gap: 24px;
 }
 </style>
