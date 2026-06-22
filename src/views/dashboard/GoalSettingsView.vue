@@ -10,6 +10,7 @@ const router = useRouter()
 const targetAsset = ref('')
 const monthlyInvestment = ref('')
 const targetDate = ref('')
+const annualReturn = ref<number | null>(null) // null = 미설정
 
 const loading = ref(false)
 const isEditMode = ref(false)
@@ -19,27 +20,61 @@ const addComma = (value: string) => {
   return number.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }
 
-const removeComma = (value: string) => {
-  return Number(value.replace(/,/g, '')) || 0
-}
+const removeComma = (value: string) => Number(value.replace(/,/g, '')) || 0
 
 const handleTargetAsset = (value: string) => {
   targetAsset.value = addComma(value)
 }
-
 const handleMonthlyInvestment = (value: string) => {
   monthlyInvestment.value = addComma(value)
 }
 
-const targetAssetText = computed(() => formatShortMoney(removeComma(targetAsset.value)))
+// 슬라이더용 - null이면 7로 표시
+const sliderValue = computed({
+  get: () => annualReturn.value ?? 7,
+  set: (v: number) => {
+    annualReturn.value = v
+  },
+})
 
+const targetAssetText = computed(() => formatShortMoney(removeComma(targetAsset.value)))
 const monthlyInvestmentText = computed(() => formatShortMoney(removeComma(monthlyInvestment.value)))
+
+// 복리 계산으로 예상 달성 기간 미리보기
+const estimatedPreview = computed(() => {
+  const T = removeComma(targetAsset.value)
+  const M = removeComma(monthlyInvestment.value)
+  const r = (annualReturn.value ?? 7) / 100 / 12 // 월 수익률
+
+  if (!T || !M) return null
+
+  let months: number
+  if (r === 0) {
+    months = Math.ceil(T / M)
+  } else {
+    // 복리 공식: n = log(1 + T*r/M) / log(1+r)  (초기 자산 0 가정 미리보기)
+    months = Math.ceil(Math.log(1 + (T * r) / M) / Math.log(1 + r))
+  }
+
+  if (!isFinite(months) || months <= 0) return null
+
+  const years = Math.floor(months / 12)
+  const remainMonths = months % 12
+
+  const date = new Date()
+  date.setMonth(date.getMonth() + months)
+  const dateStr = date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })
+
+  const durationStr =
+    years > 0 ? `${years}년 ${remainMonths > 0 ? remainMonths + '개월' : ''}` : `${months}개월`
+
+  return { dateStr, durationStr }
+})
 
 const loadData = async () => {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
   if (!user) return
 
   const { data } = await supabase
@@ -51,10 +86,10 @@ const loadData = async () => {
   if (!data) return
 
   isEditMode.value = true
-
   targetAsset.value = addComma(String(data.target_asset ?? ''))
   monthlyInvestment.value = addComma(String(data.monthly_investment ?? ''))
   targetDate.value = data.target_date ?? ''
+  annualReturn.value = data.annual_return ?? null
 }
 
 const save = async () => {
@@ -64,15 +99,11 @@ const save = async () => {
   }
 
   loading.value = true
-
   try {
     const {
       data: { user },
     } = await supabase.auth.getUser()
-
-    if (!user) {
-      return
-    }
+    if (!user) return
 
     const { error } = await supabase.from('investment_goals').upsert(
       {
@@ -80,10 +111,9 @@ const save = async () => {
         target_asset: removeComma(targetAsset.value),
         monthly_investment: removeComma(monthlyInvestment.value),
         target_date: targetDate.value || null,
+        annual_return: annualReturn.value, // null이면 DB에 NULL 저장
       },
-      {
-        onConflict: 'user_id',
-      },
+      { onConflict: 'user_id' },
     )
 
     if (error) {
@@ -91,12 +121,10 @@ const save = async () => {
       return
     }
 
-    if (isEditMode.value) {
-      showMessage('목표 정보가 수정되었습니다.', 'success')
-    } else {
-      showMessage('투자 설정이 완료되었습니다.', 'success')
-    }
-
+    showMessage(
+      isEditMode.value ? '목표 정보가 수정되었습니다.' : '투자 설정이 완료되었습니다.',
+      'success',
+    )
     router.push('/dashboard')
   } catch (error) {
     console.error(error)
@@ -106,71 +134,197 @@ const save = async () => {
   }
 }
 
-onMounted(() => {
-  loadData()
-})
+const cancel = () => {
+  if (isEditMode.value) {
+    router.back()
+  } else {
+    supabase.auth.signOut().then(() => router.replace('/'))
+  }
+}
+
+onMounted(loadData)
 </script>
 
 <template>
-  <v-container class="fill-height">
-    <v-row justify="center" align="center">
-      <v-col cols="12" sm="10" md="7" lg="5">
-        <v-card rounded="xl" elevation="4">
-          <v-card-title class="text-center text-h4 font-weight-bold py-8">
-            {{ isEditMode ? '목표 수정' : '투자 시작하기' }}
-          </v-card-title>
+  <v-container class="pa-4 pa-sm-6" style="max-width: 480px">
+    <!-- 헤더 -->
+    <div class="d-flex align-center mb-6">
+      <v-btn
+        v-if="isEditMode"
+        icon="mdi-arrow-left"
+        variant="text"
+        size="small"
+        class="mr-2"
+        @click="cancel"
+      />
+      <div>
+        <div class="text-h5 font-weight-bold">
+          {{ isEditMode ? '목표 수정' : '투자 시작하기' }}
+        </div>
+        <div class="text-body-2 text-medium-emphasis">
+          {{
+            isEditMode
+              ? 'FIRE 목표와 투자 계획을 수정합니다'
+              : '목표 자산과 투자 계획을 설정해주세요'
+          }}
+        </div>
+      </div>
+    </div>
 
-          <v-card-subtitle class="text-center mb-6">
-            목표 자산과 투자 계획을 설정해주세요
-          </v-card-subtitle>
-
-          <v-card-text>
-            <v-text-field
-              :model-value="targetAsset"
-              @update:model-value="handleTargetAsset"
-              label="목표 자산"
-              variant="outlined"
-              prepend-inner-icon="mdi-target"
+    <!-- 목표 자산 -->
+    <v-card rounded="xl" elevation="0" border class="mb-3">
+      <v-card-text class="pa-4">
+        <div class="text-caption text-medium-emphasis font-weight-medium mb-3">
+          <v-icon size="14" class="mr-1">mdi-target</v-icon>
+          목표 자산 <span class="text-error">*</span>
+        </div>
+        <v-text-field
+          :model-value="targetAsset"
+          @update:model-value="handleTargetAsset"
+          placeholder="1,000,000,000"
+          variant="outlined"
+          density="comfortable"
+          hide-details
+          suffix="원"
+        >
+          <template #append-inner>
+            <span
+              v-if="targetAsset"
+              class="text-caption text-primary text-no-wrap font-weight-bold"
             >
-              <template #append-inner>
-                <span v-if="targetAsset" class="text-grey-darken-1 text-no-wrap">
-                  ({{ targetAssetText }})
-                </span>
-              </template>
-            </v-text-field>
+              {{ targetAssetText }}
+            </span>
+          </template>
+        </v-text-field>
+      </v-card-text>
+    </v-card>
 
-            <v-text-field
-              :model-value="monthlyInvestment"
-              @update:model-value="handleMonthlyInvestment"
-              label="월 투자금 (선택)"
-              variant="outlined"
-              prepend-inner-icon="mdi-cash"
-              class="mt-2"
+    <!-- 월 투자금 -->
+    <v-card rounded="xl" elevation="0" border class="mb-3">
+      <v-card-text class="pa-4">
+        <div class="text-caption text-medium-emphasis font-weight-medium mb-3">
+          <v-icon size="14" class="mr-1">mdi-cash-multiple</v-icon>
+          월 투자금
+          <span class="text-caption text-disabled ml-1">(선택)</span>
+        </div>
+        <v-text-field
+          :model-value="monthlyInvestment"
+          @update:model-value="handleMonthlyInvestment"
+          placeholder="3,000,000"
+          variant="outlined"
+          density="comfortable"
+          hide-details
+          suffix="원"
+        >
+          <template #append-inner>
+            <span
+              v-if="monthlyInvestment"
+              class="text-caption text-primary text-no-wrap font-weight-bold"
             >
-              <template #append-inner>
-                <span v-if="monthlyInvestment" class="text-grey-darken-1 text-no-wrap">
-                  ({{ monthlyInvestmentText }})
-                </span>
-              </template>
-            </v-text-field>
+              {{ monthlyInvestmentText }}
+            </span>
+          </template>
+        </v-text-field>
+      </v-card-text>
+    </v-card>
 
-            <v-text-field
-              v-model="targetDate"
-              label="목표일 (선택)"
-              type="date"
-              variant="outlined"
-              prepend-inner-icon="mdi-calendar"
-              class="mt-2"
-            />
-          </v-card-text>
+    <!-- 연평균 수익률 -->
+    <v-card rounded="xl" elevation="0" border class="mb-3">
+      <v-card-text class="pa-4">
+        <div class="d-flex justify-space-between align-center mb-1">
+          <div class="text-caption text-medium-emphasis font-weight-medium">
+            <v-icon size="14" class="mr-1">mdi-trending-up</v-icon>
+            예상 연평균 수익률
+          </div>
+          <v-chip
+            size="x-small"
+            :color="annualReturn !== null ? 'primary' : 'default'"
+            variant="tonal"
+          >
+            {{ annualReturn !== null ? annualReturn + '%' : '미설정' }}
+          </v-chip>
+        </div>
 
-          <v-card-actions class="pa-6">
-            <v-btn color="primary" size="large" block :loading="loading" @click="save">
-              {{ isEditMode ? '수정하기' : '시작하기' }}
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-col>
-    </v-row>
+        <div class="text-caption text-disabled mb-3">
+          S&P500 역사적 평균 약 7% · 슬라이더를 움직이면 설정됩니다
+        </div>
+
+        <v-slider
+          v-model="sliderValue"
+          :min="0"
+          :max="30"
+          :step="0.5"
+          color="primary"
+          track-color="grey-lighten-3"
+          thumb-label
+          hide-details
+        >
+          <template #thumb-label="{ modelValue }">{{ modelValue }}%</template>
+        </v-slider>
+
+        <div class="d-flex justify-space-between mt-1">
+          <span class="text-caption text-disabled">0%</span>
+          <span class="text-caption text-disabled">30%</span>
+        </div>
+
+        <!-- 미리보기 -->
+        <template v-if="estimatedPreview">
+          <v-divider class="my-3" />
+          <div class="d-flex align-center gap-2">
+            <v-icon size="16" color="amber-darken-2">mdi-rocket-launch-outline</v-icon>
+            <div class="text-caption text-medium-emphasis">
+              목표 달성까지 약
+              <strong class="text-primary">{{ estimatedPreview.durationStr }}</strong>
+              → <strong class="text-primary">{{ estimatedPreview.dateStr }}</strong> 예상
+            </div>
+          </div>
+          <div class="text-caption text-disabled mt-1 ml-6">
+            현재 자산 미포함 · 복리 기준 단순 추정
+          </div>
+        </template>
+      </v-card-text>
+    </v-card>
+
+    <!-- 목표일 -->
+    <v-card rounded="xl" elevation="0" border class="mb-6">
+      <v-card-text class="pa-4">
+        <div class="text-caption text-medium-emphasis font-weight-medium mb-3">
+          <v-icon size="14" class="mr-1">mdi-calendar-outline</v-icon>
+          목표일
+          <span class="text-caption text-disabled ml-1">(선택)</span>
+        </div>
+        <v-text-field
+          v-model="targetDate"
+          type="date"
+          variant="outlined"
+          density="comfortable"
+          hide-details
+        />
+      </v-card-text>
+    </v-card>
+
+    <!-- 버튼 -->
+    <v-btn
+      color="primary"
+      size="large"
+      rounded="lg"
+      block
+      elevation="0"
+      :loading="loading"
+      class="mb-3"
+      @click="save"
+    >
+      {{ isEditMode ? '수정하기' : '시작하기' }}
+    </v-btn>
+
+    <v-btn variant="text" block @click="cancel">
+      {{ isEditMode ? '취소' : '로그아웃' }}
+    </v-btn>
   </v-container>
 </template>
+
+<style scoped>
+.gap-2 {
+  gap: 8px;
+}
+</style>

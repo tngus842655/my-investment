@@ -11,6 +11,7 @@ const form = ref()
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
+const loading = ref(false)
 
 const emailRules = [
   (v: string) => !!v || '이메일을 입력해주세요.',
@@ -24,112 +25,152 @@ const passwordRules = [
 
 const signUp = async () => {
   const { valid } = await form.value.validate()
-
   if (!valid) return
 
-  const { error } = await supabase.auth.signUp({
-    email: email.value,
-    password: password.value,
-  })
+  loading.value = true
+  try {
+    const { error } = await supabase.auth.signUp({
+      email: email.value,
+      password: password.value,
+    })
 
-  if (error) {
-    showMessage(getErrorMessage(error.code), 'warning')
-    return
+    if (error) {
+      showMessage(getErrorMessage(error.code), 'warning')
+      return
+    }
+
+    showMessage('회원가입이 완료되었습니다. 이메일 인증 후 로그인해주세요.', 'success')
+  } finally {
+    loading.value = false
   }
-
-  showMessage('회원가입이 완료되었습니다. 이메일 인증 후 로그인해주세요.', 'success')
 }
 
 const signIn = async () => {
   const { valid } = await form.value.validate()
-
   if (!valid) return
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email: email.value,
-    password: password.value,
-  })
+  loading.value = true
+  try {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.value,
+      password: password.value,
+    })
 
-  if (error) {
-    showMessage(getErrorMessage(error.code), 'warning')
-    return
+    if (error) {
+      showMessage(getErrorMessage(error.code), 'warning')
+      return
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return
+
+    const [goalResult, assetResult] = await Promise.all([
+      supabase.from('investment_goals').select('id').eq('user_id', user.id).maybeSingle(),
+      supabase.from('asset_summary').select('id').eq('user_id', user.id).maybeSingle(),
+    ])
+
+    if (!goalResult.data || !assetResult.data) {
+      router.push('/goalSettings')
+      return
+    }
+
+    router.push('/dashboard')
+  } finally {
+    loading.value = false
   }
+}
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return
-  }
-
-  const [goalResult, assetResult] = await Promise.all([
-    supabase.from('investment_goals').select('id').eq('user_id', user.id).maybeSingle(),
-
-    supabase.from('asset_summary').select('id').eq('user_id', user.id).maybeSingle(),
-  ])
-
-  const hasGoal = !!goalResult.data
-  const hasAsset = !!assetResult.data
-
-  if (!hasGoal || !hasAsset) {
-    router.push('/goalSettings')
-    return
-  }
-
-  router.push('/dashboard')
+// 엔터키로 로그인
+const onKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Enter') signIn()
 }
 </script>
 
 <template>
-  <v-container fluid class="login-page fill-height pa-4">
-    <v-row justify="center" align="center" class="fill-height">
-      <v-col cols="12" sm="10" md="6" lg="4" xl="3">
-        <v-card class="pa-6" rounded="xl" elevation="10">
-          <div class="text-center mb-6">
-            <v-icon icon="mdi-chart-line" size="60" color="primary" class="mb-2" />
+  <div class="login-bg fill-height d-flex align-center justify-center pa-4">
+    <div style="width: 100%; max-width: 400px">
+      <!-- 로고 영역 -->
+      <div class="text-center mb-6">
+        <div class="logo-icon mx-auto mb-3">
+          <v-icon icon="mdi-chart-line" size="28" color="primary" />
+        </div>
+        <div class="text-h5 font-weight-bold">MY INVESTMENT</div>
+        <div class="text-body-2 text-medium-emphasis mt-1">나만의 FIRE 목표 관리 플랫폼</div>
+      </div>
 
-            <div class="text-h4 font-weight-bold">MY INVESTMENT</div>
-
-            <div class="text-grey mt-2">나만의 투자 관리 플랫폼</div>
-          </div>
-
-          <v-form ref="form">
+      <!-- 로그인 카드 -->
+      <v-card rounded="xl" elevation="0" border class="pa-2">
+        <v-card-text class="pa-4">
+          <v-form ref="form" @keydown="onKeydown">
+            <div class="text-caption text-medium-emphasis font-weight-medium mb-1">이메일</div>
             <v-text-field
               v-model="email"
-              label="이메일"
               type="email"
               :rules="emailRules"
-              prepend-inner-icon="mdi-email-outline"
+              placeholder="example@email.com"
               variant="outlined"
               density="comfortable"
-              class="mb-2"
+              class="mb-3"
+              hide-details="auto"
+              autocomplete="email"
             />
 
+            <div class="text-caption text-medium-emphasis font-weight-medium mb-1">비밀번호</div>
             <v-text-field
               v-model="password"
-              label="비밀번호"
               :type="showPassword ? 'text' : 'password'"
               :rules="passwordRules"
-              prepend-inner-icon="mdi-lock-outline"
-              :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+              placeholder="6자 이상 입력"
+              :append-inner-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
               @click:append-inner="showPassword = !showPassword"
               variant="outlined"
               density="comfortable"
+              hide-details="auto"
+              autocomplete="current-password"
             />
           </v-form>
+        </v-card-text>
 
-          <v-btn color="success" size="large" block class="mt-4" @click="signIn"> 로그인 </v-btn>
+        <v-card-actions class="px-4 pb-4 pt-0 flex-column ga-2">
+          <v-btn
+            color="primary"
+            size="large"
+            rounded="lg"
+            block
+            elevation="0"
+            :loading="loading"
+            @click="signIn"
+          >
+            로그인
+          </v-btn>
 
-          <v-btn variant="text" block class="mt-2" @click="signUp"> 회원가입 </v-btn>
-        </v-card>
-      </v-col>
-    </v-row>
-  </v-container>
+          <v-divider class="w-100 my-1" />
+
+          <v-btn variant="text" block size="default" :disabled="loading" @click="signUp">
+            회원가입
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </div>
+  </div>
 </template>
 
 <style scoped>
-.login-page {
-  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+.login-bg {
+  min-height: 100vh;
+  background-color: rgb(var(--v-theme-surface));
+}
+
+.logo-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  border: 1px solid rgba(var(--v-theme-primary), 0.2);
+  background: rgba(var(--v-theme-primary), 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
