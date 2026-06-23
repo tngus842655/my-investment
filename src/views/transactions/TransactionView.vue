@@ -2,9 +2,11 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppTheme } from '@/composables/useAppTheme'
+import TransactionAddDialog from './TransactionAddDialog.vue'
 
 const router = useRouter()
 const { isDark } = useAppTheme()
+const addDialog = ref(false)
 
 type TransactionType = 'BUY' | 'SELL'
 type FilterType = 'ALL' | 'BUY' | 'SELL'
@@ -211,6 +213,7 @@ const closeSwipe = () => { swipedId.value = null }
           prepend-icon="mdi-plus"
           rounded="lg"
           elevation="0"
+          @click="addDialog = true"
         >
           거래 추가
         </v-btn>
@@ -387,6 +390,8 @@ const closeSwipe = () => { swipedId.value = null }
       뒤로가기
     </v-btn>
   </v-container>
+
+  <TransactionAddDialog v-model="addDialog" />
 </template>
 
 <style scoped>
