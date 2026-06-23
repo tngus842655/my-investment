@@ -93,11 +93,16 @@ const loadPortfolios = async () => {
       ),
     ])
 
-    // 포트폴리오별 KRW 원가 계산 (저장된 환율 우선 사용)
+    // 포트폴리오 currency 맵 (costKrwMap 계산에 활용)
+    const portfolioCurrencyMap = new Map(items.map((item) => [item.id, item.currency]))
+
+    // 포트폴리오별 KRW 원가 계산 (USD만 환율 적용)
     const txRows = txResult.data ?? []
     const costKrwMap = new Map<string, number>()
     for (const tx of txRows) {
-      const txRate = tx.exchange_rate ?? rate
+      const currency = portfolioCurrencyMap.get(tx.portfolio_id) ?? 'KRW'
+      const isUsd = currency === 'USD'
+      const txRate = isUsd ? (tx.exchange_rate ?? rate) : 1
       const krwAmount = tx.unit_price * tx.quantity * txRate
       const prev = costKrwMap.get(tx.portfolio_id) ?? 0
       if (tx.transaction_type === 'BUY' || tx.transaction_type === 'INITIAL') {
@@ -108,7 +113,10 @@ const loadPortfolios = async () => {
     }
 
     portfolios.value = items.map((item, i) => {
-      const currentPrice = prices[i] && prices[i]! > 0 ? prices[i] : null
+      const isCash = item.asset_type === '현금'
+
+      // 현금은 현재가 API 조회 불필요, avg_price 그대로 사용
+      const currentPrice = isCash ? null : (prices[i] && prices[i]! > 0 ? prices[i] : null)
 
       // 암호화폐 + KRW: Finnhub은 USD로 반환하므로 환율 곱해서 KRW 현재가로 변환
       const isCryptoKrw = item.asset_type === '암호화폐' && item.currency === 'KRW'
@@ -119,7 +127,7 @@ const loadPortfolios = async () => {
         : null
 
       const price = currentPriceInCurrency ?? item.avg_price
-      const isPriceFallback = currentPriceInCurrency === null
+      const isPriceFallback = !isCash && currentPriceInCurrency === null
 
       const evaluationAmount = price * item.quantity
       const evaluationAmountKrw =
@@ -131,8 +139,9 @@ const loadPortfolios = async () => {
             ? item.avg_price * item.quantity * rate
             : item.avg_price * item.quantity)
 
-      const profitAmountKrw = isPriceFallback ? 0 : evaluationAmountKrw - costKrw
-      const profitRate = isPriceFallback || costKrw === 0
+      // 현금은 손익 표시 안 함
+      const profitAmountKrw = (isPriceFallback || isCash) ? 0 : evaluationAmountKrw - costKrw
+      const profitRate = (isPriceFallback || isCash || costKrw === 0)
         ? 0
         : (profitAmountKrw / costKrw) * 100
 
