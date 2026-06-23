@@ -101,7 +101,7 @@ const loadPortfolios = async () => {
     for (const tx of txRows) {
       const currency = portfolioCurrencyMap.get(tx.portfolio_id) ?? 'KRW'
       const isUsd = currency === 'USD'
-      const txRate = isUsd ? (tx.exchange_rate ?? rate) : 1
+      const txRate = isUsd ? rate : 1
       const krwAmount = tx.unit_price * tx.quantity * txRate
       const prev = costKrwMap.get(tx.portfolio_id) ?? 0
       if (tx.transaction_type === 'BUY' || tx.transaction_type === 'INITIAL') {
