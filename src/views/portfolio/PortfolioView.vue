@@ -503,29 +503,28 @@ onUnmounted(() => {
           }}<span class="text-h6 font-weight-medium">원</span>
         </div>
         <v-divider class="mb-3" />
-        <div class="d-flex align-center ga-4">
+        <div class="summary-grid">
           <div>
-            <div class="text-caption text-medium-emphasis">총 손익</div>
+            <div class="text-caption text-medium-emphasis">원화매입금액</div>
+            <div class="text-body-2 font-weight-medium">{{ formatKrw(totalCostKrw) }}</div>
+          </div>
+          <div>
+            <div class="text-caption text-medium-emphasis">원화평가손익</div>
             <div
               class="text-body-2 font-weight-medium"
               :class="totalProfitAmountKrw >= 0 ? 'text-success' : 'text-error'"
-            >
-              {{ formatProfit(totalProfitAmountKrw) }}원
-            </div>
+            >{{ formatProfit(totalProfitAmountKrw) }}</div>
           </div>
-          <v-divider vertical style="height: 28px; border-color: rgba(255, 255, 255, 0.3)" />
           <div>
-            <div class="text-caption text-medium-emphasis">수익률</div>
+            <div class="text-caption text-medium-emphasis">원화평가금액</div>
+            <div class="text-body-2 font-weight-medium">{{ formatKrw(totalEvaluationAmountKrw) }}</div>
+          </div>
+          <div>
+            <div class="text-caption text-medium-emphasis">수익률(%)</div>
             <div
               class="text-body-2 font-weight-medium"
               :class="totalProfitRate >= 0 ? 'text-success' : 'text-error'"
-            >
-              {{ formatPercent(totalProfitRate) }}
-            </div>
-          </div>
-          <v-spacer />
-          <div v-if="exchangeRate" class="text-caption text-disabled">
-            USD {{ Math.round(exchangeRate).toLocaleString('ko-KR') }}원
+            >{{ formatPercent(totalProfitRate) }}</div>
           </div>
         </div>
       </div>
@@ -739,6 +738,12 @@ onUnmounted(() => {
 }
 
 /* ── 드래그 카드 이동 애니메이션 ── */
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+}
+
 .cards-move {
   transition: transform 180ms ease;
 }
