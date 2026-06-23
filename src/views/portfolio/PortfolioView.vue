@@ -8,6 +8,7 @@ import { showMessage } from '@/composables/useSnackbar'
 import { getStockPrice } from '@/services/market'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel } from '@/utils/tickerNames'
+import { VueDraggable } from 'vue-draggable-plus'
 
 const router = useRouter()
 const loading = ref(false)
@@ -31,12 +32,6 @@ const SWIPE_THRESHOLD = 40
 const ACTION_WIDTH = 128
 
 // ── 드래그앤드롭 상태 ─────────────────────────────
-const isDragMode = ref(false) // 드래그 모드 활성화 여부
-const draggingId = ref<string | null>(null) // 현재 드래그 중인 카드 id
-const dragOverId = ref<string | null>(null) // 현재 hover 중인 카드 id
-const longPressTimer = ref<ReturnType<typeof setTimeout> | null>(null)
-const LONG_PRESS_DURATION = 500 // 롱프레스 인식 시간 (ms)
-const dragStartY = ref(0)
 const isSavingOrder = ref(false)
 
 // ── 환율 조회 ─────────────────────────────────────
@@ -177,118 +172,14 @@ const loadPortfolios = async () => {
   }
 }
 
-// ── 롱프레스 핸들러 ───────────────────────────────
-const onCardLongPressStart = (e: TouchEvent | MouseEvent, id: string) => {
-  // 드래그 모드면 무시
-  if (isDragMode.value) return
-  // 스와이프 열려있으면 무시
-  if (swipedId.value) {
-    swipedId.value = null
-    return
-  }
-
-  const clientY = e instanceof TouchEvent ? (e.touches[0]?.clientY ?? 0) : e.clientY
-  dragStartY.value = clientY
-
-  longPressTimer.value = setTimeout(() => {
-    isDragMode.value = true
-    draggingId.value = id
-    swipedId.value = null
-    // 진동 피드백 (모바일)
-    if (navigator.vibrate) navigator.vibrate(40)
-  }, LONG_PRESS_DURATION)
-}
-
-const onCardLongPressEnd = () => {
-  if (longPressTimer.value) {
-    clearTimeout(longPressTimer.value)
-    longPressTimer.value = null
-  }
-}
-
-// 롱프레스 중 손가락/마우스가 너무 많이 움직이면 취소
-// 마우스는 클릭 시 약간 움직이므로 터치보다 임계값을 크게 설정
-const onCardLongPressMove = (e: TouchEvent | MouseEvent) => {
-  if (isDragMode.value) return
-  const clientY = e instanceof TouchEvent ? (e.touches[0]?.clientY ?? 0) : e.clientY
-  const threshold = e instanceof TouchEvent ? 8 : 6
-  if (Math.abs(clientY - dragStartY.value) > threshold) {
-    onCardLongPressEnd()
-  }
-}
-
-// ── 드래그 중 이동 핸들러 (window 레벨에서 처리) ──
-const onWindowMouseMove = (e: MouseEvent) => {
-  onCardLongPressMove(e)
-  if (!isDragMode.value || !draggingId.value) return
-  e.preventDefault()
-
-  const clientY = e.clientY
-  const cards = document.querySelectorAll('.portfolio-card-wrap')
-  let targetId: string | null = null
-
-  cards.forEach((card) => {
-    const rect = card.getBoundingClientRect()
-    if (clientY > rect.top && clientY < rect.bottom) {
-      targetId = (card as HTMLElement).dataset.id ?? null
-    }
-  })
-
-  if (targetId && targetId !== draggingId.value) {
-    dragOverId.value = targetId
-    reorderItems(draggingId.value, targetId)
-  }
-}
-
-const onDragMove = (e: TouchEvent, id: string) => {
-  if (!isDragMode.value || draggingId.value !== id) return
-  e.preventDefault()
-
-  const clientY = e.touches[0]?.clientY ?? 0
-  const cards = document.querySelectorAll('.portfolio-card-wrap')
-  let targetId: string | null = null
-
-  cards.forEach((card) => {
-    const rect = card.getBoundingClientRect()
-    if (clientY > rect.top && clientY < rect.bottom) {
-      targetId = (card as HTMLElement).dataset.id ?? null
-    }
-  })
-
-  if (targetId && targetId !== draggingId.value) {
-    dragOverId.value = targetId
-    reorderItems(draggingId.value, targetId)
-  }
-}
-
-// 배열 순서 변경
-const reorderItems = (fromId: string, toId: string) => {
-  const list = [...portfolios.value]
-  const fromIdx = list.findIndex((p) => p.id === fromId)
-  const toIdx = list.findIndex((p) => p.id === toId)
-  if (fromIdx === -1 || toIdx === -1) return
-  const moved = list.splice(fromIdx, 1)[0]
-  if (!moved) return
-  list.splice(toIdx, 0, moved)
-  portfolios.value = list
-}
-
 // ── 드래그 종료 → Supabase 저장 ──────────────────
 const onDragEnd = async () => {
-  if (!isDragMode.value) return
-  isDragMode.value = false
-  draggingId.value = null
-  dragOverId.value = null
-  onCardLongPressEnd()
-
-  // 현재 순서를 sort_order로 저장
   isSavingOrder.value = true
   try {
     const updates = portfolios.value.map((item, index) => ({
       id: item.id,
       sort_order: index,
     }))
-
     for (const update of updates) {
       await supabase
         .from('portfolios')
@@ -303,29 +194,18 @@ const onDragEnd = async () => {
   }
 }
 
-// ── 드래그 모드 취소 ──────────────────────────────
-const cancelDragMode = () => {
-  if (!isDragMode.value) return
-  isDragMode.value = false
-  draggingId.value = null
-  dragOverId.value = null
-  onCardLongPressEnd()
-  loadPortfolios() // 취소 시 원래 순서로 복구
-}
-
-// ── 기존 스와이프 핸들러 (드래그 모드 아닐 때만) ──
+// ── 스와이프 핸들러 ────────────────────────────────
 const isDraggingSwipe = ref(false)
 const swipeTouchStartX = ref(0)
 const swipeTouchStartY = ref(0)
 
 const onSwipeTouchStart = (e: TouchEvent) => {
-  if (isDragMode.value) return
   swipeTouchStartX.value = e.touches[0]?.clientX ?? 0
   swipeTouchStartY.value = e.touches[0]?.clientY ?? 0
   isDraggingSwipe.value = true
 }
 const onSwipeTouchEnd = (e: TouchEvent, id: string) => {
-  if (isDragMode.value || !isDraggingSwipe.value) return
+  if (!isDraggingSwipe.value) return
   isDraggingSwipe.value = false
   const dx = swipeTouchStartX.value - (e.changedTouches[0]?.clientX ?? 0)
   const dy = Math.abs(swipeTouchStartY.value - (e.changedTouches[0]?.clientY ?? 0))
@@ -334,13 +214,12 @@ const onSwipeTouchEnd = (e: TouchEvent, id: string) => {
   else if (dx < -SWIPE_THRESHOLD / 2 && swipedId.value === id) swipedId.value = null
 }
 const onSwipeMouseDown = (e: MouseEvent) => {
-  if (isDragMode.value) return
   swipeTouchStartX.value = e.clientX
   swipeTouchStartY.value = e.clientY
   isDraggingSwipe.value = true
 }
 const onSwipeMouseUp = (e: MouseEvent, id: string) => {
-  if (isDragMode.value || !isDraggingSwipe.value) return
+  if (!isDraggingSwipe.value) return
   isDraggingSwipe.value = false
   const dx = swipeTouchStartX.value - e.clientX
   const dy = Math.abs(swipeTouchStartY.value - e.clientY)
@@ -442,19 +321,14 @@ const refresh = async () => {
 
 const onGlobalMouseUp = () => {
   isDraggingSwipe.value = false
-  if (isDragMode.value) onDragEnd()
 }
 
 onMounted(() => {
   loadPortfolios()
   window.addEventListener('mouseup', onGlobalMouseUp)
-  window.addEventListener('mousemove', onWindowMouseMove)
-  window.addEventListener('touchend', onDragEnd)
 })
 onUnmounted(() => {
   window.removeEventListener('mouseup', onGlobalMouseUp)
-  window.removeEventListener('mousemove', onWindowMouseMove)
-  window.removeEventListener('touchend', onDragEnd)
 })
 </script>
 
@@ -469,18 +343,6 @@ onUnmounted(() => {
         <div class="text-body-2 text-medium-emphasis">실시간 평가금액 기준</div>
       </div>
       <div class="d-flex ga-2 align-center">
-        <v-fade-transition>
-          <v-chip
-            v-if="isDragMode"
-            size="small"
-            color="primary"
-            variant="tonal"
-            @click="cancelDragMode"
-          >
-            <v-icon start size="14">mdi-close</v-icon>
-            순서 변경 중
-          </v-chip>
-        </v-fade-transition>
         <v-chip v-if="isSavingOrder" size="small" color="primary" variant="tonal">
           저장 중...
         </v-chip>
@@ -495,7 +357,6 @@ onUnmounted(() => {
           @click="refresh"
         />
         <v-btn
-          v-if="!isDragMode"
           color="primary"
           prepend-icon="mdi-plus"
           rounded="lg"
@@ -574,22 +435,24 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- 힌트 -->
       <!-- 자산 카드 목록 -->
+      <VueDraggable
+        v-model="portfolios"
+        item-key="id"
+        handle=".drag-handle"
+        :animation="200"
+        ghost-class="sortable-ghost"
+        chosen-class="sortable-chosen"
+        drag-class="sortable-drag"
+        @end="onDragEnd"
+      >
+      <template #item="{ element: item }">
       <div
-        v-for="item in portfolios"
-        :key="item.id"
         class="portfolio-card-wrap mb-2"
-        :data-id="item.id"
-        :class="{
-          'is-dragging': draggingId === item.id,
-          'is-drag-over': dragOverId === item.id && draggingId !== item.id,
-          'drag-mode': isDragMode,
-        }"
         @click="swipedId && swipedId !== item.id ? closeSwipe() : undefined"
       >
-        <!-- 스와이프 액션 (드래그 모드 아닐 때만) -->
-        <div v-if="!isDragMode" class="swipe-actions">
+        <!-- 스와이프 액션 -->
+        <div class="swipe-actions">
           <button class="action-btn action-edit" @click.stop="openEditDialog(item)">
             <v-icon size="18">mdi-pencil-outline</v-icon>
             <span>수정</span>
@@ -603,39 +466,11 @@ onUnmounted(() => {
         <!-- 카드 본체 -->
         <div
           class="swipe-card"
-          :style="
-            !isDragMode && swipedId === item.id ? `transform: translateX(-${ACTION_WIDTH}px)` : ''
-          "
-          @touchstart.passive="
-            (e) => {
-              onCardLongPressStart(e, item.id)
-              onSwipeTouchStart(e)
-            }
-          "
-          @touchmove.passive="
-            (e) => {
-              onCardLongPressMove(e)
-              onDragMove(e, item.id)
-            }
-          "
-          @touchend.passive="
-            (e) => {
-              onCardLongPressEnd()
-              onSwipeTouchEnd(e, item.id)
-            }
-          "
-          @mousedown="
-            (e) => {
-              onCardLongPressStart(e, item.id)
-              onSwipeMouseDown(e)
-            }
-          "
-          @mouseup="
-            (e) => {
-              onCardLongPressEnd()
-              onSwipeMouseUp(e, item.id)
-            }
-          "
+          :style="swipedId === item.id ? `transform: translateX(-${ACTION_WIDTH}px)` : ''"
+          @touchstart.passive="(e) => onSwipeTouchStart(e)"
+          @touchend.passive="(e) => onSwipeTouchEnd(e, item.id)"
+          @mousedown="(e) => onSwipeMouseDown(e)"
+          @mouseup="(e) => onSwipeMouseUp(e, item.id)"
         >
           <div
             class="glass-card asset-card pa-3"
@@ -645,9 +480,9 @@ onUnmounted(() => {
             <div class="d-flex justify-space-between align-center mb-2">
               <div class="d-flex align-center ga-2">
                 <v-icon
-                  v-if="isDragMode"
+                  class="drag-handle"
                   size="18"
-                  style="color: rgba(var(--v-theme-on-surface), 0.35); cursor: grab"
+                  style="color: rgba(var(--v-theme-on-surface), 0.35); cursor: grab; touch-action: none"
                 >
                   mdi-drag-vertical
                 </v-icon>
@@ -744,6 +579,8 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
+      </template>
+      </VueDraggable>
     </template>
 
     <v-btn
@@ -811,35 +648,26 @@ onUnmounted(() => {
   transition: transform 0.2s ease;
 }
 
-/* ── 드래그 중인 카드 ── */
-.portfolio-card-wrap.is-dragging {
-  opacity: 0.5;
-  transform: scale(0.97);
-  z-index: 10;
+/* ── SortableJS 드래그 스타일 ── */
+.sortable-ghost {
+  opacity: 0.4;
+  background: rgba(var(--v-theme-primary), 0.08) !important;
+  border-radius: 20px;
+}
+.sortable-chosen {
+  opacity: 1;
+}
+.sortable-drag {
+  opacity: 1;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18) !important;
+  transform: scale(1.02);
 }
 
-/* ── 드롭 대상 카드 (위치 표시) ── */
-.portfolio-card-wrap.is-drag-over {
-  transform: translateY(-4px);
-}
-.portfolio-card-wrap.is-drag-over::before {
-  content: '';
-  position: absolute;
-  top: -3px;
-  left: 12px;
-  right: 12px;
-  height: 3px;
-  background: rgb(var(--v-theme-primary));
-  border-radius: 99px;
-  z-index: 10;
-}
-
-/* ── 드래그 모드일 때 카드 커서 변경 ── */
-.portfolio-card-wrap.drag-mode {
+.drag-handle {
+  touch-action: none;
   cursor: grab;
-  user-select: none;
 }
-.portfolio-card-wrap.drag-mode:active {
+.drag-handle:active {
   cursor: grabbing;
 }
 
