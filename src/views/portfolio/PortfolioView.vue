@@ -498,27 +498,21 @@ onUnmounted(() => {
       <!-- 총 요약 카드 -->
       <div class="glass-card pa-4 mb-4">
         <div class="summary-grid">
-          <div>
-            <div class="text-caption text-medium-emphasis">원화매입금액</div>
-            <div class="text-body-2 font-weight-medium">{{ formatKrw(totalCostKrw) }}</div>
+          <div class="summary-row">
+            <span class="text-caption text-medium-emphasis">원화매입금액</span>
+            <span class="text-caption font-weight-medium">{{ formatKrw(totalCostKrw) }}</span>
           </div>
-          <div>
-            <div class="text-caption text-medium-emphasis">원화평가손익</div>
-            <div
-              class="text-body-2 font-weight-medium"
-              :class="totalProfitAmountKrw >= 0 ? 'text-success' : 'text-error'"
-            >{{ formatProfit(totalProfitAmountKrw) }}</div>
+          <div class="summary-row">
+            <span class="text-caption text-medium-emphasis">원화평가손익</span>
+            <span class="text-caption font-weight-medium" :class="totalProfitAmountKrw >= 0 ? 'text-success' : 'text-error'">{{ formatProfit(totalProfitAmountKrw) }}</span>
           </div>
-          <div>
-            <div class="text-caption text-medium-emphasis">원화평가금액</div>
-            <div class="text-body-2 font-weight-medium">{{ formatKrw(totalEvaluationAmountKrw) }}</div>
+          <div class="summary-row">
+            <span class="text-caption text-medium-emphasis">원화평가금액</span>
+            <span class="text-caption font-weight-medium">{{ formatKrw(totalEvaluationAmountKrw) }}</span>
           </div>
-          <div>
-            <div class="text-caption text-medium-emphasis">수익률(%)</div>
-            <div
-              class="text-body-2 font-weight-medium"
-              :class="totalProfitRate >= 0 ? 'text-success' : 'text-error'"
-            >{{ formatPercent(totalProfitRate) }}</div>
+          <div class="summary-row">
+            <span class="text-caption text-medium-emphasis">수익률(%)</span>
+            <span class="text-caption font-weight-medium" :class="totalProfitRate >= 0 ? 'text-success' : 'text-error'">{{ formatPercent(totalProfitRate) }}</span>
           </div>
         </div>
       </div>
@@ -735,7 +729,14 @@ onUnmounted(() => {
 .summary-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px 16px;
+  gap: 6px 16px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
 }
 
 .cards-move {
