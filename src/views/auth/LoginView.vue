@@ -88,15 +88,14 @@ const onKeydown = (e: KeyboardEvent) => {
     <div style="width: 100%; max-width: 400px">
       <!-- 로고 -->
       <div class="text-center mb-8">
-        <div class="logo-icon mx-auto mb-3">
-          <img
-            :src="'/icons/icon-192.png'"
-            alt="MY INVESTMENT"
-            width="36"
-            height="36"
-            style="border-radius: 8px"
-          />
-        </div>
+        <img
+          src="/icons/icon-192.png"
+          alt="MY INVESTMENT"
+          width="64"
+          height="64"
+          class="mx-auto mb-3 d-block"
+          style="border-radius: 16px"
+        />
         <div class="text-h5 font-weight-bold">MY INVESTMENT</div>
         <div class="text-body-2 text-medium-emphasis mt-1">나만의 FIRE 목표 관리 플랫폼</div>
       </div>
@@ -156,16 +155,6 @@ const onKeydown = (e: KeyboardEvent) => {
 </template>
 
 <style scoped>
-.logo-icon {
-  width: 54px;
-  height: 54px;
-  border-radius: 16px;
-  background: rgba(var(--v-theme-primary), 0.08);
-  border: 1px solid rgba(var(--v-theme-primary), 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
 .field-label {
   font-size: 12px;

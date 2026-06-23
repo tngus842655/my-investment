@@ -107,9 +107,9 @@ onMounted(loadDashboard)
       <img
         src="/icons/icon-192.png"
         alt="MY INVESTMENT"
-        width="32"
-        height="32"
-        style="border-radius: 8px"
+        width="44"
+        height="44"
+        style="border-radius: 12px"
       />
       <div class="d-flex ga-2">
         <v-btn
