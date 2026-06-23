@@ -446,7 +446,7 @@ onMounted(loadTransactions)
     :initial-data="selectedTx ? {
       id: selectedTx.id,
       portfolio_id: selectedTx.portfolio_id,
-      transaction_type: selectedTx.transaction_type,
+      transaction_type: selectedTx.transaction_type as 'BUY' | 'SELL',
       quantity: selectedTx.quantity,
       unit_price: selectedTx.unit_price,
       transaction_date: selectedTx.transaction_date,
