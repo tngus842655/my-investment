@@ -33,7 +33,7 @@ interface Portfolio {
 }
 
 const NEW_PORTFOLIO_VALUE = '__NEW__'
-const assetTypes = ['국내주식', '해외주식', 'ETF', '암호화폐']
+const assetTypes = ['국내주식', '해외주식', '암호화폐']
 
 const portfolios = ref<Portfolio[]>([])
 const loadingPortfolios = ref(false)
@@ -56,7 +56,6 @@ const newTickerConfig = computed(() => {
   switch (newAssetType.value) {
     case '해외주식': return { label: '티커', placeholder: 'AAPL', disabled: false }
     case '국내주식': return { label: '종목코드', placeholder: '005930', disabled: false }
-    case 'ETF':     return { label: '티커', placeholder: 'VOO', disabled: false }
     case '암호화폐': return { label: '코인 영문코드', placeholder: 'BTC', disabled: false }
     case '현금':    return { label: '티커', placeholder: '-', disabled: true }
     default:        return { label: '티커', placeholder: '', disabled: false }
@@ -64,11 +63,11 @@ const newTickerConfig = computed(() => {
 })
 
 const newCurrencyLocked = computed(() =>
-  ['해외주식', '국내주식', '현금', 'ETF'].includes(newAssetType.value),
+  ['해외주식', '국내주식', '현금'].includes(newAssetType.value),
 )
 
 watch(newAssetType, (type) => {
-  if (type === '해외주식' || type === 'ETF') newCurrency.value = 'USD'
+  if (type === '해외주식') newCurrency.value = 'USD'
   else if (['국내주식', '현금'].includes(type)) newCurrency.value = 'KRW'
   if (type === '현금') newTicker.value = '-'
   else if (newTicker.value === '-') newTicker.value = ''
