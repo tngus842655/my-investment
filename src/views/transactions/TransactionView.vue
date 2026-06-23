@@ -58,8 +58,13 @@ const loadTransactions = async () => {
       .order('transaction_date', { ascending: false })
       .order('created_at', { ascending: false })
 
+    // 현금 자산 거래 제외
+    const filtered = (data ?? []).filter(
+      (tx) => (tx.portfolios as { asset_type: string } | null)?.asset_type !== '현금',
+    )
+
     if (error) throw error
-    transactions.value = (data ?? []) as Transaction[]
+    transactions.value = filtered as Transaction[]
   } catch (e) {
     console.error(e)
     showMessage('거래내역 조회 중 오류가 발생했습니다.', 'error')
