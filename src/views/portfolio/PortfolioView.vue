@@ -236,11 +236,8 @@ const onDragMove = (e: MouseEvent | TouchEvent) => {
 
     const dragIdx = portfolios.value.findIndex((p) => p.id === draggingId.value)
     const targetIdx = portfolios.value.findIndex((p) => p.id === targetId)
-    const midY = rect.top + rect.height / 2
-
-    // 아래로 이동: 커서가 대상 카드 하단 절반에 들어왔을 때
-    // 위로 이동: 커서가 대상 카드 상단 절반에 들어왔을 때
-    if ((dragIdx < targetIdx && clientY > midY) || (dragIdx > targetIdx && clientY < midY)) {
+    const threshold = rect.height * 0.35
+    if ((dragIdx < targetIdx && clientY > rect.top + threshold) || (dragIdx > targetIdx && clientY < rect.bottom - threshold)) {
       newTargetId = targetId
     }
   })
