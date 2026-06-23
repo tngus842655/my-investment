@@ -497,10 +497,10 @@ onUnmounted(() => {
     <template v-else>
       <!-- 총 요약 카드 -->
       <div class="glass-card pa-4 mb-4">
-        <div class="text-caption text-medium-emphasis font-weight-medium mb-1">총 평가자산</div>
-        <div class="text-h5 font-weight-medium mb-3" style="color: rgb(var(--v-theme-on-surface))">
+        <div class="text-caption font-weight-bold mb-1" style="color: rgba(var(--v-theme-on-surface), 0.7)">총 평가자산</div>
+        <div class="text-h4 font-weight-bold mb-3" style="color: rgb(var(--v-theme-on-surface))">
           {{ formatKrw(totalEvaluationAmountKrw)
-          }}<span class="text-body-1 font-weight-regular">원</span>
+          }}<span class="text-h6 font-weight-medium">원</span>
         </div>
         <v-divider class="mb-3" />
         <div class="d-flex align-center ga-4">
