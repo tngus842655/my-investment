@@ -193,11 +193,24 @@ const save = async () => {
 
     // 새 종목 먼저 등록
     if (isNewPortfolio.value) {
+      const tickerToSave = newAssetType.value === '현금' ? 'CASH' : newTicker.value.trim().toUpperCase()
+      const { data: existing } = await supabase
+        .from('portfolios')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('ticker', tickerToSave)
+        .maybeSingle()
+      if (existing) {
+        showMessage(`${tickerToSave} 종목이 이미 등록되어 있습니다.`, 'warning')
+        saving.value = false
+        return
+      }
+
       const { data: newPortfolio, error: pErr } = await supabase
         .from('portfolios')
         .insert({
           user_id: user.id,
-          ticker: newAssetType.value === '현금' ? 'CASH' : newTicker.value.trim().toUpperCase(),
+          ticker: tickerToSave,
           asset_type: newAssetType.value,
           currency: newCurrency.value,
           quantity: 0,
@@ -358,6 +371,7 @@ const reset = (closeDialog = true) => {
             label="수량"
             type="number"
             step="0.0001"
+            min="0"
             prepend-inner-icon="mdi-counter"
             variant="outlined"
             density="comfortable"
@@ -384,6 +398,7 @@ const reset = (closeDialog = true) => {
           density="comfortable"
           rounded="lg"
           class="mt-3"
+          :max="new Date().toISOString().slice(0, 10)"
         />
 
         <!-- 메모 -->

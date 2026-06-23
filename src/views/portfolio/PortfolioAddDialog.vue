@@ -201,11 +201,24 @@ const save = async () => {
       showMessage('자산이 수정되었습니다.', 'success')
     } else {
       // 신규 포트폴리오 등록
+      const tickerToSave = assetType.value === '현금' ? 'CASH' : ticker.value.trim().toUpperCase()
+      const { data: existing } = await supabase
+        .from('portfolios')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('ticker', tickerToSave)
+        .maybeSingle()
+      if (existing) {
+        showMessage(`${tickerToSave} 종목이 이미 등록되어 있습니다.`, 'warning')
+        saving.value = false
+        return
+      }
+
       const { data: portfolio, error: portfolioError } = await supabase
         .from('portfolios')
         .insert({
           user_id: user.id,
-          ticker: assetType.value === '현금' ? 'CASH' : ticker.value.trim().toUpperCase(),
+          ticker: tickerToSave,
           asset_type: assetType.value,
           currency: currency.value,
           quantity: 0,
@@ -345,6 +358,7 @@ const reset = (closeDialog = true) => {
               label="보유수량"
               type="number"
               step="0.0001"
+              min="0"
               prepend-inner-icon="mdi-counter"
               variant="outlined"
               density="comfortable"

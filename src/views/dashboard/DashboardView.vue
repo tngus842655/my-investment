@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
-import { getExchangeRate } from '@/services/market'
+import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
 import { useAppTheme } from '@/composables/useAppTheme'
@@ -70,7 +70,7 @@ const loadDashboard = async () => {
     const [goalResult, portfolioResult, rate] = await Promise.all([
       supabase.from('investment_goals').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('portfolios').select('*').eq('user_id', user.id),
-      getExchangeRate('USD', 'KRW').catch(() => 1350),
+      getCachedExchangeRate(),
     ])
 
     exchangeRate.value = rate
@@ -155,7 +155,7 @@ onMounted(loadDashboard)
     <template v-else>
       <!-- 히어로 카드 -->
       <div class="glass-card pa-5 mb-3">
-        <div class="field-label mb-1">현재 자산</div>
+        <div class="field-label mb-1">투자 원가 기준 자산</div>
         <div class="hero-amount font-weight-medium mb-1">
           {{ currentAsset > 0 ? formatShortMoney(currentAsset) + '원' : '-' }}
         </div>
