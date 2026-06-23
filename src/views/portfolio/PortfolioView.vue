@@ -440,8 +440,10 @@ onUnmounted(() => {
         v-model="portfolios"
         handle=".drag-handle"
         :animation="200"
+        :force-fallback="true"
+        :fallback-on-body="true"
+        :fallback-tolerance="3"
         ghost-class="sortable-ghost"
-        chosen-class="sortable-chosen"
         drag-class="sortable-drag"
         @end="onDragEnd"
       >
@@ -649,17 +651,21 @@ onUnmounted(() => {
 
 /* ── SortableJS 드래그 스타일 ── */
 .sortable-ghost {
-  opacity: 0.4;
-  background: rgba(var(--v-theme-primary), 0.08) !important;
-  border-radius: 20px;
+  border-radius: 20px !important;
+  border: 2px dashed rgba(var(--v-theme-primary), 0.4) !important;
+  background: rgba(var(--v-theme-primary), 0.05) !important;
+  box-shadow: none !important;
 }
-.sortable-chosen {
-  opacity: 1;
+.sortable-ghost * {
+  visibility: hidden;
 }
 .sortable-drag {
-  opacity: 1;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18) !important;
-  transform: scale(1.02);
+  opacity: 1 !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25) !important;
+  transform: scale(1.04) !important;
+  border-radius: 20px !important;
+  z-index: 9999 !important;
+  pointer-events: none;
 }
 
 .drag-handle {
