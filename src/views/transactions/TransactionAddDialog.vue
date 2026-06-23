@@ -147,6 +147,7 @@ const loadPortfolios = async () => {
       .from('portfolios')
       .select('id, ticker, asset_type, currency')
       .eq('user_id', user.id)
+      .neq('asset_type', '현금')
       .order('sort_order', { ascending: true })
     if (error) throw error
     portfolios.value = data ?? []
