@@ -8,7 +8,7 @@ import { showMessage } from '@/composables/useSnackbar'
 import { getStockPrice } from '@/services/market'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel } from '@/utils/tickerNames'
-import { VueDraggable } from 'vue-draggable-plus'
+import Sortable from 'sortablejs'
 
 const router = useRouter()
 const loading = ref(false)
@@ -33,6 +33,8 @@ const ACTION_WIDTH = 128
 
 // ── 드래그앤드롭 상태 ─────────────────────────────
 const isSavingOrder = ref(false)
+const sortableContainer = ref<HTMLElement | null>(null)
+let sortableInstance: Sortable | null = null
 
 // ── 환율 조회 ─────────────────────────────────────
 const fetchExchangeRate = async (): Promise<number> => {
@@ -172,26 +174,44 @@ const loadPortfolios = async () => {
   }
 }
 
-// ── 드래그 종료 → Supabase 저장 ──────────────────
-const onDragEnd = async () => {
-  isSavingOrder.value = true
-  try {
-    const updates = portfolios.value.map((item, index) => ({
-      id: item.id,
-      sort_order: index,
-    }))
-    for (const update of updates) {
-      await supabase
-        .from('portfolios')
-        .update({ sort_order: update.sort_order })
-        .eq('id', update.id)
-    }
-  } catch (error) {
-    console.error(error)
-    showMessage('순서 저장 중 오류가 발생했습니다.', 'error')
-  } finally {
-    isSavingOrder.value = false
-  }
+// ── SortableJS 초기화 ─────────────────────────────
+const initSortable = () => {
+  if (!sortableContainer.value) return
+  sortableInstance?.destroy()
+  sortableInstance = Sortable.create(sortableContainer.value, {
+    handle: '.drag-handle',
+    animation: 200,
+    forceFallback: true,
+    fallbackOnBody: true,
+    fallbackTolerance: 3,
+    ghostClass: 'sortable-ghost',
+    dragClass: 'sortable-drag',
+    onEnd: async (evt) => {
+      const oldIndex = evt.oldIndex
+      const newIndex = evt.newIndex
+      if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) return
+
+      // Vue 배열 업데이트
+      const list = [...portfolios.value]
+      const moved = list.splice(oldIndex, 1)[0]
+      if (!moved) return
+      list.splice(newIndex, 0, moved)
+      portfolios.value = list
+
+      // Supabase 저장
+      isSavingOrder.value = true
+      try {
+        for (let i = 0; i < list.length; i++) {
+          await supabase.from('portfolios').update({ sort_order: i }).eq('id', list[i]!.id)
+        }
+      } catch (error) {
+        console.error(error)
+        showMessage('순서 저장 중 오류가 발생했습니다.', 'error')
+      } finally {
+        isSavingOrder.value = false
+      }
+    },
+  })
 }
 
 // ── 스와이프 핸들러 ────────────────────────────────
@@ -323,11 +343,13 @@ const onGlobalMouseUp = () => {
   isDraggingSwipe.value = false
 }
 
-onMounted(() => {
-  loadPortfolios()
+onMounted(async () => {
+  await loadPortfolios()
+  initSortable()
   window.addEventListener('mouseup', onGlobalMouseUp)
 })
 onUnmounted(() => {
+  sortableInstance?.destroy()
   window.removeEventListener('mouseup', onGlobalMouseUp)
 })
 </script>
@@ -436,17 +458,7 @@ onUnmounted(() => {
       </div>
 
       <!-- 자산 카드 목록 -->
-      <VueDraggable
-        v-model="portfolios"
-        handle=".drag-handle"
-        :animation="200"
-        :force-fallback="true"
-        :fallback-on-body="true"
-        :fallback-tolerance="3"
-        ghost-class="sortable-ghost"
-        drag-class="sortable-drag"
-        @end="onDragEnd"
-      >
+      <div ref="sortableContainer">
       <div
         v-for="item in portfolios"
         :key="item.id"
@@ -581,7 +593,7 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
-      </VueDraggable>
+      </div>
     </template>
 
     <v-btn
