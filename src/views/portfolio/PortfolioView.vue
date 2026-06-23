@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import PortfolioAddDialog from './PortfolioAddDialog.vue'
-import type { PortfolioForm, PortfolioAsset } from '@/types/portfolio'
+import type { PortfolioAsset } from '@/types/portfolio'
 import { showMessage } from '@/composables/useSnackbar'
 import { getStockPrice, getExchangeRate } from '@/services/market'
 import { getTickerLabel } from '@/utils/tickerNames'
@@ -339,56 +339,9 @@ const openEditDialog = (item: PortfolioViewItem) => {
   editDialog.value = true
 }
 
-const savePortfolio = async (item: PortfolioForm) => {
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      showMessage('로그인이 필요합니다.', 'error')
-      return
-    }
-    const { error } = await supabase.from('portfolios').insert({
-      user_id: user.id,
-      ticker: item.ticker,
-      asset_type: item.asset_type,
-      currency: item.currency,
-      quantity: 0,
-      avg_price: 0,
-      sort_order: portfolios.value.length,
-    })
-    if (error) {
-      showMessage(error.message, 'error')
-      return
-    }
-    showMessage('자산이 등록되었습니다.', 'success')
-    await loadPortfolios()
-  } catch (error) {
-    console.error(error)
-    showMessage('자산 등록 중 오류가 발생했습니다.', 'error')
-  }
-}
-
-const updatePortfolio = async (item: PortfolioForm) => {
-  if (!selectedPortfolio.value) return
-  try {
-    const { error } = await supabase
-      .from('portfolios')
-      .update({
-        currency: item.currency,
-      })
-      .eq('id', selectedPortfolio.value.id)
-    if (error) {
-      showMessage(error.message, 'error')
-      return
-    }
-    showMessage('자산이 수정되었습니다.', 'success')
-    editDialog.value = false
-    await loadPortfolios()
-  } catch (error) {
-    console.error(error)
-    showMessage('자산 수정 중 오류가 발생했습니다.', 'error')
-  }
+const onSaved = async () => {
+  editDialog.value = false
+  await loadPortfolios()
 }
 
 const deletePortfolio = async () => {
@@ -755,11 +708,11 @@ onUnmounted(() => {
     </v-btn>
   </v-container>
 
-  <PortfolioAddDialog v-model="dialog" @save="savePortfolio" />
+  <PortfolioAddDialog v-model="dialog" @saved="loadPortfolios" />
   <PortfolioAddDialog
     v-model="editDialog"
     :initial-data="selectedPortfolio"
-    @save="updatePortfolio"
+    @saved="onSaved"
   />
 
   <v-dialog v-model="deleteDialog" max-width="320">

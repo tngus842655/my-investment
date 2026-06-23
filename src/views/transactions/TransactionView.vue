@@ -7,7 +7,7 @@ import TransactionAddDialog from './TransactionAddDialog.vue'
 
 const router = useRouter()
 
-type TransactionType = 'BUY' | 'SELL'
+type TransactionType = 'BUY' | 'SELL' | 'INITIAL'
 type FilterType = 'ALL' | 'BUY' | 'SELL'
 
 interface Transaction {
@@ -54,6 +54,7 @@ const loadTransactions = async () => {
       .from('transactions')
       .select('*, portfolios(ticker, asset_type, currency)')
       .eq('user_id', user.id)
+      .neq('transaction_type', 'INITIAL')
       .order('transaction_date', { ascending: false })
       .order('created_at', { ascending: false })
 
