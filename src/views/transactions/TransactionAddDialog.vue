@@ -1,44 +1,67 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { supabase } from '@/services/supabase'
+import { showMessage } from '@/composables/useSnackbar'
 
 type TransactionType = 'BUY' | 'SELL'
 
+export interface TransactionForm {
+  portfolio_id: string
+  transaction_type: TransactionType
+  quantity: number
+  unit_price: number
+  transaction_date: string
+  memo?: string
+}
+
+interface Portfolio {
+  id: string
+  ticker: string
+  asset_type: string
+  currency: string
+}
+
 const dialog = defineModel<boolean>()
 
+const props = defineProps<{
+  initialData?: {
+    id: string
+    portfolio_id: string
+    transaction_type: TransactionType
+    quantity: number
+    unit_price: number
+    transaction_date: string
+    memo?: string
+  } | null
+}>()
+
+const emit = defineEmits<{
+  saved: []
+}>()
+
+const isEditMode = computed(() => !!props.initialData)
+
+const portfolios = ref<Portfolio[]>([])
+const loadingPortfolios = ref(false)
+
 const txType = ref<TransactionType>('BUY')
-const ticker = ref('')
-const assetType = ref('')
+const selectedPortfolioId = ref('')
 const quantity = ref('')
 const unitPrice = ref('')
-const currency = ref('KRW')
 const txDate = ref(new Date().toISOString().slice(0, 10))
 const memo = ref('')
+const saving = ref(false)
 
-const assetTypes = ['국내주식', '해외주식', 'ETF', '암호화폐', '현금']
-const currencies = ['KRW', 'USD']
-
-const tickerConfig = computed(() => {
-  switch (assetType.value) {
-    case '해외주식': return { label: '티커', placeholder: 'AAPL', disabled: false }
-    case '국내주식': return { label: '종목코드', placeholder: '005930', disabled: false }
-    case 'ETF': return { label: '티커', placeholder: 'VOO', disabled: false }
-    case '암호화폐': return { label: '코인 영문코드', placeholder: 'BTC', disabled: false }
-    case '현금': return { label: '티커', placeholder: '-', disabled: true }
-    default: return { label: '티커', placeholder: '', disabled: false }
-  }
-})
-
-const currencyLocked = computed(() =>
-  ['해외주식', '국내주식', '현금'].includes(assetType.value),
+const selectedPortfolio = computed(() =>
+  portfolios.value.find((p) => p.id === selectedPortfolioId.value) ?? null,
 )
 
-const currencyHint = computed(() => {
-  if (assetType.value === '해외주식') return '해외주식은 USD로 고정됩니다'
-  if (assetType.value === '국내주식') return '국내주식은 KRW로 고정됩니다'
-  if (assetType.value === '현금') return '현금은 KRW로 고정됩니다'
-  if (assetType.value === '암호화폐') return '업비트 등 KRW 거래소는 KRW, 바이낸스 등은 USD'
-  return ''
-})
+const portfolioItems = computed(() =>
+  portfolios.value.map((p) => ({
+    title: `${p.ticker} · ${p.asset_type}`,
+    value: p.id,
+  })),
+)
 
 const totalAmount = computed(() => {
   const q = Number(quantity.value)
@@ -48,12 +71,16 @@ const totalAmount = computed(() => {
 })
 
 const totalLabel = computed(() => {
-  if (!totalAmount.value) return '-'
+  if (!totalAmount.value || !selectedPortfolio.value) return '-'
   const v = totalAmount.value
-  if (currency.value === 'USD') {
-    return '$' + (v % 1 === 0
-      ? v.toLocaleString('en-US')
-      : v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+  const cur = selectedPortfolio.value.currency
+  if (cur === 'USD') {
+    return (
+      '$' +
+      (v % 1 === 0
+        ? v.toLocaleString('en-US')
+        : v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+    )
   }
   if (v >= 100000000) {
     const eok = Math.floor(v / 100000000)
@@ -64,24 +91,13 @@ const totalLabel = computed(() => {
   return `${Math.round(v).toLocaleString()}원`
 })
 
-const isValid = computed(() =>
-  assetType.value &&
-  (assetType.value === '현금' || ticker.value.trim()) &&
-  Number(quantity.value) > 0 &&
-  removeComma(unitPrice.value) > 0 &&
-  txDate.value,
+const isValid = computed(
+  () =>
+    selectedPortfolioId.value &&
+    Number(quantity.value) > 0 &&
+    removeComma(unitPrice.value) > 0 &&
+    txDate.value,
 )
-
-watch(assetType, (newType) => {
-  if (newType === '해외주식') currency.value = 'USD'
-  else if (['국내주식', '현금'].includes(newType)) currency.value = 'KRW'
-  if (newType === '현금') ticker.value = '-'
-  else if (ticker.value === '-') ticker.value = ''
-})
-
-watch(dialog, (opened) => {
-  if (opened) reset(false)
-})
 
 const addComma = (v: string) => {
   const num = v.replace(/[^0-9.]/g, '')
@@ -89,24 +105,102 @@ const addComma = (v: string) => {
   const int = (parts[0] ?? '').replace(/\B(?=(\d{3})+(?!\d))/g, ',')
   return parts[1] !== undefined ? `${int}.${parts[1]}` : int
 }
-
 const removeComma = (v: string) => Number(v.replace(/,/g, '')) || 0
+const handleUnitPrice = (v: string) => {
+  unitPrice.value = addComma(v)
+}
 
-const handleUnitPrice = (v: string) => { unitPrice.value = addComma(v) }
+const loadPortfolios = async () => {
+  loadingPortfolios.value = true
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return
+    const { data, error } = await supabase
+      .from('portfolios')
+      .select('id, ticker, asset_type, currency')
+      .eq('user_id', user.id)
+      .order('sort_order', { ascending: true })
+    if (error) throw error
+    portfolios.value = data ?? []
+  } catch (e) {
+    console.error(e)
+    showMessage('포트폴리오 목록 조회에 실패했습니다.', 'error')
+  } finally {
+    loadingPortfolios.value = false
+  }
+}
 
-const save = () => {
+watch(dialog, async (opened) => {
+  if (!opened) return
+  await loadPortfolios()
+  if (props.initialData) {
+    txType.value = props.initialData.transaction_type
+    selectedPortfolioId.value = props.initialData.portfolio_id
+    quantity.value = String(props.initialData.quantity)
+    unitPrice.value = addComma(String(props.initialData.unit_price))
+    txDate.value = props.initialData.transaction_date
+    memo.value = props.initialData.memo ?? ''
+  } else {
+    reset(false)
+  }
+})
+
+const save = async () => {
   if (!isValid.value) return
-  // emit 예정 — 현재는 디자인 초안
-  reset()
+  saving.value = true
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) {
+      showMessage('로그인이 필요합니다.', 'error')
+      return
+    }
+
+    if (isEditMode.value && props.initialData) {
+      const { error } = await supabase
+        .from('transactions')
+        .update({
+          transaction_type: txType.value,
+          quantity: Number(quantity.value),
+          unit_price: removeComma(unitPrice.value),
+          transaction_date: txDate.value,
+          memo: memo.value || null,
+        })
+        .eq('id', props.initialData.id)
+      if (error) throw error
+      showMessage('거래내역이 수정되었습니다.', 'success')
+    } else {
+      const { error } = await supabase.from('transactions').insert({
+        user_id: user.id,
+        portfolio_id: selectedPortfolioId.value,
+        transaction_type: txType.value,
+        quantity: Number(quantity.value),
+        unit_price: removeComma(unitPrice.value),
+        transaction_date: txDate.value,
+        memo: memo.value || null,
+      })
+      if (error) throw error
+      showMessage('거래내역이 등록되었습니다.', 'success')
+    }
+
+    emit('saved')
+    reset()
+  } catch (e) {
+    console.error(e)
+    showMessage('저장 중 오류가 발생했습니다.', 'error')
+  } finally {
+    saving.value = false
+  }
 }
 
 const reset = (closeDialog = true) => {
   txType.value = 'BUY'
-  ticker.value = ''
-  assetType.value = ''
+  selectedPortfolioId.value = ''
   quantity.value = ''
   unitPrice.value = ''
-  currency.value = 'KRW'
   txDate.value = new Date().toISOString().slice(0, 10)
   memo.value = ''
   if (closeDialog) dialog.value = false
@@ -118,7 +212,7 @@ const reset = (closeDialog = true) => {
     <v-card rounded="xl" class="glass-dialog" style="overflow: hidden">
       <!-- 컬러 헤더 -->
       <div class="dialog-header" :class="txType === 'BUY' ? 'header-buy' : 'header-sell'">
-        <div class="header-eyebrow">거래 추가</div>
+        <div class="header-eyebrow">{{ isEditMode ? '거래 수정' : '거래 추가' }}</div>
         <!-- BUY / SELL 대형 토글 -->
         <div class="type-toggle mt-3">
           <button
@@ -141,28 +235,20 @@ const reset = (closeDialog = true) => {
       </div>
 
       <v-card-text class="pt-4 pb-2">
-        <!-- 자산유형 -->
+        <!-- 종목 선택 -->
         <v-select
-          v-model="assetType"
-          :items="assetTypes"
-          label="자산유형"
-          prepend-inner-icon="mdi-shape"
-          variant="outlined"
-          density="comfortable"
-          rounded="lg"
-        />
-
-        <!-- 티커 -->
-        <v-text-field
-          v-model="ticker"
-          :label="tickerConfig.label"
-          :placeholder="tickerConfig.placeholder"
-          :disabled="tickerConfig.disabled"
+          v-model="selectedPortfolioId"
+          :items="portfolioItems"
+          label="종목 선택"
           prepend-inner-icon="mdi-finance"
           variant="outlined"
           density="comfortable"
           rounded="lg"
-          class="mt-3"
+          :loading="loadingPortfolios"
+          :disabled="isEditMode"
+          no-data-text="등록된 포트폴리오가 없습니다"
+          :hint="isEditMode ? '종목은 수정할 수 없습니다' : ''"
+          persistent-hint
         />
 
         <!-- 수량 + 단가 (2열) -->
@@ -184,24 +270,11 @@ const reset = (closeDialog = true) => {
             variant="outlined"
             density="comfortable"
             rounded="lg"
-            :prepend-inner-icon="currency === 'USD' ? 'mdi-currency-usd' : 'mdi-currency-krw'"
+            :prepend-inner-icon="
+              selectedPortfolio?.currency === 'USD' ? 'mdi-currency-usd' : 'mdi-currency-krw'
+            "
           />
         </div>
-
-        <!-- 통화 -->
-        <v-select
-          v-model="currency"
-          :items="currencies"
-          label="통화"
-          prepend-inner-icon="mdi-cash"
-          variant="outlined"
-          density="comfortable"
-          rounded="lg"
-          class="mt-3"
-          :disabled="currencyLocked"
-          :hint="currencyHint"
-          persistent-hint
-        />
 
         <!-- 거래일 -->
         <v-text-field
@@ -229,7 +302,11 @@ const reset = (closeDialog = true) => {
         />
 
         <!-- 합계 프리뷰 -->
-        <div v-if="totalAmount" class="total-preview mt-3" :class="txType === 'BUY' ? 'preview-buy' : 'preview-sell'">
+        <div
+          v-if="totalAmount"
+          class="total-preview mt-3"
+          :class="txType === 'BUY' ? 'preview-buy' : 'preview-sell'"
+        >
           <span class="total-label">총 {{ txType === 'BUY' ? '매수' : '매도' }}금액</span>
           <span class="total-value">{{ totalLabel }}</span>
         </div>
@@ -238,17 +315,20 @@ const reset = (closeDialog = true) => {
       <v-divider />
 
       <v-card-actions class="pa-4">
-        <v-btn variant="text" @click="reset()">취소</v-btn>
+        <v-btn variant="text" :disabled="saving" @click="reset()">취소</v-btn>
         <v-spacer />
         <v-btn
           :color="txType === 'BUY' ? 'teal' : 'error'"
           :disabled="!isValid"
+          :loading="saving"
           variant="flat"
           rounded="lg"
           @click="save"
         >
-          <v-icon start size="16">{{ txType === 'BUY' ? 'mdi-arrow-down-bold' : 'mdi-arrow-up-bold' }}</v-icon>
-          {{ txType === 'BUY' ? '매수 저장' : '매도 저장' }}
+          <v-icon start size="16">{{
+            txType === 'BUY' ? 'mdi-arrow-down-bold' : 'mdi-arrow-up-bold'
+          }}</v-icon>
+          {{ isEditMode ? '수정 저장' : txType === 'BUY' ? '매수 저장' : '매도 저장' }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -265,7 +345,6 @@ const reset = (closeDialog = true) => {
   border-color: rgba(79, 200, 194, 0.2) !important;
 }
 
-/* ── 컬러 헤더 ── */
 .dialog-header {
   padding: 24px 24px 20px;
   transition: background 0.25s ease;
@@ -293,7 +372,6 @@ const reset = (closeDialog = true) => {
   color: rgba(var(--v-theme-on-surface), 0.45);
 }
 
-/* ── BUY/SELL 토글 ── */
 .type-toggle {
   display: flex;
   gap: 8px;
@@ -330,14 +408,12 @@ const reset = (closeDialog = true) => {
   background: rgba(211, 47, 47, 0.18);
 }
 
-/* ── 2열 레이아웃 ── */
 .two-col {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 
-/* ── 합계 프리뷰 ── */
 .total-preview {
   display: flex;
   justify-content: space-between;
