@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import type { PortfolioAsset } from '@/types/portfolio'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
+import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 
 const dialog = defineModel<boolean>()
 
@@ -164,6 +165,9 @@ const save = async () => {
 
       // INITIAL 거래 수정 또는 신규 생성
       if (hasInitialHolding.value) {
+        const isUsd = currency.value === 'USD'
+        const exchangeRate = isUsd ? await getCachedExchangeRate() : null
+
         if (existingInitialTxId.value) {
           // 기존 INITIAL 업데이트
           const { error: txError } = await supabase
@@ -171,6 +175,7 @@ const save = async () => {
             .update({
               quantity: Number(initQuantity.value),
               unit_price: removeComma(initAvgPrice.value),
+              ...(isUsd && { exchange_rate: exchangeRate }),
             })
             .eq('id', existingInitialTxId.value)
           if (txError) throw txError
@@ -183,6 +188,7 @@ const save = async () => {
             quantity: Number(initQuantity.value),
             unit_price: removeComma(initAvgPrice.value),
             transaction_date: new Date().toISOString().slice(0, 10),
+            exchange_rate: exchangeRate,
           })
           if (txError) throw txError
         }
@@ -227,6 +233,8 @@ const save = async () => {
 
       // 초기 잔고 입력 시 INITIAL 거래로 저장
       if (hasInitialHolding.value) {
+        const isUsd = currency.value === 'USD'
+        const exchangeRate = isUsd ? await getCachedExchangeRate() : null
         const { error: txError } = await supabase.from('transactions').insert({
           user_id: user.id,
           portfolio_id: portfolio.id,
@@ -234,6 +242,7 @@ const save = async () => {
           quantity: Number(initQuantity.value),
           unit_price: removeComma(initAvgPrice.value),
           transaction_date: new Date().toISOString().slice(0, 10),
+          exchange_rate: exchangeRate,
         })
         if (txError) throw txError
       }
