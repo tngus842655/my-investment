@@ -439,10 +439,11 @@ onUnmounted(() => {
       <VueDraggable
         v-model="portfolios"
         handle=".drag-handle"
-        :animation="150"
+        :animation="200"
         :force-fallback="true"
+        :fallback-on-body="true"
+        :fallback-tolerance="3"
         ghost-class="sortable-ghost"
-        chosen-class="sortable-chosen"
         drag-class="sortable-drag"
         @end="onDragEnd"
       >
@@ -650,22 +651,21 @@ onUnmounted(() => {
 
 /* ── SortableJS 드래그 스타일 ── */
 .sortable-ghost {
-  border-radius: 20px;
-  border: 2px dashed rgba(var(--v-theme-primary), 0.35) !important;
-  background: rgba(var(--v-theme-primary), 0.04) !important;
+  border-radius: 20px !important;
+  border: 2px dashed rgba(var(--v-theme-primary), 0.4) !important;
+  background: rgba(var(--v-theme-primary), 0.05) !important;
   box-shadow: none !important;
 }
 .sortable-ghost * {
   visibility: hidden;
 }
-.sortable-chosen {
-  opacity: 1;
-}
 .sortable-drag {
   opacity: 1 !important;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22) !important;
-  transform: scale(1.03) !important;
-  border-radius: 20px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25) !important;
+  transform: scale(1.04) !important;
+  border-radius: 20px !important;
+  z-index: 9999 !important;
+  pointer-events: none;
 }
 
 .drag-handle {
