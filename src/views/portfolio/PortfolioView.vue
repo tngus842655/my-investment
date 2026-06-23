@@ -46,13 +46,13 @@ const fetchExchangeRate = async (): Promise<number> => {
 }
 
 const totalEvaluationAmountKrw = computed(() =>
-  portfolios.value.reduce((sum, item) => sum + (item.evaluationAmountKrw ?? 0), 0),
+  portfolios.value.filter((item) => item.asset_type !== '현금').reduce((sum, item) => sum + (item.evaluationAmountKrw ?? 0), 0),
 )
 const totalProfitAmountKrw = computed(() =>
-  portfolios.value.reduce((sum, item) => sum + (item.profitAmountKrw ?? 0), 0),
+  portfolios.value.filter((item) => item.asset_type !== '현금').reduce((sum, item) => sum + (item.profitAmountKrw ?? 0), 0),
 )
 const totalCostKrw = computed(() =>
-  portfolios.value.reduce((sum, item) => sum + (item.costKrw ?? 0), 0),
+  portfolios.value.filter((item) => item.asset_type !== '현금').reduce((sum, item) => sum + (item.costKrw ?? 0), 0),
 )
 const totalProfitRate = computed(() => {
   if (totalCostKrw.value === 0) return 0
