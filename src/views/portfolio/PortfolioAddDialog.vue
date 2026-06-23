@@ -25,7 +25,7 @@ const saving = ref(false)
 const loadingInitial = ref(false)
 const existingInitialTxId = ref<string | null>(null)
 
-const assetTypes = ['국내주식', '해외주식', 'ETF', '암호화폐', '현금']
+const assetTypes = ['국내주식', '해외주식', '암호화폐', '현금']
 
 const tickerConfig = computed(() => {
   switch (assetType.value) {
@@ -33,8 +33,6 @@ const tickerConfig = computed(() => {
       return { label: '티커', placeholder: 'AAPL', disabled: false }
     case '국내주식':
       return { label: '종목코드', placeholder: '005930', disabled: false }
-    case 'ETF':
-      return { label: '티커', placeholder: 'VOO', disabled: false }
     case '암호화폐':
       return { label: '코인 영문코드', placeholder: 'BTC', disabled: false }
     case '현금':
@@ -45,12 +43,11 @@ const tickerConfig = computed(() => {
 })
 
 const currencyLocked = computed(() =>
-  ['해외주식', '국내주식', '현금', 'ETF'].includes(assetType.value),
+  ['해외주식', '국내주식', '현금'].includes(assetType.value),
 )
 
 const currencyHint = computed(() => {
-  if (assetType.value === '해외주식' || assetType.value === 'ETF')
-    return '해외주식/ETF는 USD로 고정됩니다'
+  if (assetType.value === '해외주식') return '해외주식은 USD로 고정됩니다'
   if (assetType.value === '국내주식') return '국내주식은 KRW로 고정됩니다'
   if (assetType.value === '현금') return '현금은 KRW로 고정됩니다'
   if (assetType.value === '암호화폐') return '업비트 등 KRW 거래소는 KRW, 바이낸스 등은 USD'
@@ -107,7 +104,7 @@ const loadInitialTx = async (portfolioId: string) => {
 }
 
 watch(assetType, (newType) => {
-  if (newType === '해외주식' || newType === 'ETF') currency.value = 'USD'
+  if (newType === '해외주식') currency.value = 'USD'
   else if (['국내주식', '현금'].includes(newType)) currency.value = 'KRW'
   if (newType === '현금') {
     ticker.value = '-'
