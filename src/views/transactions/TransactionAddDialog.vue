@@ -33,7 +33,7 @@ interface Portfolio {
 }
 
 const NEW_PORTFOLIO_VALUE = '__NEW__'
-const assetTypes = ['국내주식', '해외주식', 'ETF', '암호화폐', '현금']
+const assetTypes = ['국내주식', '해외주식', 'ETF', '암호화폐']
 
 const portfolios = ref<Portfolio[]>([])
 const loadingPortfolios = ref(false)

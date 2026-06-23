@@ -99,8 +99,13 @@ const loadInitialTx = async (portfolioId: string) => {
 watch(assetType, (newType) => {
   if (newType === '해외주식' || newType === 'ETF') currency.value = 'USD'
   else if (['국내주식', '현금'].includes(newType)) currency.value = 'KRW'
-  if (newType === '현금') ticker.value = '-'
-  else if (ticker.value === '-') ticker.value = ''
+  if (newType === '현금') {
+    ticker.value = '-'
+    initQuantity.value = '1'
+  } else {
+    if (ticker.value === '-') ticker.value = ''
+    if (initQuantity.value === '1') initQuantity.value = ''
+  }
 })
 
 watch(dialog, async (opened) => {
@@ -294,31 +299,47 @@ const reset = (closeDialog = true) => {
 
         <v-progress-linear v-if="loadingInitial" indeterminate color="primary" class="mb-3" rounded />
 
-        <div class="two-col">
-          <v-text-field
-            v-model="initQuantity"
-            label="보유수량"
-            type="number"
-            step="0.0001"
-            prepend-inner-icon="mdi-counter"
-            variant="outlined"
-            density="comfortable"
-            rounded="lg"
-            placeholder="0"
-            :disabled="loadingInitial"
-          />
+        <template v-if="assetType === '현금'">
           <v-text-field
             :model-value="initAvgPrice"
             @update:model-value="handleAvgPrice"
-            label="평균단가"
+            label="보유금액"
             variant="outlined"
             density="comfortable"
             rounded="lg"
-            :prepend-inner-icon="currency === 'USD' ? 'mdi-currency-usd' : 'mdi-currency-krw'"
+            prepend-inner-icon="mdi-currency-krw"
             placeholder="0"
+            suffix="원"
             :disabled="loadingInitial"
           />
-        </div>
+        </template>
+        <template v-else>
+          <div class="two-col">
+            <v-text-field
+              v-model="initQuantity"
+              label="보유수량"
+              type="number"
+              step="0.0001"
+              prepend-inner-icon="mdi-counter"
+              variant="outlined"
+              density="comfortable"
+              rounded="lg"
+              placeholder="0"
+              :disabled="loadingInitial"
+            />
+            <v-text-field
+              :model-value="initAvgPrice"
+              @update:model-value="handleAvgPrice"
+              label="평균단가"
+              variant="outlined"
+              density="comfortable"
+              rounded="lg"
+              :prepend-inner-icon="currency === 'USD' ? 'mdi-currency-usd' : 'mdi-currency-krw'"
+              placeholder="0"
+              :disabled="loadingInitial"
+            />
+          </div>
+        </template>
 
         <!-- 합계 프리뷰 -->
         <div v-if="totalInitialAmount" class="total-preview mt-1">
