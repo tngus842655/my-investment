@@ -639,7 +639,7 @@ onUnmounted(() => {
         >
           <div
             class="glass-card asset-card pa-3"
-            :class="(item.profitAmountKrw ?? 0) >= 0 ? 'border-success-left' : 'border-error-left'"
+            :class="item.asset_type === '현금' ? 'border-cash-left' : ((item.profitAmountKrw ?? 0) >= 0 ? 'border-success-left' : 'border-error-left')"
           >
             <!-- 상단: 종목명 + 타입 + 통화 + 수익률 + 드래그 핸들 -->
             <div class="d-flex justify-space-between align-center mb-2">
@@ -652,7 +652,10 @@ onUnmounted(() => {
                   mdi-drag-vertical
                 </v-icon>
                 <div>
-                  <template v-if="getTickerLabel(item.ticker).showTicker">
+                  <template v-if="item.asset_type === '현금'">
+                    <span class="text-body-1 font-weight-bold">보유현금</span>
+                  </template>
+                  <template v-else-if="getTickerLabel(item.ticker).showTicker">
                     <span class="text-body-1 font-weight-bold">{{
                       getTickerLabel(item.ticker).name
                     }}</span>
@@ -665,11 +668,12 @@ onUnmounted(() => {
                 <v-chip :color="assetTypeColor(item.asset_type)" size="x-small" variant="tonal">
                   {{ item.asset_type }}
                 </v-chip>
-                <v-chip size="x-small" variant="tonal" color="grey">
+                <v-chip v-if="item.asset_type !== '현금'" size="x-small" variant="tonal" color="grey">
                   {{ item.currency }}
                 </v-chip>
               </div>
               <v-chip
+                v-if="item.asset_type !== '현금'"
                 :color="(item.profitRate ?? 0) >= 0 ? 'success' : 'error'"
                 size="x-small"
                 variant="tonal"
@@ -677,6 +681,19 @@ onUnmounted(() => {
                 {{ formatPercent(item.profitRate ?? 0) }}
               </v-chip>
             </div>
+
+            <!-- 현금 카드: 금액만 크게 표시 -->
+            <template v-if="item.asset_type === '현금'">
+              <div class="d-flex align-center ga-2 mt-1">
+                <v-icon size="28" color="green">mdi-cash</v-icon>
+                <div class="text-h6 font-weight-bold text-primary">
+                  {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원
+                </div>
+              </div>
+            </template>
+
+            <!-- 일반 자산 카드 -->
+            <template v-else>
 
             <!-- 수량 / 평균단가 / 현재가 -->
             <div class="d-flex ga-4 mb-2">
@@ -723,6 +740,7 @@ onUnmounted(() => {
                 </div>
               </div>
             </div>
+            </template>
           </div>
         </div>
       </div>
@@ -876,6 +894,9 @@ onUnmounted(() => {
 }
 .border-error-left {
   border-left-color: rgb(var(--v-theme-error)) !important;
+}
+.border-cash-left {
+  border-left-color: #4caf50 !important;
 }
 
 .glass-dialog {
