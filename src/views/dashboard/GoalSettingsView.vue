@@ -2,6 +2,7 @@
 import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
+import { invalidateGoalCache } from '@/router'
 import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
 
@@ -116,6 +117,7 @@ const save = async () => {
       return
     }
 
+    invalidateGoalCache()
     showMessage(
       isEditMode.value ? '목표 정보가 수정되었습니다.' : '투자 설정이 완료되었습니다.',
       'success',

@@ -5,7 +5,8 @@ import { supabase } from '@/services/supabase'
 import PortfolioAddDialog from './PortfolioAddDialog.vue'
 import type { PortfolioAsset } from '@/types/portfolio'
 import { showMessage } from '@/composables/useSnackbar'
-import { getStockPrice, getExchangeRate } from '@/services/market'
+import { getStockPrice } from '@/services/market'
+import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel } from '@/utils/tickerNames'
 
 const router = useRouter()
@@ -40,17 +41,9 @@ const isSavingOrder = ref(false)
 
 // ── 환율 조회 ─────────────────────────────────────
 const fetchExchangeRate = async (): Promise<number> => {
-  try {
-    const rate = await getExchangeRate('USD', 'KRW')
-    if (rate && rate > 0) {
-      exchangeRate.value = rate
-      return rate
-    }
-  } catch (e) {
-    console.warn('환율 조회 실패, 기본값 사용:', e)
-  }
-  exchangeRate.value = 1350
-  return 1350
+  const rate = await getCachedExchangeRate()
+  exchangeRate.value = rate
+  return rate
 }
 
 const totalEvaluationAmountKrw = computed(() =>
