@@ -131,6 +131,19 @@ const loadPortfolios = async () => {
         isPriceFallback,
       }
     })
+
+    // 평가금액 합산 후 asset_summary에 저장 (대시보드와 동기화)
+    const totalEval = portfolios.value.reduce((sum, item) => sum + (item.evaluationAmountKrw ?? 0), 0)
+    const totalCost = portfolios.value.reduce((sum, item) => {
+      const costKrw = item.currency === 'USD'
+        ? item.avg_price * item.quantity * rate
+        : item.avg_price * item.quantity
+      return sum + costKrw
+    }, 0)
+    supabase.from('asset_summary').upsert(
+      { user_id: user.id, current_asset: Math.round(totalEval), investment_principal: Math.round(totalCost) },
+      { onConflict: 'user_id' },
+    ).then(({ error }) => { if (error) console.warn('asset_summary 저장 실패:', error.message) })
   } catch (error) {
     console.error(error)
     showMessage('보유자산 조회 중 오류가 발생했습니다.', 'error')

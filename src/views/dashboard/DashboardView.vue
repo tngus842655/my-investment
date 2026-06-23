@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
-import { getCachedExchangeRate } from '@/services/exchangeRateCache'
+
 import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
 import { useAppTheme } from '@/composables/useAppTheme'
@@ -15,7 +15,6 @@ const targetAsset = ref(0)
 const currentAsset = ref(0)
 const monthlyInvestment = ref(0)
 const targetDate = ref('')
-const exchangeRate = ref(1350)
 const annualReturn = ref<number | null>(null)
 const confirmDialog = ref(false)
 
@@ -67,13 +66,10 @@ const loadDashboard = async () => {
     } = await supabase.auth.getUser()
     if (!user) return
 
-    const [goalResult, portfolioResult, rate] = await Promise.all([
+    const [goalResult, summaryResult] = await Promise.all([
       supabase.from('investment_goals').select('*').eq('user_id', user.id).maybeSingle(),
-      supabase.from('portfolios').select('*').eq('user_id', user.id),
-      getCachedExchangeRate(),
+      supabase.from('asset_summary').select('current_asset').eq('user_id', user.id).maybeSingle(),
     ])
-
-    exchangeRate.value = rate
 
     if (goalResult.data) {
       targetAsset.value = goalResult.data.target_asset ?? 0
@@ -82,13 +78,7 @@ const loadDashboard = async () => {
       annualReturn.value = goalResult.data.annual_return ?? null
     }
 
-    if (portfolioResult.data) {
-      currentAsset.value = portfolioResult.data.reduce((sum, item) => {
-        const amount = item.quantity * item.avg_price
-        const krwAmount = item.currency === 'USD' ? amount * rate : amount
-        return sum + krwAmount
-      }, 0)
-    }
+    currentAsset.value = summaryResult.data?.current_asset ?? 0
   } catch (error) {
     console.error(error)
     showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
@@ -155,7 +145,7 @@ onMounted(loadDashboard)
     <template v-else>
       <!-- 히어로 카드 -->
       <div class="glass-card pa-5 mb-3">
-        <div class="field-label mb-1">투자 원가 기준 자산</div>
+        <div class="field-label mb-1">현재 자산</div>
         <div class="hero-amount font-weight-medium mb-1">
           {{ currentAsset > 0 ? formatShortMoney(currentAsset) + '원' : '-' }}
         </div>
