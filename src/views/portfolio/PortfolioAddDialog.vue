@@ -283,17 +283,17 @@ const reset = (closeDialog = true) => {
           persistent-hint
         />
 
-        <!-- 보유 잔고 섹션 -->
+        <!-- 초기 잔고 섹션 -->
         <div class="section-divider my-4">
-          <span>현재 보유 잔고 <span class="optional-label">(선택)</span></span>
+          <span>초기 잔고 <span class="optional-label">(거래 기록 이전 보유량, 선택)</span></span>
         </div>
 
         <div class="info-banner mb-3">
           <v-icon size="14" color="primary" class="mr-1 flex-shrink-0">mdi-information-outline</v-icon>
           <span class="text-caption">
             {{ isEditMode
-              ? '보유수량/평균단가를 수정하면 이후 거래까지 포함해 재계산됩니다. 거래내역에는 표시되지 않습니다.'
-              : '이미 보유 중인 수량/단가를 입력하면 자산에 반영됩니다. 거래내역에는 표시되지 않습니다.' }}
+              ? '매수·매도 거래 이전에 이미 보유하던 수량/단가입니다. 수정 시 이후 거래와 합산해 재계산됩니다.'
+              : '앱 사용 전부터 보유하던 수량/단가를 입력하세요. 이후 매수·매도 거래와 합산됩니다.' }}
           </span>
         </div>
 
