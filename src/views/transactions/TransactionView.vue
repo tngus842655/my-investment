@@ -1,114 +1,113 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAppTheme } from '@/composables/useAppTheme'
+import { supabase } from '@/services/supabase'
+import { showMessage } from '@/composables/useSnackbar'
 import TransactionAddDialog from './TransactionAddDialog.vue'
 
 const router = useRouter()
-const { isDark } = useAppTheme()
-const addDialog = ref(false)
 
 type TransactionType = 'BUY' | 'SELL'
 type FilterType = 'ALL' | 'BUY' | 'SELL'
 
 interface Transaction {
   id: string
+  portfolio_id: string
   transaction_type: TransactionType
-  ticker: string
-  asset_type: string
   quantity: number
   unit_price: number
-  currency: 'KRW' | 'USD'
   transaction_date: string
   memo?: string
+  portfolios: {
+    ticker: string
+    asset_type: string
+    currency: string
+  }
 }
 
-// ── 더미 데이터 ──────────────────────────────────
-const dummyTransactions: Transaction[] = [
-  {
-    id: '1',
-    transaction_type: 'BUY',
-    ticker: 'AAPL',
-    asset_type: '해외주식',
-    quantity: 5,
-    unit_price: 195.5,
-    currency: 'USD',
-    transaction_date: '2025-06-20',
-    memo: '분할매수',
-  },
-  {
-    id: '2',
-    transaction_type: 'SELL',
-    ticker: 'NVDA',
-    asset_type: '해외주식',
-    quantity: 2,
-    unit_price: 1080.0,
-    currency: 'USD',
-    transaction_date: '2025-06-18',
-  },
-  {
-    id: '3',
-    transaction_type: 'BUY',
-    ticker: '005930',
-    asset_type: '국내주식',
-    quantity: 10,
-    unit_price: 72400,
-    currency: 'KRW',
-    transaction_date: '2025-06-15',
-    memo: '삼성전자 적립',
-  },
-  {
-    id: '4',
-    transaction_type: 'BUY',
-    ticker: 'BTC',
-    asset_type: '암호화폐',
-    quantity: 0.05,
-    unit_price: 95000000,
-    currency: 'KRW',
-    transaction_date: '2025-05-30',
-  },
-  {
-    id: '5',
-    transaction_type: 'SELL',
-    ticker: 'AAPL',
-    asset_type: '해외주식',
-    quantity: 3,
-    unit_price: 210.0,
-    currency: 'USD',
-    transaction_date: '2025-05-22',
-    memo: '일부 익절',
-  },
-  {
-    id: '6',
-    transaction_type: 'BUY',
-    ticker: 'VOO',
-    asset_type: 'ETF',
-    quantity: 4,
-    unit_price: 480.0,
-    currency: 'USD',
-    transaction_date: '2025-05-10',
-  },
-]
-
+const loading = ref(false)
+const transactions = ref<Transaction[]>([])
 const filter = ref<FilterType>('ALL')
+
+const addDialog = ref(false)
+const editDialog = ref(false)
+const deleteDialog = ref(false)
+const selectedTx = ref<Transaction | null>(null)
+
 const swipedId = ref<string | null>(null)
 const SWIPE_THRESHOLD = 40
 const ACTION_WIDTH = 128
-
 const swipeTouchStartX = ref(0)
 const swipeTouchStartY = ref(0)
 const isDraggingSwipe = ref(false)
 
+// ── 데이터 로드 ───────────────────────────────────
+const loadTransactions = async () => {
+  loading.value = true
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*, portfolios(ticker, asset_type, currency)')
+      .eq('user_id', user.id)
+      .order('transaction_date', { ascending: false })
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    transactions.value = (data ?? []) as Transaction[]
+  } catch (e) {
+    console.error(e)
+    showMessage('거래내역 조회 중 오류가 발생했습니다.', 'error')
+  } finally {
+    loading.value = false
+  }
+}
+
+// ── 삭제 ─────────────────────────────────────────
+const deleteTx = async () => {
+  if (!selectedTx.value) return
+  try {
+    const { error } = await supabase
+      .from('transactions')
+      .delete()
+      .eq('id', selectedTx.value.id)
+    if (error) throw error
+    showMessage('거래내역이 삭제되었습니다.', 'success')
+    deleteDialog.value = false
+    selectedTx.value = null
+    await loadTransactions()
+  } catch (e) {
+    console.error(e)
+    showMessage('삭제 중 오류가 발생했습니다.', 'error')
+  }
+}
+
+const openEditDialog = (item: Transaction) => {
+  swipedId.value = null
+  selectedTx.value = item
+  editDialog.value = true
+}
+
+const openDeleteDialog = (item: Transaction) => {
+  swipedId.value = null
+  selectedTx.value = item
+  deleteDialog.value = true
+}
+
+// ── 필터 + 그룹 ───────────────────────────────────
 const filtered = computed(() => {
-  if (filter.value === 'ALL') return dummyTransactions
-  return dummyTransactions.filter((t) => t.transaction_type === filter.value)
+  if (filter.value === 'ALL') return transactions.value
+  return transactions.value.filter((t) => t.transaction_type === filter.value)
 })
 
-// 월별 그룹핑
 const grouped = computed(() => {
   const map = new Map<string, Transaction[]>()
   for (const t of filtered.value) {
-    const key = t.transaction_date.slice(0, 7) // YYYY-MM
+    const key = t.transaction_date.slice(0, 7)
     if (!map.has(key)) map.set(key, [])
     map.get(key)!.push(t)
   }
@@ -116,16 +115,17 @@ const grouped = computed(() => {
 })
 
 const totalBuy = computed(() =>
-  dummyTransactions
+  transactions.value
     .filter((t) => t.transaction_type === 'BUY')
     .reduce((s, t) => s + t.quantity * t.unit_price, 0),
 )
 const totalSell = computed(() =>
-  dummyTransactions
+  transactions.value
     .filter((t) => t.transaction_type === 'SELL')
     .reduce((s, t) => s + t.quantity * t.unit_price, 0),
 )
 
+// ── 포맷 유틸 ─────────────────────────────────────
 const formatMonthLabel = (key: string) => {
   const [y, m] = key.split('-')
   return `${y}년 ${parseInt(m!)}월`
@@ -138,32 +138,49 @@ const formatDate = (d: string) => {
 
 const formatAmount = (t: Transaction) => {
   const total = t.quantity * t.unit_price
-  if (t.currency === 'USD') {
-    return `$${total % 1 === 0 ? total.toLocaleString('en-US') : total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  const cur = t.portfolios?.currency ?? 'KRW'
+  if (cur === 'USD') {
+    return (
+      '$' +
+      (total % 1 === 0
+        ? total.toLocaleString('en-US')
+        : total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+    )
   }
   if (total >= 100000000) {
     const eok = Math.floor(total / 100000000)
-    const remainder = Math.round((total % 100000000) / 10000000)
-    return remainder > 0 ? `${eok}억 ${remainder}천만원` : `${eok}억원`
+    const rem = Math.round((total % 100000000) / 10000000)
+    return rem > 0 ? `${eok}억 ${rem}천만원` : `${eok}억원`
   }
-  if (total >= 10000) {
-    return `${Math.round(total / 10000).toLocaleString()}만원`
-  }
+  if (total >= 10000) return `${Math.round(total / 10000).toLocaleString()}만원`
   return `${Math.round(total).toLocaleString()}원`
 }
 
 const formatUnitPrice = (t: Transaction) => {
   const p = t.unit_price
-  if (t.currency === 'USD') {
-    return `$${p % 1 === 0 ? p.toLocaleString('en-US') : p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  const cur = t.portfolios?.currency ?? 'KRW'
+  if (cur === 'USD') {
+    return (
+      '$' +
+      (p % 1 === 0
+        ? p.toLocaleString('en-US')
+        : p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+    )
   }
   if (p >= 10000) return `${Math.round(p / 10000).toLocaleString()}만`
   return Math.round(p).toLocaleString()
 }
 
+const formatStatAmount = (v: number) => {
+  if (v >= 100000000) return `${Math.floor(v / 100000000).toLocaleString()}억`
+  if (v >= 10000) return `${Math.round(v / 10000).toLocaleString()}만`
+  return v.toLocaleString()
+}
+
 const assetTypeColor = (type: string) =>
-  ({ 국내주식: 'blue', 해외주식: 'purple', ETF: 'teal', 암호화폐: 'amber', 현금: 'green' })[type] ??
-  'grey'
+  ({ 국내주식: 'blue', 해외주식: 'purple', ETF: 'teal', 암호화폐: 'amber', 현금: 'green' })[
+    type
+  ] ?? 'grey'
 
 // ── 스와이프 ──────────────────────────────────────
 const onSwipeTouchStart = (e: TouchEvent) => {
@@ -194,7 +211,11 @@ const onSwipeMouseUp = (e: MouseEvent, id: string) => {
   if (dx > SWIPE_THRESHOLD) swipedId.value = id
   else if (dx < -SWIPE_THRESHOLD / 2 && swipedId.value === id) swipedId.value = null
 }
-const closeSwipe = () => { swipedId.value = null }
+const closeSwipe = () => {
+  swipedId.value = null
+}
+
+onMounted(loadTransactions)
 </script>
 
 <template>
@@ -209,167 +230,191 @@ const closeSwipe = () => { swipedId.value = null }
       </div>
       <div class="d-flex ga-2 align-center">
         <v-btn
-          color="primary"
-          prepend-icon="mdi-plus"
-          rounded="lg"
+          icon="mdi-refresh"
+          variant="outlined"
+          size="small"
+          rounded="circle"
           elevation="0"
-          @click="addDialog = true"
-        >
+          :loading="loading"
+          style="border-color: rgba(var(--v-theme-on-surface), 0.15)"
+          @click="loadTransactions"
+        />
+        <v-btn color="primary" prepend-icon="mdi-plus" rounded="lg" elevation="0" @click="addDialog = true">
           거래 추가
         </v-btn>
       </div>
     </div>
 
-    <!-- 요약 카드 -->
-    <div class="stat-grid mb-4">
-      <div class="stat-card">
-        <div class="d-flex align-center ga-1 mb-1">
-          <v-icon size="13" color="teal">mdi-arrow-down-bold</v-icon>
-          <span class="stat-label">총 매수</span>
-        </div>
-        <div class="stat-value">
-          {{ totalBuy >= 10000 ? Math.round(totalBuy / 10000).toLocaleString() + '만' : totalBuy.toLocaleString() }}
-          <span class="stat-unit">원~</span>
-        </div>
-        <div class="stat-count text-caption text-disabled">
-          {{ dummyTransactions.filter(t => t.transaction_type === 'BUY').length }}건
-        </div>
+    <!-- 스켈레톤 -->
+    <template v-if="loading">
+      <div class="stat-grid mb-4">
+        <v-skeleton-loader type="card" class="rounded-xl" style="height: 80px" />
+        <v-skeleton-loader type="card" class="rounded-xl" style="height: 80px" />
       </div>
-      <div class="stat-card">
-        <div class="d-flex align-center ga-1 mb-1">
-          <v-icon size="13" color="error">mdi-arrow-up-bold</v-icon>
-          <span class="stat-label">총 매도</span>
-        </div>
-        <div class="stat-value">
-          {{ totalSell >= 10000 ? Math.round(totalSell / 10000).toLocaleString() + '만' : totalSell.toLocaleString() }}
-          <span class="stat-unit">원~</span>
-        </div>
-        <div class="stat-count text-caption text-disabled">
-          {{ dummyTransactions.filter(t => t.transaction_type === 'SELL').length }}건
-        </div>
-      </div>
-    </div>
-
-    <!-- 필터 세그먼트 -->
-    <div class="filter-wrap mb-4">
-      <button
-        v-for="f in (['ALL', 'BUY', 'SELL'] as FilterType[])"
-        :key="f"
-        class="filter-btn"
-        :class="{ active: filter === f }"
-        @click="filter = f; closeSwipe()"
-      >
-        <v-icon v-if="f === 'BUY'" size="13" class="mr-1">mdi-arrow-down-bold</v-icon>
-        <v-icon v-else-if="f === 'SELL'" size="13" class="mr-1">mdi-arrow-up-bold</v-icon>
-        {{ f === 'ALL' ? '전체' : f === 'BUY' ? '매수' : '매도' }}
-      </button>
-    </div>
-
-    <!-- 빈 상태 -->
-    <template v-if="filtered.length === 0">
-      <div class="glass-card py-12 text-center">
-        <v-icon size="48" color="primary" class="mb-4" style="opacity: 0.4">mdi-swap-horizontal</v-icon>
-        <div class="text-h6 font-weight-medium text-medium-emphasis">거래내역이 없습니다</div>
-        <div class="text-body-2 text-disabled mt-1">거래 추가 버튼으로 첫 거래를 기록하세요.</div>
-      </div>
+      <v-skeleton-loader v-for="n in 3" :key="n" type="list-item-three-line" class="glass-card mb-2 rounded-xl" />
     </template>
 
-    <!-- 타임라인 -->
     <template v-else>
-      <div v-for="[monthKey, items] in grouped" :key="monthKey" class="mb-2">
-        <!-- 월 헤더 -->
-        <div class="month-label mb-2">
-          <span>{{ formatMonthLabel(monthKey) }}</span>
-          <span class="ml-2 text-disabled">{{ items.length }}건</span>
+      <!-- 요약 stat grid -->
+      <div class="stat-grid mb-4">
+        <div class="stat-card">
+          <div class="d-flex align-center ga-1 mb-1">
+            <v-icon size="13" color="teal">mdi-arrow-down-bold</v-icon>
+            <span class="stat-label">총 매수</span>
+          </div>
+          <div class="stat-value">
+            {{ formatStatAmount(totalBuy) }}<span class="stat-unit">원~</span>
+          </div>
+          <div class="text-caption text-disabled">
+            {{ transactions.filter((t) => t.transaction_type === 'BUY').length }}건
+          </div>
         </div>
+        <div class="stat-card">
+          <div class="d-flex align-center ga-1 mb-1">
+            <v-icon size="13" color="error">mdi-arrow-up-bold</v-icon>
+            <span class="stat-label">총 매도</span>
+          </div>
+          <div class="stat-value">
+            {{ formatStatAmount(totalSell) }}<span class="stat-unit">원~</span>
+          </div>
+          <div class="text-caption text-disabled">
+            {{ transactions.filter((t) => t.transaction_type === 'SELL').length }}건
+          </div>
+        </div>
+      </div>
 
-        <!-- 거래 카드 -->
-        <div
-          v-for="item in items"
-          :key="item.id"
-          class="tx-card-wrap mb-2"
-          @click="swipedId && swipedId !== item.id ? closeSwipe() : undefined"
+      <!-- 필터 세그먼트 -->
+      <div class="filter-wrap mb-4">
+        <button
+          v-for="f in (['ALL', 'BUY', 'SELL'] as FilterType[])"
+          :key="f"
+          class="filter-btn"
+          :class="{ active: filter === f }"
+          @click="filter = f; closeSwipe()"
         >
-          <!-- 스와이프 액션 -->
-          <div class="swipe-actions">
-            <button class="action-btn action-edit" @click.stop>
-              <v-icon size="18">mdi-pencil-outline</v-icon>
-              <span>수정</span>
-            </button>
-            <button class="action-btn action-delete" @click.stop>
-              <v-icon size="18">mdi-delete-outline</v-icon>
-              <span>삭제</span>
-            </button>
+          <v-icon v-if="f === 'BUY'" size="13" class="mr-1">mdi-arrow-down-bold</v-icon>
+          <v-icon v-else-if="f === 'SELL'" size="13" class="mr-1">mdi-arrow-up-bold</v-icon>
+          {{ f === 'ALL' ? '전체' : f === 'BUY' ? '매수' : '매도' }}
+        </button>
+      </div>
+
+      <!-- 빈 상태 -->
+      <template v-if="filtered.length === 0">
+        <div class="glass-card py-12 text-center">
+          <v-icon size="48" color="primary" class="mb-4" style="opacity: 0.4">mdi-swap-horizontal</v-icon>
+          <div class="text-h6 font-weight-medium text-medium-emphasis">거래내역이 없습니다</div>
+          <div class="text-body-2 text-disabled mt-1">거래 추가 버튼으로 첫 거래를 기록하세요.</div>
+          <v-btn
+            color="primary"
+            variant="tonal"
+            rounded="lg"
+            class="mt-6"
+            prepend-icon="mdi-plus"
+            @click="addDialog = true"
+          >
+            거래 추가
+          </v-btn>
+        </div>
+      </template>
+
+      <!-- 타임라인 -->
+      <template v-else>
+        <div v-for="[monthKey, items] in grouped" :key="monthKey" class="mb-2">
+          <div class="month-label mb-2">
+            <span>{{ formatMonthLabel(monthKey) }}</span>
+            <span class="ml-2 text-disabled">{{ items.length }}건</span>
           </div>
 
-          <!-- 카드 본체 -->
           <div
-            class="swipe-card"
-            :style="swipedId === item.id ? `transform: translateX(-${ACTION_WIDTH}px)` : ''"
-            @touchstart.passive="onSwipeTouchStart"
-            @touchend.passive="(e) => onSwipeTouchEnd(e, item.id)"
-            @mousedown="onSwipeMouseDown"
-            @mouseup="(e) => onSwipeMouseUp(e, item.id)"
+            v-for="item in items"
+            :key="item.id"
+            class="tx-card-wrap mb-2"
+            @click="swipedId && swipedId !== item.id ? closeSwipe() : undefined"
           >
+            <!-- 스와이프 액션 -->
+            <div class="swipe-actions">
+              <button class="action-btn action-edit" @click.stop="openEditDialog(item)">
+                <v-icon size="18">mdi-pencil-outline</v-icon>
+                <span>수정</span>
+              </button>
+              <button class="action-btn action-delete" @click.stop="openDeleteDialog(item)">
+                <v-icon size="18">mdi-delete-outline</v-icon>
+                <span>삭제</span>
+              </button>
+            </div>
+
+            <!-- 카드 본체 -->
             <div
-              class="glass-card tx-card pa-3"
-              :class="item.transaction_type === 'BUY' ? 'border-buy-left' : 'border-sell-left'"
+              class="swipe-card"
+              :style="swipedId === item.id ? `transform: translateX(-${ACTION_WIDTH}px)` : ''"
+              @touchstart.passive="onSwipeTouchStart"
+              @touchend.passive="(e) => onSwipeTouchEnd(e, item.id)"
+              @mousedown="onSwipeMouseDown"
+              @mouseup="(e) => onSwipeMouseUp(e, item.id)"
             >
-              <div class="d-flex align-start ga-3">
-                <!-- 타입 아이콘 뱃지 -->
-                <div
-                  class="type-badge"
-                  :class="item.transaction_type === 'BUY' ? 'type-buy' : 'type-sell'"
-                >
-                  <v-icon size="16">
-                    {{ item.transaction_type === 'BUY' ? 'mdi-arrow-down-bold' : 'mdi-arrow-up-bold' }}
-                  </v-icon>
-                </div>
+              <div
+                class="glass-card tx-card pa-3"
+                :class="item.transaction_type === 'BUY' ? 'border-buy-left' : 'border-sell-left'"
+              >
+                <div class="d-flex align-start ga-3">
+                  <!-- 타입 아이콘 뱃지 -->
+                  <div
+                    class="type-badge"
+                    :class="item.transaction_type === 'BUY' ? 'type-buy' : 'type-sell'"
+                  >
+                    <v-icon size="16">
+                      {{ item.transaction_type === 'BUY' ? 'mdi-arrow-down-bold' : 'mdi-arrow-up-bold' }}
+                    </v-icon>
+                  </div>
 
-                <!-- 종목 정보 -->
-                <div class="flex-grow-1 min-width-0">
-                  <div class="d-flex align-center justify-space-between mb-1">
-                    <div class="d-flex align-center ga-1 flex-wrap">
-                      <span class="text-body-2 font-weight-bold">{{ item.ticker }}</span>
-                      <v-chip :color="assetTypeColor(item.asset_type)" size="x-small" variant="tonal">
-                        {{ item.asset_type }}
-                      </v-chip>
+                  <!-- 종목 정보 -->
+                  <div class="flex-grow-1 min-width-0">
+                    <div class="d-flex align-center justify-space-between mb-1">
+                      <div class="d-flex align-center ga-1 flex-wrap">
+                        <span class="text-body-2 font-weight-bold">{{ item.portfolios?.ticker }}</span>
+                        <v-chip
+                          :color="assetTypeColor(item.portfolios?.asset_type)"
+                          size="x-small"
+                          variant="tonal"
+                        >
+                          {{ item.portfolios?.asset_type }}
+                        </v-chip>
+                      </div>
+                      <div class="d-flex align-center ga-1 flex-shrink-0">
+                        <v-chip
+                          :color="item.transaction_type === 'BUY' ? 'teal' : 'error'"
+                          size="x-small"
+                          variant="tonal"
+                        >
+                          {{ item.transaction_type === 'BUY' ? '매수' : '매도' }}
+                        </v-chip>
+                        <span class="date-label">{{ formatDate(item.transaction_date) }}</span>
+                      </div>
                     </div>
-                    <!-- 날짜 + 거래유형 뱃지 -->
-                    <div class="d-flex align-center ga-1 flex-shrink-0">
-                      <v-chip
-                        :color="item.transaction_type === 'BUY' ? 'teal' : 'error'"
-                        size="x-small"
-                        variant="tonal"
+
+                    <div class="d-flex align-center ga-1 mb-1">
+                      <span class="text-caption text-medium-emphasis">
+                        {{ item.quantity % 1 === 0 ? item.quantity : Number(item.quantity).toFixed(4) }}주
+                      </span>
+                      <span class="text-caption text-disabled">×</span>
+                      <span class="text-caption text-medium-emphasis">{{ formatUnitPrice(item) }}</span>
+                    </div>
+
+                    <v-divider class="mb-2" />
+
+                    <div class="d-flex align-center justify-space-between">
+                      <div
+                        class="text-body-2 font-weight-bold"
+                        :class="item.transaction_type === 'BUY' ? 'text-teal' : 'text-error'"
                       >
-                        {{ item.transaction_type === 'BUY' ? '매수' : '매도' }}
-                      </v-chip>
-                      <span class="date-label">{{ formatDate(item.transaction_date) }}</span>
-                    </div>
-                  </div>
-
-                  <!-- 수량 × 단가 -->
-                  <div class="d-flex align-center ga-1 mb-1">
-                    <span class="text-caption text-medium-emphasis">
-                      {{ item.quantity % 1 === 0 ? item.quantity : item.quantity.toFixed(4) }}주
-                    </span>
-                    <span class="text-caption text-disabled">×</span>
-                    <span class="text-caption text-medium-emphasis">{{ formatUnitPrice(item) }}</span>
-                  </div>
-
-                  <v-divider class="mb-2" />
-
-                  <!-- 합계 + 메모 -->
-                  <div class="d-flex align-center justify-space-between">
-                    <div
-                      class="text-body-2 font-weight-bold"
-                      :class="item.transaction_type === 'BUY' ? 'text-teal' : 'text-error'"
-                    >
-                      {{ item.transaction_type === 'BUY' ? '' : '-' }}{{ formatAmount(item) }}
-                    </div>
-                    <div v-if="item.memo" class="d-flex align-center ga-1">
-                      <v-icon size="11" style="color: rgba(var(--v-theme-on-surface), 0.35)">mdi-note-text-outline</v-icon>
-                      <span class="memo-text">{{ item.memo }}</span>
+                        {{ item.transaction_type === 'SELL' ? '-' : '' }}{{ formatAmount(item) }}
+                      </div>
+                      <div v-if="item.memo" class="d-flex align-center ga-1">
+                        <v-icon size="11" style="color: rgba(var(--v-theme-on-surface), 0.35)">
+                          mdi-note-text-outline
+                        </v-icon>
+                        <span class="memo-text">{{ item.memo }}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -377,7 +422,7 @@ const closeSwipe = () => { swipedId.value = null }
             </div>
           </div>
         </div>
-      </div>
+      </template>
     </template>
 
     <v-btn
@@ -391,7 +436,40 @@ const closeSwipe = () => { swipedId.value = null }
     </v-btn>
   </v-container>
 
-  <TransactionAddDialog v-model="addDialog" />
+  <!-- 거래 추가 다이얼로그 -->
+  <TransactionAddDialog v-model="addDialog" @saved="loadTransactions" />
+
+  <!-- 거래 수정 다이얼로그 -->
+  <TransactionAddDialog
+    v-model="editDialog"
+    :initial-data="selectedTx ? {
+      id: selectedTx.id,
+      portfolio_id: selectedTx.portfolio_id,
+      transaction_type: selectedTx.transaction_type,
+      quantity: selectedTx.quantity,
+      unit_price: selectedTx.unit_price,
+      transaction_date: selectedTx.transaction_date,
+      memo: selectedTx.memo,
+    } : null"
+    @saved="loadTransactions"
+  />
+
+  <!-- 삭제 확인 -->
+  <v-dialog v-model="deleteDialog" max-width="320">
+    <v-card rounded="xl" class="glass-dialog">
+      <v-card-title class="text-center pt-6">거래 삭제</v-card-title>
+      <v-card-text class="text-center text-medium-emphasis">
+        <strong>{{ selectedTx?.portfolios?.ticker }}</strong>
+        {{ selectedTx?.transaction_type === 'BUY' ? '매수' : '매도' }} 거래를 삭제하시겠습니까?<br />
+        <span class="text-caption">이 작업은 되돌릴 수 없습니다.</span>
+      </v-card-text>
+      <v-divider />
+      <v-card-actions>
+        <v-btn block variant="text" @click="deleteDialog = false">취소</v-btn>
+        <v-btn block color="error" @click="deleteTx">삭제</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <style scoped>
@@ -405,7 +483,6 @@ const closeSwipe = () => { swipedId.value = null }
   border-color: rgba(93, 214, 207, 0.15);
 }
 
-/* ── 요약 스탯 ── */
 .stat-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -436,7 +513,6 @@ const closeSwipe = () => { swipedId.value = null }
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 
-/* ── 필터 세그먼트 ── */
 .filter-wrap {
   display: flex;
   gap: 6px;
@@ -469,7 +545,6 @@ const closeSwipe = () => { swipedId.value = null }
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* ── 월 헤더 ── */
 .month-label {
   font-size: 11px;
   font-weight: 700;
@@ -479,7 +554,6 @@ const closeSwipe = () => { swipedId.value = null }
   padding: 0 2px;
 }
 
-/* ── 타입 뱃지 ── */
 .type-badge {
   width: 36px;
   height: 36px;
@@ -498,14 +572,12 @@ const closeSwipe = () => { swipedId.value = null }
   color: #d32f2f;
 }
 
-/* ── 날짜 라벨 ── */
 .date-label {
   font-size: 11px;
   font-weight: 500;
   color: rgba(var(--v-theme-on-surface), 0.4);
 }
 
-/* ── 메모 ── */
 .memo-text {
   font-size: 11px;
   color: rgba(var(--v-theme-on-surface), 0.4);
@@ -515,24 +587,15 @@ const closeSwipe = () => { swipedId.value = null }
   white-space: nowrap;
 }
 
-/* ── 텍스트 컬러 ── */
-.text-teal {
-  color: #009688 !important;
-}
+.text-teal { color: #009688 !important; }
 
-/* ── 좌측 accent ── */
 .tx-card {
   border-left: 3px solid transparent !important;
   border-radius: 20px !important;
 }
-.border-buy-left {
-  border-left-color: #009688 !important;
-}
-.border-sell-left {
-  border-left-color: rgb(var(--v-theme-error)) !important;
-}
+.border-buy-left { border-left-color: #009688 !important; }
+.border-sell-left { border-left-color: rgb(var(--v-theme-error)) !important; }
 
-/* ── 스와이프 ── */
 .tx-card-wrap {
   position: relative;
   overflow: hidden;
@@ -574,6 +637,15 @@ const closeSwipe = () => { swipedId.value = null }
   z-index: 1;
   transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   will-change: transform;
+}
+
+.glass-dialog {
+  background: rgb(var(--v-theme-surface)) !important;
+  border: 1px solid rgba(0, 0, 0, 0.07) !important;
+}
+.v-theme--dark .glass-dialog {
+  background: rgba(13, 46, 45, 0.97) !important;
+  border-color: rgba(79, 200, 194, 0.2) !important;
 }
 
 .min-width-0 { min-width: 0; }
