@@ -8,7 +8,6 @@ import { showMessage } from '@/composables/useSnackbar'
 import { getStockPrice } from '@/services/market'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel } from '@/utils/tickerNames'
-import { VueDraggable } from 'vue-draggable-plus'
 
 const router = useRouter()
 const loading = ref(false)
@@ -33,6 +32,10 @@ const ACTION_WIDTH = 128
 
 // ── 드래그앤드롭 상태 ─────────────────────────────
 const isSavingOrder = ref(false)
+const draggingId = ref<string | null>(null)
+let dragCloneEl: HTMLElement | null = null
+let dragOffsetX = 0
+let dragOffsetY = 0
 
 // ── 환율 조회 ─────────────────────────────────────
 const fetchExchangeRate = async (): Promise<number> => {
@@ -172,19 +175,76 @@ const loadPortfolios = async () => {
   }
 }
 
-// ── 드래그 종료 → Supabase 저장 ──────────────────
-const onDragEnd = async () => {
+// ── 커스텀 드래그앤드롭 ───────────────────────────
+const startDrag = (e: MouseEvent | TouchEvent, item: PortfolioViewItem) => {
+  e.preventDefault()
+  swipedId.value = null
+
+  const touch = e instanceof TouchEvent ? e.touches[0]! : e
+  const cardEl = (e.currentTarget as HTMLElement).closest('.portfolio-card-wrap') as HTMLElement
+  if (!cardEl) return
+
+  const rect = cardEl.getBoundingClientRect()
+  dragOffsetX = touch.clientX - rect.left
+  dragOffsetY = touch.clientY - rect.top
+  draggingId.value = item.id
+
+  // 카드 복사본 생성 → body에 붙여서 커서를 따라다니게 함
+  const clone = cardEl.cloneNode(true) as HTMLElement
+  clone.style.cssText = `
+    position: fixed;
+    left: ${rect.left}px;
+    top: ${rect.top}px;
+    width: ${rect.width}px;
+    z-index: 9999;
+    pointer-events: none;
+    border-radius: 20px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.28);
+    transform: scale(1.03);
+    opacity: 0.97;
+    transition: box-shadow 0.15s;
+  `
+  document.body.appendChild(clone)
+  dragCloneEl = clone
+
+  if (navigator.vibrate) navigator.vibrate(30)
+}
+
+const onDragMove = (e: MouseEvent | TouchEvent) => {
+  if (!draggingId.value || !dragCloneEl) return
+  if (e instanceof TouchEvent) e.preventDefault()
+
+  const touch = e instanceof TouchEvent ? e.touches[0]! : e
+  const clientX = touch.clientX
+  const clientY = touch.clientY
+
+  // 클론 이동
+  dragCloneEl.style.left = `${clientX - dragOffsetX}px`
+  dragCloneEl.style.top = `${clientY - dragOffsetY}px`
+
+  // 어느 카드 위에 있는지 확인 → 배열 재정렬
+  const cards = document.querySelectorAll<HTMLElement>('.portfolio-card-wrap[data-id]')
+  cards.forEach((card) => {
+    const targetId = card.dataset.id
+    if (!targetId || targetId === draggingId.value) return
+    const rect = card.getBoundingClientRect()
+    if (clientY > rect.top && clientY < rect.bottom) {
+      reorderItems(draggingId.value!, targetId)
+    }
+  })
+}
+
+const endDrag = async () => {
+  if (!draggingId.value) return
+
+  dragCloneEl?.remove()
+  dragCloneEl = null
+  draggingId.value = null
+
   isSavingOrder.value = true
   try {
-    const updates = portfolios.value.map((item, index) => ({
-      id: item.id,
-      sort_order: index,
-    }))
-    for (const update of updates) {
-      await supabase
-        .from('portfolios')
-        .update({ sort_order: update.sort_order })
-        .eq('id', update.id)
+    for (let i = 0; i < portfolios.value.length; i++) {
+      await supabase.from('portfolios').update({ sort_order: i }).eq('id', portfolios.value[i]!.id)
     }
   } catch (error) {
     console.error(error)
@@ -194,12 +254,23 @@ const onDragEnd = async () => {
   }
 }
 
+const reorderItems = (fromId: string, toId: string) => {
+  const list = [...portfolios.value]
+  const fromIdx = list.findIndex((p) => p.id === fromId)
+  const toIdx = list.findIndex((p) => p.id === toId)
+  if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return
+  const moved = list.splice(fromIdx, 1)[0]!
+  list.splice(toIdx, 0, moved)
+  portfolios.value = list
+}
+
 // ── 스와이프 핸들러 ────────────────────────────────
 const isDraggingSwipe = ref(false)
 const swipeTouchStartX = ref(0)
 const swipeTouchStartY = ref(0)
 
 const onSwipeTouchStart = (e: TouchEvent) => {
+  if (draggingId.value) return
   swipeTouchStartX.value = e.touches[0]?.clientX ?? 0
   swipeTouchStartY.value = e.touches[0]?.clientY ?? 0
   isDraggingSwipe.value = true
@@ -321,14 +392,22 @@ const refresh = async () => {
 
 const onGlobalMouseUp = () => {
   isDraggingSwipe.value = false
+  endDrag()
 }
 
-onMounted(() => {
-  loadPortfolios()
+onMounted(async () => {
+  await loadPortfolios()
   window.addEventListener('mouseup', onGlobalMouseUp)
+  window.addEventListener('mousemove', onDragMove)
+  window.addEventListener('touchmove', onDragMove, { passive: false })
+  window.addEventListener('touchend', endDrag)
 })
 onUnmounted(() => {
+  dragCloneEl?.remove()
   window.removeEventListener('mouseup', onGlobalMouseUp)
+  window.removeEventListener('mousemove', onDragMove)
+  window.removeEventListener('touchmove', onDragMove)
+  window.removeEventListener('touchend', endDrag)
 })
 </script>
 
@@ -436,21 +515,13 @@ onUnmounted(() => {
       </div>
 
       <!-- 자산 카드 목록 -->
-      <VueDraggable
-        v-model="portfolios"
-        handle=".drag-handle"
-        :animation="200"
-        :force-fallback="true"
-        :fallback-on-body="true"
-        :fallback-tolerance="3"
-        ghost-class="sortable-ghost"
-        drag-class="sortable-drag"
-        @end="onDragEnd"
-      >
+      <TransitionGroup name="cards" tag="div">
       <div
         v-for="item in portfolios"
         :key="item.id"
         class="portfolio-card-wrap mb-2"
+        :data-id="item.id"
+        :style="draggingId === item.id ? { opacity: '0', pointerEvents: 'none' } : {}"
         @click="swipedId && swipedId !== item.id ? closeSwipe() : undefined"
       >
         <!-- 스와이프 액션 -->
@@ -484,7 +555,9 @@ onUnmounted(() => {
                 <v-icon
                   class="drag-handle"
                   size="18"
-                  style="color: rgba(var(--v-theme-on-surface), 0.35); cursor: grab; touch-action: none"
+                  style="color: rgba(var(--v-theme-on-surface), 0.35); cursor: grab; touch-action: none; user-select: none"
+                  @mousedown.stop="(e: MouseEvent) => startDrag(e, item)"
+                  @touchstart.stop.prevent="(e: TouchEvent) => startDrag(e, item)"
                 >
                   mdi-drag-vertical
                 </v-icon>
@@ -581,7 +654,7 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
-      </VueDraggable>
+      </TransitionGroup>
     </template>
 
     <v-btn
@@ -649,28 +722,16 @@ onUnmounted(() => {
   transition: transform 0.2s ease;
 }
 
-/* ── SortableJS 드래그 스타일 ── */
-.sortable-ghost {
-  border-radius: 20px !important;
-  border: 2px dashed rgba(var(--v-theme-primary), 0.4) !important;
-  background: rgba(var(--v-theme-primary), 0.05) !important;
-  box-shadow: none !important;
-}
-.sortable-ghost * {
-  visibility: hidden;
-}
-.sortable-drag {
-  opacity: 1 !important;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25) !important;
-  transform: scale(1.04) !important;
-  border-radius: 20px !important;
-  z-index: 9999 !important;
-  pointer-events: none;
+/* ── 드래그 카드 이동 애니메이션 ── */
+.cards-move {
+  transition: transform 180ms ease;
 }
 
 .drag-handle {
   touch-action: none;
   cursor: grab;
+  -webkit-user-select: none;
+  user-select: none;
 }
 .drag-handle:active {
   cursor: grabbing;
