@@ -766,9 +766,10 @@ onUnmounted(() => {
     <v-card rounded="xl" class="glass-dialog">
       <v-card-title class="text-center pt-6">자산 삭제</v-card-title>
       <v-card-text class="text-center text-medium-emphasis">
-        <strong>{{ selectedPortfolio?.ticker }}</strong
-        >을(를) 삭제하시겠습니까?<br />
-        <span class="text-caption">이 작업은 되돌릴 수 없습니다.</span>
+        <strong>{{ selectedPortfolio?.ticker }}</strong>을(를) 삭제하시겠습니까?<br />
+        <span class="text-caption text-error">
+          해당 종목의 거래내역도 모두 함께 삭제됩니다.<br />이 작업은 되돌릴 수 없습니다.
+        </span>
       </v-card-text>
       <v-divider />
       <v-card-actions>
