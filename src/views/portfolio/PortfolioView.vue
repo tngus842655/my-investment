@@ -16,7 +16,7 @@ interface PortfolioViewItem extends PortfolioAsset {
   currentPrice?: number
   evaluationAmount?: number
   evaluationAmountKrw?: number
-  profitAmount?: number
+  costKrw?: number
   profitAmountKrw?: number
   profitRate?: number
   isPriceFallback?: boolean // 현재가 조회 실패 시 true
@@ -52,16 +52,12 @@ const totalEvaluationAmountKrw = computed(() =>
 const totalProfitAmountKrw = computed(() =>
   portfolios.value.reduce((sum, item) => sum + (item.profitAmountKrw ?? 0), 0),
 )
+const totalCostKrw = computed(() =>
+  portfolios.value.reduce((sum, item) => sum + (item.costKrw ?? 0), 0),
+)
 const totalProfitRate = computed(() => {
-  const totalCost = portfolios.value.reduce((sum, item) => {
-    const costKrw =
-      item.currency === 'USD'
-        ? item.avg_price * item.quantity * (exchangeRate.value ?? 1350)
-        : item.avg_price * item.quantity
-    return sum + costKrw
-  }, 0)
-  if (totalCost === 0) return 0
-  return (totalProfitAmountKrw.value / totalCost) * 100
+  if (totalCostKrw.value === 0) return 0
+  return (totalProfitAmountKrw.value / totalCostKrw.value) * 100
 })
 
 // ── 포트폴리오 로드 ───────────────────────────────
@@ -86,12 +82,30 @@ const loadPortfolios = async () => {
 
     const items = (data ?? []) as PortfolioAsset[]
 
-    const [rate, ...prices] = await Promise.all([
+    const [rate, txResult, ...prices] = await Promise.all([
       fetchExchangeRate(),
+      supabase
+        .from('transactions')
+        .select('portfolio_id, transaction_type, quantity, unit_price, exchange_rate')
+        .eq('user_id', user.id),
       ...items.map((item) =>
         getStockPrice(item.ticker, item.asset_type, item.currency).catch(() => null),
       ),
     ])
+
+    // 포트폴리오별 KRW 원가 계산 (저장된 환율 우선 사용)
+    const txRows = txResult.data ?? []
+    const costKrwMap = new Map<string, number>()
+    for (const tx of txRows) {
+      const txRate = tx.exchange_rate ?? rate
+      const krwAmount = tx.unit_price * tx.quantity * txRate
+      const prev = costKrwMap.get(tx.portfolio_id) ?? 0
+      if (tx.transaction_type === 'BUY' || tx.transaction_type === 'INITIAL') {
+        costKrwMap.set(tx.portfolio_id, prev + krwAmount)
+      } else if (tx.transaction_type === 'SELL') {
+        costKrwMap.set(tx.portfolio_id, prev - krwAmount)
+      }
+    }
 
     portfolios.value = items.map((item, i) => {
       const currentPrice = prices[i] && prices[i]! > 0 ? prices[i] : null
@@ -108,24 +122,26 @@ const loadPortfolios = async () => {
       const isPriceFallback = currentPriceInCurrency === null
 
       const evaluationAmount = price * item.quantity
-      const profitAmount = isPriceFallback ? 0 : (price - item.avg_price) * item.quantity
-      // 암호화폐 KRW는 이미 KRW로 변환됐으므로 추가 환율 변환 불필요
       const evaluationAmountKrw =
         item.currency === 'USD' && !isCryptoKrw ? evaluationAmount * rate : evaluationAmount
-      const profitAmountKrw =
-        item.currency === 'USD' && !isCryptoKrw ? profitAmount * rate : profitAmount
-      const profitRate = isPriceFallback
+
+      // 저장된 거래별 환율로 계산한 KRW 원가 (없으면 현재 환율 fallback)
+      const costKrw = costKrwMap.get(item.id)
+        ?? (item.currency === 'USD' && !isCryptoKrw
+            ? item.avg_price * item.quantity * rate
+            : item.avg_price * item.quantity)
+
+      const profitAmountKrw = isPriceFallback ? 0 : evaluationAmountKrw - costKrw
+      const profitRate = isPriceFallback || costKrw === 0
         ? 0
-        : item.avg_price > 0
-          ? ((price - item.avg_price) / item.avg_price) * 100
-          : 0
+        : (profitAmountKrw / costKrw) * 100
 
       return {
         ...item,
         currentPrice: currentPriceInCurrency ?? undefined,
         evaluationAmount,
         evaluationAmountKrw,
-        profitAmount,
+        costKrw,
         profitAmountKrw,
         profitRate,
         isPriceFallback,

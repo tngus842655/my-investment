@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
+import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 
 type TransactionType = 'BUY' | 'SELL'
 
@@ -221,6 +222,10 @@ const save = async () => {
       portfolioId = newPortfolio.id
     }
 
+    // USD 거래 시 현재 환율 자동 저장
+    const isUsd = effectiveCurrency.value === 'USD'
+    const exchangeRate = isUsd ? await getCachedExchangeRate() : null
+
     if (isEditMode.value && props.initialData) {
       const { error } = await supabase
         .from('transactions')
@@ -230,6 +235,7 @@ const save = async () => {
           unit_price: removeComma(unitPrice.value),
           transaction_date: txDate.value,
           memo: memo.value || null,
+          ...(isUsd && { exchange_rate: exchangeRate }),
         })
         .eq('id', props.initialData.id)
       if (error) throw error
@@ -243,6 +249,7 @@ const save = async () => {
         unit_price: removeComma(unitPrice.value),
         transaction_date: txDate.value,
         memo: memo.value || null,
+        exchange_rate: exchangeRate,
       })
       if (error) throw error
       showMessage('거래내역이 등록되었습니다.', 'success')
