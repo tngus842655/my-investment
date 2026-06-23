@@ -245,6 +245,8 @@ const onDragMove = (e: MouseEvent | TouchEvent) => {
   if (newTargetId && newTargetId !== lastDragTargetId) {
     lastDragTargetId = newTargetId
     reorderItems(draggingId.value!, newTargetId)
+  } else if (!newTargetId) {
+    lastDragTargetId = null
   }
 }
 
