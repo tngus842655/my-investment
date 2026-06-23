@@ -48,67 +48,66 @@ VITE_SUPABASE_ANON_KEY=
 모든 테이블은 `user_id → auth.users` FK를 가지며 user 삭제 시 CASCADE 된다.
 
 #### investment_goals
+
 사용자별 1개 (user_id unique). FIRE 목표 설정.
 
-| 컬럼명 | 타입 | 설명 |
-|--------|------|------|
-| id | uuid | PK |
-| user_id | uuid | FK → auth.users, unique |
-| target_asset | int8 | 목표 자산 (KRW) |
-| monthly_investment | int8 | 월 투자금액 (KRW) |
-| annual_return | float8 | 연 기대 수익률 (%, nullable) |
-| target_date | date | 목표 달성 날짜 (nullable) |
-| created_at | timestamptz | |
-| updated_at | timestamptz | |
+| 컬럼명             | 타입        | 설명                         |
+| ------------------ | ----------- | ---------------------------- |
+| id                 | uuid        | PK                           |
+| user_id            | uuid        | FK → auth.users, unique      |
+| target_asset       | int8        | 목표 자산 (KRW)              |
+| monthly_investment | int8        | 월 투자금액 (KRW)            |
+| annual_return      | float8      | 연 기대 수익률 (%, nullable) |
+| target_date        | date        | 목표 달성 날짜 (nullable)    |
+| created_at         | timestamptz |                              |
+| updated_at         | timestamptz |                              |
 
 #### asset_summary
+
 사용자별 1개 (user_id unique). 전체 자산 요약 (캐시성 데이터).
 
-| 컬럼명 | 타입 | 설명 |
-|--------|------|------|
-| id | uuid | PK |
-| user_id | uuid | FK → auth.users, unique |
-| current_asset | int8 | 현재 평가 자산 (KRW) |
-| investment_principal | int8 | 투자 원금 (KRW) |
-| created_at | timestamptz | |
-| updated_at | timestamptz | |
+| 컬럼명               | 타입        | 설명                    |
+| -------------------- | ----------- | ----------------------- |
+| id                   | uuid        | PK                      |
+| user_id              | uuid        | FK → auth.users, unique |
+| current_asset        | int8        | 현재 평가 자산 (KRW)    |
+| investment_principal | int8        | 투자 원금 (KRW)         |
+| created_at           | timestamptz |                         |
+| updated_at           | timestamptz |                         |
 
 #### portfolios
+
 보유 종목 목록.
 
-| 컬럼명 | 타입 | 설명 |
-|--------|------|------|
-| id | uuid | PK |
-| user_id | uuid | FK → auth.users |
-| ticker | text | 종목 코드 (예: AAPL, 005930) |
-| asset_type | text | 자산 유형 |
-| quantity | numeric | 보유 수량 |
-| avg_price | numeric | 평균 매수가 |
-| currency | currency_enum | 통화 (enum) |
-| sort_order | int8 | 정렬 순서 (nullable) |
-| created_at | timestamptz | |
-| updated_at | timestamptz | |
+| 컬럼명     | 타입          | 설명                         |
+| ---------- | ------------- | ---------------------------- |
+| id         | uuid          | PK                           |
+| user_id    | uuid          | FK → auth.users              |
+| ticker     | text          | 종목 코드 (예: AAPL, 005930) |
+| asset_type | text          | 자산 유형                    |
+| quantity   | numeric       | 보유 수량                    |
+| avg_price  | numeric       | 평균 매수가                  |
+| currency   | currency_enum | KRW \| USD                   |
+| sort_order | int8          | 정렬 순서 (nullable)         |
+| created_at | timestamptz   |                              |
+| updated_at | timestamptz   |                              |
 
 #### transactions
+
 종목별 매수/매도 거래 내역. portfolio_id → portfolios CASCADE.
 
-| 컬럼명 | 타입 | 설명 |
-|--------|------|------|
-| id | uuid | PK |
-| user_id | uuid | FK → auth.users |
-| portfolio_id | uuid | FK → portfolios |
-| transaction_type | transaction_type_enum | 거래 유형 (enum) |
-| quantity | numeric | 거래 수량 |
-| unit_price | numeric | 거래 단가 |
-| transaction_date | date | 거래일 |
-| memo | text | 메모 (nullable) |
-| created_at | timestamptz | |
-| updated_at | timestamptz | |
-
-### Enum 타입
-
-- `currency_enum`: portfolios.currency에 사용 (실제 값은 Supabase에서 확인)
-- `transaction_type_enum`: transactions.transaction_type에 사용 (실제 값은 Supabase에서 확인)
+| 컬럼명           | 타입                  | 설명            |
+| ---------------- | --------------------- | --------------- |
+| id               | uuid                  | PK              |
+| user_id          | uuid                  | FK → auth.users |
+| portfolio_id     | uuid                  | FK → portfolios |
+| transaction_type | transaction_type_enum | BUY \| SELL     |
+| quantity         | numeric               | 거래 수량       |
+| unit_price       | numeric               | 거래 단가       |
+| transaction_date | date                  | 거래일          |
+| memo             | text                  | 메모 (nullable) |
+| created_at       | timestamptz           |                 |
+| updated_at       | timestamptz           |                 |
 
 ### 공통 패턴
 
