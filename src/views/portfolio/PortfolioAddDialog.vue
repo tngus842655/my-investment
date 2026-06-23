@@ -22,6 +22,8 @@ const currency = ref('KRW')
 const initQuantity = ref('')
 const initAvgPrice = ref('')
 const saving = ref(false)
+const loadingInitial = ref(false)
+const existingInitialTxId = ref<string | null>(null)
 
 const assetTypes = ['국내주식', '해외주식', 'ETF', '암호화폐', '현금']
 
@@ -58,12 +60,41 @@ const totalInitialAmount = computed(() => {
   if (!q || !p) return null
   const v = q * p
   if (currency.value === 'USD') {
-    return '$' + (v % 1 === 0 ? v.toLocaleString('en-US') : v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+    return '$' + (v % 1 === 0
+      ? v.toLocaleString('en-US')
+      : v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
   }
   if (v >= 100000000) return `${Math.floor(v / 100000000)}억원`
   if (v >= 10000) return `${Math.round(v / 10000).toLocaleString()}만원`
   return `${Math.round(v).toLocaleString()}원`
 })
+
+// 수정 모드 진입 시 INITIAL 거래 로드
+const loadInitialTx = async (portfolioId: string) => {
+  loadingInitial.value = true
+  try {
+    const { data } = await supabase
+      .from('transactions')
+      .select('id, quantity, unit_price')
+      .eq('portfolio_id', portfolioId)
+      .eq('transaction_type', 'INITIAL')
+      .maybeSingle()
+
+    if (data) {
+      existingInitialTxId.value = data.id
+      initQuantity.value = String(data.quantity)
+      initAvgPrice.value = addComma(String(data.unit_price))
+    } else {
+      existingInitialTxId.value = null
+      initQuantity.value = ''
+      initAvgPrice.value = ''
+    }
+  } catch (e) {
+    console.error(e)
+  } finally {
+    loadingInitial.value = false
+  }
+}
 
 watch(assetType, (newType) => {
   if (newType === '해외주식' || newType === 'ETF') currency.value = 'USD'
@@ -72,12 +103,13 @@ watch(assetType, (newType) => {
   else if (ticker.value === '-') ticker.value = ''
 })
 
-watch(dialog, (opened) => {
+watch(dialog, async (opened) => {
   if (!opened) return
   if (props.initialData) {
     ticker.value = props.initialData.ticker
     assetType.value = props.initialData.asset_type
     currency.value = props.initialData.currency
+    await loadInitialTx(props.initialData.id)
   } else {
     reset(false)
   }
@@ -106,14 +138,49 @@ const save = async () => {
     if (!user) { showMessage('로그인이 필요합니다.', 'error'); return }
 
     if (isEditMode.value && props.initialData) {
+      // 통화 수정
       const { error } = await supabase
         .from('portfolios')
         .update({ currency: currency.value })
         .eq('id', props.initialData.id)
       if (error) throw error
+
+      // INITIAL 거래 수정 또는 신규 생성
+      if (hasInitialHolding.value) {
+        if (existingInitialTxId.value) {
+          // 기존 INITIAL 업데이트
+          const { error: txError } = await supabase
+            .from('transactions')
+            .update({
+              quantity: Number(initQuantity.value),
+              unit_price: removeComma(initAvgPrice.value),
+            })
+            .eq('id', existingInitialTxId.value)
+          if (txError) throw txError
+        } else {
+          // INITIAL 없으면 새로 생성
+          const { error: txError } = await supabase.from('transactions').insert({
+            user_id: user.id,
+            portfolio_id: props.initialData.id,
+            transaction_type: 'INITIAL',
+            quantity: Number(initQuantity.value),
+            unit_price: removeComma(initAvgPrice.value),
+            transaction_date: new Date().toISOString().slice(0, 10),
+          })
+          if (txError) throw txError
+        }
+      } else if (existingInitialTxId.value) {
+        // 수량/단가 비우면 INITIAL 거래 삭제
+        const { error: txError } = await supabase
+          .from('transactions')
+          .delete()
+          .eq('id', existingInitialTxId.value)
+        if (txError) throw txError
+      }
+
       showMessage('자산이 수정되었습니다.', 'success')
     } else {
-      // 1. 포트폴리오 등록
+      // 신규 포트폴리오 등록
       const { data: portfolio, error: portfolioError } = await supabase
         .from('portfolios')
         .insert({
@@ -128,7 +195,7 @@ const save = async () => {
         .single()
       if (portfolioError) throw portfolioError
 
-      // 2. 초기 잔고 입력 시 INITIAL 거래로 저장
+      // 초기 잔고 입력 시 INITIAL 거래로 저장
       if (hasInitialHolding.value) {
         const { error: txError } = await supabase.from('transactions').insert({
           user_id: user.id,
@@ -160,6 +227,7 @@ const reset = (closeDialog = true) => {
   currency.value = 'KRW'
   initQuantity.value = ''
   initAvgPrice.value = ''
+  existingInitialTxId.value = null
   if (closeDialog) dialog.value = false
 }
 </script>
@@ -210,47 +278,53 @@ const reset = (closeDialog = true) => {
           persistent-hint
         />
 
-        <!-- 현재 보유 입력 (신규 등록 시에만) -->
-        <template v-if="!isEditMode">
-          <div class="section-divider my-4">
-            <span>현재 보유 잔고 <span class="optional-label">(선택)</span></span>
-          </div>
+        <!-- 보유 잔고 섹션 -->
+        <div class="section-divider my-4">
+          <span>현재 보유 잔고 <span class="optional-label">(선택)</span></span>
+        </div>
 
-          <div class="info-banner mb-3">
-            <v-icon size="14" color="primary" class="mr-1 flex-shrink-0">mdi-information-outline</v-icon>
-            <span class="text-caption">이미 보유 중인 수량/단가를 입력하면 자산에 반영됩니다. 거래내역에는 표시되지 않습니다.</span>
-          </div>
+        <div class="info-banner mb-3">
+          <v-icon size="14" color="primary" class="mr-1 flex-shrink-0">mdi-information-outline</v-icon>
+          <span class="text-caption">
+            {{ isEditMode
+              ? '보유수량/평균단가를 수정하면 이후 거래까지 포함해 재계산됩니다. 거래내역에는 표시되지 않습니다.'
+              : '이미 보유 중인 수량/단가를 입력하면 자산에 반영됩니다. 거래내역에는 표시되지 않습니다.' }}
+          </span>
+        </div>
 
-          <div class="two-col">
-            <v-text-field
-              v-model="initQuantity"
-              label="보유수량"
-              type="number"
-              step="0.0001"
-              prepend-inner-icon="mdi-counter"
-              variant="outlined"
-              density="comfortable"
-              rounded="lg"
-              placeholder="0"
-            />
-            <v-text-field
-              :model-value="initAvgPrice"
-              @update:model-value="handleAvgPrice"
-              label="평균단가"
-              variant="outlined"
-              density="comfortable"
-              rounded="lg"
-              :prepend-inner-icon="currency === 'USD' ? 'mdi-currency-usd' : 'mdi-currency-krw'"
-              placeholder="0"
-            />
-          </div>
+        <v-progress-linear v-if="loadingInitial" indeterminate color="primary" class="mb-3" rounded />
 
-          <!-- 합계 프리뷰 -->
-          <div v-if="totalInitialAmount" class="total-preview mt-1">
-            <span class="total-label">평가금액</span>
-            <span class="total-value">{{ totalInitialAmount }}</span>
-          </div>
-        </template>
+        <div class="two-col">
+          <v-text-field
+            v-model="initQuantity"
+            label="보유수량"
+            type="number"
+            step="0.0001"
+            prepend-inner-icon="mdi-counter"
+            variant="outlined"
+            density="comfortable"
+            rounded="lg"
+            placeholder="0"
+            :disabled="loadingInitial"
+          />
+          <v-text-field
+            :model-value="initAvgPrice"
+            @update:model-value="handleAvgPrice"
+            label="평균단가"
+            variant="outlined"
+            density="comfortable"
+            rounded="lg"
+            :prepend-inner-icon="currency === 'USD' ? 'mdi-currency-usd' : 'mdi-currency-krw'"
+            placeholder="0"
+            :disabled="loadingInitial"
+          />
+        </div>
+
+        <!-- 합계 프리뷰 -->
+        <div v-if="totalInitialAmount" class="total-preview mt-1">
+          <span class="total-label">평가금액</span>
+          <span class="total-value">{{ totalInitialAmount }}</span>
+        </div>
       </v-card-text>
 
       <v-card-actions class="pa-4">
