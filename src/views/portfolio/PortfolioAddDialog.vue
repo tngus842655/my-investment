@@ -29,12 +29,18 @@ const assetTypes = ['국내주식', '해외주식', 'ETF', '암호화폐', '현�
 
 const tickerConfig = computed(() => {
   switch (assetType.value) {
-    case '해외주식': return { label: '티커', placeholder: 'AAPL', disabled: false }
-    case '국내주식': return { label: '종목코드', placeholder: '005930', disabled: false }
-    case 'ETF':     return { label: '티커', placeholder: 'VOO', disabled: false }
-    case '암호화폐': return { label: '코인 영문코드', placeholder: 'BTC', disabled: false }
-    case '현금':    return { label: '티커', placeholder: '-', disabled: true }
-    default:        return { label: '티커', placeholder: '', disabled: false }
+    case '해외주식':
+      return { label: '티커', placeholder: 'AAPL', disabled: false }
+    case '국내주식':
+      return { label: '종목코드', placeholder: '005930', disabled: false }
+    case 'ETF':
+      return { label: '티커', placeholder: 'VOO', disabled: false }
+    case '암호화폐':
+      return { label: '코인 영문코드', placeholder: 'BTC', disabled: false }
+    case '현금':
+      return { label: '티커', placeholder: '-', disabled: true }
+    default:
+      return { label: '티커', placeholder: '', disabled: false }
   }
 })
 
@@ -43,7 +49,8 @@ const currencyLocked = computed(() =>
 )
 
 const currencyHint = computed(() => {
-  if (assetType.value === '해외주식' || assetType.value === 'ETF') return '해외주식/ETF는 USD로 고정됩니다'
+  if (assetType.value === '해외주식' || assetType.value === 'ETF')
+    return '해외주식/ETF는 USD로 고정됩니다'
   if (assetType.value === '국내주식') return '국내주식은 KRW로 고정됩니다'
   if (assetType.value === '현금') return '현금은 KRW로 고정됩니다'
   if (assetType.value === '암호화폐') return '업비트 등 KRW 거래소는 KRW, 바이낸스 등은 USD'
@@ -60,9 +67,12 @@ const totalInitialAmount = computed(() => {
   if (!q || !p) return null
   const v = q * p
   if (currency.value === 'USD') {
-    return '$' + (v % 1 === 0
-      ? v.toLocaleString('en-US')
-      : v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+    return (
+      '$' +
+      (v % 1 === 0
+        ? v.toLocaleString('en-US')
+        : v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+    )
   }
   if (v >= 100000000) return `${Math.floor(v / 100000000)}억원`
   if (v >= 10000) return `${Math.round(v / 10000).toLocaleString()}만원`
@@ -127,20 +137,25 @@ const addComma = (v: string) => {
   return parts[1] !== undefined ? `${int}.${parts[1]}` : int
 }
 const removeComma = (v: string) => Number(v.replace(/,/g, '')) || 0
-const handleAvgPrice = (v: string) => { initAvgPrice.value = addComma(v) }
+const handleAvgPrice = (v: string) => {
+  initAvgPrice.value = addComma(v)
+}
 
-const isValid = computed(() =>
-  assetType.value &&
-  (assetType.value === '현금' || ticker.value.trim()) &&
-  currency.value,
+const isValid = computed(
+  () => assetType.value && (assetType.value === '현금' || ticker.value.trim()) && currency.value,
 )
 
 const save = async () => {
   if (!isValid.value) return
   saving.value = true
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { showMessage('로그인이 필요합니다.', 'error'); return }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) {
+      showMessage('로그인이 필요합니다.', 'error')
+      return
+    }
 
     if (isEditMode.value && props.initialData) {
       // 통화 수정
@@ -285,19 +300,29 @@ const reset = (closeDialog = true) => {
 
         <!-- 초기 잔고 섹션 -->
         <div class="section-divider my-4">
-          <span>초기 잔고 <span class="optional-label">(거래 기록 이전 보유량, 선택)</span></span>
+          <span>초기 잔고 <span class="optional-label">(거래 기록 이전 보유량)</span></span>
         </div>
 
         <div class="info-banner mb-3">
-          <v-icon size="14" color="primary" class="mr-1 flex-shrink-0">mdi-information-outline</v-icon>
+          <v-icon size="14" color="primary" class="mr-1 flex-shrink-0"
+            >mdi-information-outline</v-icon
+          >
           <span class="text-caption">
-            {{ isEditMode
-              ? '매수·매도 거래 이전에 이미 보유하던 수량/단가입니다. 수정 시 이후 거래와 합산해 재계산됩니다.'
-              : '앱 사용 전부터 보유하던 수량/단가를 입력하세요. 이후 매수·매도 거래와 합산됩니다.' }}
+            {{
+              isEditMode
+                ? '매수·매도 거래 이전에 이미 보유하던 수량/단가입니다. 수정 시 이후 거래와 합산해 재계산됩니다.'
+                : '앱 사용 전부터 보유하던 수량/단가를 입력하세요. 이후 매수·매도 거래와 합산됩니다.'
+            }}
           </span>
         </div>
 
-        <v-progress-linear v-if="loadingInitial" indeterminate color="primary" class="mb-3" rounded />
+        <v-progress-linear
+          v-if="loadingInitial"
+          indeterminate
+          color="primary"
+          class="mb-3"
+          rounded
+        />
 
         <template v-if="assetType === '현금'">
           <v-text-field
