@@ -155,7 +155,7 @@ onMounted(loadData)
           @click="cancel"
         />
         <div>
-          <div class="text-h5 font-weight-bold" style="color: rgb(var(--v-theme-primary))">
+          <div class="text-h5 font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">
             {{ isEditMode ? '목표 수정' : '투자 시작하기' }}
           </div>
           <div class="text-body-2 text-medium-emphasis mt-1">
