@@ -36,6 +36,7 @@ const draggingId = ref<string | null>(null)
 let dragCloneEl: HTMLElement | null = null
 let dragOffsetX = 0
 let dragOffsetY = 0
+let lastDragTargetId: string | null = null
 
 // ── 환율 조회 ─────────────────────────────────────
 const fetchExchangeRate = async (): Promise<number> => {
@@ -188,6 +189,7 @@ const startDrag = (e: MouseEvent | TouchEvent, item: PortfolioViewItem) => {
   dragOffsetX = touch.clientX - rect.left
   dragOffsetY = touch.clientY - rect.top
   draggingId.value = item.id
+  lastDragTargetId = null
 
   // 카드 복사본 생성 → body에 붙여서 커서를 따라다니게 함
   const clone = cardEl.cloneNode(true) as HTMLElement
@@ -222,16 +224,30 @@ const onDragMove = (e: MouseEvent | TouchEvent) => {
   dragCloneEl.style.left = `${clientX - dragOffsetX}px`
   dragCloneEl.style.top = `${clientY - dragOffsetY}px`
 
-  // 어느 카드 위에 있는지 확인 → 배열 재정렬
+  // 어느 카드 위에 있는지 확인 → 중간점 기준으로만 재정렬 (떨림 방지)
   const cards = document.querySelectorAll<HTMLElement>('.portfolio-card-wrap[data-id]')
+  let newTargetId: string | null = null
+
   cards.forEach((card) => {
     const targetId = card.dataset.id
     if (!targetId || targetId === draggingId.value) return
     const rect = card.getBoundingClientRect()
-    if (clientY > rect.top && clientY < rect.bottom) {
-      reorderItems(draggingId.value!, targetId)
+    if (clientY < rect.top || clientY > rect.bottom) return
+
+    const dragIdx = portfolios.value.findIndex((p) => p.id === draggingId.value)
+    const targetIdx = portfolios.value.findIndex((p) => p.id === targetId)
+    const threshold = rect.height * 0.35
+    if ((dragIdx < targetIdx && clientY > rect.top + threshold) || (dragIdx > targetIdx && clientY < rect.bottom - threshold)) {
+      newTargetId = targetId
     }
   })
+
+  if (newTargetId && newTargetId !== lastDragTargetId) {
+    lastDragTargetId = newTargetId
+    reorderItems(draggingId.value!, newTargetId)
+  } else if (!newTargetId) {
+    lastDragTargetId = null
+  }
 }
 
 const endDrag = async () => {
