@@ -20,10 +20,11 @@ const confirmDialog = ref(false)
 
 const progressRate = computed(() => {
   if (!targetAsset.value) return 0
-  return Math.min(Math.round((currentAsset.value / targetAsset.value) * 100), 100)
+  return Math.round((currentAsset.value / targetAsset.value) * 100)
 })
 
 const remainingAsset = computed(() => Math.max(targetAsset.value - currentAsset.value, 0))
+const isGoalAchieved = computed(() => targetAsset.value > 0 && currentAsset.value >= targetAsset.value)
 
 const estimatedDate = computed(() => {
   const T = targetAsset.value
@@ -103,7 +104,13 @@ onMounted(loadDashboard)
   <v-container class="pa-4 pa-sm-6">
     <!-- 헤더 -->
     <div class="d-flex justify-space-between align-center mb-6">
-      <span class="section-eyebrow">MY INVESTMENT</span>
+      <img
+        src="/icons/icon-192.png"
+        alt="MY INVESTMENT"
+        width="32"
+        height="32"
+        style="border-radius: 8px"
+      />
       <div class="d-flex ga-2">
         <v-btn
           :icon="isDark() ? 'mdi-weather-sunny' : 'mdi-weather-night'"
@@ -168,22 +175,27 @@ onMounted(loadDashboard)
         <div class="progress-label-row mb-2">
           <span class="text-caption font-weight-medium">{{ progressRate }}% 달성</span>
           <span class="text-caption" style="color: rgba(var(--v-theme-on-surface), 0.5)">
-            목표 {{ formatShortMoney(targetAsset) }}
+            목표 {{ formatShortMoney(targetAsset) }}원
           </span>
         </div>
 
         <div class="progress-track mb-2">
-          <div class="progress-fill" :style="{ width: Math.max(progressRate, 2) + '%' }">
+          <div class="progress-fill" :style="{ width: Math.min(progressRate, 100) + '%' }">
             <div class="progress-dot" />
           </div>
         </div>
 
         <div class="text-caption" style="color: rgba(var(--v-theme-on-surface), 0.55)">
-          목표까지
-          <span class="font-weight-medium" style="color: rgb(var(--v-theme-on-surface))">
-            {{ formatShortMoney(remainingAsset) }}
-          </span>
-          남음
+          <template v-if="isGoalAchieved">
+            <span style="color: rgb(var(--v-theme-primary))">🎉 목표 달성! 목표금액을 재설정하세요</span>
+          </template>
+          <template v-else>
+            목표까지
+            <span class="font-weight-medium" style="color: rgb(var(--v-theme-on-surface))">
+              {{ formatShortMoney(remainingAsset) }}원
+            </span>
+            남음
+          </template>
         </div>
       </div>
 
@@ -192,12 +204,12 @@ onMounted(loadDashboard)
         <div class="stat-card">
           <div class="stat-label">월 투자금</div>
           <div class="stat-value">
-            {{ monthlyInvestment > 0 ? formatShortMoney(monthlyInvestment) : '-' }}
+            {{ monthlyInvestment > 0 ? formatShortMoney(monthlyInvestment) + '원' : '-' }}
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-label">잔여 목표</div>
-          <div class="stat-value text-error">{{ formatShortMoney(remainingAsset) }}</div>
+          <div class="stat-value text-error">{{ isGoalAchieved ? '달성' : formatShortMoney(remainingAsset) }}</div>
         </div>
       </div>
 
