@@ -1,8 +1,6 @@
 export interface PortfolioForm {
   ticker: string
   asset_type: string
-  quantity: number
-  avg_price: number
   currency: string
 }
 

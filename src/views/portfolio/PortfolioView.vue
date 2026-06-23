@@ -352,10 +352,10 @@ const savePortfolio = async (item: PortfolioForm) => {
       user_id: user.id,
       ticker: item.ticker,
       asset_type: item.asset_type,
-      quantity: item.quantity,
-      avg_price: item.avg_price,
       currency: item.currency,
-      sort_order: portfolios.value.length, // 새 항목은 맨 뒤
+      quantity: 0,
+      avg_price: 0,
+      sort_order: portfolios.value.length,
     })
     if (error) {
       showMessage(error.message, 'error')
@@ -375,10 +375,6 @@ const updatePortfolio = async (item: PortfolioForm) => {
     const { error } = await supabase
       .from('portfolios')
       .update({
-        ticker: item.ticker,
-        asset_type: item.asset_type,
-        quantity: item.quantity,
-        avg_price: item.avg_price,
         currency: item.currency,
       })
       .eq('id', selectedPortfolio.value.id)
