@@ -499,15 +499,15 @@ onUnmounted(() => {
       <div class="glass-card pa-4 mb-4">
         <div class="summary-grid">
           <div class="summary-row">
-            <span class="text-caption text-medium-emphasis">원화매입금액</span>
+            <span class="text-caption text-medium-emphasis">매입금액</span>
             <span class="text-caption font-weight-medium">{{ formatKrw(totalCostKrw) }}</span>
           </div>
           <div class="summary-row">
-            <span class="text-caption text-medium-emphasis">원화평가손익</span>
+            <span class="text-caption text-medium-emphasis">평가손익</span>
             <span class="text-caption font-weight-medium" :class="totalProfitAmountKrw >= 0 ? 'text-success' : 'text-error'">{{ formatProfit(totalProfitAmountKrw) }}</span>
           </div>
           <div class="summary-row">
-            <span class="text-caption text-medium-emphasis">원화평가금액</span>
+            <span class="text-caption text-medium-emphasis">평가금액</span>
             <span class="text-caption font-weight-medium">{{ formatKrw(totalEvaluationAmountKrw) }}</span>
           </div>
           <div class="summary-row">
@@ -737,6 +737,7 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   gap: 8px;
+  white-space: nowrap;
 }
 
 .cards-move {
