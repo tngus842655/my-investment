@@ -278,7 +278,7 @@ onMounted(loadDashboard)
 
         <div
           class="glass-card menu-card pa-4 d-flex align-center ga-3"
-          @click="showMessage('서비스 준비중', 'warning')"
+          @click="router.push('/transactions')"
         >
           <div class="menu-icon">
             <v-icon size="18" color="primary">mdi-swap-horizontal</v-icon>
@@ -288,7 +288,7 @@ onMounted(loadDashboard)
             <div class="text-caption text-medium-emphasis">매수/매도 내역 기록 및 조회</div>
           </div>
           <v-spacer />
-          <v-chip size="x-small" color="warning" variant="tonal">준비중</v-chip>
+          <v-icon size="16" style="color: rgba(var(--v-theme-on-surface), 0.35)">mdi-chevron-right</v-icon>
         </div>
       </div>
     </template>

@@ -5,6 +5,7 @@ import LoginView from '@/views/auth/LoginView.vue'
 import GoalSettingsView from '@/views/dashboard/GoalSettingsView.vue'
 import DashboardView from '@/views/dashboard/DashboardView.vue'
 import PortfolioView from '@/views/portfolio/PortfolioView.vue'
+import TransactionView from '@/views/transactions/TransactionView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -30,6 +31,12 @@ const router = createRouter({
       path: '/portfolio',
       name: 'portfolio',
       component: PortfolioView,
+      meta: { requiresAuth: true, requiresGoal: true },
+    },
+    {
+      path: '/transactions',
+      name: 'transactions',
+      component: TransactionView,
       meta: { requiresAuth: true, requiresGoal: true },
     },
   ],
