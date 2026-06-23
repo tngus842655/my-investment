@@ -368,7 +368,7 @@ const reset = (closeDialog = true) => {
 
         <!-- 합계 프리뷰 -->
         <div v-if="totalInitialAmount && assetType !== '현금'" class="total-preview mt-1">
-          <span class="total-label">평가금액</span>
+          <span class="total-label">매수 총금액</span>
           <span class="total-value">{{ totalInitialAmount }}</span>
         </div>
       </v-card-text>
