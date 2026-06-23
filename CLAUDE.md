@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Git Push 규칙
+
+사용자가 "push" 라고 말하면 항상 `git push origin HEAD:develop` 으로 develop 브랜치에 push한다.
+
 ## 프로젝트 개요
 
 **MY INVESTMENT** - 개인 FIRE(Financial Independence, Retire Early) 목표 관리 PWA. 투자 포트폴리오 추적 및 목표 달성률을 확인하는 앱.
