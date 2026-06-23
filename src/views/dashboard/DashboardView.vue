@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
-import { getExchangeRate } from '@/services/market'
+
 import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
 import { useAppTheme } from '@/composables/useAppTheme'
@@ -15,7 +15,6 @@ const targetAsset = ref(0)
 const currentAsset = ref(0)
 const monthlyInvestment = ref(0)
 const targetDate = ref('')
-const exchangeRate = ref(1350)
 const annualReturn = ref<number | null>(null)
 const confirmDialog = ref(false)
 
@@ -67,13 +66,10 @@ const loadDashboard = async () => {
     } = await supabase.auth.getUser()
     if (!user) return
 
-    const [goalResult, portfolioResult, rate] = await Promise.all([
+    const [goalResult, summaryResult] = await Promise.all([
       supabase.from('investment_goals').select('*').eq('user_id', user.id).maybeSingle(),
-      supabase.from('portfolios').select('*').eq('user_id', user.id),
-      getExchangeRate('USD', 'KRW').catch(() => 1350),
+      supabase.from('asset_summary').select('current_asset').eq('user_id', user.id).maybeSingle(),
     ])
-
-    exchangeRate.value = rate
 
     if (goalResult.data) {
       targetAsset.value = goalResult.data.target_asset ?? 0
@@ -82,13 +78,7 @@ const loadDashboard = async () => {
       annualReturn.value = goalResult.data.annual_return ?? null
     }
 
-    if (portfolioResult.data) {
-      currentAsset.value = portfolioResult.data.reduce((sum, item) => {
-        const amount = item.quantity * item.avg_price
-        const krwAmount = item.currency === 'USD' ? amount * rate : amount
-        return sum + krwAmount
-      }, 0)
-    }
+    currentAsset.value = summaryResult.data?.current_asset ?? 0
   } catch (error) {
     console.error(error)
     showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
@@ -278,7 +268,7 @@ onMounted(loadDashboard)
 
         <div
           class="glass-card menu-card pa-4 d-flex align-center ga-3"
-          @click="showMessage('서비스 준비중', 'warning')"
+          @click="router.push('/transactions')"
         >
           <div class="menu-icon">
             <v-icon size="18" color="primary">mdi-swap-horizontal</v-icon>
@@ -288,7 +278,7 @@ onMounted(loadDashboard)
             <div class="text-caption text-medium-emphasis">매수/매도 내역 기록 및 조회</div>
           </div>
           <v-spacer />
-          <v-chip size="x-small" color="warning" variant="tonal">준비중</v-chip>
+          <v-icon size="16" style="color: rgba(var(--v-theme-on-surface), 0.35)">mdi-chevron-right</v-icon>
         </div>
       </div>
     </template>

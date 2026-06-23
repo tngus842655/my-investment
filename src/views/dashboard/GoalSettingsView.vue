@@ -2,6 +2,7 @@
 import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
+import { invalidateGoalCache } from '@/router'
 import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
 
@@ -116,6 +117,7 @@ const save = async () => {
       return
     }
 
+    invalidateGoalCache()
     showMessage(
       isEditMode.value ? '목표 정보가 수정되었습니다.' : '투자 설정이 완료되었습니다.',
       'success',
@@ -155,7 +157,7 @@ onMounted(loadData)
           @click="cancel"
         />
         <div>
-          <div class="text-h5 font-weight-bold text-white">
+          <div class="text-h5 font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">
             {{ isEditMode ? '목표 수정' : '투자 시작하기' }}
           </div>
           <div class="text-body-2 text-medium-emphasis mt-1">

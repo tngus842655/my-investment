@@ -3,9 +3,10 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import PortfolioAddDialog from './PortfolioAddDialog.vue'
-import type { PortfolioForm, PortfolioAsset } from '@/types/portfolio'
+import type { PortfolioAsset } from '@/types/portfolio'
 import { showMessage } from '@/composables/useSnackbar'
-import { getStockPrice, getExchangeRate } from '@/services/market'
+import { getStockPrice } from '@/services/market'
+import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel } from '@/utils/tickerNames'
 
 const router = useRouter()
@@ -15,7 +16,7 @@ interface PortfolioViewItem extends PortfolioAsset {
   currentPrice?: number
   evaluationAmount?: number
   evaluationAmountKrw?: number
-  profitAmount?: number
+  costKrw?: number
   profitAmountKrw?: number
   profitRate?: number
   isPriceFallback?: boolean // 현재가 조회 실패 시 true
@@ -40,17 +41,9 @@ const isSavingOrder = ref(false)
 
 // ── 환율 조회 ─────────────────────────────────────
 const fetchExchangeRate = async (): Promise<number> => {
-  try {
-    const rate = await getExchangeRate('USD', 'KRW')
-    if (rate && rate > 0) {
-      exchangeRate.value = rate
-      return rate
-    }
-  } catch (e) {
-    console.warn('환율 조회 실패, 기본값 사용:', e)
-  }
-  exchangeRate.value = 1350
-  return 1350
+  const rate = await getCachedExchangeRate()
+  exchangeRate.value = rate
+  return rate
 }
 
 const totalEvaluationAmountKrw = computed(() =>
@@ -59,16 +52,12 @@ const totalEvaluationAmountKrw = computed(() =>
 const totalProfitAmountKrw = computed(() =>
   portfolios.value.reduce((sum, item) => sum + (item.profitAmountKrw ?? 0), 0),
 )
+const totalCostKrw = computed(() =>
+  portfolios.value.reduce((sum, item) => sum + (item.costKrw ?? 0), 0),
+)
 const totalProfitRate = computed(() => {
-  const totalCost = portfolios.value.reduce((sum, item) => {
-    const costKrw =
-      item.currency === 'USD'
-        ? item.avg_price * item.quantity * (exchangeRate.value ?? 1350)
-        : item.avg_price * item.quantity
-    return sum + costKrw
-  }, 0)
-  if (totalCost === 0) return 0
-  return (totalProfitAmountKrw.value / totalCost) * 100
+  if (totalCostKrw.value === 0) return 0
+  return (totalProfitAmountKrw.value / totalCostKrw.value) * 100
 })
 
 // ── 포트폴리오 로드 ───────────────────────────────
@@ -93,12 +82,30 @@ const loadPortfolios = async () => {
 
     const items = (data ?? []) as PortfolioAsset[]
 
-    const [rate, ...prices] = await Promise.all([
+    const [rate, txResult, ...prices] = await Promise.all([
       fetchExchangeRate(),
+      supabase
+        .from('transactions')
+        .select('portfolio_id, transaction_type, quantity, unit_price, exchange_rate')
+        .eq('user_id', user.id),
       ...items.map((item) =>
         getStockPrice(item.ticker, item.asset_type, item.currency).catch(() => null),
       ),
     ])
+
+    // 포트폴리오별 KRW 원가 계산 (저장된 환율 우선 사용)
+    const txRows = txResult.data ?? []
+    const costKrwMap = new Map<string, number>()
+    for (const tx of txRows) {
+      const txRate = tx.exchange_rate ?? rate
+      const krwAmount = tx.unit_price * tx.quantity * txRate
+      const prev = costKrwMap.get(tx.portfolio_id) ?? 0
+      if (tx.transaction_type === 'BUY' || tx.transaction_type === 'INITIAL') {
+        costKrwMap.set(tx.portfolio_id, prev + krwAmount)
+      } else if (tx.transaction_type === 'SELL') {
+        costKrwMap.set(tx.portfolio_id, prev - krwAmount)
+      }
+    }
 
     portfolios.value = items.map((item, i) => {
       const currentPrice = prices[i] && prices[i]! > 0 ? prices[i] : null
@@ -115,29 +122,44 @@ const loadPortfolios = async () => {
       const isPriceFallback = currentPriceInCurrency === null
 
       const evaluationAmount = price * item.quantity
-      const profitAmount = isPriceFallback ? 0 : (price - item.avg_price) * item.quantity
-      // 암호화폐 KRW는 이미 KRW로 변환됐으므로 추가 환율 변환 불필요
       const evaluationAmountKrw =
         item.currency === 'USD' && !isCryptoKrw ? evaluationAmount * rate : evaluationAmount
-      const profitAmountKrw =
-        item.currency === 'USD' && !isCryptoKrw ? profitAmount * rate : profitAmount
-      const profitRate = isPriceFallback
+
+      // 저장된 거래별 환율로 계산한 KRW 원가 (없으면 현재 환율 fallback)
+      const costKrw = costKrwMap.get(item.id)
+        ?? (item.currency === 'USD' && !isCryptoKrw
+            ? item.avg_price * item.quantity * rate
+            : item.avg_price * item.quantity)
+
+      const profitAmountKrw = isPriceFallback ? 0 : evaluationAmountKrw - costKrw
+      const profitRate = isPriceFallback || costKrw === 0
         ? 0
-        : item.avg_price > 0
-          ? ((price - item.avg_price) / item.avg_price) * 100
-          : 0
+        : (profitAmountKrw / costKrw) * 100
 
       return {
         ...item,
         currentPrice: currentPriceInCurrency ?? undefined,
         evaluationAmount,
         evaluationAmountKrw,
-        profitAmount,
+        costKrw,
         profitAmountKrw,
         profitRate,
         isPriceFallback,
       }
     })
+
+    // 평가금액 합산 후 asset_summary에 저장 (대시보드와 동기화)
+    const totalEval = portfolios.value.reduce((sum, item) => sum + (item.evaluationAmountKrw ?? 0), 0)
+    const totalCost = portfolios.value.reduce((sum, item) => {
+      const costKrw = item.currency === 'USD'
+        ? item.avg_price * item.quantity * rate
+        : item.avg_price * item.quantity
+      return sum + costKrw
+    }, 0)
+    supabase.from('asset_summary').upsert(
+      { user_id: user.id, current_asset: Math.round(totalEval), investment_principal: Math.round(totalCost) },
+      { onConflict: 'user_id' },
+    ).then(({ error }) => { if (error) console.warn('asset_summary 저장 실패:', error.message) })
   } catch (error) {
     console.error(error)
     showMessage('보유자산 조회 중 오류가 발생했습니다.', 'error')
@@ -339,60 +361,9 @@ const openEditDialog = (item: PortfolioViewItem) => {
   editDialog.value = true
 }
 
-const savePortfolio = async (item: PortfolioForm) => {
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      showMessage('로그인이 필요합니다.', 'error')
-      return
-    }
-    const { error } = await supabase.from('portfolios').insert({
-      user_id: user.id,
-      ticker: item.ticker,
-      asset_type: item.asset_type,
-      quantity: item.quantity,
-      avg_price: item.avg_price,
-      currency: item.currency,
-      sort_order: portfolios.value.length, // 새 항목은 맨 뒤
-    })
-    if (error) {
-      showMessage(error.message, 'error')
-      return
-    }
-    showMessage('자산이 등록되었습니다.', 'success')
-    await loadPortfolios()
-  } catch (error) {
-    console.error(error)
-    showMessage('자산 등록 중 오류가 발생했습니다.', 'error')
-  }
-}
-
-const updatePortfolio = async (item: PortfolioForm) => {
-  if (!selectedPortfolio.value) return
-  try {
-    const { error } = await supabase
-      .from('portfolios')
-      .update({
-        ticker: item.ticker,
-        asset_type: item.asset_type,
-        quantity: item.quantity,
-        avg_price: item.avg_price,
-        currency: item.currency,
-      })
-      .eq('id', selectedPortfolio.value.id)
-    if (error) {
-      showMessage(error.message, 'error')
-      return
-    }
-    showMessage('자산이 수정되었습니다.', 'success')
-    editDialog.value = false
-    await loadPortfolios()
-  } catch (error) {
-    console.error(error)
-    showMessage('자산 수정 중 오류가 발생했습니다.', 'error')
-  }
+const onSaved = async () => {
+  editDialog.value = false
+  await loadPortfolios()
 }
 
 const deletePortfolio = async () => {
@@ -759,20 +730,21 @@ onUnmounted(() => {
     </v-btn>
   </v-container>
 
-  <PortfolioAddDialog v-model="dialog" @save="savePortfolio" />
+  <PortfolioAddDialog v-model="dialog" @saved="loadPortfolios" />
   <PortfolioAddDialog
     v-model="editDialog"
     :initial-data="selectedPortfolio"
-    @save="updatePortfolio"
+    @saved="onSaved"
   />
 
   <v-dialog v-model="deleteDialog" max-width="320">
     <v-card rounded="xl" class="glass-dialog">
       <v-card-title class="text-center pt-6">자산 삭제</v-card-title>
       <v-card-text class="text-center text-medium-emphasis">
-        <strong>{{ selectedPortfolio?.ticker }}</strong
-        >을(를) 삭제하시겠습니까?<br />
-        <span class="text-caption">이 작업은 되돌릴 수 없습니다.</span>
+        <strong>{{ selectedPortfolio?.ticker }}</strong>을(를) 삭제하시겠습니까?<br />
+        <span class="text-caption text-error">
+          해당 종목의 거래내역도 모두 함께 삭제됩니다.<br />이 작업은 되돌릴 수 없습니다.
+        </span>
       </v-card-text>
       <v-divider />
       <v-card-actions>
