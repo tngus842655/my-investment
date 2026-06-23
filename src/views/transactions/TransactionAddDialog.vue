@@ -18,6 +18,7 @@ const props = defineProps<{
     transaction_date: string
     memo?: string
   } | null
+  initialType?: TransactionType
 }>()
 
 const emit = defineEmits<{
@@ -267,7 +268,7 @@ const save = async () => {
 }
 
 const reset = (closeDialog = true) => {
-  txType.value = 'BUY'
+  txType.value = props.initialType ?? 'BUY'
   selectedPortfolioId.value = ''
   quantity.value = ''
   unitPrice.value = ''
@@ -285,7 +286,7 @@ const reset = (closeDialog = true) => {
     <v-card rounded="xl" class="glass-dialog" style="overflow: hidden">
       <!-- 컬러 헤더 -->
       <div class="dialog-header" :class="txType === 'BUY' ? 'header-buy' : 'header-sell'">
-        <div class="header-eyebrow">{{ isEditMode ? '거래 수정' : '거래 추가' }}</div>
+        <div class="text-h6 font-weight-bold" style="color: white">{{ isEditMode ? '거래 수정' : '거래 추가' }}</div>
         <div class="type-toggle mt-3">
           <button
             class="toggle-btn"

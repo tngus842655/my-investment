@@ -443,7 +443,7 @@ onMounted(loadTransactions)
   </v-container>
 
   <!-- 거래 추가 다이얼로그 -->
-  <TransactionAddDialog v-model="addDialog" @saved="loadTransactions" />
+  <TransactionAddDialog v-model="addDialog" :initial-type="filter === 'SELL' ? 'SELL' : 'BUY'" @saved="loadTransactions" />
 
   <!-- 거래 수정 다이얼로그 -->
   <TransactionAddDialog

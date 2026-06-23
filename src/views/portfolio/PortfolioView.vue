@@ -46,13 +46,13 @@ const fetchExchangeRate = async (): Promise<number> => {
 }
 
 const totalEvaluationAmountKrw = computed(() =>
-  portfolios.value.reduce((sum, item) => sum + (item.evaluationAmountKrw ?? 0), 0),
+  portfolios.value.filter((item) => item.asset_type !== '현금').reduce((sum, item) => sum + (item.evaluationAmountKrw ?? 0), 0),
 )
 const totalProfitAmountKrw = computed(() =>
-  portfolios.value.reduce((sum, item) => sum + (item.profitAmountKrw ?? 0), 0),
+  portfolios.value.filter((item) => item.asset_type !== '현금').reduce((sum, item) => sum + (item.profitAmountKrw ?? 0), 0),
 )
 const totalCostKrw = computed(() =>
-  portfolios.value.reduce((sum, item) => sum + (item.costKrw ?? 0), 0),
+  portfolios.value.filter((item) => item.asset_type !== '현금').reduce((sum, item) => sum + (item.costKrw ?? 0), 0),
 )
 const totalProfitRate = computed(() => {
   if (totalCostKrw.value === 0) return 0
@@ -101,7 +101,7 @@ const loadPortfolios = async () => {
     for (const tx of txRows) {
       const currency = portfolioCurrencyMap.get(tx.portfolio_id) ?? 'KRW'
       const isUsd = currency === 'USD'
-      const txRate = isUsd ? (tx.exchange_rate ?? rate) : 1
+      const txRate = isUsd ? rate : 1
       const krwAmount = tx.unit_price * tx.quantity * txRate
       const prev = costKrwMap.get(tx.portfolio_id) ?? 0
       if (tx.transaction_type === 'BUY' || tx.transaction_type === 'INITIAL') {
@@ -497,35 +497,22 @@ onUnmounted(() => {
     <template v-else>
       <!-- 총 요약 카드 -->
       <div class="glass-card pa-4 mb-4">
-        <div class="text-caption text-medium-emphasis font-weight-medium mb-1">총 평가자산</div>
-        <div class="text-h5 font-weight-medium mb-3" style="color: rgb(var(--v-theme-on-surface))">
-          {{ formatKrw(totalEvaluationAmountKrw)
-          }}<span class="text-body-1 font-weight-regular">원</span>
-        </div>
-        <v-divider class="mb-3" />
-        <div class="d-flex align-center ga-4">
-          <div>
-            <div class="text-caption text-medium-emphasis">총 손익</div>
-            <div
-              class="text-body-2 font-weight-medium"
-              :class="totalProfitAmountKrw >= 0 ? 'text-success' : 'text-error'"
-            >
-              {{ formatProfit(totalProfitAmountKrw) }}원
-            </div>
+        <div class="summary-grid">
+          <div class="summary-row">
+            <span class="text-caption text-medium-emphasis">매입금액</span>
+            <span class="text-caption font-weight-medium">{{ formatKrw(totalCostKrw) }}</span>
           </div>
-          <v-divider vertical style="height: 28px; border-color: rgba(255, 255, 255, 0.3)" />
-          <div>
-            <div class="text-caption text-medium-emphasis">수익률</div>
-            <div
-              class="text-body-2 font-weight-medium"
-              :class="totalProfitRate >= 0 ? 'text-success' : 'text-error'"
-            >
-              {{ formatPercent(totalProfitRate) }}
-            </div>
+          <div class="summary-row">
+            <span class="text-caption text-medium-emphasis">평가손익</span>
+            <span class="text-caption font-weight-medium" :class="totalProfitAmountKrw >= 0 ? 'text-success' : 'text-error'">{{ formatProfit(totalProfitAmountKrw) }}</span>
           </div>
-          <v-spacer />
-          <div v-if="exchangeRate" class="text-caption text-disabled">
-            USD {{ Math.round(exchangeRate).toLocaleString('ko-KR') }}원
+          <div class="summary-row">
+            <span class="text-caption text-medium-emphasis">평가금액</span>
+            <span class="text-caption font-weight-medium">{{ formatKrw(totalEvaluationAmountKrw) }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="text-caption text-medium-emphasis">수익률(%)</span>
+            <span class="text-caption font-weight-medium" :class="totalProfitRate >= 0 ? 'text-success' : 'text-error'">{{ formatPercent(totalProfitRate) }}</span>
           </div>
         </div>
       </div>
@@ -739,6 +726,20 @@ onUnmounted(() => {
 }
 
 /* ── 드래그 카드 이동 애니메이션 ── */
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 16px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
 .cards-move {
   transition: transform 180ms ease;
 }
