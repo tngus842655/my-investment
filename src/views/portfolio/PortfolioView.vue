@@ -438,7 +438,6 @@ onUnmounted(() => {
       <!-- 자산 카드 목록 -->
       <VueDraggable
         v-model="portfolios"
-        item-key="id"
         handle=".drag-handle"
         :animation="200"
         ghost-class="sortable-ghost"
@@ -446,8 +445,9 @@ onUnmounted(() => {
         drag-class="sortable-drag"
         @end="onDragEnd"
       >
-      <template #item="{ element: item }">
       <div
+        v-for="item in portfolios"
+        :key="item.id"
         class="portfolio-card-wrap mb-2"
         @click="swipedId && swipedId !== item.id ? closeSwipe() : undefined"
       >
@@ -579,7 +579,6 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
-      </template>
       </VueDraggable>
     </template>
 
