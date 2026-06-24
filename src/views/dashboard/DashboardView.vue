@@ -116,15 +116,9 @@ onMounted(loadDashboard)
     <!-- 헤더 -->
     <div class="d-flex justify-space-between align-center mb-6">
       <div class="text-h6 font-weight-bold">FIREPATH</div>
-      <v-btn
-        icon="mdi-pencil-outline"
-        variant="outlined"
-        size="small"
-        rounded="circle"
-        elevation="0"
-        class="glass-btn"
-        @click="router.push('/goalSettings')"
-      />
+      <button class="icon-btn" @click="router.push('/goalSettings')">
+        <img src="/icons/icon-goal.png" alt="목표수정" class="icon-btn-img" />
+      </button>
     </div>
 
     <!-- 스켈레톤 -->
@@ -248,6 +242,22 @@ onMounted(loadDashboard)
         </div>
       </div>
 
+      <!-- 퀵 액션 -->
+      <div class="quick-grid mb-3">
+        <button class="quick-item" @click="router.push('/portfolio')">
+          <img src="/icons/icon-asset.png" alt="자산관리" class="quick-icon" />
+          <span class="quick-label">자산관리</span>
+        </button>
+        <button class="quick-item" @click="router.push('/transactions')">
+          <img src="/icons/icon-record.png" alt="투자기록" class="quick-icon" />
+          <span class="quick-label">투자기록</span>
+        </button>
+        <button class="quick-item" @click="router.push('/analysis')">
+          <img src="/icons/icon-predict.png" alt="미래예측" class="quick-icon" />
+          <span class="quick-label">미래예측</span>
+        </button>
+      </div>
+
       <!-- 투자 현황 미니 리스트 -->
       <div class="glass-card pa-4">
         <div class="d-flex justify-space-between align-center mb-3">
@@ -321,6 +331,55 @@ onMounted(loadDashboard)
   background: rgb(var(--v-theme-surface)) !important;
   border-color: rgba(var(--v-theme-on-surface), 0.15) !important;
   color: rgb(var(--v-theme-on-surface)) !important;
+}
+
+/* 헤더 목표수정 아이콘 버튼 */
+.icon-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: opacity 0.15s ease;
+}
+.icon-btn:active { opacity: 0.6; }
+.icon-btn-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+/* 퀵 액션 그리드 */
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.quick-item {
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 16px;
+  padding: 16px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.quick-item:active { opacity: 0.7; }
+.quick-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+.quick-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(var(--v-theme-on-surface), 0.7);
 }
 
 .field-label {
