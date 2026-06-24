@@ -266,7 +266,7 @@ const logout = async () => {
         </div>
         <v-text-field
           v-model="deleteEmailInput"
-          :placeholder="currentUserEmail"
+          placeholder="이메일 주소 입력"
           variant="outlined"
           density="compact"
           rounded="lg"
