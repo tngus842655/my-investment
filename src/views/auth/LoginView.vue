@@ -67,9 +67,14 @@ const onKeydown = (e: KeyboardEvent) => { if (e.key === 'Enter') signIn() }
     <div class="login-inner">
       <!-- 브랜드 -->
       <div class="text-center mb-10">
-        <div class="brand-icon mx-auto mb-4">
-          <v-icon size="32" color="primary">mdi-trending-up</v-icon>
-        </div>
+        <video
+          src="/icons/icon-rocket.mp4"
+          class="brand-logo mx-auto mb-2"
+          autoplay
+          loop
+          muted
+          playsinline
+        />
         <div class="brand-title">FIREPATH</div>
         <div class="brand-sub mt-2">Financial Independence, Retire Early</div>
       </div>
@@ -153,6 +158,14 @@ const onKeydown = (e: KeyboardEvent) => { if (e.key === 'Enter') signIn() }
 }
 
 /* 브랜드 */
+.brand-logo {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  display: block;
+  mix-blend-mode: multiply;
+}
+
 .brand-icon {
   width: 64px;
   height: 64px;

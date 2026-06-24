@@ -1,5 +1,10 @@
 # CLAUDE.md
 
+## ⚠️ 서비스 오픈 전 체크리스트
+
+- [ ] `.env`를 `.gitignore`에 추가할 것 (현재 2PC 개발 편의상 저장소에 포함되어 있음 — API 키 노출 주의!)
+
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Git Push 규칙

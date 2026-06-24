@@ -3,6 +3,11 @@
  * 없는 종목은 티커를 그대로 표시
  */
 export const TICKER_NAMES: Record<string, string> = {
+  // ── 현금 ───────────────────────────────────────
+  CASH: '보유현금',
+  CASH_KRW: '원화현금',
+  CASH_USD: '달러현금',
+
   // ── 미국 주식 ──────────────────────────────────
   AAPL: '애플',
   MSFT: '마이크로소프트',
@@ -225,4 +230,12 @@ export const getTickerLabel = (ticker: string): { name: string; showTicker: bool
   const name = TICKER_NAMES[ticker.toUpperCase()]
   if (name) return { name, showTicker: true }
   return { name: ticker, showTicker: false }
+}
+
+/**
+ * 티커가 ETF인지 판별 (asset_type 무관하게 이름 기반으로 확인)
+ */
+export const isEtfTicker = (ticker: string): boolean => {
+  const name = TICKER_NAMES[ticker.toUpperCase()]
+  return name ? name.includes('ETF') : false
 }

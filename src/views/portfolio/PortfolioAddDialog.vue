@@ -44,13 +44,13 @@ const tickerConfig = computed(() => {
 })
 
 const currencyLocked = computed(() =>
-  ['해외주식', '국내주식', '현금'].includes(assetType.value),
+  ['해외주식', '국내주식'].includes(assetType.value),
 )
 
 const currencyHint = computed(() => {
   if (assetType.value === '해외주식') return '해외주식은 USD로 고정됩니다'
   if (assetType.value === '국내주식') return '국내주식은 KRW로 고정됩니다'
-  if (assetType.value === '현금') return '현금은 KRW로 고정됩니다'
+  if (assetType.value === '현금') return '원화(KRW)와 달러(USD) 현금은 각각 따로 관리됩니다'
   if (assetType.value === '암호화폐') return '업비트 등 KRW 거래소는 KRW, 바이낸스 등은 USD'
   return ''
 })
@@ -106,7 +106,8 @@ const loadInitialTx = async (portfolioId: string) => {
 
 watch(assetType, (newType) => {
   if (newType === '해외주식') currency.value = 'USD'
-  else if (['국내주식', '현금'].includes(newType)) currency.value = 'KRW'
+  else if (newType === '국내주식') currency.value = 'KRW'
+  else if (newType === '현금') currency.value = 'KRW'
   if (newType === '현금') {
     ticker.value = '-'
     initQuantity.value = '1'
@@ -204,7 +205,12 @@ const save = async () => {
       showMessage('자산이 수정되었습니다.', 'success')
     } else {
       // 신규 포트폴리오 등록
-      const tickerToSave = assetType.value === '현금' ? 'CASH' : ticker.value.trim().toUpperCase()
+      const tickerToSave =
+        assetType.value === '현금'
+          ? currency.value === 'USD'
+            ? 'CASH_USD'
+            : 'CASH_KRW'
+          : ticker.value.trim().toUpperCase()
       const { data: existing } = await supabase
         .from('portfolios')
         .select('id')
@@ -212,7 +218,12 @@ const save = async () => {
         .eq('ticker', tickerToSave)
         .maybeSingle()
       if (existing) {
-        showMessage(`${tickerToSave} 종목이 이미 등록되어 있습니다.`, 'warning')
+        const label =
+          assetType.value === '현금'
+            ? currency.value === 'USD' ? '현금(달러)' : '현금(원화)'
+            : tickerToSave
+        const suffix = assetType.value === '현금' ? '이(가) 이미 등록되어 있습니다.' : ' 종목이 이미 등록되어 있습니다.'
+        showMessage(`${label}${suffix}`, 'warning')
         saving.value = false
         return
       }
@@ -351,9 +362,9 @@ const reset = (closeDialog = true) => {
             variant="outlined"
             density="comfortable"
             rounded="lg"
-            prepend-inner-icon="mdi-currency-krw"
+            :prepend-inner-icon="currency === 'USD' ? 'mdi-currency-usd' : 'mdi-currency-krw'"
             placeholder="0"
-            suffix="원"
+            :suffix="currency === 'USD' ? 'USD' : '원'"
             :disabled="loadingInitial"
           />
         </template>

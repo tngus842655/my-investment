@@ -5,11 +5,11 @@ const router = useRouter()
 const route = useRoute()
 
 const tabs = [
-  { label: '홈', desc: '대시보드', icon: 'mdi-home-outline', activeIcon: 'mdi-home', route: '/dashboard', img: null, video: null },
-  { label: '자산', desc: '보유 자산 한눈에', icon: null, activeIcon: null, route: '/portfolio', img: '/icons/icon-asset.png', video: null },
-  { label: '기록', desc: '매매 내역 관리', icon: null, activeIcon: null, route: '/transactions', img: null, video: '/icons/icon-record.mp4' },
-  { label: '예측', desc: '목표 달성 시점', icon: null, activeIcon: null, route: '/analysis', img: '/icons/icon-predict.png', video: null },
-  { label: '더보기', desc: '설정 및 계정', icon: 'mdi-dots-horizontal', activeIcon: 'mdi-dots-horizontal', route: '/more', img: null, video: null },
+  { label: '홈', desc: '대시보드', icon: 'mdi-home-outline', activeIcon: 'mdi-home', route: '/dashboard', img: null },
+  { label: '자산', desc: '보유 자산 한눈에', icon: null, activeIcon: null, route: '/portfolio', img: '/icons/icon-asset.png' },
+  { label: '기록', desc: '매매 내역 관리', icon: null, activeIcon: null, route: '/transactions', img: '/icons/icon-record.png' },
+  { label: '예측', desc: '목표 달성 시점', icon: null, activeIcon: null, route: '/analysis', img: '/icons/icon-predict.png' },
+  { label: '더보기', desc: '설정 및 계정', icon: 'mdi-dots-horizontal', activeIcon: 'mdi-dots-horizontal', route: '/more', img: '/icons/icon-more.png' },
 ]
 
 const isActive = (tabRoute: string) => route.path === tabRoute

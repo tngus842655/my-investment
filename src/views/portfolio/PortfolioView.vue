@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { prefetchTickerLogos } from '@/services/tickerLogo'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import PortfolioAddDialog from './PortfolioAddDialog.vue'
@@ -7,7 +8,7 @@ import type { PortfolioAsset } from '@/types/portfolio'
 import { showMessage } from '@/composables/useSnackbar'
 import { getStockPrice } from '@/services/market'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
-import { getTickerLabel } from '@/utils/tickerNames'
+import { getTickerLabel, isEtfTicker } from '@/utils/tickerNames'
 
 const router = useRouter()
 const loading = ref(false)
@@ -23,6 +24,7 @@ interface PortfolioViewItem extends PortfolioAsset {
 }
 
 const portfolios = ref<PortfolioViewItem[]>([])
+const logoMap = ref<Record<string, string | null>>({})
 const exchangeRate = ref<number | null>(null)
 
 // ── 스와이프 상태 ─────────────────────────────────
@@ -174,6 +176,12 @@ const loadPortfolios = async () => {
   } finally {
     loading.value = false
   }
+
+  // 로고 fetch — 캐시 히트는 즉시 반영, 미스만 병렬 API 호출
+  prefetchTickerLogos(
+    portfolios.value.filter((item) => item.asset_type !== '현금'),
+    (ticker, url) => { logoMap.value[ticker] = url },
+  )
 }
 
 // ── 커스텀 드래그앤드롭 ───────────────────────────
@@ -431,11 +439,14 @@ onUnmounted(() => {
   <v-container class="pa-4 pa-sm-6" @click.self="closeSwipe">
     <!-- 헤더 -->
     <div class="d-flex justify-space-between align-center mb-5">
-      <div>
-        <div class="text-h5 font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">
-          보유자산
+      <div class="d-flex align-center ga-2">
+        <img src="/icons/icon-asset.png" class="header-icon" alt="자산" />
+        <div>
+          <div class="text-h5 font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">
+            보유자산
+          </div>
+          <div class="text-body-2 text-medium-emphasis">실시간 평가금액 기준</div>
         </div>
-        <div class="text-body-2 text-medium-emphasis">실시간 평가금액 기준</div>
       </div>
       <div class="d-flex ga-2 align-center">
         <v-chip v-if="isSavingOrder" size="small" color="primary" variant="tonal">
@@ -552,7 +563,7 @@ onUnmounted(() => {
             class="glass-card asset-card pa-3"
             :class="item.asset_type === '현금' ? 'border-cash-left' : ((item.profitAmountKrw ?? 0) >= 0 ? 'border-success-left' : 'border-error-left')"
           >
-            <!-- 상단: 종목명 + 타입 + 통화 + 수익률 + 드래그 핸들 -->
+            <!-- 상단: 종목명 + 수익률 + 드래그 핸들 -->
             <div class="d-flex justify-space-between align-center mb-2">
               <div class="d-flex align-center ga-2">
                 <v-icon
@@ -564,9 +575,41 @@ onUnmounted(() => {
                 >
                   mdi-drag-vertical
                 </v-icon>
+                <!-- 로고 -->
+                <div
+                  class="ticker-logo-wrap"
+                  :class="{
+                    'logo-bg-etf': (item.asset_type === 'ETF' || isEtfTicker(item.ticker)) && !logoMap[item.ticker],
+                    'logo-bg-kr': item.currency === 'KRW' && item.asset_type !== '현금' && !isEtfTicker(item.ticker),
+                  }"
+                >
+                  <img
+                    v-if="item.asset_type === '현금' && item.ticker === 'CASH_USD'"
+                    src="/icons/icon-dollar.png"
+                    class="ticker-logo"
+                    alt="달러현금"
+                    style="mix-blend-mode: multiply"
+                  />
+                  <img
+                    v-else-if="item.asset_type === '현금'"
+                    src="/icons/icon-won.png"
+                    class="ticker-logo"
+                    alt="원화현금"
+                    style="mix-blend-mode: multiply"
+                  />
+                  <img
+                    v-else-if="logoMap[item.ticker]"
+                    :src="logoMap[item.ticker]!"
+                    class="ticker-logo"
+                    :alt="item.ticker"
+                  />
+                  <span v-else-if="item.asset_type === 'ETF' || isEtfTicker(item.ticker)" class="logo-text logo-text-etf">E</span>
+                  <span v-else-if="item.currency === 'KRW' && item.asset_type !== '현금'" class="logo-text logo-text-kr">국</span>
+                  <v-icon v-else size="20" :color="assetTypeColor(item.asset_type)">mdi-chart-line</v-icon>
+                </div>
                 <div>
                   <template v-if="item.asset_type === '현금'">
-                    <span class="text-body-1 font-weight-bold">보유현금</span>
+                    <span class="text-body-1 font-weight-bold">{{ getTickerLabel(item.ticker).name }}</span>
                   </template>
                   <template v-else-if="getTickerLabel(item.ticker).showTicker">
                     <span class="text-body-1 font-weight-bold">{{
@@ -578,12 +621,6 @@ onUnmounted(() => {
                     <span class="text-body-1 font-weight-bold">{{ item.ticker }}</span>
                   </template>
                 </div>
-                <v-chip :color="assetTypeColor(item.asset_type)" size="x-small" variant="tonal">
-                  {{ item.asset_type }}
-                </v-chip>
-                <v-chip v-if="item.asset_type !== '현금'" size="x-small" variant="tonal" color="grey">
-                  {{ item.currency }}
-                </v-chip>
               </div>
               <v-chip
                 v-if="item.asset_type !== '현금'"
@@ -595,56 +632,40 @@ onUnmounted(() => {
               </v-chip>
             </div>
 
-            <!-- 현금 카드: 금액만 크게 표시 -->
+            <!-- 현금 카드 -->
             <template v-if="item.asset_type === '현금'">
-              <div class="d-flex align-center ga-2 mt-1">
-                <v-icon size="28" color="green">mdi-cash</v-icon>
-                <div class="text-h6 font-weight-bold text-primary">
+              <div class="text-body-2 font-weight-bold text-primary mt-1">
+                <template v-if="item.currency === 'USD'">
+                  ${{ formatPrice(item.avg_price * item.quantity, 'USD') }}
+                  <span class="compact-sep ml-1">·</span>
+                  <span class="compact-label ml-1">{{ formatKrw(item.evaluationAmountKrw ?? 0) }}원</span>
+                </template>
+                <template v-else>
                   {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원
-                </div>
+                </template>
               </div>
             </template>
 
             <!-- 일반 자산 카드 -->
             <template v-else>
-
-            <!-- 수량 / 평균단가 / 현재가 -->
-            <div class="d-flex ga-4 mb-2">
-              <div>
-                <div class="text-caption text-medium-emphasis">수량</div>
-                <div class="text-caption font-weight-bold">{{ item.quantity }}</div>
+              <!-- 수량 · 평균단가 → 현재가 한 줄 -->
+              <div class="compact-price-row">
+                <span class="compact-label">{{ item.quantity }}주</span>
+                <span class="compact-sep">·</span>
+                <span class="compact-label">{{ formatPrice(item.avg_price, item.currency) }}</span>
+                <span class="compact-arrow">→</span>
+                <template v-if="item.isPriceFallback">
+                  <span class="compact-fail">조회 실패</span>
+                </template>
+                <template v-else>
+                  <span class="compact-label">{{ formatPrice(item.currentPrice ?? 0, item.currency) }}</span>
+                </template>
               </div>
-              <div>
-                <div class="text-caption text-medium-emphasis">평균단가</div>
-                <div class="text-caption font-weight-bold">
-                  {{ formatPrice(item.avg_price, item.currency) }}
-                </div>
-              </div>
-              <div>
-                <div class="text-caption text-medium-emphasis">현재가</div>
-                <div class="text-caption font-weight-bold">
-                  <template v-if="item.isPriceFallback">
-                    <span style="color: rgba(var(--v-theme-on-surface), 0.35)">조회 실패</span>
-                  </template>
-                  <template v-else>
-                    {{ formatPrice(item.currentPrice ?? 0, item.currency) }}
-                  </template>
-                </div>
-              </div>
-            </div>
-
-            <v-divider class="mb-2" />
-
-            <!-- 평가금액 + 평가손익 -->
-            <div class="d-flex justify-space-between align-center">
-              <div>
-                <div class="text-caption text-medium-emphasis">평가금액</div>
+              <!-- 평가금액 + 평가손익 한 줄 -->
+              <div class="d-flex justify-space-between align-center mt-2">
                 <div class="text-body-2 font-weight-bold text-primary">
                   {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원
                 </div>
-              </div>
-              <div class="text-right">
-                <div class="text-caption text-medium-emphasis">평가손익</div>
                 <div
                   class="text-body-2 font-weight-bold"
                   :class="(item.profitAmountKrw ?? 0) >= 0 ? 'text-success' : 'text-error'"
@@ -652,7 +673,6 @@ onUnmounted(() => {
                   {{ formatProfit(item.profitAmountKrw ?? 0) }}원
                 </div>
               </div>
-            </div>
             </template>
           </div>
         </div>
@@ -688,6 +708,13 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.header-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
 .glass-card {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(0, 0, 0, 0.07);
@@ -698,10 +725,69 @@ onUnmounted(() => {
 }
 
 
+.ticker-logo-wrap {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(var(--v-theme-on-surface), 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.ticker-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+.logo-bg-etf {
+  background: #e8f4ff;
+}
+.logo-bg-kr {
+  background: #fff3e0;
+}
+.logo-text {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+.logo-text-etf {
+  color: #1565c0;
+}
+.logo-text-kr {
+  color: #e65100;
+}
+
 .ticker-sub {
   font-size: 11px;
   font-weight: 400;
   color: rgba(var(--v-theme-on-surface), 0.45);
+}
+
+.compact-price-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+.compact-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(var(--v-theme-on-surface), 0.7);
+}
+.compact-sep {
+  font-size: 11px;
+  color: rgba(var(--v-theme-on-surface), 0.3);
+}
+.compact-arrow {
+  font-size: 11px;
+  color: rgba(var(--v-theme-on-surface), 0.35);
+  margin: 0 1px;
+}
+.compact-fail {
+  font-size: 12px;
+  color: rgba(var(--v-theme-on-surface), 0.3);
 }
 
 /* ── 스와이프 래퍼 ── */
