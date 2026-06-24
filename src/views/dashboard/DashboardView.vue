@@ -4,6 +4,8 @@ import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
+import { getCachedExchangeRate } from '@/services/exchangeRateCache'
+import { getTickerLabel } from '@/utils/tickerNames'
 
 const router = useRouter()
 const loading = ref(true)
@@ -13,6 +15,18 @@ const currentAsset = ref(0)
 const monthlyInvestment = ref(0)
 const annualReturn = ref<number | null>(null)
 
+interface MiniPortfolio {
+  id: string
+  ticker: string
+  asset_type: string
+  currency: string
+  quantity: number
+  avg_price: number
+  evaluationKrw: number
+}
+
+const topPortfolios = ref<MiniPortfolio[]>([])
+
 const progressRate = computed(() => {
   if (!targetAsset.value) return 0
   return Math.min(Math.round((currentAsset.value / targetAsset.value) * 100), 100)
@@ -21,7 +35,7 @@ const progressRate = computed(() => {
 const remainingAsset = computed(() => Math.max(targetAsset.value - currentAsset.value, 0))
 const isGoalAchieved = computed(() => targetAsset.value > 0 && currentAsset.value >= targetAsset.value)
 
-// SVG 도넛 차트 계산
+// SVG 도넛 차트
 const RADIUS = 54
 const STROKE = 10
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
@@ -58,15 +72,20 @@ const estimatedDate = computed(() => {
   return { dateStr, durationStr }
 })
 
+const assetTypeColor = (type: string) =>
+  ({ 국내주식: 'blue', 해외주식: 'purple', ETF: 'teal', 암호화폐: 'amber', 현금: 'green' })[type] ?? 'grey'
+
 const loadDashboard = async () => {
   loading.value = true
   try {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const [goalResult, summaryResult] = await Promise.all([
+    const [goalResult, summaryResult, portfolioResult, rate] = await Promise.all([
       supabase.from('investment_goals').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('asset_summary').select('current_asset').eq('user_id', user.id).maybeSingle(),
+      supabase.from('portfolios').select('id,ticker,asset_type,currency,quantity,avg_price').eq('user_id', user.id).order('sort_order', { ascending: true }).limit(4),
+      getCachedExchangeRate(),
     ])
 
     if (goalResult.data) {
@@ -75,6 +94,12 @@ const loadDashboard = async () => {
       annualReturn.value = goalResult.data.annual_return ?? null
     }
     currentAsset.value = summaryResult.data?.current_asset ?? 0
+
+    topPortfolios.value = (portfolioResult.data ?? []).map((p) => {
+      const eval_ = p.avg_price * p.quantity
+      const evalKrw = p.currency === 'USD' ? eval_ * rate : eval_
+      return { ...p, evaluationKrw: Math.round(evalKrw) }
+    })
   } catch (error) {
     console.error(error)
     showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
@@ -102,8 +127,9 @@ onMounted(loadDashboard)
       />
     </div>
 
-    <!-- 스켈레톤 로딩 -->
+    <!-- 스켈레톤 -->
     <template v-if="loading">
+      <v-skeleton-loader type="card" class="mb-3 rounded-xl" />
       <v-skeleton-loader type="card" class="mb-3 rounded-xl" />
       <v-skeleton-loader type="card" class="mb-3 rounded-xl" />
       <v-skeleton-loader type="card" class="mb-3 rounded-xl" />
@@ -137,14 +163,12 @@ onMounted(loadDashboard)
       <div class="glass-card pa-5 mb-3">
         <div class="field-label mb-4">FIRE 달성률</div>
         <div class="fire-rate-layout">
-          <!-- 도넛 차트 -->
           <div class="donut-wrap">
             <svg
               :width="RADIUS * 2 + STROKE"
               :height="RADIUS * 2 + STROKE"
               :viewBox="`0 0 ${RADIUS * 2 + STROKE} ${RADIUS * 2 + STROKE}`"
             >
-              <!-- 배경 트랙 -->
               <circle
                 :cx="RADIUS + STROKE / 2"
                 :cy="RADIUS + STROKE / 2"
@@ -153,7 +177,6 @@ onMounted(loadDashboard)
                 stroke="rgba(var(--v-theme-on-surface), 0.08)"
                 :stroke-width="STROKE"
               />
-              <!-- 진행 호 -->
               <circle
                 class="donut-progress"
                 :cx="RADIUS + STROKE / 2"
@@ -168,7 +191,6 @@ onMounted(loadDashboard)
                 transform-origin="center"
                 transform="rotate(-90)"
               />
-              <!-- 중앙 퍼센트 텍스트 -->
               <text
                 :x="RADIUS + STROKE / 2"
                 :y="RADIUS + STROKE / 2 + 1"
@@ -182,7 +204,6 @@ onMounted(loadDashboard)
             </svg>
           </div>
 
-          <!-- 우측 정보 -->
           <div class="fire-info">
             <template v-if="isGoalAchieved">
               <div class="fire-info-main" style="color: rgb(var(--v-theme-primary))">🎉 목표 달성!</div>
@@ -191,9 +212,7 @@ onMounted(loadDashboard)
             <template v-else>
               <div class="fire-info-sub mb-1">목표까지</div>
               <div class="fire-info-main">{{ formatShortMoney(remainingAsset) }}원 남음</div>
-
               <div class="fire-divider my-3" />
-
               <div class="fire-info-sub mb-1">예상 달성일</div>
               <template v-if="estimatedDate">
                 <div class="fire-info-date">{{ estimatedDate.dateStr }}</div>
@@ -214,7 +233,7 @@ onMounted(loadDashboard)
       </div>
 
       <!-- 스탯 2개 -->
-      <div class="stat-grid">
+      <div class="stat-grid mb-3">
         <div class="stat-card">
           <div class="stat-label">월 투자금</div>
           <div class="stat-value">
@@ -227,6 +246,64 @@ onMounted(loadDashboard)
             {{ annualReturn !== null ? annualReturn + '%' : '-' }}
           </div>
         </div>
+      </div>
+
+      <!-- 투자 현황 미니 리스트 -->
+      <div class="glass-card pa-4">
+        <div class="d-flex justify-space-between align-center mb-3">
+          <span class="field-label" style="font-size: 13px">투자 현황</span>
+          <span
+            class="see-all"
+            @click="router.push('/portfolio')"
+          >
+            전체 보기 <v-icon size="13">mdi-chevron-right</v-icon>
+          </span>
+        </div>
+
+        <!-- 종목 없을 때 -->
+        <template v-if="topPortfolios.length === 0">
+          <div class="text-center py-6">
+            <v-icon size="36" color="primary" style="opacity: 0.35" class="mb-2">mdi-chart-line-variant</v-icon>
+            <div class="text-caption text-medium-emphasis">보유 자산이 없습니다</div>
+          </div>
+        </template>
+
+        <!-- 종목 리스트 -->
+        <template v-else>
+          <div
+            v-for="(item, i) in topPortfolios"
+            :key="item.id"
+            class="mini-portfolio-item"
+            :class="{ 'mt-3': i > 0 }"
+          >
+            <div class="d-flex align-center ga-2 flex-1 min-w-0">
+              <!-- 아이콘 -->
+              <div class="mini-icon" :class="`bg-${assetTypeColor(item.asset_type)}`">
+                <v-icon size="14" color="white">
+                  {{ item.asset_type === '현금' ? 'mdi-cash' : item.asset_type === '암호화폐' ? 'mdi-bitcoin' : 'mdi-chart-line' }}
+                </v-icon>
+              </div>
+
+              <!-- 종목명 -->
+              <div class="flex-1 min-w-0">
+                <div class="mini-ticker">
+                  <template v-if="item.asset_type === '현금'">보유현금</template>
+                  <template v-else-if="getTickerLabel(item.ticker).showTicker">
+                    {{ getTickerLabel(item.ticker).name }}
+                    <span class="mini-ticker-sub">{{ item.ticker }}</span>
+                  </template>
+                  <template v-else>{{ item.ticker }}</template>
+                </div>
+                <div class="mini-asset-type">{{ item.asset_type }}</div>
+              </div>
+            </div>
+
+            <!-- 금액 -->
+            <div class="text-right">
+              <div class="mini-amount">{{ item.evaluationKrw.toLocaleString('ko-KR') }}원</div>
+            </div>
+          </div>
+        </template>
       </div>
     </template>
   </v-container>
@@ -264,37 +341,27 @@ onMounted(loadDashboard)
   color: rgb(var(--v-theme-on-surface));
 }
 
-/* 도넛 차트 */
+/* 도넛 */
 .fire-rate-layout {
   display: flex;
   align-items: center;
   gap: 24px;
 }
-
-.donut-wrap {
-  flex-shrink: 0;
-}
-
+.donut-wrap { flex-shrink: 0; }
 .donut-progress {
   transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
 .donut-label {
   font-size: 18px;
   font-weight: 700;
 }
 
-/* 우측 정보 */
-.fire-info {
-  flex: 1;
-  min-width: 0;
-}
-
+/* FIRE 정보 */
+.fire-info { flex: 1; min-width: 0; }
 .fire-info-sub {
   font-size: 12px;
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
-
 .fire-info-main {
   font-size: 17px;
   font-weight: 600;
@@ -303,13 +370,11 @@ onMounted(loadDashboard)
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .fire-info-date {
   font-size: 20px;
   font-weight: 700;
   color: rgb(var(--v-theme-on-surface));
 }
-
 .fire-divider {
   height: 1px;
   background: rgba(var(--v-theme-on-surface), 0.08);
@@ -321,7 +386,6 @@ onMounted(loadDashboard)
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
-
 .stat-card {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(0, 0, 0, 0.07);
@@ -331,16 +395,74 @@ onMounted(loadDashboard)
 .v-theme--dark .stat-card {
   border-color: rgba(93, 214, 207, 0.15);
 }
-
 .stat-label {
   font-size: 11px;
   color: rgba(var(--v-theme-on-surface), 0.5);
   margin-bottom: 8px;
 }
-
 .stat-value {
   font-size: 18px;
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
+}
+
+/* 투자 현황 미니 리스트 */
+.see-all {
+  font-size: 12px;
+  color: rgb(var(--v-theme-primary));
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.mini-portfolio-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mini-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+.bg-blue { background: #1976d2; }
+.bg-purple { background: #7b1fa2; }
+.bg-teal { background: #00796b; }
+.bg-amber { background: #f57c00; }
+.bg-green { background: #388e3c; }
+.bg-grey { background: #616161; }
+
+.mini-ticker {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mini-ticker-sub {
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+  margin-left: 4px;
+}
+.mini-asset-type {
+  font-size: 11px;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+  margin-top: 1px;
+}
+.mini-amount {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+  white-space: nowrap;
 }
 </style>
