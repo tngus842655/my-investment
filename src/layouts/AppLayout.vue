@@ -8,7 +8,7 @@ const tabs = [
   { label: '홈', icon: 'mdi-home', route: '/dashboard' },
   { label: '자산', icon: 'mdi-chart-line', route: '/portfolio' },
   { label: '기록', icon: 'mdi-swap-horizontal', route: '/transactions' },
-  { label: '분석', icon: 'mdi-chart-pie', route: '/analysis' },
+  { label: '예측', icon: 'mdi-chart-timeline-variant', route: '/analysis' },
   { label: '더보기', icon: 'mdi-dots-horizontal', route: '/more' },
 ]
 
