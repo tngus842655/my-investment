@@ -44,7 +44,7 @@ const logout = async () => {
         <v-icon size="16" style="color: rgba(var(--v-theme-on-surface), 0.35)">mdi-chevron-right</v-icon>
       </div>
 
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3 menu-disabled">
+      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/fire-simulator')">
         <div class="menu-icon">
           <v-icon size="18" color="primary">mdi-chart-timeline-variant</v-icon>
         </div>
@@ -53,7 +53,7 @@ const logout = async () => {
           <div class="text-caption text-medium-emphasis">투자금·수익률 변경 시 달성일 비교</div>
         </div>
         <v-spacer />
-        <v-chip size="x-small" color="primary" variant="tonal">준비중</v-chip>
+        <v-icon size="16" style="color: rgba(var(--v-theme-on-surface), 0.35)">mdi-chevron-right</v-icon>
       </div>
 
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3 menu-disabled">
