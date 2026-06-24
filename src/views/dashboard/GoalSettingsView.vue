@@ -336,7 +336,6 @@ onMounted(loadData)
         {{ isEditMode ? '취소' : '로그아웃' }}
       </v-btn>
     </div>
-    </div>
   </div>
 </template>
 
