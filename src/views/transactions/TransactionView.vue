@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import TransactionAddDialog from './TransactionAddDialog.vue'
-
-const router = useRouter()
 
 type TransactionType = 'BUY' | 'SELL' | 'INITIAL'
 type FilterType = 'ALL' | 'BUY' | 'SELL'
@@ -77,10 +74,7 @@ const loadTransactions = async () => {
 const deleteTx = async () => {
   if (!selectedTx.value) return
   try {
-    const { error } = await supabase
-      .from('transactions')
-      .delete()
-      .eq('id', selectedTx.value.id)
+    const { error } = await supabase.from('transactions').delete().eq('id', selectedTx.value.id)
     if (error) throw error
     showMessage('거래내역이 삭제되었습니다.', 'success')
     deleteDialog.value = false
@@ -184,9 +178,8 @@ const formatStatAmount = (v: number) => {
 }
 
 const assetTypeColor = (type: string) =>
-  ({ 국내주식: 'blue', 해외주식: 'purple', ETF: 'teal', 암호화폐: 'amber', 현금: 'green' })[
-    type
-  ] ?? 'grey'
+  ({ 국내주식: 'blue', 해외주식: 'purple', ETF: 'teal', 암호화폐: 'amber', 현금: 'green' })[type] ??
+  'grey'
 
 // ── 스와이프 ──────────────────────────────────────
 const onSwipeTouchStart = (e: TouchEvent) => {
@@ -248,7 +241,13 @@ onMounted(loadTransactions)
           style="border-color: rgba(var(--v-theme-on-surface), 0.15)"
           @click="loadTransactions"
         />
-        <v-btn color="primary" prepend-icon="mdi-plus" rounded="lg" elevation="0" @click="addDialog = true">
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-plus"
+          rounded="lg"
+          elevation="0"
+          @click="addDialog = true"
+        >
           거래 추가
         </v-btn>
       </div>
@@ -260,7 +259,12 @@ onMounted(loadTransactions)
         <v-skeleton-loader type="card" class="rounded-xl" style="height: 80px" />
         <v-skeleton-loader type="card" class="rounded-xl" style="height: 80px" />
       </div>
-      <v-skeleton-loader v-for="n in 3" :key="n" type="list-item-three-line" class="glass-card mb-2 rounded-xl" />
+      <v-skeleton-loader
+        v-for="n in 3"
+        :key="n"
+        type="list-item-three-line"
+        class="glass-card mb-2 rounded-xl"
+      />
     </template>
 
     <template v-else>
@@ -295,11 +299,14 @@ onMounted(loadTransactions)
       <!-- 필터 세그먼트 -->
       <div class="filter-wrap mb-4">
         <button
-          v-for="f in (['ALL', 'BUY', 'SELL'] as FilterType[])"
+          v-for="f in ['ALL', 'BUY', 'SELL'] as FilterType[]"
           :key="f"
           class="filter-btn"
           :class="{ active: filter === f }"
-          @click="filter = f; closeSwipe()"
+          @click="
+            filter = f
+            closeSwipe()
+          "
         >
           <v-icon v-if="f === 'BUY'" size="13" class="mr-1">mdi-arrow-down-bold</v-icon>
           <v-icon v-else-if="f === 'SELL'" size="13" class="mr-1">mdi-arrow-up-bold</v-icon>
@@ -310,7 +317,9 @@ onMounted(loadTransactions)
       <!-- 빈 상태 -->
       <template v-if="filtered.length === 0">
         <div class="glass-card py-12 text-center">
-          <v-icon size="48" color="primary" class="mb-4" style="opacity: 0.4">mdi-swap-horizontal</v-icon>
+          <v-icon size="48" color="primary" class="mb-4" style="opacity: 0.4"
+            >mdi-swap-horizontal</v-icon
+          >
           <div class="text-h6 font-weight-medium text-medium-emphasis">거래내역이 없습니다</div>
           <div class="text-body-2 text-disabled mt-1">거래 추가 버튼으로 첫 거래를 기록하세요.</div>
           <v-btn
@@ -372,7 +381,11 @@ onMounted(loadTransactions)
                     :class="item.transaction_type === 'BUY' ? 'type-buy' : 'type-sell'"
                   >
                     <v-icon size="16">
-                      {{ item.transaction_type === 'BUY' ? 'mdi-arrow-down-bold' : 'mdi-arrow-up-bold' }}
+                      {{
+                        item.transaction_type === 'BUY'
+                          ? 'mdi-arrow-down-bold'
+                          : 'mdi-arrow-up-bold'
+                      }}
                     </v-icon>
                   </div>
 
@@ -380,7 +393,9 @@ onMounted(loadTransactions)
                   <div class="flex-grow-1 min-width-0">
                     <div class="d-flex align-center justify-space-between mb-1">
                       <div class="d-flex align-center ga-1 flex-wrap">
-                        <span class="text-body-2 font-weight-bold">{{ item.portfolios?.ticker }}</span>
+                        <span class="text-body-2 font-weight-bold">{{
+                          item.portfolios?.ticker
+                        }}</span>
                         <v-chip
                           :color="assetTypeColor(item.portfolios?.asset_type)"
                           size="x-small"
@@ -403,10 +418,16 @@ onMounted(loadTransactions)
 
                     <div class="d-flex align-center ga-1 mb-1">
                       <span class="text-caption text-medium-emphasis">
-                        {{ item.quantity % 1 === 0 ? item.quantity : Number(item.quantity).toFixed(4) }}주
+                        {{
+                          item.quantity % 1 === 0
+                            ? item.quantity
+                            : Number(item.quantity).toFixed(4)
+                        }}주
                       </span>
                       <span class="text-caption text-disabled">×</span>
-                      <span class="text-caption text-medium-emphasis">{{ formatUnitPrice(item) }}</span>
+                      <span class="text-caption text-medium-emphasis">{{
+                        formatUnitPrice(item)
+                      }}</span>
                     </div>
 
                     <v-divider class="mb-2" />
@@ -433,24 +454,31 @@ onMounted(loadTransactions)
         </div>
       </template>
     </template>
-
   </v-container>
 
   <!-- 거래 추가 다이얼로그 -->
-  <TransactionAddDialog v-model="addDialog" :initial-type="filter === 'SELL' ? 'SELL' : 'BUY'" @saved="loadTransactions" />
+  <TransactionAddDialog
+    v-model="addDialog"
+    :initial-type="filter === 'SELL' ? 'SELL' : 'BUY'"
+    @saved="loadTransactions"
+  />
 
   <!-- 거래 수정 다이얼로그 -->
   <TransactionAddDialog
     v-model="editDialog"
-    :initial-data="selectedTx ? {
-      id: selectedTx.id,
-      portfolio_id: selectedTx.portfolio_id,
-      transaction_type: selectedTx.transaction_type as 'BUY' | 'SELL',
-      quantity: selectedTx.quantity,
-      unit_price: selectedTx.unit_price,
-      transaction_date: selectedTx.transaction_date,
-      memo: selectedTx.memo,
-    } : null"
+    :initial-data="
+      selectedTx
+        ? {
+            id: selectedTx.id,
+            portfolio_id: selectedTx.portfolio_id,
+            transaction_type: selectedTx.transaction_type as 'BUY' | 'SELL',
+            quantity: selectedTx.quantity,
+            unit_price: selectedTx.unit_price,
+            transaction_date: selectedTx.transaction_date,
+            memo: selectedTx.memo,
+          }
+        : null
+    "
     @saved="loadTransactions"
   />
 
@@ -484,7 +512,9 @@ onMounted(loadTransactions)
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(0, 0, 0, 0.07);
   border-radius: 20px;
-  transition: background 0.25s ease, border-color 0.25s ease;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease;
 }
 
 .stat-grid {
@@ -534,7 +564,9 @@ onMounted(loadTransactions)
   cursor: pointer;
   background: transparent;
   color: rgba(var(--v-theme-on-surface), 0.55);
-  transition: background 0.18s ease, color 0.18s ease;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
 }
 .filter-btn.active {
   background: rgb(var(--v-theme-surface));
@@ -542,7 +574,7 @@ onMounted(loadTransactions)
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
 .v-theme--dark .filter-btn.active {
-  background: rgba(0, 212, 184, 0.10);
+  background: rgba(0, 212, 184, 0.1);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
@@ -588,14 +620,20 @@ onMounted(loadTransactions)
   white-space: nowrap;
 }
 
-.text-teal { color: #009688 !important; }
+.text-teal {
+  color: #009688 !important;
+}
 
 .tx-card {
   border-left: 3px solid transparent !important;
   border-radius: 20px !important;
 }
-.border-buy-left { border-left-color: #009688 !important; }
-.border-sell-left { border-left-color: rgb(var(--v-theme-error)) !important; }
+.border-buy-left {
+  border-left-color: #009688 !important;
+}
+.border-sell-left {
+  border-left-color: rgb(var(--v-theme-error)) !important;
+}
 
 .tx-card-wrap {
   position: relative;
@@ -624,7 +662,9 @@ onMounted(loadTransactions)
   color: #fff;
   transition: filter 0.15s;
 }
-.action-btn:active { filter: brightness(0.9); }
+.action-btn:active {
+  filter: brightness(0.9);
+}
 .action-edit {
   background: #0e8a82;
   border-radius: 20px 0 0 20px;
@@ -645,5 +685,7 @@ onMounted(loadTransactions)
   border: 1px solid rgba(0, 0, 0, 0.07) !important;
 }
 
-.min-width-0 { min-width: 0; }
+.min-width-0 {
+  min-width: 0;
+}
 </style>
