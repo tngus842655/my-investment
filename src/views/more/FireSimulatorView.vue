@@ -25,16 +25,18 @@ const calcAsset = (C: number, M: number, annualPct: number, n: number) => {
   return C * Math.pow(1 + r, n) + (M * (Math.pow(1 + r, n) - 1)) / r
 }
 
-interface YearPoint {
-  year: number
+interface MonthPoint {
+  month: number  // 시작월로부터 경과 개월 수
+  year: number   // 해당 월의 연도 (레이블용)
   asset: number
 }
 
-function buildProjection(C: number, M: number, annualPct: number, T: number): YearPoint[] {
+function buildProjection(C: number, M: number, annualPct: number, T: number): MonthPoint[] {
   if (!C && !M) return []
   const r = annualPct / 100 / 12
   const now = new Date()
   const startYear = now.getFullYear()
+  const startMonth = now.getMonth() // 0-indexed
 
   let maxMonths = 360
   if (T > 0 && M > 0) {
@@ -49,13 +51,13 @@ function buildProjection(C: number, M: number, annualPct: number, T: number): Ye
     }
   }
 
-  const points: YearPoint[] = []
-  const endYear = startYear + Math.ceil(maxMonths / 12)
-  for (let y = startYear; y <= endYear; y++) {
-    const n = (y - startYear) * 12
+  const points: MonthPoint[] = []
+  for (let n = 0; n <= maxMonths; n++) {
     const asset = calcAsset(C, M, annualPct, n)
-    points.push({ year: y, asset: Math.round(asset) })
-    if (T > 0 && asset >= T && y > startYear) break
+    const absMonth = startMonth + n
+    const year = startYear + Math.floor(absMonth / 12)
+    points.push({ month: n, year, asset: Math.round(asset) })
+    if (T > 0 && asset >= T && n > 0) break
   }
   return points
 }
@@ -115,29 +117,29 @@ const chartData = computed(() => {
 
   const allPts = [...basePts, ...simPts]
   const maxY = Math.max(...allPts.map((p) => p.asset)) * 1.05
-  const minX = Math.min(...allPts.map((p) => p.year))
-  const maxX = Math.max(...allPts.map((p) => p.year))
+  const minM = 0
+  const maxM = Math.max(...allPts.map((p) => p.month))
 
-  const toX = (year: number) => PAD.left + ((year - minX) / Math.max(maxX - minX, 1)) * PW
+  const toX = (m: number) => PAD.left + ((m - minM) / Math.max(maxM - minM, 1)) * PW
   const toY = (asset: number) => PAD.top + PH - (asset / Math.max(maxY, 1)) * PH
 
-  function buildPath(pts: YearPoint[]) {
+  function buildPath(pts: MonthPoint[]) {
     if (pts.length < 2) return ''
     return pts.reduce((acc, pt, i) => {
-      const x = toX(pt.year)
+      const x = toX(pt.month)
       const y = toY(pt.asset)
       if (i === 0) return `M ${x},${y}`
       const prev = pts[i - 1]!
-      const cpx = (toX(prev.year) + x) / 2
+      const cpx = (toX(prev.month) + x) / 2
       return acc + ` C ${cpx},${toY(prev.asset)} ${cpx},${y} ${x},${y}`
     }, '')
   }
 
-  function buildFill(pts: YearPoint[], path: string) {
+  function buildFill(pts: MonthPoint[], path: string) {
     if (!path) return ''
     const first = pts[0]!
     const last = pts[pts.length - 1]!
-    return path + ` L ${toX(last.year)},${PAD.top + PH} L ${toX(first.year)},${PAD.top + PH} Z`
+    return path + ` L ${toX(last.month)},${PAD.top + PH} L ${toX(first.month)},${PAD.top + PH} Z`
   }
 
   const basePath = buildPath(basePts)
@@ -146,14 +148,23 @@ const chartData = computed(() => {
   // 목표선 Y
   const goalY = targetAsset.value > 0 ? toY(targetAsset.value) : null
 
-  // X축 레이블 (전체 범위 기준)
-  const allYears = [...new Set(allPts.map((p) => p.year))].sort()
-  const step = Math.max(1, Math.ceil(allYears.length / 5))
-  const xLabels = allYears.filter((_, i) => i % step === 0 || i === allYears.length - 1).map((y) => ({ x: toX(y), label: String(y) }))
+  // X축 레이블: 연도가 바뀌는 첫 번째 월 포인트를 기준으로 최대 5개
+  const seenYears = new Set<number>()
+  const yearTicks: { x: number; label: string }[] = []
+  for (const p of [...basePts, ...simPts].sort((a, b) => a.month - b.month)) {
+    if (!seenYears.has(p.year)) {
+      seenYears.add(p.year)
+      yearTicks.push({ x: toX(p.month), label: String(p.year) })
+    }
+  }
+  const tickStep = Math.max(1, Math.ceil(yearTicks.length / 5))
+  const xLabels = yearTicks.filter((_, i) => i % tickStep === 0 || i === yearTicks.length - 1)
 
   // 달성 포인트
-  const baseGoalPt = targetAsset.value > 0 ? basePts.find((p) => p.asset >= targetAsset.value) : null
-  const simGoalPt = targetAsset.value > 0 ? simPts.find((p) => p.asset >= targetAsset.value) : null
+  const baseGoalRaw = targetAsset.value > 0 ? basePts.find((p) => p.asset >= targetAsset.value) : null
+  const simGoalRaw = targetAsset.value > 0 ? simPts.find((p) => p.asset >= targetAsset.value) : null
+  const baseGoalPt = baseGoalRaw ? { x: toX(baseGoalRaw.month), y: toY(baseGoalRaw.asset) } : null
+  const simGoalPt = simGoalRaw ? { x: toX(simGoalRaw.month), y: toY(simGoalRaw.asset) } : null
 
   return {
     basePath,
@@ -162,8 +173,8 @@ const chartData = computed(() => {
     simFill: buildFill(simPts, simPath),
     goalY,
     xLabels,
-    baseGoalPt: baseGoalPt ? { x: toX(baseGoalPt.year), y: toY(baseGoalPt.asset) } : null,
-    simGoalPt: simGoalPt ? { x: toX(simGoalPt.year), y: toY(simGoalPt.asset) } : null,
+    baseGoalPt,
+    simGoalPt,
   }
 })
 
