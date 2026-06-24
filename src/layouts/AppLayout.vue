@@ -5,11 +5,11 @@ const router = useRouter()
 const route = useRoute()
 
 const tabs = [
-  { label: '홈', icon: 'mdi-home-outline', activeIcon: 'mdi-home', route: '/dashboard', img: null },
-  { label: '자산', icon: null, activeIcon: null, route: '/portfolio', img: '/icons/icon-asset.png' },
-  { label: '기록', icon: null, activeIcon: null, route: '/transactions', img: '/icons/icon-record.png' },
-  { label: '예측', icon: null, activeIcon: null, route: '/analysis', img: '/icons/icon-predict.png' },
-  { label: '더보기', icon: 'mdi-dots-horizontal', activeIcon: 'mdi-dots-horizontal', route: '/more', img: null },
+  { label: '홈', desc: '대시보드', icon: 'mdi-home-outline', activeIcon: 'mdi-home', route: '/dashboard', img: null },
+  { label: '자산', desc: '보유 자산 한눈에', icon: null, activeIcon: null, route: '/portfolio', img: '/icons/icon-asset.png' },
+  { label: '기록', desc: '매매 내역 관리', icon: null, activeIcon: null, route: '/transactions', img: '/icons/icon-record.png' },
+  { label: '예측', desc: '목표 달성 시점', icon: null, activeIcon: null, route: '/analysis', img: '/icons/icon-predict.png' },
+  { label: '더보기', desc: '설정 및 계정', icon: 'mdi-dots-horizontal', activeIcon: 'mdi-dots-horizontal', route: '/more', img: null },
 ]
 
 const isActive = (tabRoute: string) => route.path === tabRoute
@@ -31,9 +31,10 @@ const isActive = (tabRoute: string) => route.path === tabRoute
       >
         <div class="tab-icon-wrap" :class="{ 'tab-icon-active': isActive(tab.route) }">
           <img v-if="tab.img" :src="tab.img" class="tab-png-icon" :class="{ 'tab-png-active': isActive(tab.route) }" :alt="tab.label" />
-          <v-icon v-else size="20">{{ isActive(tab.route) ? tab.activeIcon : tab.icon }}</v-icon>
+          <v-icon v-else size="26">{{ isActive(tab.route) ? tab.activeIcon : tab.icon }}</v-icon>
         </div>
         <span class="bottom-nav-label">{{ tab.label }}</span>
+        <span class="bottom-nav-desc">{{ tab.desc }}</span>
       </button>
     </nav>
   </div>
@@ -49,7 +50,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
 
 .app-content {
   flex: 1;
-  padding-bottom: calc(68px + env(safe-area-inset-bottom));
+  padding-bottom: calc(84px + env(safe-area-inset-bottom));
   overflow-y: auto;
 }
 
@@ -58,7 +59,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   bottom: 0;
   left: 0;
   right: 0;
-  height: calc(60px + env(safe-area-inset-bottom));
+  height: calc(76px + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   display: flex;
   align-items: stretch;
@@ -79,13 +80,13 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
   background: none;
   border: none;
   cursor: pointer;
   color: rgba(var(--v-theme-on-surface), 0.35);
   transition: color 0.15s ease;
-  padding: 8px 0 4px;
+  padding: 10px 4px 6px;
 }
 
 .bottom-nav-item.active {
@@ -93,13 +94,14 @@ const isActive = (tabRoute: string) => route.path === tabRoute
 }
 
 .tab-icon-wrap {
-  width: 36px;
-  height: 24px;
+  width: 44px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: 14px;
   transition: background 0.15s ease;
+  margin-bottom: 2px;
 }
 
 .tab-icon-active {
@@ -110,15 +112,9 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   background: rgba(12, 168, 153, 0.12);
 }
 
-.bottom-nav-label {
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-}
-
 .tab-png-icon {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   object-fit: contain;
   opacity: 0.35;
   transition: opacity 0.15s ease;
@@ -126,5 +122,23 @@ const isActive = (tabRoute: string) => route.path === tabRoute
 
 .tab-png-active {
   opacity: 1;
+}
+
+.bottom-nav-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+.bottom-nav-desc {
+  font-size: 9px;
+  font-weight: 400;
+  opacity: 0.6;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60px;
 }
 </style>
