@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { getTickerLogo } from '@/services/tickerLogo'
+import { prefetchTickerLogos } from '@/services/tickerLogo'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import PortfolioAddDialog from './PortfolioAddDialog.vue'
@@ -177,12 +177,11 @@ const loadPortfolios = async () => {
     loading.value = false
   }
 
-  // 로고 비동기 fetch (로딩 완료 후)
-  portfolios.value.forEach(async (item) => {
-    if (item.asset_type === '현금') return
-    const url = await getTickerLogo(item.ticker, item.currency)
-    logoMap.value[item.ticker] = url
-  })
+  // 로고 fetch — 캐시 히트는 즉시 반영, 미스만 병렬 API 호출
+  prefetchTickerLogos(
+    portfolios.value.filter((item) => item.asset_type !== '현금'),
+    (ticker, url) => { logoMap.value[ticker] = url },
+  )
 }
 
 // ── 커스텀 드래그앤드롭 ───────────────────────────
