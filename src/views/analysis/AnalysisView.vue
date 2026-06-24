@@ -183,7 +183,10 @@ onMounted(loadData)
 <template>
   <v-container class="pa-4 pa-sm-6">
     <!-- 헤더 -->
-    <div class="text-h6 font-weight-bold mb-1">미래 예측</div>
+    <div class="d-flex align-center ga-2 mb-1">
+      <img src="/icons/icon-predict.png" class="header-icon" alt="예측" />
+      <div class="text-h6 font-weight-bold">미래 예측</div>
+    </div>
     <div class="text-body-2 text-medium-emphasis mb-5">FIRE 달성까지의 여정</div>
 
     <!-- 스켈레톤 -->
@@ -331,6 +334,13 @@ onMounted(loadData)
 </template>
 
 <style scoped>
+.header-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
 .glass-card {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(0, 0, 0, 0.07);

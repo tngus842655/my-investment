@@ -21,7 +21,10 @@ const logout = async () => {
 
 <template>
   <v-container class="pa-4 pa-sm-6">
-    <div class="text-h5 font-weight-bold mb-1">더보기</div>
+    <div class="d-flex align-center ga-2 mb-1">
+      <img src="/icons/icon-more.png" class="header-icon" alt="더보기" />
+      <div class="text-h5 font-weight-bold">더보기</div>
+    </div>
     <div class="text-body-2 text-medium-emphasis mb-6">설정 및 계정 관리</div>
 
     <div class="d-flex flex-column ga-2">
@@ -76,6 +79,13 @@ const logout = async () => {
 </template>
 
 <style scoped>
+.header-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
 .glass-card {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(0, 0, 0, 0.07);

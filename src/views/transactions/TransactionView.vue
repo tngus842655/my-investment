@@ -228,11 +228,14 @@ onMounted(loadTransactions)
   <v-container class="pa-4 pa-sm-6" @click.self="closeSwipe">
     <!-- 헤더 -->
     <div class="d-flex justify-space-between align-center mb-5">
-      <div>
-        <div class="text-h5 font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">
-          거래내역
+      <div class="d-flex align-center ga-2">
+        <img src="/icons/icon-record.png" class="header-icon" alt="기록" />
+        <div>
+          <div class="text-h5 font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">
+            거래내역
+          </div>
+          <div class="text-body-2 text-medium-emphasis">매수 / 매도 기록</div>
         </div>
-        <div class="text-body-2 text-medium-emphasis">매수 / 매도 기록</div>
       </div>
       <div class="d-flex ga-2 align-center">
         <v-btn
@@ -470,6 +473,13 @@ onMounted(loadTransactions)
 </template>
 
 <style scoped>
+.header-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
 .glass-card {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(0, 0, 0, 0.07);
