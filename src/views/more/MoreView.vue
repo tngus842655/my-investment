@@ -344,7 +344,7 @@ const logout = async () => {
 }
 .delete-account-btn {
   font-size: 12px;
-  color: rgba(var(--v-theme-error), 0.5);
+  color: rgba(var(--v-theme-on-surface), 0.4);
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
