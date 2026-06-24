@@ -26,17 +26,10 @@ const passwordRules = [
 const signUp = async () => {
   const { valid } = await form.value.validate()
   if (!valid) return
-
   loading.value = true
   try {
-    const { error } = await supabase.auth.signUp({
-      email: email.value,
-      password: password.value,
-    })
-    if (error) {
-      showMessage(getErrorMessage(error.code), 'warning')
-      return
-    }
+    const { error } = await supabase.auth.signUp({ email: email.value, password: password.value })
+    if (error) { showMessage(getErrorMessage(error.code), 'warning'); return }
     showMessage('회원가입이 완료되었습니다. 이메일 인증 후 로그인해주세요.', 'success')
   } finally {
     loading.value = false
@@ -46,21 +39,12 @@ const signUp = async () => {
 const signIn = async () => {
   const { valid } = await form.value.validate()
   if (!valid) return
-
   loading.value = true
   try {
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.value,
-      password: password.value,
-    })
-    if (error) {
-      showMessage(getErrorMessage(error.code), 'warning')
-      return
-    }
+    const { error } = await supabase.auth.signInWithPassword({ email: email.value, password: password.value })
+    if (error) { showMessage(getErrorMessage(error.code), 'warning'); return }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
     const [goalResult, assetResult] = await Promise.all([
@@ -68,97 +52,140 @@ const signIn = async () => {
       supabase.from('asset_summary').select('id').eq('user_id', user.id).maybeSingle(),
     ])
 
-    if (!goalResult.data || !assetResult.data) {
-      router.push('/goalSettings')
-      return
-    }
+    if (!goalResult.data || !assetResult.data) { router.push('/goalSettings'); return }
     router.push('/dashboard')
   } finally {
     loading.value = false
   }
 }
 
-const onKeydown = (e: KeyboardEvent) => {
-  if (e.key === 'Enter') signIn()
-}
+const onKeydown = (e: KeyboardEvent) => { if (e.key === 'Enter') signIn() }
 </script>
 
 <template>
-  <div class="fill-height d-flex align-center justify-center pa-4">
-    <div style="width: 100%; max-width: 400px">
-      <!-- 로고 -->
-      <div class="text-center mb-8">
-        <img
-          src="/icons/icon-192.png"
-          alt="MY INVESTMENT"
-          width="64"
-          height="64"
-          class="mx-auto mb-3 d-block"
-          style="border-radius: 16px"
-        />
-        <div class="text-h5 font-weight-bold">MY INVESTMENT</div>
-        <div class="text-body-2 text-medium-emphasis mt-1">나만의 FIRE 목표 관리 플랫폼</div>
+  <div class="login-wrap">
+    <div class="login-inner">
+      <!-- 브랜드 -->
+      <div class="text-center mb-10">
+        <div class="brand-icon mx-auto mb-4">
+          <v-icon size="32" color="primary">mdi-trending-up</v-icon>
+        </div>
+        <div class="brand-title">FIREPATH</div>
+        <div class="brand-sub mt-2">Financial Independence, Retire Early</div>
       </div>
 
-      <!-- 로그인 카드 -->
-      <v-card rounded="xl" elevation="0" border class="pa-2">
-        <v-card-text class="pa-4">
-          <v-form ref="form" @keydown="onKeydown">
-            <div class="field-label mb-1">이메일</div>
-            <v-text-field
-              v-model="email"
-              type="email"
-              :rules="emailRules"
-              placeholder="example@email.com"
-              variant="outlined"
-              density="comfortable"
-              class="mb-3"
-              hide-details="auto"
-              autocomplete="email"
-            />
-            <div class="field-label mb-1">비밀번호</div>
-            <v-text-field
-              v-model="password"
-              :type="showPassword ? 'text' : 'password'"
-              :rules="passwordRules"
-              placeholder="6자 이상 입력"
-              :append-inner-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
-              @click:append-inner="showPassword = !showPassword"
-              variant="outlined"
-              density="comfortable"
-              hide-details="auto"
-              autocomplete="current-password"
-            />
-          </v-form>
-        </v-card-text>
+      <!-- 폼 카드 -->
+      <div class="login-card">
+        <v-form ref="form" @keydown="onKeydown">
+          <div class="fp-label mb-2">이메일</div>
+          <v-text-field
+            v-model="email"
+            type="email"
+            :rules="emailRules"
+            placeholder="example@email.com"
+            variant="outlined"
+            density="comfortable"
+            class="mb-4"
+            hide-details="auto"
+            autocomplete="email"
+            bg-color="transparent"
+          />
+          <div class="fp-label mb-2">비밀번호</div>
+          <v-text-field
+            v-model="password"
+            :type="showPassword ? 'text' : 'password'"
+            :rules="passwordRules"
+            placeholder="6자 이상 입력"
+            :append-inner-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
+            @click:append-inner="showPassword = !showPassword"
+            variant="outlined"
+            density="comfortable"
+            hide-details="auto"
+            autocomplete="current-password"
+            bg-color="transparent"
+          />
+        </v-form>
 
-        <v-card-actions class="px-4 pb-4 pt-0 flex-column ga-2">
-          <v-btn
-            color="primary"
-            size="large"
-            rounded="lg"
-            block
-            elevation="0"
-            :loading="loading"
-            @click="signIn"
-          >
-            로그인
-          </v-btn>
-          <v-divider class="w-100 my-1" />
-          <v-btn variant="text" block size="default" :disabled="loading" @click="signUp">
-            회원가입
-          </v-btn>
-        </v-card-actions>
-      </v-card>
+        <v-btn
+          color="primary"
+          size="large"
+          rounded="lg"
+          block
+          elevation="0"
+          :loading="loading"
+          class="mt-6"
+          style="font-weight: 700; letter-spacing: 0.03em"
+          @click="signIn"
+        >
+          로그인
+        </v-btn>
+
+        <v-divider class="my-4" opacity="0.1" />
+
+        <v-btn
+          variant="text"
+          block
+          size="default"
+          :disabled="loading"
+          style="color: rgba(var(--v-theme-on-surface), 0.5)"
+          @click="signUp"
+        >
+          계정이 없으신가요? <span style="color: rgb(var(--v-theme-primary)); margin-left: 4px">회원가입</span>
+        </v-btn>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.login-wrap {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
 
-.field-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: rgba(var(--v-theme-on-surface), 0.6);
+.login-inner {
+  width: 100%;
+  max-width: 380px;
+}
+
+/* 브랜드 */
+.brand-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: rgba(0, 212, 184, 0.12);
+  border: 1px solid rgba(0, 212, 184, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.brand-sub {
+  font-size: 13px;
+  color: rgba(var(--v-theme-on-surface), 0.4);
+  letter-spacing: 0.02em;
+}
+
+/* 폼 카드 */
+.login-card {
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.06);
+  border-radius: 24px;
+  padding: 28px 24px;
+}
+
+.v-theme--dark .login-card {
+  border-color: rgba(0, 212, 184, 0.12);
 }
 </style>

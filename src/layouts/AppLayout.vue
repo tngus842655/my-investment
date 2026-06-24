@@ -5,11 +5,11 @@ const router = useRouter()
 const route = useRoute()
 
 const tabs = [
-  { label: '홈', icon: 'mdi-home', route: '/dashboard' },
-  { label: '자산', icon: 'mdi-chart-line', route: '/portfolio' },
-  { label: '기록', icon: 'mdi-swap-horizontal', route: '/transactions' },
-  { label: '예측', icon: 'mdi-chart-timeline-variant', route: '/analysis' },
-  { label: '더보기', icon: 'mdi-dots-horizontal', route: '/more' },
+  { label: '홈', icon: 'mdi-home-outline', activeIcon: 'mdi-home', route: '/dashboard' },
+  { label: '자산', icon: 'mdi-chart-line', activeIcon: 'mdi-chart-line', route: '/portfolio' },
+  { label: '기록', icon: 'mdi-swap-horizontal', activeIcon: 'mdi-swap-horizontal', route: '/transactions' },
+  { label: '예측', icon: 'mdi-chart-timeline-variant', activeIcon: 'mdi-chart-timeline-variant', route: '/analysis' },
+  { label: '더보기', icon: 'mdi-dots-horizontal', activeIcon: 'mdi-dots-horizontal', route: '/more' },
 ]
 
 const isActive = (tabRoute: string) => route.path === tabRoute
@@ -29,7 +29,9 @@ const isActive = (tabRoute: string) => route.path === tabRoute
         :class="{ active: isActive(tab.route) }"
         @click="router.push(tab.route)"
       >
-        <v-icon size="22">{{ tab.icon }}</v-icon>
+        <div class="tab-icon-wrap" :class="{ 'tab-icon-active': isActive(tab.route) }">
+          <v-icon size="20">{{ isActive(tab.route) ? tab.activeIcon : tab.icon }}</v-icon>
+        </div>
         <span class="bottom-nav-label">{{ tab.label }}</span>
       </button>
     </nav>
@@ -41,11 +43,12 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .app-content {
   flex: 1;
-  padding-bottom: 72px;
+  padding-bottom: calc(68px + env(safe-area-inset-bottom));
   overflow-y: auto;
 }
 
@@ -54,17 +57,19 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   bottom: 0;
   left: 0;
   right: 0;
-  height: 64px;
+  height: calc(60px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
   display: flex;
   align-items: stretch;
   background: rgb(var(--v-theme-surface));
-  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.06);
   z-index: 100;
-  padding-bottom: env(safe-area-inset-bottom);
+  backdrop-filter: blur(12px);
 }
 
 .v-theme--dark .bottom-nav {
-  border-top-color: rgba(93, 214, 207, 0.12);
+  background: rgba(15, 28, 53, 0.95);
+  border-top-color: rgba(0, 212, 184, 0.1);
 }
 
 .bottom-nav-item {
@@ -77,17 +82,31 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   background: none;
   border: none;
   cursor: pointer;
-  color: rgba(var(--v-theme-on-surface), 0.4);
+  color: rgba(var(--v-theme-on-surface), 0.35);
   transition: color 0.15s ease;
-  padding: 0;
+  padding: 8px 0 4px;
 }
 
 .bottom-nav-item.active {
   color: rgb(var(--v-theme-primary));
 }
 
-.bottom-nav-item:active {
-  opacity: 0.7;
+.tab-icon-wrap {
+  width: 36px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  transition: background 0.15s ease;
+}
+
+.tab-icon-active {
+  background: rgba(0, 212, 184, 0.12);
+}
+
+.v-theme--light .tab-icon-active {
+  background: rgba(12, 168, 153, 0.12);
 }
 
 .bottom-nav-label {
