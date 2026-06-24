@@ -147,7 +147,7 @@ const onChartLeave = () => { tooltip.value = null }
     </div>
 
     <template v-else>
-      <div v-if="history.length < 2" class="text-center py-12 text-medium-emphasis">
+      <div v-if="history.length < 1" class="text-center py-12 text-medium-emphasis">
         <v-icon size="48" class="mb-3">mdi-chart-timeline-variant</v-icon>
         <div class="text-body-2">아직 기록이 없어요.</div>
         <div class="text-caption mt-1">내일부터 달성률 변화를 확인할 수 있어요.</div>
@@ -191,7 +191,7 @@ const onChartLeave = () => { tooltip.value = null }
         <!-- 차트 -->
         <v-card rounded="xl" class="pa-4">
           <div v-if="!chartData" class="text-center text-caption text-medium-emphasis py-6">
-            해당 기간의 데이터가 없어요.
+            데이터가 2일 이상 쌓이면 차트가 표시돼요.
           </div>
           <svg
             v-else
