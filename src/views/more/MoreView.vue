@@ -138,6 +138,18 @@ const logout = async () => {
         <v-spacer />
         <v-icon size="16" style="color: rgba(var(--v-theme-on-surface), 0.35)">mdi-chevron-right</v-icon>
       </div>
+
+      <div class="menu-card glass-card pa-4 d-flex align-center ga-3 menu-disabled">
+        <div class="menu-icon menu-icon-error">
+          <v-icon size="18" color="error">mdi-account-remove-outline</v-icon>
+        </div>
+        <div>
+          <div class="text-body-2 font-weight-medium text-error">회원탈퇴</div>
+          <div class="text-caption text-medium-emphasis">계정 및 모든 데이터 삭제</div>
+        </div>
+        <v-spacer />
+        <v-chip size="x-small" color="error" variant="tonal">준비중</v-chip>
+      </div>
     </div>
   </v-container>
 
