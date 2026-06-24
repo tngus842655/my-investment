@@ -14,6 +14,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 2. GitHub MCP로 해당 브랜치 → `develop` PR 생성
 3. PR을 squash merge로 develop에 머지
 
+사용자가 "main에 반영" 이라고 말하면 아래 순서로 진행한다:
+1. 현재 작업 브랜치에 `git push -u origin <branch>`
+2. GitHub API(curl + $GITHUB_TOKEN) 또는 GitHub MCP로 해당 브랜치 → `main` PR 생성
+3. PR을 squash merge로 main에 머지
+4. **절대 `git push origin main` 직접 push 시도 금지** — main은 보호 브랜치라 항상 막힘
+
 ## 프로젝트 개요
 
 **MY INVESTMENT** - 개인 FIRE(Financial Independence, Retire Early) 목표 관리 PWA. 투자 포트폴리오 추적 및 목표 달성률을 확인하는 앱.
