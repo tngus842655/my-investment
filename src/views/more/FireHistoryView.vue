@@ -14,6 +14,7 @@ interface HistoryPoint {
 }
 
 const history = ref<HistoryPoint[]>([])
+const currentAsset = ref(0)
 const selectedPeriod = ref<'1M' | '3M' | '6M' | '1Y' | 'ALL'>('3M')
 const periods = [
   { label: '1개월', value: '1M' },
@@ -29,12 +30,13 @@ const tooltip = ref<{ x: number; y: number; pt: HistoryPoint } | null>(null)
 onMounted(async () => {
   try {
     await supabase.rpc('save_daily_asset_snapshot')
-    const { data, error } = await supabase
-      .from('asset_history')
-      .select('recorded_at, current_asset, progress_pct')
-      .order('recorded_at', { ascending: true })
-    if (error) throw error
-    history.value = data ?? []
+    const [historyResult, summaryResult] = await Promise.all([
+      supabase.from('asset_history').select('recorded_at, current_asset, progress_pct').order('recorded_at', { ascending: true }),
+      supabase.from('asset_summary').select('current_asset').maybeSingle(),
+    ])
+    if (historyResult.error) throw historyResult.error
+    history.value = historyResult.data ?? []
+    currentAsset.value = summaryResult.data?.current_asset ?? 0
   } catch {
     showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
   } finally {
@@ -170,8 +172,8 @@ const onChartLeave = () => { tooltip.value = null }
             </div>
           </v-card>
           <v-card rounded="xl" class="summary-card flex-1 pa-4 text-center">
-            <div class="text-caption text-medium-emphasis mb-1">최근 기록 자산</div>
-            <div class="text-h6 font-weight-bold">{{ formatAsset(lastPt?.current_asset ?? 0) }}</div>
+            <div class="text-caption text-medium-emphasis mb-1">현재 자산</div>
+            <div class="text-h6 font-weight-bold">{{ formatAsset(currentAsset) }}</div>
           </v-card>
         </div>
 
