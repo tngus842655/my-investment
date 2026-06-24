@@ -5,11 +5,11 @@ const router = useRouter()
 const route = useRoute()
 
 const tabs = [
-  { label: '홈', icon: 'mdi-home-outline', activeIcon: 'mdi-home', route: '/dashboard' },
-  { label: '자산', icon: 'mdi-chart-line', activeIcon: 'mdi-chart-line', route: '/portfolio' },
-  { label: '기록', icon: 'mdi-swap-horizontal', activeIcon: 'mdi-swap-horizontal', route: '/transactions' },
-  { label: '예측', icon: 'mdi-chart-timeline-variant', activeIcon: 'mdi-chart-timeline-variant', route: '/analysis' },
-  { label: '더보기', icon: 'mdi-dots-horizontal', activeIcon: 'mdi-dots-horizontal', route: '/more' },
+  { label: '홈', icon: 'mdi-home-outline', activeIcon: 'mdi-home', route: '/dashboard', img: null },
+  { label: '자산', icon: null, activeIcon: null, route: '/portfolio', img: '/icons/icon-asset.png' },
+  { label: '기록', icon: null, activeIcon: null, route: '/transactions', img: '/icons/icon-record.png' },
+  { label: '예측', icon: null, activeIcon: null, route: '/analysis', img: '/icons/icon-predict.png' },
+  { label: '더보기', icon: 'mdi-dots-horizontal', activeIcon: 'mdi-dots-horizontal', route: '/more', img: null },
 ]
 
 const isActive = (tabRoute: string) => route.path === tabRoute
@@ -30,7 +30,8 @@ const isActive = (tabRoute: string) => route.path === tabRoute
         @click="router.push(tab.route)"
       >
         <div class="tab-icon-wrap" :class="{ 'tab-icon-active': isActive(tab.route) }">
-          <v-icon size="20">{{ isActive(tab.route) ? tab.activeIcon : tab.icon }}</v-icon>
+          <img v-if="tab.img" :src="tab.img" class="tab-png-icon" :class="{ 'tab-png-active': isActive(tab.route) }" :alt="tab.label" />
+          <v-icon v-else size="20">{{ isActive(tab.route) ? tab.activeIcon : tab.icon }}</v-icon>
         </div>
         <span class="bottom-nav-label">{{ tab.label }}</span>
       </button>
@@ -113,5 +114,17 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.01em;
+}
+
+.tab-png-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  opacity: 0.35;
+  transition: opacity 0.15s ease;
+}
+
+.tab-png-active {
+  opacity: 1;
 }
 </style>
