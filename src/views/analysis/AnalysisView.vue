@@ -336,9 +336,6 @@ onMounted(loadData)
   border: 1px solid rgba(0, 0, 0, 0.07);
   border-radius: 20px;
 }
-.v-theme--dark .glass-card {
-  border-color: rgba(93, 214, 207, 0.15);
-}
 
 .remain-badge {
   display: flex;
@@ -376,9 +373,6 @@ onMounted(loadData)
   border: 1px solid rgba(0, 0, 0, 0.07);
   border-radius: 16px;
   padding: 16px;
-}
-.v-theme--dark .stat-card {
-  border-color: rgba(93, 214, 207, 0.15);
 }
 .stat-label {
   font-size: 11px;

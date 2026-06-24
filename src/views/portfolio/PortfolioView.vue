@@ -697,10 +697,6 @@ onUnmounted(() => {
     border-color 0.25s ease;
 }
 
-.v-theme--dark .glass-card {
-  background: rgb(var(--v-theme-surface));
-  border-color: rgba(93, 214, 207, 0.15);
-}
 
 .ticker-sub {
   font-size: 11px;
@@ -804,9 +800,5 @@ onUnmounted(() => {
 .glass-dialog {
   background: rgb(var(--v-theme-surface)) !important;
   border: 1px solid rgba(0, 0, 0, 0.07) !important;
-}
-.v-theme--dark .glass-dialog {
-  background: rgba(13, 46, 45, 0.92) !important;
-  border-color: rgba(79, 200, 194, 0.2) !important;
 }
 </style>

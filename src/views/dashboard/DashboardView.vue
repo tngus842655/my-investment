@@ -316,17 +316,11 @@ onMounted(loadDashboard)
   border-radius: 20px;
   transition: background 0.25s ease, border-color 0.25s ease;
 }
-.v-theme--dark .glass-card {
-  border-color: rgba(93, 214, 207, 0.15);
-}
 
 .glass-btn {
   background: rgb(var(--v-theme-surface)) !important;
   border-color: rgba(var(--v-theme-on-surface), 0.15) !important;
   color: rgb(var(--v-theme-on-surface)) !important;
-}
-.v-theme--dark .glass-btn {
-  border-color: rgba(93, 214, 207, 0.25) !important;
 }
 
 .field-label {
@@ -391,9 +385,6 @@ onMounted(loadDashboard)
   border: 1px solid rgba(0, 0, 0, 0.07);
   border-radius: 16px;
   padding: 16px;
-}
-.v-theme--dark .stat-card {
-  border-color: rgba(93, 214, 207, 0.15);
 }
 .stat-label {
   font-size: 11px;

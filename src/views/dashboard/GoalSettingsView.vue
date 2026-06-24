@@ -341,10 +341,6 @@ onMounted(loadData)
     border-color 0.25s ease;
 }
 
-.v-theme--dark .glass-card {
-  background: rgb(var(--v-theme-surface));
-  border-color: rgba(93, 214, 207, 0.15);
-}
 
 .field-label {
   font-size: 12px;

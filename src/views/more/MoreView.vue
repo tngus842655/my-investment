@@ -81,9 +81,6 @@ const logout = async () => {
   border: 1px solid rgba(0, 0, 0, 0.07);
   border-radius: 20px;
 }
-.v-theme--dark .glass-card {
-  border-color: rgba(93, 214, 207, 0.15);
-}
 .menu-icon {
   width: 38px;
   height: 38px;
@@ -103,9 +100,5 @@ const logout = async () => {
 }
 .glass-dialog {
   background: rgb(var(--v-theme-surface)) !important;
-}
-.v-theme--dark .glass-dialog {
-  background: rgba(13, 46, 45, 0.92) !important;
-  border-color: rgba(79, 200, 194, 0.2) !important;
 }
 </style>

@@ -412,7 +412,7 @@ const reset = (closeDialog = true) => {
   -webkit-backdrop-filter: blur(16px) !important;
 }
 .v-theme--dark .glass-dialog {
-  background: rgba(13, 46, 45, 0.92) !important;
+  background: rgba(8, 15, 30, 0.92) !important;
   border-color: rgba(79, 200, 194, 0.2) !important;
 }
 
