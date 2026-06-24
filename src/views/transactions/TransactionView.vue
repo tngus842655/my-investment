@@ -431,15 +431,6 @@ onMounted(loadTransactions)
       </template>
     </template>
 
-    <v-btn
-      class="mt-4"
-      variant="text"
-      prepend-icon="mdi-arrow-left"
-      style="color: rgba(var(--v-theme-on-surface), 0.7)"
-      @click="router.back()"
-    >
-      뒤로가기
-    </v-btn>
   </v-container>
 
   <!-- 거래 추가 다이얼로그 -->

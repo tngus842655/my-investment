@@ -660,15 +660,6 @@ onUnmounted(() => {
       </TransitionGroup>
     </template>
 
-    <v-btn
-      class="mt-4"
-      variant="text"
-      prepend-icon="mdi-arrow-left"
-      style="color: rgba(var(--v-theme-on-surface), 0.7)"
-      @click="router.back()"
-    >
-      뒤로가기
-    </v-btn>
   </v-container>
 
   <PortfolioAddDialog v-model="dialog" @saved="loadPortfolios" />

@@ -3,9 +3,12 @@ import { supabase } from '@/services/supabase'
 
 import LoginView from '@/views/auth/LoginView.vue'
 import GoalSettingsView from '@/views/dashboard/GoalSettingsView.vue'
+import AppLayout from '@/layouts/AppLayout.vue'
 import DashboardView from '@/views/dashboard/DashboardView.vue'
 import PortfolioView from '@/views/portfolio/PortfolioView.vue'
 import TransactionView from '@/views/transactions/TransactionView.vue'
+import AnalysisView from '@/views/analysis/AnalysisView.vue'
+import MoreView from '@/views/more/MoreView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -22,22 +25,36 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: '/dashboard',
-      name: 'dashboard',
-      component: DashboardView,
+      path: '/',
+      component: AppLayout,
       meta: { requiresAuth: true, requiresGoal: true },
-    },
-    {
-      path: '/portfolio',
-      name: 'portfolio',
-      component: PortfolioView,
-      meta: { requiresAuth: true, requiresGoal: true },
-    },
-    {
-      path: '/transactions',
-      name: 'transactions',
-      component: TransactionView,
-      meta: { requiresAuth: true, requiresGoal: true },
+      children: [
+        {
+          path: 'dashboard',
+          name: 'dashboard',
+          component: DashboardView,
+        },
+        {
+          path: 'portfolio',
+          name: 'portfolio',
+          component: PortfolioView,
+        },
+        {
+          path: 'transactions',
+          name: 'transactions',
+          component: TransactionView,
+        },
+        {
+          path: 'analysis',
+          name: 'analysis',
+          component: AnalysisView,
+        },
+        {
+          path: 'more',
+          name: 'more',
+          component: MoreView,
+        },
+      ],
     },
   ],
 })
@@ -79,4 +96,3 @@ export const invalidateGoalCache = () => {
 }
 
 export default router
-

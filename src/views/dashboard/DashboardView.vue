@@ -5,10 +5,8 @@ import { supabase } from '@/services/supabase'
 
 import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
-import { useAppTheme } from '@/composables/useAppTheme'
 
 const router = useRouter()
-const { isDark, toggleTheme } = useAppTheme()
 const loading = ref(true)
 
 const targetAsset = ref(0)
@@ -16,8 +14,6 @@ const currentAsset = ref(0)
 const monthlyInvestment = ref(0)
 const targetDate = ref('')
 const annualReturn = ref<number | null>(null)
-const confirmDialog = ref(false)
-
 const progressRate = computed(() => {
   if (!targetAsset.value) return 0
   return Math.round((currentAsset.value / targetAsset.value) * 100)
@@ -88,15 +84,6 @@ const loadDashboard = async () => {
   }
 }
 
-const logout = async () => {
-  const { error } = await supabase.auth.signOut()
-  if (error) {
-    showMessage('로그아웃 중 오류가 발생했습니다.', 'error')
-    return
-  }
-  router.replace('/')
-}
-
 onMounted(loadDashboard)
 </script>
 
@@ -104,42 +91,16 @@ onMounted(loadDashboard)
   <v-container class="pa-4 pa-sm-6">
     <!-- 헤더 -->
     <div class="d-flex justify-space-between align-center mb-6">
-      <img
-        src="/icons/icon-192.png"
-        alt="MY INVESTMENT"
-        width="44"
-        height="44"
-        style="border-radius: 12px"
+      <div class="text-h6 font-weight-bold">FIREPATH</div>
+      <v-btn
+        icon="mdi-pencil-outline"
+        variant="outlined"
+        size="small"
+        rounded="circle"
+        elevation="0"
+        class="glass-btn"
+        @click="router.push('/goalSettings')"
       />
-      <div class="d-flex ga-2">
-        <v-btn
-          :icon="isDark() ? 'mdi-weather-sunny' : 'mdi-weather-night'"
-          variant="outlined"
-          size="small"
-          rounded="circle"
-          elevation="0"
-          class="glass-btn"
-          @click="toggleTheme"
-        />
-        <v-btn
-          icon="mdi-pencil-outline"
-          variant="outlined"
-          size="small"
-          rounded="circle"
-          elevation="0"
-          class="glass-btn"
-          @click="router.push('/goalSettings')"
-        />
-        <v-btn
-          icon="mdi-logout"
-          variant="outlined"
-          size="small"
-          rounded="circle"
-          elevation="0"
-          class="glass-btn"
-          @click="confirmDialog = true"
-        />
-      </div>
     </div>
 
     <!-- 스켈레톤 로딩 -->
@@ -256,60 +217,9 @@ onMounted(loadDashboard)
         </template>
       </div>
 
-      <!-- 섹션 라벨 -->
-      <div class="section-eyebrow mb-2">메뉴</div>
-
-      <!-- 메뉴 리스트 -->
-      <div class="d-flex flex-column ga-2">
-        <div
-          class="glass-card menu-card pa-4 d-flex align-center ga-3"
-          @click="router.push('/portfolio')"
-        >
-          <div class="menu-icon">
-            <v-icon size="18" color="primary">mdi-chart-line</v-icon>
-          </div>
-          <div>
-            <div class="text-body-2 font-weight-medium">보유자산 관리</div>
-            <div class="text-caption text-medium-emphasis">실시간 평가금액 및 수익률 확인</div>
-          </div>
-          <v-spacer />
-          <v-icon size="16" style="color: rgba(var(--v-theme-on-surface), 0.35)"
-            >mdi-chevron-right</v-icon
-          >
-        </div>
-
-        <div
-          class="glass-card menu-card pa-4 d-flex align-center ga-3"
-          @click="router.push('/transactions')"
-        >
-          <div class="menu-icon">
-            <v-icon size="18" color="primary">mdi-swap-horizontal</v-icon>
-          </div>
-          <div>
-            <div class="text-body-2 font-weight-medium">거래내역 관리</div>
-            <div class="text-caption text-medium-emphasis">매수/매도 내역 기록 및 조회</div>
-          </div>
-          <v-spacer />
-          <v-icon size="16" style="color: rgba(var(--v-theme-on-surface), 0.35)">mdi-chevron-right</v-icon>
-        </div>
-      </div>
     </template>
   </v-container>
 
-  <!-- 로그아웃 확인 다이얼로그 -->
-  <v-dialog v-model="confirmDialog" max-width="320">
-    <v-card rounded="xl" class="glass-dialog">
-      <v-card-title class="text-center pt-6">로그아웃</v-card-title>
-      <v-card-text class="text-center text-medium-emphasis">
-        정말 로그아웃 하시겠습니까?
-      </v-card-text>
-      <v-divider />
-      <v-card-actions>
-        <v-btn variant="text" block @click="confirmDialog = false">취소</v-btn>
-        <v-btn color="error" block @click="logout">로그아웃</v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
 </template>
 
 <style scoped>
