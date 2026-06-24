@@ -149,8 +149,8 @@ const onChartLeave = () => { tooltip.value = null }
     <template v-else>
       <div v-if="history.length < 2" class="text-center py-12 text-medium-emphasis">
         <v-icon size="48" class="mb-3">mdi-chart-timeline-variant</v-icon>
-        <div class="text-body-2">데이터가 아직 부족해요.</div>
-        <div class="text-caption mt-1">매일 접속하면 히스토리가 쌓여요!</div>
+        <div class="text-body-2">아직 기록이 없어요.</div>
+        <div class="text-caption mt-1">내일부터 달성률 변화를 확인할 수 있어요.</div>
       </div>
 
       <template v-else>
