@@ -242,6 +242,30 @@ onMounted(loadDashboard)
         </div>
       </div>
 
+      <!-- 퀵 액션 카드 -->
+      <div class="quick-grid mb-3">
+        <button class="quick-card" @click="router.push('/goalSettings')">
+          <img src="/icons/icon-goal.png" alt="목표 설정" class="quick-icon" />
+          <div class="quick-title">목표 설정</div>
+          <div class="quick-desc">FIRE 목표의 계획</div>
+        </button>
+        <button class="quick-card" @click="router.push('/portfolio')">
+          <img src="/icons/icon-asset.png" alt="자산 관리" class="quick-icon" />
+          <div class="quick-title">자산 관리</div>
+          <div class="quick-desc">보유 자산 한눈에</div>
+        </button>
+        <button class="quick-card" @click="router.push('/transactions')">
+          <img src="/icons/icon-record.png" alt="투자 기록" class="quick-icon" />
+          <div class="quick-title">투자 기록</div>
+          <div class="quick-desc">매매 내역 관리</div>
+        </button>
+        <button class="quick-card" @click="router.push('/analysis')">
+          <img src="/icons/icon-predict.png" alt="미래 예측" class="quick-icon" />
+          <div class="quick-title">미래 예측</div>
+          <div class="quick-desc">목표 달성 시점 예측</div>
+        </button>
+      </div>
+
       <!-- 투자 현황 미니 리스트 -->
       <div class="glass-card pa-4">
         <div class="d-flex justify-space-between align-center mb-3">
@@ -469,5 +493,42 @@ onMounted(loadDashboard)
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
   white-space: nowrap;
+}
+
+/* 퀵 액션 */
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.quick-card {
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 16px;
+  padding: 14px 6px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  text-align: center;
+}
+.quick-card:active { opacity: 0.7; }
+.quick-icon {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+.quick-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+  line-height: 1.2;
+}
+.quick-desc {
+  font-size: 9px;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+  line-height: 1.3;
 }
 </style>
