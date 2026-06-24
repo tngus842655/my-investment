@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { getTickerLogo } from '@/services/tickerLogo'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import PortfolioAddDialog from './PortfolioAddDialog.vue'
@@ -23,6 +24,7 @@ interface PortfolioViewItem extends PortfolioAsset {
 }
 
 const portfolios = ref<PortfolioViewItem[]>([])
+const logoMap = ref<Record<string, string | null>>({})
 const exchangeRate = ref<number | null>(null)
 
 // ── 스와이프 상태 ─────────────────────────────────
@@ -174,6 +176,13 @@ const loadPortfolios = async () => {
   } finally {
     loading.value = false
   }
+
+  // 로고 비동기 fetch (로딩 완료 후)
+  portfolios.value.forEach(async (item) => {
+    if (item.asset_type === '현금') return
+    const url = await getTickerLogo(item.ticker, item.currency)
+    logoMap.value[item.ticker] = url
+  })
 }
 
 // ── 커스텀 드래그앤드롭 ───────────────────────────
@@ -567,6 +576,18 @@ onUnmounted(() => {
                 >
                   mdi-drag-vertical
                 </v-icon>
+                <!-- 로고 -->
+                <div class="ticker-logo-wrap">
+                  <img
+                    v-if="logoMap[item.ticker]"
+                    :src="logoMap[item.ticker]!"
+                    class="ticker-logo"
+                    :alt="item.ticker"
+                  />
+                  <v-icon v-else size="20" :color="assetTypeColor(item.asset_type)">
+                    {{ item.currency === 'KRW' ? 'mdi-flag' : 'mdi-chart-line' }}
+                  </v-icon>
+                </div>
                 <div>
                   <template v-if="item.asset_type === '현금'">
                     <span class="text-body-1 font-weight-bold">보유현금</span>
@@ -677,6 +698,23 @@ onUnmounted(() => {
     border-color 0.25s ease;
 }
 
+
+.ticker-logo-wrap {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(var(--v-theme-on-surface), 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.ticker-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
 
 .ticker-sub {
   font-size: 11px;
