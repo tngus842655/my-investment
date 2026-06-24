@@ -116,14 +116,16 @@ onMounted(loadDashboard)
     <!-- 헤더 -->
     <div class="d-flex justify-space-between align-center mb-6">
       <div class="d-flex align-center ga-2">
-        <video
-          src="/icons/icon-rocket.mp4"
-          class="header-logo"
-          autoplay
-          loop
-          muted
-          playsinline
-        />
+        <div class="header-logo-wrap">
+          <video
+            src="/icons/icon-rocket.mp4"
+            class="header-logo"
+            autoplay
+            loop
+            muted
+            playsinline
+          />
+        </div>
         <div class="text-h6 font-weight-bold">FIREPATH</div>
       </div>
       <button class="icon-btn" @click="router.push('/goalSettings')">
@@ -314,11 +316,22 @@ onMounted(loadDashboard)
 </template>
 
 <style scoped>
+.header-logo-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
 .header-logo {
   width: 32px;
   height: 32px;
   object-fit: contain;
-  mix-blend-mode: screen;
 }
 
 .glass-card {
