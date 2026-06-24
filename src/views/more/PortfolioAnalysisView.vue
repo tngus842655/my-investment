@@ -122,10 +122,7 @@ onMounted(loadData)
   <v-container class="pa-4 pa-sm-6">
     <!-- 헤더 -->
     <div class="d-flex align-center ga-2 mb-6">
-      <button class="back-btn" @click="router.back()">
-        <v-icon size="22">mdi-arrow-left</v-icon>
-      </button>
-      <div>
+      <v-btn icon="mdi-arrow-left" variant="text" size="small" class="mr-1" style="color: rgb(var(--v-theme-on-surface))" @click="router.back()" />      <div>
         <div class="text-h5 font-weight-bold">포트폴리오 분석</div>
         <div class="text-body-2 text-medium-emphasis">종목별 비중 분석</div>
       </div>
@@ -218,19 +215,6 @@ onMounted(loadData)
 </template>
 
 <style scoped>
-.back-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-  border: none;
-  background: rgba(var(--v-theme-on-surface), 0.06);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: rgb(var(--v-theme-on-surface));
-  flex-shrink: 0;
-}
 
 .toggle-row {
   display: flex;
