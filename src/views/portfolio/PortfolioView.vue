@@ -585,7 +585,21 @@ onUnmounted(() => {
                   }"
                 >
                   <img
-                    v-if="logoMap[item.ticker]"
+                    v-if="item.asset_type === '현금' && item.ticker === 'CASH_USD'"
+                    src="/icons/icon-dollar.png"
+                    class="ticker-logo"
+                    alt="달러현금"
+                    style="mix-blend-mode: multiply"
+                  />
+                  <img
+                    v-else-if="item.asset_type === '현금'"
+                    src="/icons/icon-won.png"
+                    class="ticker-logo"
+                    alt="원화현금"
+                    style="mix-blend-mode: multiply"
+                  />
+                  <img
+                    v-else-if="logoMap[item.ticker]"
                     :src="logoMap[item.ticker]!"
                     class="ticker-logo"
                     :alt="item.ticker"
@@ -596,7 +610,7 @@ onUnmounted(() => {
                 </div>
                 <div>
                   <template v-if="item.asset_type === '현금'">
-                    <span class="text-body-1 font-weight-bold">보유현금</span>
+                    <span class="text-body-1 font-weight-bold">{{ getTickerLabel(item.ticker).name }}</span>
                   </template>
                   <template v-else-if="getTickerLabel(item.ticker).showTicker">
                     <span class="text-body-1 font-weight-bold">{{
@@ -622,7 +636,14 @@ onUnmounted(() => {
             <!-- 현금 카드 -->
             <template v-if="item.asset_type === '현금'">
               <div class="text-body-2 font-weight-bold text-primary mt-1">
-                {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원
+                <template v-if="item.currency === 'USD'">
+                  ${{ formatPrice(item.avg_price * item.quantity, 'USD') }}
+                  <span class="compact-sep ml-1">·</span>
+                  <span class="compact-label ml-1">{{ formatKrw(item.evaluationAmountKrw ?? 0) }}원</span>
+                </template>
+                <template v-else>
+                  {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원
+                </template>
               </div>
             </template>
 
@@ -728,7 +749,7 @@ onUnmounted(() => {
   background: #fff3e0;
 }
 .logo-text {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 800;
   letter-spacing: -0.5px;
 }
