@@ -112,18 +112,6 @@ const logout = async () => {
     <!-- 설정 섹션 -->
     <div class="section-label mb-2">설정</div>
     <div class="d-flex flex-column ga-2 mb-5">
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3 menu-disabled">
-        <div class="menu-icon">
-          <v-icon size="18" color="primary">mdi-cloud-outline</v-icon>
-        </div>
-        <div>
-          <div class="text-body-2 font-weight-medium">백업 및 복원</div>
-          <div class="text-caption text-medium-emphasis">데이터 백업 및 복원</div>
-        </div>
-        <v-spacer />
-        <v-chip size="x-small" color="primary" variant="tonal">준비중</v-chip>
-      </div>
-
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="toggleTheme">
         <div class="menu-icon">
           <v-icon size="18" color="primary">{{ isDark() ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
