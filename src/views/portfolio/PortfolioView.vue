@@ -577,16 +577,22 @@ onUnmounted(() => {
                   mdi-drag-vertical
                 </v-icon>
                 <!-- 로고 -->
-                <div class="ticker-logo-wrap">
+                <div
+                  class="ticker-logo-wrap"
+                  :class="{
+                    'logo-bg-etf': item.asset_type === 'ETF' && !logoMap[item.ticker],
+                    'logo-bg-kr': item.currency === 'KRW' && item.asset_type !== '현금',
+                  }"
+                >
                   <img
                     v-if="logoMap[item.ticker]"
                     :src="logoMap[item.ticker]!"
                     class="ticker-logo"
                     :alt="item.ticker"
                   />
-                  <v-icon v-else size="20" :color="assetTypeColor(item.asset_type)">
-                    {{ item.currency === 'KRW' ? 'mdi-flag' : 'mdi-chart-line' }}
-                  </v-icon>
+                  <span v-else-if="item.asset_type === 'ETF'" class="logo-text logo-text-etf">E</span>
+                  <span v-else-if="item.currency === 'KRW' && item.asset_type !== '현금'" class="logo-text logo-text-kr">국</span>
+                  <v-icon v-else size="20" :color="assetTypeColor(item.asset_type)">mdi-chart-line</v-icon>
                 </div>
                 <div>
                   <template v-if="item.asset_type === '현금'">
@@ -714,6 +720,23 @@ onUnmounted(() => {
   width: 28px;
   height: 28px;
   object-fit: contain;
+}
+.logo-bg-etf {
+  background: #e8f4ff;
+}
+.logo-bg-kr {
+  background: #fff3e0;
+}
+.logo-text {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+.logo-text-etf {
+  color: #1565c0;
+}
+.logo-text-kr {
+  color: #e65100;
 }
 
 .ticker-sub {
