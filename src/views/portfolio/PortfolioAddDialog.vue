@@ -220,7 +220,7 @@ const save = async () => {
       if (existing) {
         const label =
           assetType.value === '현금'
-            ? currency.value === 'USD' ? '달러현금' : '원화현금'
+            ? currency.value === 'USD' ? '현금(달러)' : '현금(원화)'
             : tickerToSave
         showMessage(`${label} 종목이 이미 등록되어 있습니다.`, 'warning')
         saving.value = false
