@@ -8,7 +8,7 @@ import type { PortfolioAsset } from '@/types/portfolio'
 import { showMessage } from '@/composables/useSnackbar'
 import { getStockPrice } from '@/services/market'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
-import { getTickerLabel } from '@/utils/tickerNames'
+import { getTickerLabel, isEtfTicker } from '@/utils/tickerNames'
 
 const router = useRouter()
 const loading = ref(false)
@@ -580,8 +580,8 @@ onUnmounted(() => {
                 <div
                   class="ticker-logo-wrap"
                   :class="{
-                    'logo-bg-etf': item.asset_type === 'ETF' && !logoMap[item.ticker],
-                    'logo-bg-kr': item.currency === 'KRW' && item.asset_type !== '현금',
+                    'logo-bg-etf': (item.asset_type === 'ETF' || isEtfTicker(item.ticker)) && !logoMap[item.ticker],
+                    'logo-bg-kr': item.currency === 'KRW' && item.asset_type !== '현금' && !isEtfTicker(item.ticker),
                   }"
                 >
                   <img
@@ -590,7 +590,7 @@ onUnmounted(() => {
                     class="ticker-logo"
                     :alt="item.ticker"
                   />
-                  <span v-else-if="item.asset_type === 'ETF'" class="logo-text logo-text-etf">E</span>
+                  <span v-else-if="item.asset_type === 'ETF' || isEtfTicker(item.ticker)" class="logo-text logo-text-etf">E</span>
                   <span v-else-if="item.currency === 'KRW' && item.asset_type !== '현금'" class="logo-text logo-text-kr">국</span>
                   <v-icon v-else size="20" :color="assetTypeColor(item.asset_type)">mdi-chart-line</v-icon>
                 </div>
@@ -728,7 +728,7 @@ onUnmounted(() => {
   background: #fff3e0;
 }
 .logo-text {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: -0.5px;
 }
