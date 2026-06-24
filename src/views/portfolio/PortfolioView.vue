@@ -94,7 +94,9 @@ const loadPortfolios = async () => {
         .select('portfolio_id, transaction_type, quantity, unit_price, exchange_rate')
         .eq('user_id', user.id),
       ...items.map((item) =>
-        getStockPrice(item.ticker, item.asset_type, item.currency).catch(() => null),
+        item.asset_type === '현금'
+          ? Promise.resolve(null)
+          : getStockPrice(item.ticker, item.asset_type, item.currency).catch(() => null),
       ),
     ])
 
