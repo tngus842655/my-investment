@@ -43,11 +43,14 @@ const tickerConfig = computed(() => {
   }
 })
 
-const currencyLocked = computed(() => ['해외주식', '국내주식'].includes(assetType.value))
+const currencyLocked = computed(() =>
+  ['해외주식', '국내주식'].includes(assetType.value) || (isEditMode.value && assetType.value === '현금'),
+)
 
 const currencyHint = computed(() => {
   if (assetType.value === '해외주식') return '해외주식은 USD로 고정됩니다'
   if (assetType.value === '국내주식') return '국내주식은 KRW로 고정됩니다'
+  if (assetType.value === '현금' && isEditMode.value) return '현금 통화는 수정할 수 없습니다'
   if (assetType.value === '현금') return '원화(KRW)와 달러(USD) 현금은 각각 따로 관리됩니다'
   if (assetType.value === '암호화폐') return '업비트 등 KRW 거래소는 KRW, 바이낸스 등은 USD'
   return ''
@@ -103,6 +106,7 @@ const loadInitialTx = async (portfolioId: string) => {
 }
 
 watch(assetType, (newType) => {
+  if (isEditMode.value) return
   if (newType === '해외주식') currency.value = 'USD'
   else if (newType === '국내주식') currency.value = 'KRW'
   else if (newType === '현금') currency.value = 'KRW'

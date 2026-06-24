@@ -12,6 +12,7 @@ import MoreView from '@/views/more/MoreView.vue'
 import PortfolioAnalysisView from '@/views/more/PortfolioAnalysisView.vue'
 import BadgesView from '@/views/more/BadgesView.vue'
 import FireSimulatorView from '@/views/more/FireSimulatorView.vue'
+import FireHistoryView from '@/views/more/FireHistoryView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -71,6 +72,11 @@ const router = createRouter({
           path: 'fire-simulator',
           name: 'fireSimulator',
           component: FireSimulatorView,
+        },
+        {
+          path: 'fire-history',
+          name: 'fireHistory',
+          component: FireHistoryView,
         },
       ],
     },
