@@ -35,11 +35,8 @@ const deleteAccount = async () => {
   if (!deleteEmailValid.value) return
   deleteLoading.value = true
   try {
-    const { data: { session } } = await supabase.auth.getSession()
-    const res = await supabase.functions.invoke('delete-user', {
-      headers: { Authorization: `Bearer ${session?.access_token}` },
-    })
-    if (res.error) throw res.error
+    const { error } = await supabase.rpc('delete_user_account')
+    if (error) throw error
 
     await supabase.auth.signOut()
     showMessage('계정이 삭제되었습니다.', 'success')
