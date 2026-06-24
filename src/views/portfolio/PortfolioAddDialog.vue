@@ -43,9 +43,7 @@ const tickerConfig = computed(() => {
   }
 })
 
-const currencyLocked = computed(() =>
-  ['해외주식', '국내주식'].includes(assetType.value),
-)
+const currencyLocked = computed(() => ['해외주식', '국내주식'].includes(assetType.value))
 
 const currencyHint = computed(() => {
   if (assetType.value === '해외주식') return '해외주식은 USD로 고정됩니다'
@@ -220,9 +218,14 @@ const save = async () => {
       if (existing) {
         const label =
           assetType.value === '현금'
-            ? currency.value === 'USD' ? '현금(달러)' : '현금(원화)'
+            ? currency.value === 'USD'
+              ? '현금(달러)'
+              : '현금(원화)'
             : tickerToSave
-        const suffix = assetType.value === '현금' ? '이(가) 이미 등록되어 있습니다.' : ' 종목이 이미 등록되어 있습니다.'
+        const suffix =
+          assetType.value === '현금'
+            ? '이 이미 등록되어 있습니다.'
+            : ' 종목이 이미 등록되어 있습니다.'
         showMessage(`${label}${suffix}`, 'warning')
         saving.value = false
         return
