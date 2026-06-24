@@ -222,7 +222,8 @@ const save = async () => {
           assetType.value === '현금'
             ? currency.value === 'USD' ? '현금(달러)' : '현금(원화)'
             : tickerToSave
-        showMessage(`${label} 종목이 이미 등록되어 있습니다.`, 'warning')
+        const suffix = assetType.value === '현금' ? '이(가) 이미 등록되어 있습니다.' : ' 종목이 이미 등록되어 있습니다.'
+        showMessage(`${label}${suffix}`, 'warning')
         saving.value = false
         return
       }
