@@ -1,5 +1,4 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,24 +19,31 @@ Deno.serve(async (req) => {
       })
     }
 
-    const supabaseAdmin = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', { auth: { autoRefreshToken: false, persistSession: false } })
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-    // 요청한 유저 확인
-    const supabaseClient = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_ANON_KEY') ?? '', { global: { headers: { Authorization: authHeader } } })
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseClient.auth.getUser()
-    if (userError || !user) {
+    // 유저 정보 조회
+    const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { Authorization: authHeader, apikey: anonKey },
+    })
+    const userData = await userRes.json()
+    if (!userData.id) {
       return new Response(JSON.stringify({ error: '유저 정보를 가져올 수 없습니다.' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id)
-    if (deleteError) {
-      return new Response(JSON.stringify({ error: deleteError.message }), {
+    // Admin API로 유저 삭제
+    const deleteRes = await fetch(`${supabaseUrl}/auth/v1/admin/users/${userData.id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey },
+    })
+
+    if (!deleteRes.ok) {
+      const err = await deleteRes.json()
+      return new Response(JSON.stringify({ error: err.message ?? '삭제 실패' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
