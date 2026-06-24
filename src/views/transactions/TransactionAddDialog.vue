@@ -460,7 +460,7 @@ const reset = (closeDialog = true) => {
   border: 1px solid rgba(0, 0, 0, 0.07) !important;
 }
 .v-theme--dark .glass-dialog {
-  background: rgba(13, 46, 45, 0.97) !important;
+  background: rgba(8, 15, 30, 0.97) !important;
   border-color: rgba(79, 200, 194, 0.2) !important;
 }
 

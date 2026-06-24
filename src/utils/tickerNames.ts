@@ -179,7 +179,7 @@ export const TICKER_NAMES: Record<string, string> = {
   '133690': 'TIGER 나스닥100',
   '379800': 'KODEX 미국S&P500',
   '360750': 'TIGER 미국S&P500',
-  '381180': 'KODEX 미국나스닥100',
+  '379810': 'KODEX 미국나스닥100',
   '305720': 'KODEX 2차전지산업',
   '091160': 'KODEX 반도체',
   '278540': 'KODEX 글로벌반도체',

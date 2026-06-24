@@ -19,9 +19,8 @@ export const useAppTheme = () => {
       theme.global.name.value = saved
       return
     }
-    // 저장값 없으면 시스템 설정 따라가기
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    theme.global.name.value = prefersDark ? 'dark' : 'light'
+    // 저장값 없으면 다크 기본
+    theme.global.name.value = 'dark'
   }
 
   return { isDark, toggleTheme, initTheme }

@@ -431,15 +431,6 @@ onMounted(loadTransactions)
       </template>
     </template>
 
-    <v-btn
-      class="mt-4"
-      variant="text"
-      prepend-icon="mdi-arrow-left"
-      style="color: rgba(var(--v-theme-on-surface), 0.7)"
-      @click="router.back()"
-    >
-      뒤로가기
-    </v-btn>
   </v-container>
 
   <!-- 거래 추가 다이얼로그 -->
@@ -485,9 +476,6 @@ onMounted(loadTransactions)
   border-radius: 20px;
   transition: background 0.25s ease, border-color 0.25s ease;
 }
-.v-theme--dark .glass-card {
-  border-color: rgba(93, 214, 207, 0.15);
-}
 
 .stat-grid {
   display: grid;
@@ -499,9 +487,6 @@ onMounted(loadTransactions)
   border: 1px solid rgba(0, 0, 0, 0.07);
   border-radius: 16px;
   padding: 14px 16px;
-}
-.v-theme--dark .stat-card {
-  border-color: rgba(93, 214, 207, 0.15);
 }
 .stat-label {
   font-size: 11px;
@@ -547,7 +532,7 @@ onMounted(loadTransactions)
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
 .v-theme--dark .filter-btn.active {
-  background: rgba(93, 214, 207, 0.12);
+  background: rgba(0, 212, 184, 0.10);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
@@ -648,10 +633,6 @@ onMounted(loadTransactions)
 .glass-dialog {
   background: rgb(var(--v-theme-surface)) !important;
   border: 1px solid rgba(0, 0, 0, 0.07) !important;
-}
-.v-theme--dark .glass-dialog {
-  background: rgba(13, 46, 45, 0.97) !important;
-  border-color: rgba(79, 200, 194, 0.2) !important;
 }
 
 .min-width-0 { min-width: 0; }
