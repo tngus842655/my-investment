@@ -15,6 +15,7 @@ const annualReturn = ref<number | null>(null)
 
 const loading = ref(false)
 const isEditMode = ref(false)
+const initializing = ref(true)
 
 const addComma = (value: string) => {
   const number = value.replace(/[^0-9]/g, '')
@@ -79,13 +80,17 @@ const loadData = async () => {
     .eq('user_id', user.id)
     .maybeSingle()
 
-  if (!data) return
+  if (!data) {
+    initializing.value = false
+    return
+  }
 
   isEditMode.value = true
   targetAsset.value = addComma(String(data.target_asset ?? ''))
   monthlyInvestment.value = addComma(String(data.monthly_investment ?? ''))
   targetDate.value = data.target_date ?? ''
   annualReturn.value = data.annual_return ?? null
+  initializing.value = false
 }
 
 const save = async () => {
@@ -144,7 +149,10 @@ onMounted(loadData)
 
 <template>
   <div class="fill-height pa-4 pa-sm-6 d-flex flex-column align-center">
-    <div style="width: 100%; max-width: 480px">
+    <div v-if="initializing" class="d-flex justify-center align-center fill-height">
+      <v-progress-circular indeterminate color="primary" />
+    </div>
+    <div v-else style="width: 100%; max-width: 480px">
       <!-- 헤더 -->
       <div class="d-flex align-center mb-6">
         <v-btn
@@ -327,6 +335,7 @@ onMounted(loadData)
       >
         {{ isEditMode ? '취소' : '로그아웃' }}
       </v-btn>
+    </div>
     </div>
   </div>
 </template>
