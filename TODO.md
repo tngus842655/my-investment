@@ -11,11 +11,11 @@
 
 ## 🟡 자산 분석
 
-### FIRE 진행 기록
-- **DB 작업 필요**: Supabase에 `asset_history` 테이블 생성
-  - `user_id`, `recorded_at` (date), `current_asset`, `progress_pct` 컬럼
-  - 주기적 스냅샷 저장 방식 (수동 또는 자동 트리거)
-- 목표 달성률 변화 히스토리 라인 차트
+### ✅ FIRE 진행 기록 (완료)
+- `asset_history` 테이블 생성 + RLS 적용
+- `save_daily_asset_snapshot` RPC 함수 구현 (매일 UTC 15:00 pg_cron 자동 실행)
+- 기간별 탭(1M/3M/6M/1Y/ALL) + SVG 베지어 라인 차트 + 툴팁
+- 요약 카드: 현재 달성률, 기간 변화, 현재 자산(asset_summary 기준)
 
 ### 자산 성장 리포트
 - `asset_history` 테이블 필요 (위와 동일)
@@ -54,3 +54,7 @@
 - 회원탈퇴 기능 (2단계 확인 다이얼로그 + RPC 삭제)
 - 티커 삭제 다이얼로그 한글명 표시
 - 뒤로가기 버튼 스타일 통일
+- FIRE 진행 기록 (기간별 탭 + SVG 라인 차트 + 툴팁 + pg_cron 일일 스냅샷)
+- 포트폴리오 수정 시 currency 덮어쓰기 버그 수정 (USD→KRW 오류)
+- 현금 통화 수정 모드 잠금 처리
+- GoalSettingsView 초기 렌더링 깜빡임 수정
