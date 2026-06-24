@@ -170,7 +170,7 @@ const onChartLeave = () => { tooltip.value = null }
             </div>
           </v-card>
           <v-card rounded="xl" class="summary-card flex-1 pa-4 text-center">
-            <div class="text-caption text-medium-emphasis mb-1">현재 자산</div>
+            <div class="text-caption text-medium-emphasis mb-1">최근 기록 자산</div>
             <div class="text-h6 font-weight-bold">{{ formatAsset(lastPt?.current_asset ?? 0) }}</div>
           </v-card>
         </div>
