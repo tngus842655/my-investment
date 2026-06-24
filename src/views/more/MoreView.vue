@@ -21,11 +21,13 @@ const logout = async () => {
 
 <template>
   <v-container class="pa-4 pa-sm-6">
-    <div class="d-flex align-center ga-2 mb-1">
+    <div class="d-flex align-center ga-2 mb-6">
       <img src="/icons/icon-more.png" class="header-icon" alt="더보기" />
-      <div class="text-h5 font-weight-bold">더보기</div>
+      <div>
+        <div class="text-h5 font-weight-bold">더보기</div>
+        <div class="text-body-2 text-medium-emphasis">설정 및 계정 관리</div>
+      </div>
     </div>
-    <div class="text-body-2 text-medium-emphasis mb-6">설정 및 계정 관리</div>
 
     <div class="d-flex flex-column ga-2">
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/goalSettings')">
