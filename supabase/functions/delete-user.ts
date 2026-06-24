@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
 
     if (!deleteRes.ok) {
       const err = await deleteRes.json()
-      return new Response(JSON.stringify({ error: err.message ?? '삭제 실패' }), {
+      return new Response(JSON.stringify({ error: err.message ?? err.msg ?? err.error ?? JSON.stringify(err), status: deleteRes.status }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
