@@ -9,6 +9,9 @@ import PortfolioView from '@/views/portfolio/PortfolioView.vue'
 import TransactionView from '@/views/transactions/TransactionView.vue'
 import AnalysisView from '@/views/analysis/AnalysisView.vue'
 import MoreView from '@/views/more/MoreView.vue'
+import PortfolioAnalysisView from '@/views/more/PortfolioAnalysisView.vue'
+import BadgesView from '@/views/more/BadgesView.vue'
+import FireSimulatorView from '@/views/more/FireSimulatorView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -53,6 +56,21 @@ const router = createRouter({
           path: 'more',
           name: 'more',
           component: MoreView,
+        },
+        {
+          path: 'portfolio-analysis',
+          name: 'portfolioAnalysis',
+          component: PortfolioAnalysisView,
+        },
+        {
+          path: 'badges',
+          name: 'badges',
+          component: BadgesView,
+        },
+        {
+          path: 'fire-simulator',
+          name: 'fireSimulator',
+          component: FireSimulatorView,
         },
       ],
     },
