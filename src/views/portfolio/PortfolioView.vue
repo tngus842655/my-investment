@@ -555,7 +555,7 @@ onUnmounted(() => {
             class="glass-card asset-card pa-3"
             :class="item.asset_type === '현금' ? 'border-cash-left' : ((item.profitAmountKrw ?? 0) >= 0 ? 'border-success-left' : 'border-error-left')"
           >
-            <!-- 상단: 종목명 + 타입 + 통화 + 수익률 + 드래그 핸들 -->
+            <!-- 상단: 종목명 + 수익률 + 드래그 핸들 -->
             <div class="d-flex justify-space-between align-center mb-2">
               <div class="d-flex align-center ga-2">
                 <v-icon
@@ -581,12 +581,6 @@ onUnmounted(() => {
                     <span class="text-body-1 font-weight-bold">{{ item.ticker }}</span>
                   </template>
                 </div>
-                <v-chip :color="assetTypeColor(item.asset_type)" size="x-small" variant="tonal">
-                  {{ item.asset_type }}
-                </v-chip>
-                <v-chip v-if="item.asset_type !== '현금'" size="x-small" variant="tonal" color="grey">
-                  {{ item.currency }}
-                </v-chip>
               </div>
               <v-chip
                 v-if="item.asset_type !== '현금'"
