@@ -303,10 +303,7 @@ onMounted(loadTransactions)
           :key="f"
           class="filter-btn"
           :class="{ active: filter === f }"
-          @click="
-            filter = f
-            closeSwipe()
-          "
+          @click="filter = f; closeSwipe()"
         >
           <v-icon v-if="f === 'BUY'" size="13" class="mr-1">mdi-arrow-down-bold</v-icon>
           <v-icon v-else-if="f === 'SELL'" size="13" class="mr-1">mdi-arrow-up-bold</v-icon>
