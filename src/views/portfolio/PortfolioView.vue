@@ -592,56 +592,33 @@ onUnmounted(() => {
               </v-chip>
             </div>
 
-            <!-- 현금 카드: 금액만 크게 표시 -->
+            <!-- 현금 카드 -->
             <template v-if="item.asset_type === '현금'">
-              <div class="d-flex align-center ga-2 mt-1">
-                <v-icon size="28" color="green">mdi-cash</v-icon>
-                <div class="text-h6 font-weight-bold text-primary">
-                  {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원
-                </div>
+              <div class="text-body-2 font-weight-bold text-primary mt-1">
+                {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원
               </div>
             </template>
 
             <!-- 일반 자산 카드 -->
             <template v-else>
-
-            <!-- 수량 / 평균단가 / 현재가 -->
-            <div class="d-flex ga-4 mb-2">
-              <div>
-                <div class="text-caption text-medium-emphasis">수량</div>
-                <div class="text-caption font-weight-bold">{{ item.quantity }}</div>
+              <!-- 수량 · 평균단가 → 현재가 한 줄 -->
+              <div class="compact-price-row">
+                <span class="compact-label">{{ item.quantity }}주</span>
+                <span class="compact-sep">·</span>
+                <span class="compact-label">{{ formatPrice(item.avg_price, item.currency) }}</span>
+                <span class="compact-arrow">→</span>
+                <template v-if="item.isPriceFallback">
+                  <span class="compact-fail">조회 실패</span>
+                </template>
+                <template v-else>
+                  <span class="compact-label">{{ formatPrice(item.currentPrice ?? 0, item.currency) }}</span>
+                </template>
               </div>
-              <div>
-                <div class="text-caption text-medium-emphasis">평균단가</div>
-                <div class="text-caption font-weight-bold">
-                  {{ formatPrice(item.avg_price, item.currency) }}
-                </div>
-              </div>
-              <div>
-                <div class="text-caption text-medium-emphasis">현재가</div>
-                <div class="text-caption font-weight-bold">
-                  <template v-if="item.isPriceFallback">
-                    <span style="color: rgba(var(--v-theme-on-surface), 0.35)">조회 실패</span>
-                  </template>
-                  <template v-else>
-                    {{ formatPrice(item.currentPrice ?? 0, item.currency) }}
-                  </template>
-                </div>
-              </div>
-            </div>
-
-            <v-divider class="mb-2" />
-
-            <!-- 평가금액 + 평가손익 -->
-            <div class="d-flex justify-space-between align-center">
-              <div>
-                <div class="text-caption text-medium-emphasis">평가금액</div>
+              <!-- 평가금액 + 평가손익 한 줄 -->
+              <div class="d-flex justify-space-between align-center mt-2">
                 <div class="text-body-2 font-weight-bold text-primary">
                   {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원
                 </div>
-              </div>
-              <div class="text-right">
-                <div class="text-caption text-medium-emphasis">평가손익</div>
                 <div
                   class="text-body-2 font-weight-bold"
                   :class="(item.profitAmountKrw ?? 0) >= 0 ? 'text-success' : 'text-error'"
@@ -649,7 +626,6 @@ onUnmounted(() => {
                   {{ formatProfit(item.profitAmountKrw ?? 0) }}원
                 </div>
               </div>
-            </div>
             </template>
           </div>
         </div>
@@ -706,6 +682,31 @@ onUnmounted(() => {
   font-size: 11px;
   font-weight: 400;
   color: rgba(var(--v-theme-on-surface), 0.45);
+}
+
+.compact-price-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+.compact-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(var(--v-theme-on-surface), 0.7);
+}
+.compact-sep {
+  font-size: 11px;
+  color: rgba(var(--v-theme-on-surface), 0.3);
+}
+.compact-arrow {
+  font-size: 11px;
+  color: rgba(var(--v-theme-on-surface), 0.35);
+  margin: 0 1px;
+}
+.compact-fail {
+  font-size: 12px;
+  color: rgba(var(--v-theme-on-surface), 0.3);
 }
 
 /* ── 스와이프 래퍼 ── */
