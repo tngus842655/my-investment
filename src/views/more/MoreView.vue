@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
@@ -8,6 +8,48 @@ import { useAppTheme } from '@/composables/useAppTheme'
 const router = useRouter()
 const { isDark, toggleTheme } = useAppTheme()
 const confirmDialog = ref(false)
+
+// 회원탈퇴 상태
+const deleteStep = ref(0) // 0: 닫힘, 1: 경고, 2: 이메일 확인
+const deleteEmailInput = ref('')
+const deleteLoading = ref(false)
+const currentUserEmail = ref('')
+
+const deleteEmailValid = computed(() =>
+  deleteEmailInput.value.trim() === currentUserEmail.value,
+)
+
+const openDeleteDialog = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  currentUserEmail.value = user?.email ?? ''
+  deleteEmailInput.value = ''
+  deleteStep.value = 1
+}
+
+const closeDeleteDialog = () => {
+  deleteStep.value = 0
+  deleteEmailInput.value = ''
+}
+
+const deleteAccount = async () => {
+  if (!deleteEmailValid.value) return
+  deleteLoading.value = true
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await supabase.functions.invoke('delete-user', {
+      headers: { Authorization: `Bearer ${session?.access_token}` },
+    })
+    if (res.error) throw res.error
+
+    await supabase.auth.signOut()
+    showMessage('계정이 삭제되었습니다.', 'success')
+    router.replace('/')
+  } catch {
+    showMessage('계정 삭제 중 오류가 발생했습니다.', 'error')
+  } finally {
+    deleteLoading.value = false
+  }
+}
 
 const logout = async () => {
   const { error } = await supabase.auth.signOut()
@@ -179,7 +221,7 @@ const logout = async () => {
         <v-icon size="16" style="color: rgba(var(--v-theme-on-surface), 0.35)">mdi-chevron-right</v-icon>
       </div>
 
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3 menu-disabled">
+      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="openDeleteDialog">
         <div class="menu-icon menu-icon-error">
           <v-icon size="18" color="error">mdi-account-remove-outline</v-icon>
         </div>
@@ -188,10 +230,63 @@ const logout = async () => {
           <div class="text-caption text-medium-emphasis">계정 및 모든 데이터 삭제</div>
         </div>
         <v-spacer />
-        <v-chip size="x-small" color="error" variant="tonal">준비중</v-chip>
+        <v-icon size="16" style="color: rgba(var(--v-theme-on-surface), 0.35)">mdi-chevron-right</v-icon>
       </div>
     </div>
   </v-container>
+
+  <!-- 회원탈퇴 1단계: 경고 -->
+  <v-dialog :model-value="deleteStep === 1" max-width="320" @update:model-value="closeDeleteDialog">
+    <v-card rounded="xl" class="glass-dialog">
+      <v-card-title class="text-center pt-6 text-error">회원탈퇴</v-card-title>
+      <v-card-text class="text-center">
+        <v-icon color="error" size="40" class="mb-3">mdi-alert-circle-outline</v-icon>
+        <div class="text-body-2 mb-2 font-weight-medium">정말 탈퇴하시겠습니까?</div>
+        <div class="text-caption text-medium-emphasis">
+          탈퇴 시 계정과 연결된 모든 데이터<br>
+          (투자 목표, 포트폴리오, 거래 내역 등)가<br>
+          <strong>영구적으로 삭제</strong>되며 복구할 수 없습니다.
+        </div>
+      </v-card-text>
+      <v-divider />
+      <v-card-actions>
+        <v-btn variant="text" block @click="closeDeleteDialog">취소</v-btn>
+        <v-btn color="error" block @click="deleteStep = 2">계속</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <!-- 회원탈퇴 2단계: 이메일 재입력 -->
+  <v-dialog :model-value="deleteStep === 2" max-width="320" @update:model-value="closeDeleteDialog">
+    <v-card rounded="xl" class="glass-dialog">
+      <v-card-title class="text-center pt-6 text-error">최종 확인</v-card-title>
+      <v-card-text>
+        <div class="text-caption text-medium-emphasis text-center mb-4">
+          본인 확인을 위해 이메일 주소를 입력해주세요.
+        </div>
+        <v-text-field
+          v-model="deleteEmailInput"
+          :placeholder="currentUserEmail"
+          variant="outlined"
+          density="compact"
+          rounded="lg"
+          hide-details
+          @keyup.enter="deleteAccount"
+        />
+      </v-card-text>
+      <v-divider />
+      <v-card-actions>
+        <v-btn variant="text" block @click="closeDeleteDialog">취소</v-btn>
+        <v-btn
+          color="error"
+          block
+          :disabled="!deleteEmailValid || deleteLoading"
+          :loading="deleteLoading"
+          @click="deleteAccount"
+        >탈퇴</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 
   <v-dialog v-model="confirmDialog" max-width="320">
     <v-card rounded="xl" class="glass-dialog">
