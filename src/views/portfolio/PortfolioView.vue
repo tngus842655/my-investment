@@ -489,7 +489,7 @@ onUnmounted(() => {
           prepend-icon="mdi-plus"
           rounded="lg"
           elevation="0"
-          @click="dialog = true"
+          @click="closeSwipe(); dialog = true"
         >
           자산 추가
         </v-btn>
@@ -520,7 +520,7 @@ onUnmounted(() => {
           rounded="lg"
           class="mt-6"
           prepend-icon="mdi-plus"
-          @click="dialog = true"
+          @click="closeSwipe(); dialog = true"
         >
           자산 추가
         </v-btn>
