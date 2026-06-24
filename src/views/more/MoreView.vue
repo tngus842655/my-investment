@@ -218,16 +218,8 @@ const logout = async () => {
         <v-icon size="16" style="color: rgba(var(--v-theme-on-surface), 0.35)">mdi-chevron-right</v-icon>
       </div>
 
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="openDeleteDialog">
-        <div class="menu-icon menu-icon-error">
-          <v-icon size="18" color="error">mdi-account-remove-outline</v-icon>
-        </div>
-        <div>
-          <div class="text-body-2 font-weight-medium text-error">회원탈퇴</div>
-          <div class="text-caption text-medium-emphasis">계정 및 모든 데이터 삭제</div>
-        </div>
-        <v-spacer />
-        <v-icon size="16" style="color: rgba(var(--v-theme-on-surface), 0.35)">mdi-chevron-right</v-icon>
+      <div class="text-center mt-2">
+        <span class="delete-account-btn" @click="openDeleteDialog">회원탈퇴</span>
       </div>
     </div>
   </v-container>
@@ -349,5 +341,15 @@ const logout = async () => {
 }
 .glass-dialog {
   background: rgb(var(--v-theme-surface)) !important;
+}
+.delete-account-btn {
+  font-size: 12px;
+  color: rgba(var(--v-theme-error), 0.5);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.delete-account-btn:active {
+  opacity: 0.6;
 }
 </style>
