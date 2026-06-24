@@ -158,7 +158,14 @@ const chartData = computed(() => {
     }
   }
   const tickStep = Math.max(1, Math.ceil(yearTicks.length / 5))
-  const xLabels = yearTicks.filter((_, i) => i % tickStep === 0 || i === yearTicks.length - 1)
+  const candidates = yearTicks.filter((_, i) => i % tickStep === 0)
+  // 마지막 연도가 직전 레이블과 너무 가까우면 제외
+  const lastTick = yearTicks[yearTicks.length - 1]
+  if (lastTick && !candidates.includes(lastTick)) {
+    const prev = candidates[candidates.length - 1]
+    if (!prev || lastTick.x - prev.x > PW / 6) candidates.push(lastTick)
+  }
+  const xLabels = candidates
 
   // 달성 포인트
   const baseGoalRaw = targetAsset.value > 0 ? basePts.find((p) => p.asset >= targetAsset.value) : null
