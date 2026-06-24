@@ -115,7 +115,17 @@ onMounted(loadDashboard)
   <v-container class="pa-4 pa-sm-6">
     <!-- 헤더 -->
     <div class="d-flex justify-space-between align-center mb-6">
-      <div class="text-h6 font-weight-bold">FIREPATH</div>
+      <div class="d-flex align-center ga-2">
+        <video
+          src="/icons/icon-rocket.mp4"
+          class="header-logo"
+          autoplay
+          loop
+          muted
+          playsinline
+        />
+        <div class="text-h6 font-weight-bold">FIREPATH</div>
+      </div>
       <button class="icon-btn" @click="router.push('/goalSettings')">
         <img src="/icons/icon-goal.png" alt="목표수정" class="icon-btn-img" />
       </button>
@@ -304,6 +314,12 @@ onMounted(loadDashboard)
 </template>
 
 <style scoped>
+.header-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
 .glass-card {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(0, 0, 0, 0.07);
