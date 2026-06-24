@@ -103,6 +103,7 @@ const loadInitialTx = async (portfolioId: string) => {
 }
 
 watch(assetType, (newType) => {
+  if (isEditMode.value) return
   if (newType === '해외주식') currency.value = 'USD'
   else if (newType === '국내주식') currency.value = 'KRW'
   else if (newType === '현금') currency.value = 'KRW'
