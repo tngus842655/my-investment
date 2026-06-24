@@ -30,17 +30,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
         @click="router.push(tab.route)"
       >
         <div class="tab-icon-wrap" :class="{ 'tab-icon-active': isActive(tab.route) }">
-          <video
-            v-if="tab.video"
-            :src="tab.video"
-            class="tab-png-icon"
-            :class="{ 'tab-png-active': isActive(tab.route) }"
-            autoplay
-            loop
-            muted
-            playsinline
-          />
-          <img v-else-if="tab.img" :src="tab.img" class="tab-png-icon" :class="{ 'tab-png-active': isActive(tab.route) }" :alt="tab.label" />
+          <img v-if="tab.img" :src="tab.img" class="tab-png-icon" :class="{ 'tab-png-active': isActive(tab.route) }" :alt="tab.label" />
           <v-icon v-else size="26">{{ isActive(tab.route) ? tab.activeIcon : tab.icon }}</v-icon>
         </div>
         <span class="bottom-nav-label">{{ tab.label }}</span>
