@@ -126,8 +126,8 @@ const loadData = async () => {
     const sanitized = events.map((e) => {
       const d = new Date(`${e.date}T00:00:00`)  // 로컬 시간 기준 파싱
       const day = d.getDay()
-      if (day === 0) d.setDate(d.getDate() - 2)
-      else if (day === 6) d.setDate(d.getDate() - 1)
+      if (day === 0) d.setDate(d.getDate() + 1)
+      else if (day === 6) d.setDate(d.getDate() + 2)
       const fixed = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
       return { ...e, date: fixed }
     })
@@ -207,8 +207,8 @@ const onDayClick = (day: number | null, events: CalendarEvent[]) => {
 function toNearestBusinessDay(date: Date): Date {
   const d = new Date(date)
   const day = d.getDay()
-  if (day === 0) d.setDate(d.getDate() - 2)
-  else if (day === 6) d.setDate(d.getDate() - 1)
+  if (day === 0) d.setDate(d.getDate() + 1)  // 일 → 월
+  else if (day === 6) d.setDate(d.getDate() + 2)  // 토 → 월
   return d
 }
 
