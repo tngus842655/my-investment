@@ -36,7 +36,7 @@ const executeDelete = async () => {
       .eq('id', deleteTarget.value.id)
     if (error) { console.error(error); return }
     const idx = logs.value.findIndex(l => l.id === deleteTarget.value!.id)
-    if (idx !== -1) logs.value[idx] = { ...logs.value[idx], deleted_at: new Date().toISOString() }
+    if (idx !== -1) logs.value[idx] = { id: logs.value[idx].id, email: logs.value[idx].email, signed_up_at: logs.value[idx].signed_up_at, deleted_at: new Date().toISOString() }
     deleteDialog.value = false
   } finally {
     deleteLoading.value = false
