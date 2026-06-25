@@ -28,6 +28,8 @@ onMounted(() => {
 .app-bg {
   min-height: 100vh;
   min-height: 100dvh;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .app-bg.dark {

@@ -401,15 +401,16 @@ function formatFull(v: number) {
         <!-- 상세 테이블 -->
         <v-card rounded="xl" class="pa-4">
           <!-- 헤더 -->
-          <div class="detail-header mb-3">
-            <v-btn
-              icon size="x-small" variant="text"
-              :style="selectedMonth ? '' : 'visibility: hidden'"
-              @click="selectedMonth = null; tooltip = null"
-            >
-              <v-icon size="16">mdi-arrow-left</v-icon>
-            </v-btn>
-            <div class="text-body-2 font-weight-medium">{{ selectedMonth ? '일별 상세' : '월별 상세' }}</div>
+          <div class="d-flex align-center mb-3">
+            <template v-if="selectedMonth">
+              <v-btn icon size="x-small" variant="text" class="mr-1" @click="selectedMonth = null; tooltip = null">
+                <v-icon size="16">mdi-arrow-left</v-icon>
+              </v-btn>
+              <div class="text-body-2 font-weight-medium">{{ selectedMonth }} 일별 상세</div>
+            </template>
+            <div v-else class="text-body-2 font-weight-medium">월별 상세</div>
+            <v-spacer />
+            <div v-if="!selectedMonth" class="text-caption text-medium-emphasis">막대 클릭 시 일별 보기</div>
           </div>
 
           <!-- 월별 뷰 -->
@@ -420,7 +421,7 @@ function formatFull(v: number) {
               class="month-row"
               :class="{ 'border-top': i > 0 }"
             >
-              <span class="month-label">{{ pt.month.replace('-', '.') }}</span>
+              <span class="month-label">{{ pt.month }}</span>
               <span class="month-asset">{{ formatFull(pt.asset) }}</span>
               <span
                 class="month-change"
@@ -442,7 +443,7 @@ function formatFull(v: number) {
               class="month-row"
               :class="{ 'border-top': i > 0 }"
             >
-              <span class="month-label">{{ pt.date.replace(/-/g, '.') }}</span>
+              <span class="month-label">{{ pt.date.slice(5).replace('-', '/') }}</span>
               <span class="month-asset">{{ formatFull(pt.asset) }}</span>
               <span
                 class="month-change"
@@ -513,12 +514,6 @@ function formatFull(v: number) {
 }
 .legend-dot.profit {
   background: rgb(var(--v-theme-success));
-}
-.detail-header {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  height: 32px;
 }
 .month-row {
   display: flex;
