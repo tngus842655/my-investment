@@ -10,6 +10,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 커밋 메시지 규칙
+
+**모든 커밋 메시지는 반드시 한글로 작성할 것.**
+
 ## Git Push 규칙
 
 사용자가 "push" 라고 말하면 아래 순서로 develop까지 반영한다:
