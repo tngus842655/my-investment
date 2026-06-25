@@ -37,7 +37,7 @@ const executeDelete = async () => {
     if (error) { console.error(error); return }
     const idx = logs.value.findIndex(l => l.id === deleteTarget.value!.id)
     if (idx !== -1) {
-      const cur = logs.value[idx]
+      const cur = logs.value[idx]!
       logs.value[idx] = { id: cur.id, email: cur.email, signed_up_at: cur.signed_up_at, deleted_at: new Date().toISOString() }
     }
     deleteDialog.value = false
