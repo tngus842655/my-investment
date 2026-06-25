@@ -321,10 +321,7 @@ onMounted(loadDashboard)
 
             <!-- 금액 -->
             <div class="text-right">
-              <div class="mini-amount">
-                <span v-if="hideAsset">•••</span>
-                <span v-else>{{ item.evaluationKrw.toLocaleString('ko-KR') }}원</span>
-              </div>
+              <div class="mini-amount">{{ item.evaluationKrw.toLocaleString('ko-KR') }}원</div>
             </div>
           </div>
         </template>
