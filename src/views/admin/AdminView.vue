@@ -65,8 +65,8 @@ const monthlyChart = computed(() => {
     .sort(([a], [b]) => a.localeCompare(b))
     .slice(-6) // 최근 6개월
 
-  const maxVal = Math.max(...entries.map(([, v]) => v.signup), 1)
-  const VH = 80
+  const maxVal = Math.max(...entries.map(([, v]) => v.signup), 4)
+  const VH = 60
   return entries.map(([label, v], i) => ({
     label: label.slice(5), // MM
     signup: v.signup,
