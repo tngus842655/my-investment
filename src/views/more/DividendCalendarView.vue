@@ -101,8 +101,10 @@ const loadData = async () => {
       for (const div of td.dividends.filter((d) => d.type === 'ex')) {
         const totalUsd = div.amount * port.quantity
         const totalKrw = port.currency === 'USD' ? totalUsd * rate : totalUsd
+        // Yahoo Finance가 UTC 기준이라 주말로 잡힐 수 있음 → 영업일로 보정
+        const adjustedDate = toNearestBusinessDay(new Date(div.date)).toISOString().slice(0, 10)
         events.push({
-          date: div.date,
+          date: adjustedDate,
           ticker: td.ticker,
           amountPerShare: div.amount,
           totalAmountKrw: Math.round(totalKrw),
@@ -112,8 +114,10 @@ const loadData = async () => {
         })
       }
 
-      // 과거 이력 기반 1년치 미래 예측
-      const pastDivs = td.dividends.filter((d) => d.type === 'ex')
+      // 과거 이력 기반 1년치 미래 예측 (날짜 보정 포함)
+      const pastDivs = td.dividends
+        .filter((d) => d.type === 'ex')
+        .map((d) => ({ ...d, date: toNearestBusinessDay(new Date(d.date)).toISOString().slice(0, 10) }))
       const predicted = predictFutureDividends(td.ticker, pastDivs, port.quantity, port.currency, rate)
       events.push(...predicted)
     }
