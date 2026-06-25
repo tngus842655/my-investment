@@ -313,7 +313,7 @@ const aiData = computed(() => {
 
       <!-- 기본 정보 섹션 -->
       <v-card rounded="xl" class="mb-3 overflow-hidden">
-        <div class="px-4 pt-3 pb-1">
+        <div class="px-4 pt-2 pb-1">
           <div class="section-title">기본 정보</div>
         </div>
         <div v-if="dataB" class="col-header-row d-flex align-center px-4 pb-1">
@@ -336,11 +336,11 @@ const aiData = computed(() => {
 
       <!-- 수익률 섹션 -->
       <v-card rounded="xl" class="mb-3 overflow-hidden">
-        <div class="px-4 pt-3 pb-1">
+        <div class="px-4 pt-2 pb-1">
           <div class="section-title">수익률</div>
         </div>
 
-        <div class="metric-row d-flex align-center px-4 py-3">
+        <div class="metric-row d-flex align-center px-4 py-2">
           <div class="metric-label text-caption d-flex align-center ga-1">
             CAGR (연평균 수익률)
             <v-tooltip :text="tooltips.cagr" location="bottom" open-on-click>
@@ -358,12 +358,12 @@ const aiData = computed(() => {
             {{ fmt.pct(dataB.cagr) }}
           </div>
         </div>
-        <div class="metric-row d-flex align-center px-4 py-3">
+        <div class="metric-row d-flex align-center px-4 py-2">
           <div class="metric-label text-caption">52주 최고</div>
           <div class="metric-val text-body-2 font-weight-medium text-right">{{ fmt.price(dataA!.week52High, dataA!.currency) }}</div>
           <div v-if="dataB" class="metric-val text-body-2 font-weight-medium text-right">{{ fmt.price(dataB.week52High, dataB.currency) }}</div>
         </div>
-        <div class="metric-row d-flex align-center px-4 py-3">
+        <div class="metric-row d-flex align-center px-4 py-2">
           <div class="metric-label text-caption">52주 최저</div>
           <div class="metric-val text-body-2 font-weight-medium text-right">{{ fmt.price(dataA!.week52Low, dataA!.currency) }}</div>
           <div v-if="dataB" class="metric-val text-body-2 font-weight-medium text-right">{{ fmt.price(dataB.week52Low, dataB.currency) }}</div>
@@ -372,11 +372,11 @@ const aiData = computed(() => {
 
       <!-- 리스크 섹션 -->
       <v-card rounded="xl" class="mb-3 overflow-hidden">
-        <div class="px-4 pt-3 pb-1">
+        <div class="px-4 pt-2 pb-1">
           <div class="section-title">리스크</div>
         </div>
 
-        <div class="metric-row d-flex align-center px-4 py-3">
+        <div class="metric-row d-flex align-center px-4 py-2">
           <div class="metric-label text-caption d-flex align-center ga-1">
             MDD (최대 낙폭)
             <v-tooltip :text="tooltips.mdd" location="bottom" open-on-click>
@@ -395,7 +395,7 @@ const aiData = computed(() => {
             {{ fmt.pct(dataB.mdd) }}
           </div>
         </div>
-        <div class="metric-row d-flex align-center px-4 py-3">
+        <div class="metric-row d-flex align-center px-4 py-2">
           <div class="metric-label text-caption d-flex align-center ga-1">
             연간 변동성
             <v-tooltip :text="tooltips.volatility" location="bottom" open-on-click>
@@ -413,7 +413,7 @@ const aiData = computed(() => {
             {{ fmt.pct(dataB.volatility) }}
           </div>
         </div>
-        <div class="metric-row d-flex align-center px-4 py-3">
+        <div class="metric-row d-flex align-center px-4 py-2">
           <div class="metric-label text-caption d-flex align-center ga-1">
             베타
             <v-tooltip :text="tooltips.beta" location="bottom" open-on-click>
@@ -435,11 +435,11 @@ const aiData = computed(() => {
 
       <!-- 배당 & 비용 섹션 -->
       <v-card rounded="xl" class="mb-3 overflow-hidden">
-        <div class="px-4 pt-3 pb-1">
+        <div class="px-4 pt-2 pb-1">
           <div class="section-title">배당 & 비용</div>
         </div>
 
-        <div class="metric-row d-flex align-center px-4 py-3">
+        <div class="metric-row d-flex align-center px-4 py-2">
           <div class="metric-label text-caption d-flex align-center ga-1">
             배당률
             <v-tooltip :text="tooltips.dividendYield" location="bottom" open-on-click>
@@ -457,7 +457,7 @@ const aiData = computed(() => {
             {{ fmt.pct(dataB.dividendYield) }}
           </div>
         </div>
-        <div class="metric-row d-flex align-center px-4 py-3">
+        <div class="metric-row d-flex align-center px-4 py-2">
           <div class="metric-label text-caption d-flex align-center ga-1">
             운용보수 (TER)
             <v-tooltip :text="tooltips.ter" location="bottom" open-on-click>
