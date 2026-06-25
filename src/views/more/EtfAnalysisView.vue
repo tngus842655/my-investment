@@ -289,7 +289,7 @@ const aiData = computed(() => {
 
     <template v-else>
       <!-- ETF 카드 -->
-      <div class="d-flex ga-3 mb-4">
+      <div class="d-flex ga-2 mb-3">
         <template v-for="info in ([dataA, dataB].filter(Boolean) as EtfInfo[])" :key="info.ticker">
           <div class="etf-card flex-1 pa-2">
             <div class="d-flex align-center ga-1 mb-1 flex-wrap">
@@ -298,9 +298,10 @@ const aiData = computed(() => {
                 :color="tag.color" size="x-small" variant="tonal"
               >{{ tag.label }}</v-chip>
             </div>
-            <div class="text-caption text-medium-emphasis mt-1">{{ info.ticker }}</div>
-            <div class="text-body-2 font-weight-bold" style="line-height:1.3">{{ info.name }}</div>
-            <div class="text-h6 font-weight-bold text-primary mt-2">{{ fmt.price(info.currentPrice, info.currency) }}</div>
+            <div class="d-flex align-center justify-space-between mt-1">
+              <div class="text-body-2 font-weight-bold">{{ info.ticker }}</div>
+              <div class="text-body-2 font-weight-bold text-primary">{{ fmt.price(info.currentPrice, info.currency) }}</div>
+            </div>
           </div>
         </template>
       </div>
