@@ -591,6 +591,6 @@ const aiData = computed(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: default;
-  max-width: 100%;
+  max-width: 130px;
 }
 </style>
