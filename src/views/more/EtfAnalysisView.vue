@@ -152,6 +152,13 @@ const better = (a: number | null, b: number | null, higherIsBetter: boolean): 'a
         </div>
       </div>
 
+      <!-- 컬럼 헤더 -->
+      <div v-if="dataB" class="d-flex px-1 mb-1">
+        <div class="flex-1" />
+        <div class="col-header text-right">{{ dataA.ticker }}</div>
+        <div class="col-header text-right">{{ dataB.ticker }}</div>
+      </div>
+
       <!-- 수익률 섹션 -->
       <v-card rounded="xl" class="mb-3 overflow-hidden">
         <div class="section-title px-4 pt-3 pb-1">수익률</div>
@@ -286,5 +293,12 @@ const better = (a: number | null, b: number | null, higherIsBetter: boolean): 'a
   font-size: 11px;
   min-width: 72px;
   white-space: nowrap;
+}
+.col-header {
+  min-width: 72px;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+  letter-spacing: 0.04em;
 }
 </style>
