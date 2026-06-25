@@ -252,12 +252,13 @@ const aiSummary = computed((): string => {
 
       <!-- 기본 정보 섹션 -->
       <v-card rounded="xl" class="mb-3 overflow-hidden">
-        <div class="section-title-row px-4 pt-3 pb-1">
-          <div class="section-title flex-1">기본 정보</div>
-          <template v-if="dataB">
-            <div class="col-header">{{ dataA!.ticker }}</div>
-            <div class="col-header">{{ dataB.ticker }}</div>
-          </template>
+        <div class="px-4 pt-3 pb-1">
+          <div class="section-title">기본 정보</div>
+        </div>
+        <div v-if="dataB" class="col-header-row d-flex align-center px-4 pb-1">
+          <div class="metric-label" />
+          <div class="col-header">{{ dataA!.ticker }}</div>
+          <div class="col-header">{{ dataB.ticker }}</div>
         </div>
 
         <div class="metric-row d-flex align-center px-4 py-2">
@@ -267,8 +268,8 @@ const aiSummary = computed((): string => {
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
           <div class="metric-label text-caption">카테고리</div>
-          <div class="metric-val text-caption text-right" style="word-break:break-word">{{ dataA!.category ?? '-' }}</div>
-          <div v-if="dataB" class="metric-val text-caption text-right" style="word-break:break-word">{{ dataB.category ?? '-' }}</div>
+          <div class="metric-val text-caption text-right">{{ dataA!.category ?? '-' }}</div>
+          <div v-if="dataB" class="metric-val text-caption text-right">{{ dataB.category ?? '-' }}</div>
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
           <div class="metric-label text-caption">운용자산 (AUM)</div>
@@ -284,12 +285,13 @@ const aiSummary = computed((): string => {
 
       <!-- 수익률 섹션 -->
       <v-card rounded="xl" class="mb-3 overflow-hidden">
-        <div class="section-title-row px-4 pt-3 pb-1">
-          <div class="section-title flex-1">수익률</div>
-          <template v-if="dataB">
-            <div class="col-header">{{ dataA!.ticker }}</div>
-            <div class="col-header">{{ dataB.ticker }}</div>
-          </template>
+        <div class="px-4 pt-3 pb-1">
+          <div class="section-title">수익률</div>
+        </div>
+        <div v-if="dataB" class="col-header-row d-flex align-center px-4 pb-1">
+          <div class="metric-label" />
+          <div class="col-header">{{ dataA!.ticker }}</div>
+          <div class="col-header">{{ dataB.ticker }}</div>
         </div>
 
         <div class="metric-row d-flex align-center px-4 py-3">
@@ -322,12 +324,13 @@ const aiSummary = computed((): string => {
 
       <!-- 리스크 섹션 -->
       <v-card rounded="xl" class="mb-3 overflow-hidden">
-        <div class="section-title-row px-4 pt-3 pb-1">
-          <div class="section-title flex-1">리스크</div>
-          <template v-if="dataB">
-            <div class="col-header">{{ dataA!.ticker }}</div>
-            <div class="col-header">{{ dataB.ticker }}</div>
-          </template>
+        <div class="px-4 pt-3 pb-1">
+          <div class="section-title">리스크</div>
+        </div>
+        <div v-if="dataB" class="col-header-row d-flex align-center px-4 pb-1">
+          <div class="metric-label" />
+          <div class="col-header">{{ dataA!.ticker }}</div>
+          <div class="col-header">{{ dataB.ticker }}</div>
         </div>
 
         <div class="metric-row d-flex align-center px-4 py-3">
@@ -383,12 +386,13 @@ const aiSummary = computed((): string => {
 
       <!-- 배당 & 비용 섹션 -->
       <v-card rounded="xl" class="mb-3 overflow-hidden">
-        <div class="section-title-row px-4 pt-3 pb-1">
-          <div class="section-title flex-1">배당 & 비용</div>
-          <template v-if="dataB">
-            <div class="col-header">{{ dataA!.ticker }}</div>
-            <div class="col-header">{{ dataB.ticker }}</div>
-          </template>
+        <div class="px-4 pt-3 pb-1">
+          <div class="section-title">배당 & 비용</div>
+        </div>
+        <div v-if="dataB" class="col-header-row d-flex align-center px-4 pb-1">
+          <div class="metric-label" />
+          <div class="col-header">{{ dataA!.ticker }}</div>
+          <div class="col-header">{{ dataB.ticker }}</div>
         </div>
 
         <div class="metric-row d-flex align-center px-4 py-3">
@@ -447,10 +451,6 @@ const aiSummary = computed((): string => {
   border: 1px solid rgba(var(--v-theme-primary), 0.12);
   border-radius: 16px;
 }
-.section-title-row {
-  display: flex;
-  align-items: center;
-}
 .section-title {
   font-size: 11px;
   font-weight: 700;
@@ -458,18 +458,26 @@ const aiSummary = computed((): string => {
   text-transform: uppercase;
   color: rgba(var(--v-theme-on-surface), 0.4);
 }
+.col-header-row {
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.06);
+}
 .metric-row {
   border-top: 1px solid rgba(var(--v-theme-on-surface), 0.06);
 }
 .metric-label {
   flex: 1;
-  color: rgba(var(--v-theme-on-surface), 0.7);
+  color: rgba(var(--v-theme-on-surface), 0.5);
 }
 .metric-val {
-  min-width: 84px;
+  min-width: 80px;
+  padding-left: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .col-header {
-  min-width: 84px;
+  min-width: 80px;
+  padding-left: 12px;
   font-size: 12px;
   font-weight: 700;
   text-align: right;
