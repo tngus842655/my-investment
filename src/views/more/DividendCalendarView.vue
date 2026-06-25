@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
-import { getTickerLabel } from '@/utils/tickerNames'
+import { getTickerDisplayName } from '@/utils/tickerNames'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 
 const router = useRouter()
@@ -287,7 +287,7 @@ const weekdays = ['일', '월', '화', '수', '목', '금', '토']
           >
             <div class="event-ticker">
               <div class="text-body-2 font-weight-medium">{{ ev.ticker }}</div>
-              <div class="text-caption text-medium-emphasis">{{ getTickerLabel(ev.ticker) }}</div>
+              <div class="text-caption text-medium-emphasis">{{ getTickerDisplayName(ev.ticker) }}</div>
             </div>
             <div class="text-right">
               <div class="text-body-2 font-weight-bold text-primary">{{ formatKrw(ev.totalAmountKrw) }}</div>
