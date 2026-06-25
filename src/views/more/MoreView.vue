@@ -38,6 +38,13 @@ const deleteAccount = async () => {
     const { error } = await supabase.rpc('delete_user_account')
     if (error) throw error
 
+    // 탈퇴 시점 기록
+    await supabase
+      .from('signup_log')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('email', currentUserEmail.value)
+      .is('deleted_at', null)
+
     await supabase.auth.signOut()
     showMessage('계정이 삭제되었습니다.', 'success')
     router.replace('/')

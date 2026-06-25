@@ -30,6 +30,8 @@ const signUp = async () => {
   try {
     const { error } = await supabase.auth.signUp({ email: email.value, password: password.value })
     if (error) { showMessage(getErrorMessage(error.code), 'warning'); return }
+    // 가입 이력 기록
+    await supabase.from('signup_log').insert({ email: email.value })
     showMessage('회원가입이 완료되었습니다. 이메일 인증 후 로그인해주세요.', 'success')
   } finally {
     loading.value = false
