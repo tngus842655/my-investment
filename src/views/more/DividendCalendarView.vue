@@ -122,7 +122,17 @@ const loadData = async () => {
       events.push(...predicted)
     }
 
-    calendarEvents.value = events.sort((a, b) => a.date.localeCompare(b.date))
+    // 최종 방어: 주말 날짜가 어떤 경로로든 섞이지 않도록 한번 더 보정
+    const sanitized = events.map((e) => {
+      const d = new Date(`${e.date}T00:00:00`)  // 로컬 시간 기준 파싱
+      const day = d.getDay()
+      if (day === 0) d.setDate(d.getDate() - 2)
+      else if (day === 6) d.setDate(d.getDate() - 1)
+      const fixed = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      return { ...e, date: fixed }
+    })
+
+    calendarEvents.value = sanitized.sort((a, b) => a.date.localeCompare(b.date))
   } catch {
     showMessage('배당 데이터를 불러오는 중 오류가 발생했습니다.', 'error')
   } finally {
