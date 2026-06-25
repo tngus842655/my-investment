@@ -43,8 +43,9 @@ const calendarEvents = ref<CalendarEvent[]>([])
 const exchangeRate = ref(1300)
 const selectedYear = ref(new Date().getFullYear())
 const selectedMonth = ref(new Date().getMonth() + 1)
+const activeCacheKey = ref('')
 
-onMounted(async () => {
+const loadData = async () => {
   try {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
@@ -66,7 +67,8 @@ onMounted(async () => {
     )
     if (!targets.length) { loading.value = false; return }
 
-    const cacheKey = `dividend_cache_${targets.map((p) => p.ticker).sort().join(',')}`
+    activeCacheKey.value = `dividend_cache_${targets.map((p) => p.ticker).sort().join(',')}`
+    const cacheKey = activeCacheKey.value
     const CACHE_TTL = 24 * 60 * 60 * 1000  // 24시간
 
     let rawData: { data: TickerDividend[] }
@@ -122,7 +124,9 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
-})
+}
+
+onMounted(loadData)
 
 // 선택된 년/월 이벤트
 const currentMonthEvents = computed(() => {
@@ -189,9 +193,27 @@ const onDayClick = (day: number | null, events: CalendarEvent[]) => {
 function toNearestBusinessDay(date: Date): Date {
   const d = new Date(date)
   const day = d.getDay()
-  if (day === 0) d.setDate(d.getDate() - 2)  // 일 → 금
-  else if (day === 6) d.setDate(d.getDate() - 1)  // 토 → 금
+  if (day === 0) d.setDate(d.getDate() - 2)
+  else if (day === 6) d.setDate(d.getDate() - 1)
   return d
+}
+
+// 해당 월의 N번째 특정 요일 날짜 반환
+function getNthWeekdayDate(year: number, month: number, n: number, weekday: number): Date {
+  const first = new Date(year, month - 1, 1)
+  const firstWd = first.getDay()
+  let day = 1 + ((weekday - firstWd + 7) % 7) + (n - 1) * 7
+  const maxDay = new Date(year, month, 0).getDate()
+  if (day > maxDay) day -= 7  // 5번째가 없으면 4번째로
+  return new Date(year, month - 1, day)
+}
+
+// 날짜가 해당 월의 몇 번째 무슨 요일인지
+function getNthWeekday(date: Date): { n: number; weekday: number } {
+  return {
+    n: Math.ceil(date.getDate() / 7),
+    weekday: date.getDay(),
+  }
 }
 
 function predictFutureDividends(
@@ -205,7 +227,7 @@ function predictFutureDividends(
 
   const sorted = [...pastDivs].sort((a, b) => a.date.localeCompare(b.date))
 
-  // 평균 간격 계산
+  // 배당 주기 감지
   const intervals: number[] = []
   for (let i = 1; i < sorted.length; i++) {
     const diff = (new Date(sorted[i].date).getTime() - new Date(sorted[i - 1].date).getTime()) / 86400000
@@ -213,24 +235,39 @@ function predictFutureDividends(
   }
   const avgInterval = intervals.reduce((s, v) => s + v, 0) / intervals.length
 
-  // 표준 주기 감지
-  let freqMonths: number  // 몇 개월마다 배당
+  let freqMonths: number
   if (avgInterval <= 45) freqMonths = 1
   else if (avgInterval <= 120) freqMonths = 3
   else if (avgInterval <= 270) freqMonths = 6
   else freqMonths = 12
 
-  // 최근 N회 평균 금액 (주기에 맞게)
+  // 최근 평균 금액
   const recentCount = freqMonths === 1 ? 6 : 4
   const recent = sorted.slice(-recentCount)
   const avgAmount = recent.reduce((s, d) => s + d.amount, 0) / recent.length
 
-  // 과거 이력에서 월 내 평균 지급일 계산 (월배당/분기배당에 활용)
-  const avgDayOfMonth = Math.round(
-    sorted.reduce((s, d) => s + new Date(d.date).getDate(), 0) / sorted.length
-  )
+  // ── 패턴 감지: "N번째 무슨요일" vs "몇 일" 중 더 일관성 있는 방식 선택 ──
+  const nthWeekdays = sorted.map((d) => getNthWeekday(new Date(d.date)))
 
-  // 분기배당이면 어느 월에 지급하는지 패턴 추출 (예: 3,6,9,12월)
+  // 최빈 (n, weekday) 조합 찾기
+  const freq: Record<string, number> = {}
+  for (const { n, weekday } of nthWeekdays) {
+    const key = `${n}-${weekday}`
+    freq[key] = (freq[key] ?? 0) + 1
+  }
+  const topKey = Object.entries(freq).sort((a, b) => b[1] - a[1])[0]
+  const [topN, topWeekday] = topKey[0].split('-').map(Number)
+  const nthWeekdayConsistency = topKey[1] / sorted.length  // 일치율
+
+  // 평균 날짜 일관성 (표준편차가 낮을수록 날짜 기반이 유리)
+  const avgDay = sorted.reduce((s, d) => s + new Date(d.date).getDate(), 0) / sorted.length
+  const dayStdDev = Math.sqrt(
+    sorted.reduce((s, d) => s + (new Date(d.date).getDate() - avgDay) ** 2, 0) / sorted.length
+  )
+  // N번째 요일 패턴 일치율이 60% 이상이고, 날짜 표준편차가 5일 초과면 요일 기반 우선
+  const useNthWeekday = nthWeekdayConsistency >= 0.6 && dayStdDev > 5
+
+  // 분기·반기·연배당: 지급 월 패턴
   const payMonths = freqMonths > 1
     ? [...new Set(sorted.map((d) => new Date(d.date).getMonth() + 1))].sort((a, b) => a - b)
     : null
@@ -244,9 +281,15 @@ function predictFutureDividends(
   const seen = new Set<string>()
 
   const addPrediction = (year: number, month: number) => {
-    const maxDay = new Date(year, month, 0).getDate()
-    const day = Math.min(avgDayOfMonth, maxDay)
-    const candidate = toNearestBusinessDay(new Date(year, month - 1, day))
+    let candidate: Date
+    if (useNthWeekday) {
+      // N번째 무슨요일 패턴
+      candidate = toNearestBusinessDay(getNthWeekdayDate(year, month, topN, topWeekday))
+    } else {
+      // 평균 날짜 패턴
+      const maxDay = new Date(year, month, 0).getDate()
+      candidate = toNearestBusinessDay(new Date(year, month - 1, Math.min(Math.round(avgDay), maxDay)))
+    }
     if (candidate < today || candidate > oneYearLater) return
     const dateStr = candidate.toISOString().slice(0, 10)
     if (seen.has(dateStr)) return
@@ -256,7 +299,6 @@ function predictFutureDividends(
   }
 
   if (freqMonths === 1) {
-    // 월배당: 오늘부터 1년간 매월 avgDayOfMonth에 예측
     const cursor = new Date(today)
     cursor.setDate(1)
     while (cursor <= oneYearLater) {
@@ -264,8 +306,6 @@ function predictFutureDividends(
       cursor.setMonth(cursor.getMonth() + 1)
     }
   } else {
-    // 분기·반기·연배당: 과거 지급 월 패턴 기반으로 1년치 생성
-    const lastYear = new Date(sorted[sorted.length - 1].date).getFullYear()
     for (let yearOffset = 0; yearOffset <= 1; yearOffset++) {
       const targetYear = today.getFullYear() + yearOffset
       for (const m of (payMonths ?? [])) {
@@ -299,6 +339,13 @@ function formatKrw(v: number) {
 }
 
 const weekdays = ['일', '월', '화', '수', '목', '금', '토']
+
+const refreshData = async () => {
+  if (activeCacheKey.value) localStorage.removeItem(activeCacheKey.value)
+  calendarEvents.value = []
+  loading.value = true
+  await loadData()
+}
 </script>
 
 <template>
@@ -312,6 +359,10 @@ const weekdays = ['일', '월', '화', '수', '목', '금', '토']
         <div class="text-h5 font-weight-bold">배당 캘린더</div>
         <div class="text-body-2 text-medium-emphasis">보유 종목 배당락일 및 예상 배당금</div>
       </div>
+      <v-spacer />
+      <v-btn icon size="small" variant="text" :loading="loading" @click="refreshData">
+        <v-icon size="20">mdi-refresh</v-icon>
+      </v-btn>
     </div>
 
     <div v-if="loading" class="d-flex justify-center py-12">
