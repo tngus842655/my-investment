@@ -116,6 +116,9 @@ const fetchEtfInfo = async (ticker: string, crumb: string | null, cookie: string
     result.dividendYield = detail?.yield?.raw ?? detail?.trailingAnnualDividendYield?.raw ?? detail?.dividendYield?.raw ?? null
     result.expenseRatio = fund?.feesExpensesInvestment?.annualReportExpenseRatio?.raw ?? stats?.annualReportExpenseRatio?.raw ?? null
     result.beta = stats?.beta?.raw ?? stats?.beta3Year?.raw ?? null
+    result.totalAssets = detail?.totalAssets?.raw ?? stats?.totalAssets?.raw ?? null
+    result.fundFamily = fund?.family ?? null
+    result.category = fund?.categoryName ?? null
   }
 
   return result
