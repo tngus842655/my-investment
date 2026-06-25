@@ -298,7 +298,7 @@ const aiData = computed(() => {
                 :color="tag.color" size="x-small" variant="tonal"
               >{{ tag.label }}</v-chip>
             </div>
-            <div class="d-flex align-center justify-space-between mt-1">
+            <div class="d-flex align-center ga-2 mt-1">
               <div class="text-body-2 font-weight-bold">{{ info.ticker }}</div>
               <div class="text-body-2 font-weight-bold text-primary">{{ fmt.price(info.currentPrice, info.currency) }}</div>
             </div>
@@ -339,11 +339,6 @@ const aiData = computed(() => {
         <div class="px-4 pt-3 pb-1">
           <div class="section-title">수익률</div>
         </div>
-        <div v-if="dataB" class="col-header-row d-flex align-center px-4 pb-1">
-          <div class="metric-label" />
-          <div class="col-header">{{ dataA!.ticker }}</div>
-          <div class="col-header">{{ dataB.ticker }}</div>
-        </div>
 
         <div class="metric-row d-flex align-center px-4 py-3">
           <div class="metric-label text-caption d-flex align-center ga-1">
@@ -379,11 +374,6 @@ const aiData = computed(() => {
       <v-card rounded="xl" class="mb-3 overflow-hidden">
         <div class="px-4 pt-3 pb-1">
           <div class="section-title">리스크</div>
-        </div>
-        <div v-if="dataB" class="col-header-row d-flex align-center px-4 pb-1">
-          <div class="metric-label" />
-          <div class="col-header">{{ dataA!.ticker }}</div>
-          <div class="col-header">{{ dataB.ticker }}</div>
         </div>
 
         <div class="metric-row d-flex align-center px-4 py-3">
@@ -447,11 +437,6 @@ const aiData = computed(() => {
       <v-card rounded="xl" class="mb-3 overflow-hidden">
         <div class="px-4 pt-3 pb-1">
           <div class="section-title">배당 & 비용</div>
-        </div>
-        <div v-if="dataB" class="col-header-row d-flex align-center px-4 pb-1">
-          <div class="metric-label" />
-          <div class="col-header">{{ dataA!.ticker }}</div>
-          <div class="col-header">{{ dataB.ticker }}</div>
         </div>
 
         <div class="metric-row d-flex align-center px-4 py-3">
@@ -550,6 +535,7 @@ const aiData = computed(() => {
 .metric-label {
   flex: 1;
   color: rgba(var(--v-theme-on-surface), 0.5);
+  white-space: nowrap;
 }
 .metric-val {
   min-width: 80px;
