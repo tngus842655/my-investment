@@ -322,7 +322,6 @@ onMounted(loadDashboard)
 }
 :global(.v-theme--dark) .header-logo {
   mix-blend-mode: normal;
-  filter: brightness(0) invert(1);
 }
 
 .glass-card {

@@ -167,7 +167,6 @@ const onKeydown = (e: KeyboardEvent) => { if (e.key === 'Enter') signIn() }
 }
 :global(.v-theme--dark) .brand-logo {
   mix-blend-mode: normal;
-  filter: brightness(0) invert(1);
 }
 
 .brand-icon {

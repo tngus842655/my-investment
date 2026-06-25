@@ -776,7 +776,6 @@ onUnmounted(() => {
 }
 :global(.v-theme--dark) .header-icon {
   mix-blend-mode: normal;
-  filter: brightness(0) invert(1);
 }
 
 .glass-card {
@@ -809,7 +808,6 @@ onUnmounted(() => {
 }
 :global(.v-theme--dark) .ticker-logo-blend {
   mix-blend-mode: normal;
-  filter: brightness(0) invert(1);
 }
 .logo-bg-etf {
   background: #e8f4ff;
