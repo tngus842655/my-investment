@@ -297,6 +297,10 @@ const logout = async () => {
   object-fit: contain;
   mix-blend-mode: multiply;
 }
+.v-theme--dark .header-icon {
+  mix-blend-mode: normal;
+  filter: brightness(0) invert(1);
+}
 
 .section-label {
   font-size: 11px;

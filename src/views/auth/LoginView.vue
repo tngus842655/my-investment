@@ -165,6 +165,10 @@ const onKeydown = (e: KeyboardEvent) => { if (e.key === 'Enter') signIn() }
   display: block;
   mix-blend-mode: multiply;
 }
+.v-theme--dark .brand-logo {
+  mix-blend-mode: normal;
+  filter: brightness(0) invert(1);
+}
 
 .brand-icon {
   width: 64px;

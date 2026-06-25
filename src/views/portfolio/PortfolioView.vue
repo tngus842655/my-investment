@@ -636,16 +636,14 @@ onUnmounted(() => {
                     <img
                       v-if="item.asset_type === '현금' && item.ticker === 'CASH_USD'"
                       src="/icons/icon-dollar.png"
-                      class="ticker-logo"
+                      class="ticker-logo ticker-logo-blend"
                       alt="달러현금"
-                      style="mix-blend-mode: multiply"
                     />
                     <img
                       v-else-if="item.asset_type === '현금'"
                       src="/icons/icon-won.png"
-                      class="ticker-logo"
+                      class="ticker-logo ticker-logo-blend"
                       alt="원화현금"
-                      style="mix-blend-mode: multiply"
                     />
                     <img
                       v-else-if="logoMap[item.ticker]"
@@ -776,6 +774,10 @@ onUnmounted(() => {
   object-fit: contain;
   mix-blend-mode: multiply;
 }
+.v-theme--dark .header-icon {
+  mix-blend-mode: normal;
+  filter: brightness(0) invert(1);
+}
 
 .glass-card {
   background: rgb(var(--v-theme-surface));
@@ -801,6 +803,13 @@ onUnmounted(() => {
   width: 28px;
   height: 28px;
   object-fit: contain;
+}
+.ticker-logo-blend {
+  mix-blend-mode: multiply;
+}
+.v-theme--dark .ticker-logo-blend {
+  mix-blend-mode: normal;
+  filter: brightness(0) invert(1);
 }
 .logo-bg-etf {
   background: #e8f4ff;
