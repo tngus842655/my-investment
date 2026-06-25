@@ -8,6 +8,18 @@
 
 - [ ] `.env`를 `.gitignore`에 추가할 것 (현재 2PC 개발 편의상 저장소에 포함되어 있음 — API 키 노출 주의!)
 
+## Supabase RLS 정책 작성 주의사항
+
+RLS 정책에서 이메일로 관리자 체크할 때 `auth.users` 테이블 직접 조회는 권한 오류 발생:
+
+```sql
+-- ❌ 이렇게 하면 안 됨 (permission denied for table users)
+USING ((SELECT email FROM auth.users WHERE id = auth.uid()) = 'admin@email.com')
+
+-- ✅ 이렇게 해야 함 (JWT claims에서 직접 읽기)
+USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'email') = 'admin@email.com')
+```
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 커밋 메시지 규칙
