@@ -13,6 +13,7 @@ import PortfolioAnalysisView from '@/views/more/PortfolioAnalysisView.vue'
 import BadgesView from '@/views/more/BadgesView.vue'
 import FireSimulatorView from '@/views/more/FireSimulatorView.vue'
 import FireHistoryView from '@/views/more/FireHistoryView.vue'
+import AssetGrowthView from '@/views/more/AssetGrowthView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -77,6 +78,11 @@ const router = createRouter({
           path: 'fire-history',
           name: 'fireHistory',
           component: FireHistoryView,
+        },
+        {
+          path: 'asset-growth',
+          name: 'assetGrowth',
+          component: AssetGrowthView,
         },
       ],
     },

@@ -318,7 +318,6 @@ onMounted(loadDashboard)
   width: 36px;
   height: 36px;
   object-fit: contain;
-  mix-blend-mode: multiply;
 }
 
 .glass-card {

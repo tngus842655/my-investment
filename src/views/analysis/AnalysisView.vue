@@ -340,7 +340,6 @@ onMounted(loadData)
   width: 28px;
   height: 28px;
   object-fit: contain;
-  mix-blend-mode: multiply;
 }
 
 .glass-card {
