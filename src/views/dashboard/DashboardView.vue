@@ -229,10 +229,7 @@ onMounted(loadDashboard)
             </template>
             <template v-else>
               <div class="fire-info-sub mb-1">목표까지</div>
-              <div class="fire-info-main">
-                <span v-if="hideAsset">•••</span>
-                <span v-else>{{ formatShortMoney(remainingAsset) }}원 남음</span>
-              </div>
+              <div class="fire-info-main">{{ formatShortMoney(remainingAsset) }}원 남음</div>
               <div class="fire-divider my-3" />
               <div class="fire-info-sub mb-1">예상 달성일</div>
               <template v-if="estimatedDate">
