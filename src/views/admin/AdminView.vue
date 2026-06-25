@@ -76,35 +76,6 @@ const stats = computed(() => {
   return { total, active, deleted, retentionRate, avgDays, lastSignup, lastDeleted }
 })
 
-// ── 월별 가입 추이 SVG 바 차트 ────────────────────
-const monthlyChart = computed(() => {
-  if (logs.value.length === 0) return null
-
-  const map = new Map<string, { signup: number; deleted: number }>()
-  for (const l of logs.value) {
-    const d = new Date(l.signed_up_at)
-    const key = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}`
-    const cur = map.get(key) ?? { signup: 0, deleted: 0 }
-    cur.signup++
-    if (l.deleted_at) cur.deleted++
-    map.set(key, cur)
-  }
-
-  const entries = Array.from(map.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .slice(-6) // 최근 6개월
-
-  const maxVal = Math.max(...entries.map(([, v]) => v.signup), 4)
-  const VH = 60
-  return entries.map(([label, v], i) => ({
-    label: label.slice(5), // MM
-    signup: v.signup,
-    deleted: v.deleted,
-    barH: Math.round((v.signup / maxVal) * VH),
-    x: i * 40 + 16,
-  }))
-})
-
 // ── 포맷 ─────────────────────────────────────────
 const formatDate = (iso: string) => {
   const d = new Date(iso)
@@ -195,42 +166,6 @@ onMounted(async () => {
             {{ stats.lastDeleted ? stats.lastDeleted.email + ' · ' + formatDateShort(stats.lastDeleted.deleted_at!) : '-' }}
           </span>
         </div>
-      </div>
-
-      <!-- 월별 가입 추이 -->
-      <div v-if="monthlyChart" class="glass-card pa-4 mb-3">
-        <div class="section-label mb-4">월별 가입 추이 (최근 6개월)</div>
-        <svg width="100%" :viewBox="`0 0 ${monthlyChart.length * 40 + 16} 110`" style="overflow: visible">
-          <g v-for="item in monthlyChart" :key="item.label">
-            <!-- 바 -->
-            <rect
-              :x="item.x"
-              :y="90 - item.barH"
-              width="24"
-              :height="item.barH"
-              rx="6"
-              fill="rgb(var(--v-theme-primary))"
-              opacity="0.8"
-            />
-            <!-- 가입 수 -->
-            <text
-              :x="item.x + 12"
-              :y="85 - item.barH"
-              text-anchor="middle"
-              font-size="10"
-              font-weight="700"
-              fill="rgb(var(--v-theme-primary))"
-            >{{ item.signup }}</text>
-            <!-- 월 레이블 -->
-            <text
-              :x="item.x + 12"
-              y="104"
-              text-anchor="middle"
-              font-size="9"
-              fill="rgba(var(--v-theme-on-surface), 0.4)"
-            >{{ item.label }}월</text>
-          </g>
-        </svg>
       </div>
 
       <!-- 가입 이력 목록 -->
