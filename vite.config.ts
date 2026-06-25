@@ -12,8 +12,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/*.png'],
       manifest: {
-        name: 'MY INVESTMENT',
-        short_name: 'MY INVESTMENT',
+        name: 'FirePath',
+        short_name: 'FirePath',
         description: '나만의 FIRE 목표 관리 플랫폼',
         theme_color: '#0E8A82',
         background_color: '#F0F7F6',
