@@ -102,7 +102,7 @@ const remainingInfo = computed(() => {
 // ── SVG 차트 ─────────────────────────────────────
 const VW = 300
 const VH = 180
-const PAD = { top: 16, right: 16, bottom: 32, left: 8 }
+const PAD = { top: 16, right: 60, bottom: 32, left: 8 }
 const PW = VW - PAD.left - PAD.right
 const PH = VH - PAD.top - PAD.bottom
 
@@ -148,6 +148,46 @@ const chartPoints = computed(() => {
     : null
 
   return { d, fillD, pointArr, xLabels, startPt, goalPt, toX, toY }
+})
+
+// ── 마일스톤 ─────────────────────────────────────
+const formatMilestoneLabel = (v: number) => {
+  if (v >= 100_000_000) return (v / 100_000_000) % 1 === 0
+    ? `${v / 100_000_000}억`
+    : `${(v / 100_000_000).toFixed(1)}억`
+  return `${Math.round(v / 10_000)}만`
+}
+
+const chartMilestones = computed(() => {
+  const T = targetAsset.value
+  const C = currentAsset.value
+  if (!T || !chartPoints.value) return []
+
+  // 목표에 맞는 눈금 단위 결정
+  let step: number
+  if (T <= 50_000_000) step = 10_000_000
+  else if (T <= 200_000_000) step = 50_000_000
+  else if (T <= 500_000_000) step = 100_000_000
+  else if (T <= 2_000_000_000) step = 500_000_000
+  else step = 1_000_000_000
+
+  const result: { value: number; label: string; isPassed: boolean; y: number }[] = []
+  let v = step
+  while (v < T) {
+    result.push({
+      value: v,
+      label: formatMilestoneLabel(v),
+      isPassed: C >= v,
+      y: chartPoints.value!.toY(v),
+    })
+    v += step
+  }
+  return result
+})
+
+const nextMilestone = computed(() => {
+  const C = currentAsset.value
+  return chartMilestones.value.find((m) => !m.isPassed) ?? null
 })
 
 const hasData = computed(() =>
@@ -296,21 +336,49 @@ onMounted(loadData)
               </linearGradient>
             </defs>
 
+            <!-- 마일스톤 수평선 + 라벨 -->
+            <g v-for="m in chartMilestones" :key="m.value">
+              <line
+                :x1="PAD.left"
+                :y1="m.y"
+                :x2="VW - PAD.right + 2"
+                :y2="m.y"
+                :stroke="m.isPassed ? 'rgba(var(--v-theme-primary), 0.25)' : 'rgba(var(--v-theme-on-surface), 0.1)'"
+                stroke-width="1"
+                stroke-dasharray="3 3"
+              />
+              <text
+                :x="VW - PAD.right + 6"
+                :y="m.y + 4"
+                font-size="9"
+                font-weight="600"
+                :fill="m.isPassed ? 'rgba(var(--v-theme-primary), 0.7)' : 'rgba(var(--v-theme-on-surface), 0.35)'"
+              >{{ m.isPassed ? '✓' : '💰' }} {{ m.label }}</text>
+            </g>
+
+            <!-- 목표선 -->
+            <g v-if="targetAsset > 0 && chartPoints.goalPt">
+              <line
+                :x1="PAD.left"
+                :y1="chartPoints.goalPt.y"
+                :x2="VW - PAD.right + 2"
+                :y2="chartPoints.goalPt.y"
+                stroke="rgb(var(--v-theme-primary))"
+                stroke-width="1"
+                stroke-dasharray="4 3"
+                opacity="0.5"
+              />
+              <text
+                :x="VW - PAD.right + 6"
+                :y="chartPoints.goalPt.y + 4"
+                font-size="9"
+                font-weight="700"
+                fill="rgb(var(--v-theme-primary))"
+              >🏁 {{ formatMilestoneLabel(targetAsset) }}</text>
+            </g>
+
             <!-- fill -->
             <path :d="chartPoints.fillD" fill="url(#chartFill)" />
-
-            <!-- 목표선 (수평 점선) -->
-            <line
-              v-if="targetAsset > 0 && chartPoints.goalPt"
-              :x1="PAD.left"
-              :y1="chartPoints.goalPt.y"
-              :x2="VW - PAD.right"
-              :y2="chartPoints.goalPt.y"
-              stroke="rgb(var(--v-theme-primary))"
-              stroke-width="1"
-              stroke-dasharray="4 3"
-              opacity="0.4"
-            />
 
             <!-- 선 -->
             <path
@@ -322,15 +390,22 @@ onMounted(loadData)
               stroke-linejoin="round"
             />
 
-            <!-- 시작점 -->
+            <!-- 현재 자산 시작점 -->
             <circle
               :cx="chartPoints.startPt.x"
               :cy="chartPoints.startPt.y"
-              r="4"
+              r="5"
               fill="rgb(var(--v-theme-surface))"
               stroke="rgb(var(--v-theme-primary))"
-              stroke-width="2"
+              stroke-width="2.5"
             />
+            <text
+              :x="chartPoints.startPt.x + 8"
+              :y="chartPoints.startPt.y + 4"
+              font-size="8"
+              font-weight="600"
+              fill="rgba(var(--v-theme-on-surface), 0.55)"
+            >● 현재</text>
 
             <!-- 목표 달성 포인트 -->
             <g v-if="chartPoints.goalPt && targetAsset > 0">
@@ -340,13 +415,6 @@ onMounted(loadData)
                 r="5"
                 fill="rgb(var(--v-theme-primary))"
               />
-              <!-- 깃발 -->
-              <text
-                :x="chartPoints.goalPt.x - 1"
-                :y="chartPoints.goalPt.y - 10"
-                text-anchor="middle"
-                font-size="12"
-              >🚩</text>
             </g>
 
             <!-- X축 레이블 -->
@@ -360,6 +428,13 @@ onMounted(loadData)
               >{{ lbl.label }}</text>
             </g>
           </svg>
+
+          <!-- 다음 마일스톤 -->
+          <div v-if="nextMilestone" class="next-milestone-bar mt-3">
+            <v-icon size="14" color="primary">mdi-flag-outline</v-icon>
+            <span>다음 목표 <strong>{{ nextMilestone.label }}</strong>까지
+              <strong>{{ formatShortMoney(nextMilestone.value - currentAsset) }}원</strong> 남았습니다</span>
+          </div>
         </template>
       </div>
 
@@ -490,6 +565,20 @@ onMounted(loadData)
 .stat-value-lg {
   font-size: 20px;
   font-weight: 700;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.next-milestone-bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: rgba(var(--v-theme-on-surface), 0.55);
+  background: rgba(var(--v-theme-primary), 0.06);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+.next-milestone-bar strong {
   color: rgb(var(--v-theme-on-surface));
 }
 
