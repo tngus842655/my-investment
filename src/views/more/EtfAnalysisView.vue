@@ -92,6 +92,11 @@ const cls = (a: number | null, b: number | null, higherIsBetter: boolean, side: 
   return w === side ? 'winner' : 'loser'
 }
 
+const isWinner = (a: number | null, b: number | null, higherIsBetter: boolean, side: 'a' | 'b'): boolean => {
+  if (!dataB.value) return false
+  return better(a, b, higherIsBetter) === side
+}
+
 const getEtfTags = (info: EtfInfo) => {
   const tags: Array<{ label: string; color: string }> = []
   const name = (info.name ?? '').toLowerCase()
@@ -122,57 +127,47 @@ const tooltips: Record<string, string> = {
   dividendYield: '최근 12개월 지급 배당금의 현재가 대비 비율입니다.',
 }
 
-const aiSummary = computed((): string => {
+const aiData = computed(() => {
   const a = dataA.value
   const b = dataB.value
-  if (!a) return ''
+  if (!a) return null
 
   if (!b) {
     const parts: string[] = []
-    if (a.cagr != null) parts.push(`연평균 수익률(CAGR) ${fmt.pct(a.cagr)}`)
-    if (a.mdd != null) parts.push(`최대 낙폭(MDD) ${fmt.pct(a.mdd)}`)
+    if (a.cagr != null) parts.push(`CAGR ${fmt.pct(a.cagr)}`)
+    if (a.mdd != null) parts.push(`MDD ${fmt.pct(a.mdd)}`)
     if (a.expenseRatio != null) parts.push(`운용보수 ${fmt.pct(a.expenseRatio, 2)}`)
     const risk = a.mdd == null ? '' : a.mdd > -0.2 ? '낮은' : a.mdd > -0.4 ? '중간 수준의' : '높은'
-    const div = (a.dividendYield ?? 0) > 0.02 ? ' 배당 수익을 원하는 투자자에게 적합하며,' : ''
-    return `${a.ticker}은 ${parts.join(', ')}의 ETF입니다.${div} 리스크는 ${risk} 편입니다.`
+    return { mode: 'single' as const, summary: `${a.ticker}은 ${parts.join(', ')}의 ETF입니다. 리스크는 ${risk} 편입니다.` }
   }
 
-  const lines: string[] = []
-
-  if (a.cagr != null && b.cagr != null) {
-    const winner = a.cagr > b.cagr ? a.ticker : b.ticker
-    const diff = Math.abs((a.cagr - b.cagr) * 100).toFixed(1)
-    lines.push(`수익률 면에서 ${winner}의 CAGR이 ${diff}%p 높습니다.`)
-  }
-
-  if (a.mdd != null && b.mdd != null) {
-    const winner = a.mdd > b.mdd ? a.ticker : b.ticker
-    lines.push(`리스크는 ${winner}의 최대 낙폭이 더 작아 상대적으로 안정적입니다.`)
-  }
-
-  if (a.expenseRatio != null && b.expenseRatio != null) {
-    const winner = a.expenseRatio < b.expenseRatio ? a.ticker : b.ticker
-    lines.push(`운용보수는 ${winner}이 더 저렴합니다.`)
-  }
-
-  if ((a.dividendYield ?? 0) > 0 || (b.dividendYield ?? 0) > 0) {
-    if (a.dividendYield != null && b.dividendYield != null) {
-      const winner = a.dividendYield > b.dividendYield ? a.ticker : b.ticker
-      lines.push(`배당률은 ${winner}이 더 높습니다.`)
-    }
-  }
+  const cagrW = better(a.cagr, b.cagr, true)
+  const mddW  = better(a.mdd,  b.mdd,  true)
+  const terW  = better(a.expenseRatio,  b.expenseRatio,  false)
+  const divW  = better(a.dividendYield, b.dividendYield, true)
 
   let aScore = 0, bScore = 0
-  if (a.cagr != null && b.cagr != null) a.cagr > b.cagr ? aScore++ : bScore++
-  if (a.mdd != null && b.mdd != null) a.mdd > b.mdd ? aScore++ : bScore++
-  if (a.expenseRatio != null && b.expenseRatio != null) a.expenseRatio < b.expenseRatio ? aScore++ : bScore++
-  if (a.dividendYield != null && b.dividendYield != null) a.dividendYield > b.dividendYield ? aScore++ : bScore++
-  if (aScore !== bScore) {
-    const overall = aScore > bScore ? a.ticker : b.ticker
-    lines.push(`종합적으로 이번 비교에서 ${overall}이 더 유리한 ETF로 평가됩니다.`)
-  }
+  ;[cagrW, mddW, terW, divW].forEach(w => { if (w === 'a') aScore++; else if (w === 'b') bScore++ })
 
-  return lines.join(' ')
+  const tied = aScore === bScore
+  const ws = tied ? null : (aScore > bScore ? 'a' : 'b')
+  const winnerInfo = ws === 'b' ? b : a
+  const winnerTicker = ws === 'b' ? b.ticker : a.ticker
+
+  const reasons: string[] = []
+  if (ws && cagrW === ws && a.cagr != null) reasons.push('CAGR 수익률 우수')
+  if (ws && mddW  === ws && a.mdd  != null) reasons.push('최대 낙폭(MDD) 안정적')
+  if (ws && terW  === ws && a.expenseRatio != null) reasons.push('운용보수(TER) 저렴')
+  if (ws && divW  === ws && (a.dividendYield ?? 0) > 0) reasons.push('배당률 높음')
+
+  const closing = tied ? '두 ETF는 전반적으로 비슷한 수준입니다.'
+    : (winnerInfo.expenseRatio ?? 1) < 0.003 && (winnerInfo.dividendYield ?? 0) < 0.01
+      ? '장기 적립식 투자에 유리합니다.'
+      : (winnerInfo.dividendYield ?? 0) > 0.01
+        ? '배당 수익을 원하는 투자자에게 적합합니다.'
+        : '종합적으로 더 유리한 ETF입니다.'
+
+  return { mode: 'compare' as const, winner: winnerTicker, reasons, closing, tied }
 })
 </script>
 
@@ -306,10 +301,12 @@ const aiSummary = computed((): string => {
               </template>
             </v-tooltip>
           </div>
-          <div class="metric-val text-body-2 text-right" :class="cls(dataA!.cagr, dataB?.cagr ?? null, true, 'a')">
+          <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.cagr, dataB?.cagr ?? null, true, 'a')">
+            <span v-if="isWinner(dataA!.cagr, dataB?.cagr ?? null, true, 'a')">🏆</span>
             {{ fmt.pct(dataA!.cagr) }}
           </div>
-          <div v-if="dataB" class="metric-val text-body-2 text-right" :class="cls(dataA!.cagr, dataB.cagr, true, 'b')">
+          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.cagr, dataB.cagr, true, 'b')">
+            <span v-if="isWinner(dataA!.cagr, dataB.cagr, true, 'b')">🏆</span>
             {{ fmt.pct(dataB.cagr) }}
           </div>
         </div>
@@ -346,10 +343,12 @@ const aiSummary = computed((): string => {
             </v-tooltip>
           </div>
           <!-- MDD는 음수값 → 0에 가까울수록(높을수록) 낙폭 적음 → higherIsBetter: true -->
-          <div class="metric-val text-body-2 text-right" :class="cls(dataA!.mdd, dataB?.mdd ?? null, true, 'a')">
+          <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.mdd, dataB?.mdd ?? null, true, 'a')">
+            <span v-if="isWinner(dataA!.mdd, dataB?.mdd ?? null, true, 'a')">🏆</span>
             {{ fmt.pct(dataA!.mdd) }}
           </div>
-          <div v-if="dataB" class="metric-val text-body-2 text-right" :class="cls(dataA!.mdd, dataB.mdd, true, 'b')">
+          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.mdd, dataB.mdd, true, 'b')">
+            <span v-if="isWinner(dataA!.mdd, dataB.mdd, true, 'b')">🏆</span>
             {{ fmt.pct(dataB.mdd) }}
           </div>
         </div>
@@ -362,10 +361,12 @@ const aiSummary = computed((): string => {
               </template>
             </v-tooltip>
           </div>
-          <div class="metric-val text-body-2 text-right" :class="cls(dataA!.volatility, dataB?.volatility ?? null, false, 'a')">
+          <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.volatility, dataB?.volatility ?? null, false, 'a')">
+            <span v-if="isWinner(dataA!.volatility, dataB?.volatility ?? null, false, 'a')">🏆</span>
             {{ fmt.pct(dataA!.volatility) }}
           </div>
-          <div v-if="dataB" class="metric-val text-body-2 text-right" :class="cls(dataA!.volatility, dataB.volatility, false, 'b')">
+          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.volatility, dataB.volatility, false, 'b')">
+            <span v-if="isWinner(dataA!.volatility, dataB.volatility, false, 'b')">🏆</span>
             {{ fmt.pct(dataB.volatility) }}
           </div>
         </div>
@@ -378,10 +379,12 @@ const aiSummary = computed((): string => {
               </template>
             </v-tooltip>
           </div>
-          <div class="metric-val text-body-2 text-right" :class="cls(dataA!.beta, dataB?.beta ?? null, false, 'a')">
+          <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.beta, dataB?.beta ?? null, false, 'a')">
+            <span v-if="isWinner(dataA!.beta, dataB?.beta ?? null, false, 'a')">🏆</span>
             {{ fmt.num(dataA!.beta) }}
           </div>
-          <div v-if="dataB" class="metric-val text-body-2 text-right" :class="cls(dataA!.beta, dataB.beta, false, 'b')">
+          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.beta, dataB.beta, false, 'b')">
+            <span v-if="isWinner(dataA!.beta, dataB.beta, false, 'b')">🏆</span>
             {{ fmt.num(dataB.beta) }}
           </div>
         </div>
@@ -407,10 +410,12 @@ const aiSummary = computed((): string => {
               </template>
             </v-tooltip>
           </div>
-          <div class="metric-val text-body-2 text-right" :class="cls(dataA!.dividendYield, dataB?.dividendYield ?? null, true, 'a')">
+          <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.dividendYield, dataB?.dividendYield ?? null, true, 'a')">
+            <span v-if="isWinner(dataA!.dividendYield, dataB?.dividendYield ?? null, true, 'a')">🏆</span>
             {{ fmt.pct(dataA!.dividendYield) }}
           </div>
-          <div v-if="dataB" class="metric-val text-body-2 text-right" :class="cls(dataA!.dividendYield, dataB.dividendYield, true, 'b')">
+          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.dividendYield, dataB.dividendYield, true, 'b')">
+            <span v-if="isWinner(dataA!.dividendYield, dataB.dividendYield, true, 'b')">🏆</span>
             {{ fmt.pct(dataB.dividendYield) }}
           </div>
         </div>
@@ -423,22 +428,44 @@ const aiSummary = computed((): string => {
               </template>
             </v-tooltip>
           </div>
-          <div class="metric-val text-body-2 text-right" :class="cls(dataA!.expenseRatio, dataB?.expenseRatio ?? null, false, 'a')">
+          <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.expenseRatio, dataB?.expenseRatio ?? null, false, 'a')">
+            <span v-if="isWinner(dataA!.expenseRatio, dataB?.expenseRatio ?? null, false, 'a')">🏆</span>
             {{ dataA!.expenseRatio != null ? fmt.pct(dataA!.expenseRatio, 2) : '-' }}
           </div>
-          <div v-if="dataB" class="metric-val text-body-2 text-right" :class="cls(dataA!.expenseRatio, dataB.expenseRatio, false, 'b')">
+          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.expenseRatio, dataB.expenseRatio, false, 'b')">
+            <span v-if="isWinner(dataA!.expenseRatio, dataB.expenseRatio, false, 'b')">🏆</span>
             {{ dataB.expenseRatio != null ? fmt.pct(dataB.expenseRatio, 2) : '-' }}
           </div>
         </div>
       </v-card>
 
       <!-- AI 요약 -->
-      <v-card v-if="aiSummary" rounded="xl" class="mb-4 ai-card pa-4">
-        <div class="d-flex align-center ga-2 mb-2">
+      <v-card v-if="aiData" rounded="xl" class="mb-4 ai-card pa-4">
+        <div class="d-flex align-center ga-2 mb-3">
           <v-icon size="18" color="primary">mdi-creation</v-icon>
-          <div class="text-caption font-weight-bold" style="color: rgb(var(--v-theme-primary))">AI 분석 요약</div>
+          <div class="text-caption font-weight-bold" style="color: rgb(var(--v-theme-primary))">AI 종합 분석</div>
         </div>
-        <div class="text-body-2" style="line-height:1.7">{{ aiSummary }}</div>
+
+        <!-- 단일 ETF -->
+        <div v-if="aiData.mode === 'single'" class="text-body-2" style="line-height:1.7">{{ aiData.summary }}</div>
+
+        <!-- 비교 모드 -->
+        <template v-else>
+          <div v-if="!aiData.tied" class="ai-winner-row d-flex align-center ga-2 mb-3 pa-3">
+            <span style="font-size:20px">🏆</span>
+            <div>
+              <div class="text-caption text-medium-emphasis">추천 ETF</div>
+              <div class="text-body-1 font-weight-bold">{{ aiData.winner }}</div>
+            </div>
+          </div>
+
+          <div v-for="reason in aiData.reasons" :key="reason" class="d-flex align-center ga-2 mb-1">
+            <v-icon size="15" color="success">mdi-check-circle-outline</v-icon>
+            <div class="text-body-2">{{ reason }}</div>
+          </div>
+
+          <div class="text-body-2 text-medium-emphasis mt-3">{{ aiData.closing }}</div>
+        </template>
       </v-card>
 
       <div class="text-caption text-medium-emphasis">
@@ -500,5 +527,9 @@ const aiSummary = computed((): string => {
 .ai-card {
   background: rgba(var(--v-theme-primary), 0.04);
   border: 1px solid rgba(var(--v-theme-primary), 0.15);
+}
+.ai-winner-row {
+  background: rgba(var(--v-theme-primary), 0.08);
+  border-radius: 12px;
 }
 </style>
