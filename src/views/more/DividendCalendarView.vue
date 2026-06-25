@@ -170,6 +170,14 @@ const onDayClick = (day: number | null, events: CalendarEvent[]) => {
   showSheet.value = true
 }
 
+function toNearestBusinessDay(date: Date): Date {
+  const d = new Date(date)
+  const day = d.getDay()
+  if (day === 0) d.setDate(d.getDate() - 2)  // 일 → 금
+  else if (day === 6) d.setDate(d.getDate() - 1)  // 토 → 금
+  return d
+}
+
 function predictFutureDividends(
   ticker: string,
   pastDivs: DividendEvent[],
@@ -211,17 +219,20 @@ function predictFutureDividends(
 
   while (nextDate <= oneYearLater) {
     if (nextDate >= today) {
-      const dateStr = nextDate.toISOString().slice(0, 10)
+      const adjusted = toNearestBusinessDay(new Date(nextDate))
+      const dateStr = adjusted.toISOString().slice(0, 10)
       const totalKrw = currency === 'USD' ? avgAmount * quantity * rate : avgAmount * quantity
-      predictions.push({
-        date: dateStr,
-        ticker,
-        amountPerShare: avgAmount,
-        totalAmountKrw: Math.round(totalKrw),
-        currency,
-        quantity,
-        isNext: true,
-      })
+      if (!predictions.find((p) => p.date === dateStr)) {
+        predictions.push({
+          date: dateStr,
+          ticker,
+          amountPerShare: avgAmount,
+          totalAmountKrw: Math.round(totalKrw),
+          currency,
+          quantity,
+          isNext: true,
+        })
+      }
     }
     nextDate.setDate(nextDate.getDate() + period)
   }
