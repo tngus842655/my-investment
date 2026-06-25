@@ -28,18 +28,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Git Push 규칙
 
-사용자가 "push" 라고 말하면 아래 순서로 develop까지 반영한다:
+사용자가 "push" 또는 "main에 반영" 이라고 말하면 아래 순서로 진행한다:
 
-1. 현재 작업 브랜치에 `git push -u origin <branch>`
-2. GitHub MCP로 해당 브랜치 → `develop` PR 생성
-3. PR을 squash merge로 develop에 머지
-
-사용자가 "main에 반영" 이라고 말하면 아래 순서로 진행한다:
-
-1. 현재 작업 브랜치에 `git push -u origin <branch>`
-2. GitHub API(curl + $GITHUB_TOKEN) 또는 GitHub MCP로 해당 브랜치 → `main` PR 생성
+1. **새 브랜치 생성** — 현재 작업 브랜치를 그대로 쓰지 말고 `claude/작업명-날짜` 형식으로 새 브랜치 생성
+   - `git checkout main && git pull origin main`
+   - `git checkout -b claude/새브랜치명`
+   - 변경된 파일들만 `git checkout origin/작업브랜치 -- 파일1 파일2 ...` 로 가져오기
+   - `git push -u origin claude/새브랜치명`
+2. GitHub MCP로 새 브랜치 → `main` PR 생성
 3. PR을 squash merge로 main에 머지
-4. **절대 `git push origin main` 직접 push 시도 금지** — main은 보호 브랜치라 항상 막힘
+
+**⚠️ 충돌 방지 핵심 규칙:**
+- squash merge 후 같은 브랜치에서 계속 작업하면 다음 PR에서 반드시 충돌 발생
+- main에 push할 때는 **항상 새 브랜치**를 만들어서 변경 파일만 담아 PR 생성
+- **절대 `git push origin main` 직접 push 시도 금지** — main은 보호 브랜치라 항상 막힘
 
 ## 프로젝트 개요
 
