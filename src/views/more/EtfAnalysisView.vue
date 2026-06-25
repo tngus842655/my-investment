@@ -302,6 +302,7 @@ const aiData = computed(() => {
               <div class="text-body-2 font-weight-bold">{{ info.ticker }}</div>
               <div class="text-body-2 font-weight-bold text-primary">{{ fmt.price(info.currentPrice, info.currency) }}</div>
             </div>
+            <div v-if="info.fundFamily" class="text-caption text-medium-emphasis mt-1" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ info.fundFamily }}</div>
           </div>
         </template>
       </div>
@@ -317,11 +318,6 @@ const aiData = computed(() => {
           <div class="col-header">{{ dataB.ticker }}</div>
         </div>
 
-        <div class="metric-row d-flex align-center px-4 py-2">
-          <div class="metric-label text-caption">운용사</div>
-          <div class="metric-val text-caption text-right">{{ dataA!.fundFamily ?? '-' }}</div>
-          <div v-if="dataB" class="metric-val text-caption text-right">{{ dataB.fundFamily ?? '-' }}</div>
-        </div>
         <div class="metric-row d-flex align-center px-4 py-2">
           <div class="metric-label text-caption">운용자산 (AUM)</div>
           <div class="metric-val text-body-2 font-weight-medium text-right">{{ fmt.aum(dataA!.totalAssets, dataA!.currency) }}</div>
