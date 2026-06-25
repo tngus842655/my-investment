@@ -438,6 +438,30 @@ const refresh = async () => {
   isRefreshing.value = false
 }
 
+// ── 정렬 ─────────────────────────────────────────
+type SortKey = 'custom' | 'eval' | 'profit' | 'rate' | 'name'
+const sortKey = ref<SortKey>('custom')
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'custom', label: '직접 정렬' },
+  { key: 'eval',   label: '평가금액순' },
+  { key: 'profit', label: '손익순' },
+  { key: 'rate',   label: '수익률순' },
+  { key: 'name',   label: '이름순' },
+]
+
+const sortedPortfolios = computed(() => {
+  if (sortKey.value === 'custom') return portfolios.value
+  const list = [...portfolios.value]
+  switch (sortKey.value) {
+    case 'eval':   return list.sort((a, b) => (b.evaluationAmountKrw ?? 0) - (a.evaluationAmountKrw ?? 0))
+    case 'profit': return list.sort((a, b) => (b.profitAmountKrw ?? 0) - (a.profitAmountKrw ?? 0))
+    case 'rate':   return list.sort((a, b) => (b.profitRate ?? 0) - (a.profitRate ?? 0))
+    case 'name':   return list.sort((a, b) => a.ticker.localeCompare(b.ticker))
+    default:       return list
+  }
+})
+
 const onGlobalMouseUp = () => {
   isDraggingSwipe.value = false
   endDrag()
@@ -486,6 +510,33 @@ onUnmounted(() => {
           style="border-color: rgba(var(--v-theme-on-surface), 0.15)"
           @click="refresh"
         />
+        <!-- 정렬 메뉴 -->
+        <v-menu location="bottom end">
+          <template #activator="{ props }">
+            <v-btn
+              v-bind="props"
+              variant="outlined"
+              size="small"
+              rounded="lg"
+              elevation="0"
+              :color="sortKey !== 'custom' ? 'primary' : undefined"
+              style="border-color: rgba(var(--v-theme-on-surface), 0.15); min-width: 0; padding: 0 10px"
+            >
+              <v-icon size="16">mdi-sort</v-icon>
+            </v-btn>
+          </template>
+          <v-list density="compact" rounded="lg" min-width="140">
+            <v-list-item
+              v-for="opt in SORT_OPTIONS"
+              :key="opt.key"
+              :active="sortKey === opt.key"
+              active-color="primary"
+              @click="sortKey = opt.key; closeSwipe()"
+            >
+              <v-list-item-title style="font-size: 13px">{{ opt.label }}</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
         <v-btn
           color="primary"
           prepend-icon="mdi-plus"
@@ -562,10 +613,19 @@ onUnmounted(() => {
         </div>
       </div>
 
+      <!-- 정렬 중 안내 칩 -->
+      <div v-if="sortKey !== 'custom'" class="d-flex align-center ga-2 mb-3">
+        <v-icon size="14" color="primary">mdi-sort</v-icon>
+        <span style="font-size: 12px; color: rgba(var(--v-theme-on-surface), 0.55)">
+          {{ SORT_OPTIONS.find(o => o.key === sortKey)?.label }} 적용 중
+        </span>
+        <v-btn size="x-small" variant="text" color="primary" @click="sortKey = 'custom'">초기화</v-btn>
+      </div>
+
       <!-- 자산 카드 목록 -->
       <TransitionGroup name="cards" tag="div">
         <div
-          v-for="item in portfolios"
+          v-for="item in sortedPortfolios"
           :key="item.id"
           class="portfolio-card-wrap mb-2"
           :data-id="item.id"
@@ -607,6 +667,7 @@ onUnmounted(() => {
               <div class="d-flex justify-space-between align-center mb-2">
                 <div class="d-flex align-center ga-2">
                   <v-icon
+                    v-if="sortKey === 'custom'"
                     class="drag-handle"
                     size="18"
                     style="
@@ -620,6 +681,7 @@ onUnmounted(() => {
                   >
                     mdi-drag-vertical
                   </v-icon>
+                  <div v-else style="width: 18px; flex-shrink: 0" />
                   <!-- 로고 -->
                   <div
                     class="ticker-logo-wrap"
