@@ -6,9 +6,9 @@ const corsHeaders = {
 }
 
 interface DividendEvent {
-  date: string      // YYYY-MM-DD
-  amount: number    // 주당 배당금 (USD or KRW)
-  type: 'ex' | 'pay'  // 배당락일 or 지급일
+  date: string
+  amount: number
+  type: 'ex' | 'next'  // ex: 과거 배당락일, next: 다음 예정 배당락일
 }
 
 interface TickerDividend {
@@ -18,43 +18,65 @@ interface TickerDividend {
 }
 
 const yahooSymbol = (ticker: string, currency: string): string => {
-  if (currency === 'KRW') {
-    if (/^\d{6}$/.test(ticker)) return `${ticker}.KS`
-  }
+  if (currency === 'KRW' && /^\d{6}$/.test(ticker)) return `${ticker}.KS`
   return ticker
 }
 
 const fetchDividends = async (ticker: string, currency: string): Promise<TickerDividend> => {
   const symbol = yahooSymbol(ticker, currency)
-  // 2년치 데이터 조회
   const now = Math.floor(Date.now() / 1000)
   const from = now - 60 * 60 * 24 * 365 * 2
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&period1=${from}&period2=${now}&events=dividends`
 
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' },
-  })
+  // 과거 배당 이력 + 다음 배당락일 동시 조회
+  const [chartRes, summaryRes] = await Promise.allSettled([
+    fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&period1=${from}&period2=${now}&events=dividends`,
+      { headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' } }
+    ),
+    fetch(
+      `https://query1.finance.yahoo.com/v11/finance/quoteSummary/${symbol}?modules=calendarEvents`,
+      { headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' } }
+    ),
+  ])
 
-  if (!res.ok) throw new Error(`Yahoo Finance error: ${res.status} for ${symbol}`)
+  const dividends: DividendEvent[] = []
 
-  const data = await res.json()
-  const result = data?.chart?.result?.[0]
-  if (!result) return { ticker, dividends: [], currency }
+  // 과거 배당 이력
+  if (chartRes.status === 'fulfilled' && chartRes.value.ok) {
+    const data = await chartRes.value.json()
+    const rawDividends: Record<string, { amount: number; date: number }> =
+      data?.chart?.result?.[0]?.events?.dividends ?? {}
 
-  const rawDividends: Record<string, { amount: number; date: number }> =
-    result?.events?.dividends ?? {}
-
-  const dividends: DividendEvent[] = Object.values(rawDividends).map((d) => {
-    const date = new Date(d.date * 1000)
-    const dateStr = date.toISOString().slice(0, 10)
-    return {
-      date: dateStr,
-      amount: d.amount,
-      type: 'ex' as const,
+    for (const d of Object.values(rawDividends)) {
+      dividends.push({
+        date: new Date(d.date * 1000).toISOString().slice(0, 10),
+        amount: d.amount,
+        type: 'ex',
+      })
     }
-  })
+  }
 
-  // 날짜 오름차순 정렬
+  // 다음 배당락일 (quoteSummary)
+  if (summaryRes.status === 'fulfilled' && summaryRes.value.ok) {
+    const data = await summaryRes.value.json()
+    const cal = data?.quoteSummary?.result?.[0]?.calendarEvents
+    const exDateTs = cal?.exDividendDate?.raw
+    const divAmount = cal?.dividendRate?.raw ?? cal?.dividendYield?.raw ?? null
+
+    if (exDateTs) {
+      const exDate = new Date(exDateTs * 1000).toISOString().slice(0, 10)
+      const today = new Date().toISOString().slice(0, 10)
+      // 오늘 이후 날짜만 next로 추가 (과거 이력과 중복 방지)
+      if (exDate >= today && !dividends.find((d) => d.date === exDate)) {
+        dividends.push({
+          date: exDate,
+          amount: divAmount ?? 0,
+          type: 'next',
+        })
+      }
+    }
+  }
+
   dividends.sort((a, b) => a.date.localeCompare(b.date))
 
   return { ticker, dividends, currency }

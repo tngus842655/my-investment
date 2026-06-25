@@ -19,7 +19,7 @@ interface Portfolio {
 interface DividendEvent {
   date: string
   amount: number
-  type: 'ex'
+  type: 'ex' | 'next'
 }
 
 interface TickerDividend {
@@ -29,12 +29,13 @@ interface TickerDividend {
 }
 
 interface CalendarEvent {
-  date: string          // YYYY-MM-DD
+  date: string
   ticker: string
   amountPerShare: number
   totalAmountKrw: number
   currency: string
   quantity: number
+  isNext: boolean
 }
 
 const portfolios = ref<Portfolio[]>([])
@@ -88,6 +89,7 @@ onMounted(async () => {
           totalAmountKrw: Math.round(totalKrw),
           currency: port.currency,
           quantity: port.quantity,
+          isNext: div.type === 'next',
         })
       }
     }
@@ -268,6 +270,7 @@ const weekdays = ['일', '월', '화', '수', '목', '금', '토']
                   v-for="ev in cell.events.slice(0, 3)"
                   :key="ev.ticker"
                   class="cal-dot"
+                  :class="ev.isNext ? 'cal-dot-next' : ''"
                 />
               </div>
             </div>
@@ -276,8 +279,11 @@ const weekdays = ['일', '월', '화', '수', '목', '금', '토']
 
         <!-- 선택한 날 상세 -->
         <v-card v-if="selectedDate && selectedDateEvents.length" rounded="xl" class="pa-4 mb-4">
-          <div class="text-body-2 font-weight-medium mb-3">
-            {{ selectedDate!.replace(/-/g, '.') }} 배당락
+          <div class="d-flex align-center ga-2 mb-3">
+            <div class="text-body-2 font-weight-medium">
+              {{ selectedDate!.replace(/-/g, '.') }} 배당락
+            </div>
+            <v-chip v-if="selectedDateEvents.some(e => e.isNext)" size="x-small" color="warning" variant="tonal">예정</v-chip>
           </div>
           <div
             v-for="(ev, i) in selectedDateEvents"
@@ -286,13 +292,18 @@ const weekdays = ['일', '월', '화', '수', '목', '금', '토']
             :class="{ 'border-top': i > 0 }"
           >
             <div class="event-ticker">
-              <div class="text-body-2 font-weight-medium">{{ ev.ticker }}</div>
+              <div class="d-flex align-center ga-1">
+                <span class="text-body-2 font-weight-medium">{{ ev.ticker }}</span>
+                <v-chip v-if="ev.isNext" size="x-small" color="warning" variant="tonal">예정</v-chip>
+              </div>
               <div class="text-caption text-medium-emphasis">{{ getTickerDisplayName(ev.ticker) }}</div>
             </div>
             <div class="text-right">
-              <div class="text-body-2 font-weight-bold text-primary">{{ formatKrw(ev.totalAmountKrw) }}</div>
+              <div class="text-body-2 font-weight-bold" :class="ev.isNext ? 'text-warning' : 'text-primary'">
+                {{ ev.totalAmountKrw > 0 ? formatKrw(ev.totalAmountKrw) : '금액 미정' }}
+              </div>
               <div class="text-caption text-medium-emphasis">
-                {{ ev.currency === 'USD' ? '$' : '₩' }}{{ ev.amountPerShare.toFixed(4) }} × {{ ev.quantity }}주
+                {{ ev.currency === 'USD' ? '$' : '₩' }}{{ ev.amountPerShare > 0 ? ev.amountPerShare.toFixed(4) : '?' }} × {{ ev.quantity }}주
               </div>
             </div>
           </div>
@@ -314,10 +325,15 @@ const weekdays = ['일', '월', '화', '수', '목', '금', '토']
           >
             <div class="event-date">{{ ev.date.slice(5).replace('-', '.') }}</div>
             <div class="event-ticker">
-              <div class="text-body-2 font-weight-medium">{{ ev.ticker }}</div>
+              <div class="d-flex align-center ga-1">
+                <span class="text-body-2 font-weight-medium">{{ ev.ticker }}</span>
+                <v-chip v-if="ev.isNext" size="x-small" color="warning" variant="tonal">예정</v-chip>
+              </div>
             </div>
             <div class="text-right">
-              <div class="text-body-2 font-weight-bold text-primary">{{ formatKrw(ev.totalAmountKrw) }}</div>
+              <div class="text-body-2 font-weight-bold" :class="ev.isNext ? 'text-warning' : 'text-primary'">
+                {{ ev.totalAmountKrw > 0 ? formatKrw(ev.totalAmountKrw) : '금액 미정' }}
+              </div>
             </div>
           </div>
         </v-card>
@@ -388,6 +404,9 @@ const weekdays = ['일', '월', '화', '수', '목', '금', '토']
   height: 4px;
   border-radius: 50%;
   background: rgb(var(--v-theme-primary));
+}
+.cal-dot-next {
+  background: rgb(var(--v-theme-warning));
 }
 .event-row {
   display: flex;
