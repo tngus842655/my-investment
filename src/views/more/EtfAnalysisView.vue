@@ -157,16 +157,15 @@ const better = (a: number | null, b: number | null, higherIsBetter: boolean): 'a
         </div>
       </div>
 
-      <!-- 컬럼 헤더 -->
-      <div v-if="dataB" class="d-flex px-1 mb-1">
-        <div class="flex-1" />
-        <div class="col-header text-right">{{ dataA.ticker }}</div>
-        <div class="col-header text-right">{{ dataB.ticker }}</div>
-      </div>
-
       <!-- 수익률 섹션 -->
       <v-card rounded="xl" class="mb-3 overflow-hidden">
-        <div class="section-title px-4 pt-3 pb-1">수익률</div>
+        <div class="d-flex align-center px-4 pt-3 pb-1">
+          <div class="section-title flex-1">수익률</div>
+          <template v-if="dataB">
+            <div class="col-header">{{ dataA.ticker }}</div>
+            <div class="col-header">{{ dataB.ticker }}</div>
+          </template>
+        </div>
 
         <div class="metric-row d-flex align-center px-4 py-3">
           <div class="metric-label text-caption">CAGR (연평균 수익률)</div>
@@ -200,7 +199,13 @@ const better = (a: number | null, b: number | null, higherIsBetter: boolean): 'a
 
       <!-- 리스크 섹션 -->
       <v-card rounded="xl" class="mb-3 overflow-hidden">
-        <div class="section-title px-4 pt-3 pb-1">리스크</div>
+        <div class="d-flex align-center px-4 pt-3 pb-1">
+          <div class="section-title flex-1">리스크</div>
+          <template v-if="dataB">
+            <div class="col-header">{{ dataA.ticker }}</div>
+            <div class="col-header">{{ dataB.ticker }}</div>
+          </template>
+        </div>
 
         <div class="metric-row d-flex align-center px-4 py-3">
           <div class="metric-label text-caption">MDD (최대 낙폭)</div>
@@ -239,7 +244,13 @@ const better = (a: number | null, b: number | null, higherIsBetter: boolean): 'a
 
       <!-- 배당 & 비용 섹션 -->
       <v-card rounded="xl" class="mb-4 overflow-hidden">
-        <div class="section-title px-4 pt-3 pb-1">배당 & 비용</div>
+        <div class="d-flex align-center px-4 pt-3 pb-1">
+          <div class="section-title flex-1">배당 & 비용</div>
+          <template v-if="dataB">
+            <div class="col-header">{{ dataA.ticker }}</div>
+            <div class="col-header">{{ dataB.ticker }}</div>
+          </template>
+        </div>
 
         <div class="metric-row d-flex align-center px-4 py-3">
           <div class="metric-label text-caption">배당률</div>
