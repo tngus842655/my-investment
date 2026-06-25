@@ -71,7 +71,7 @@ const loadData = async () => {
     const cacheKey = activeCacheKey.value
     const CACHE_TTL = 24 * 60 * 60 * 1000  // 24시간
 
-    let rawData: { data: TickerDividend[] }
+    let rawData: { data: TickerDividend[] } | null = null
     const cached = localStorage.getItem(cacheKey)
     if (cached) {
       const { ts, payload } = JSON.parse(cached)
@@ -82,7 +82,7 @@ const loadData = async () => {
       }
     }
 
-    if (!rawData!) {
+    if (!rawData) {
       const { data, error } = await supabase.functions.invoke('etf-dividend', {
         body: { tickers: targets.map((p) => ({ ticker: p.ticker, currency: p.currency })) },
       })
@@ -94,7 +94,7 @@ const loadData = async () => {
     const tickerMap = new Map<string, Portfolio>(targets.map((p) => [p.ticker, p]))
     const events: CalendarEvent[] = []
 
-    for (const td of (rawData.data as TickerDividend[])) {
+    for (const td of (rawData!.data as TickerDividend[])) {
       const port = tickerMap.get(td.ticker)
       if (!port) continue
       // 과거 배당 이력만 추가 (next는 우리가 직접 예측으로 대체)
@@ -500,7 +500,6 @@ const refreshData = async () => {
 
         <div class="notice-text text-caption text-medium-emphasis mt-2">
           <div>* 배당락일은 과거 기반 예상치로 실제와 다를 수 있습니다.</div>
-          <div class="mt-1">* 국내 주식·ETF는 과거 이력만 표시됩니다.</div>
         </div>
       </template>
     </template>
