@@ -79,7 +79,8 @@ onMounted(async () => {
     for (const td of (data.data as TickerDividend[])) {
       const port = tickerMap.get(td.ticker)
       if (!port) continue
-      for (const div of td.dividends) {
+      // 과거 배당 이력만 추가 (next는 우리가 직접 예측으로 대체)
+      for (const div of td.dividends.filter((d) => d.type === 'ex')) {
         const totalUsd = div.amount * port.quantity
         const totalKrw = port.currency === 'USD' ? totalUsd * rate : totalUsd
         events.push({
@@ -89,9 +90,14 @@ onMounted(async () => {
           totalAmountKrw: Math.round(totalKrw),
           currency: port.currency,
           quantity: port.quantity,
-          isNext: div.type === 'next',
+          isNext: false,
         })
       }
+
+      // 과거 이력 기반 1년치 미래 예측
+      const pastDivs = td.dividends.filter((d) => d.type === 'ex')
+      const predicted = predictFutureDividends(td.ticker, pastDivs, port.quantity, port.currency, rate)
+      events.push(...predicted)
     }
 
     calendarEvents.value = events.sort((a, b) => a.date.localeCompare(b.date))
@@ -162,6 +168,65 @@ const onDayClick = (day: number | null, events: CalendarEvent[]) => {
   const dateStr = `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}-${String(day).padStart(2, '0')}`
   selectedDate.value = dateStr
   showSheet.value = true
+}
+
+function predictFutureDividends(
+  ticker: string,
+  pastDivs: DividendEvent[],
+  quantity: number,
+  currency: string,
+  rate: number,
+): CalendarEvent[] {
+  if (pastDivs.length < 2) return []
+
+  const sorted = [...pastDivs].sort((a, b) => a.date.localeCompare(b.date))
+
+  // 평균 간격 계산
+  const intervals: number[] = []
+  for (let i = 1; i < sorted.length; i++) {
+    const diff = (new Date(sorted[i].date).getTime() - new Date(sorted[i - 1].date).getTime()) / 86400000
+    intervals.push(diff)
+  }
+  const avgInterval = intervals.reduce((s, v) => s + v, 0) / intervals.length
+
+  // 표준 주기로 스냅
+  let period: number
+  if (avgInterval <= 45) period = 30
+  else if (avgInterval <= 120) period = 91
+  else if (avgInterval <= 270) period = 182
+  else period = 365
+
+  // 최근 4회 평균 금액
+  const recent = sorted.slice(-4)
+  const avgAmount = recent.reduce((s, d) => s + d.amount, 0) / recent.length
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const oneYearLater = new Date(today)
+  oneYearLater.setFullYear(oneYearLater.getFullYear() + 1)
+
+  const predictions: CalendarEvent[] = []
+  const nextDate = new Date(sorted[sorted.length - 1].date)
+  nextDate.setDate(nextDate.getDate() + period)
+
+  while (nextDate <= oneYearLater) {
+    if (nextDate >= today) {
+      const dateStr = nextDate.toISOString().slice(0, 10)
+      const totalKrw = currency === 'USD' ? avgAmount * quantity * rate : avgAmount * quantity
+      predictions.push({
+        date: dateStr,
+        ticker,
+        amountPerShare: avgAmount,
+        totalAmountKrw: Math.round(totalKrw),
+        currency,
+        quantity,
+        isNext: true,
+      })
+    }
+    nextDate.setDate(nextDate.getDate() + period)
+  }
+
+  return predictions
 }
 
 function formatAmountPerShare(ev: CalendarEvent) {
@@ -321,8 +386,8 @@ const weekdays = ['일', '월', '화', '수', '목', '금', '토']
         </div>
 
         <div class="notice-text text-caption text-medium-emphasis mt-2">
-          <div>* 배당락일 기준 표시 · 과거 지급 패턴 기반 예상치로 실제와 다를 수 있어요</div>
-          <div class="mt-1">* 국내 주식·ETF는 다음 배당락일 예정 정보를 제공하지 않아요 (과거 이력만 표시)</div>
+          <div>* 배당락일은 과거 기반 예상치로 실제와 다를 수 있습니다.</div>
+          <div class="mt-1">* 국내 주식·ETF는 과거 이력만 표시됩니다.</div>
         </div>
       </template>
     </template>
@@ -445,7 +510,7 @@ const weekdays = ['일', '월', '화', '수', '목', '금', '토']
   min-width: 0;
 }
 .notice-text {
-  text-wrap: balance;
-  text-align: center;
+  text-align: left;
+  padding: 0 2px;
 }
 </style>
