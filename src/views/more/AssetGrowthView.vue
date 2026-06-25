@@ -406,11 +406,10 @@ function formatFull(v: number) {
               <v-btn icon size="x-small" variant="text" class="mr-1" @click="selectedMonth = null; tooltip = null">
                 <v-icon size="16">mdi-arrow-left</v-icon>
               </v-btn>
-              <div class="text-body-2 font-weight-medium">{{ selectedMonth }} 일별 상세</div>
+              <div class="text-body-2 font-weight-medium">일별 상세</div>
             </template>
             <div v-else class="text-body-2 font-weight-medium">월별 상세</div>
             <v-spacer />
-            <div v-if="!selectedMonth" class="text-caption text-medium-emphasis">막대 클릭 시 일별 보기</div>
           </div>
 
           <!-- 월별 뷰 -->
