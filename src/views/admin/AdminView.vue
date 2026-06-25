@@ -30,15 +30,24 @@ const executeDelete = async () => {
   if (!deleteTarget.value) return
   deleteLoading.value = true
   try {
+    const now = new Date().toISOString()
+
+    // signup_log 탈퇴 처리
     const { error } = await supabase
       .from('signup_log')
-      .update({ deleted_at: new Date().toISOString() })
+      .update({ deleted_at: now })
       .eq('id', deleteTarget.value.id)
     if (error) { console.error(error); return }
+
+    // Auth 계정 삭제 (Edge Function)
+    await supabase.functions.invoke('admin-delete-user', {
+      body: { email: deleteTarget.value.email },
+    })
+
     const idx = logs.value.findIndex(l => l.id === deleteTarget.value!.id)
     if (idx !== -1) {
       const cur = logs.value[idx]!
-      logs.value[idx] = { id: cur.id, email: cur.email, signed_up_at: cur.signed_up_at, deleted_at: new Date().toISOString() }
+      logs.value[idx] = { id: cur.id, email: cur.email, signed_up_at: cur.signed_up_at, deleted_at: now }
     }
     deleteDialog.value = false
   } finally {
