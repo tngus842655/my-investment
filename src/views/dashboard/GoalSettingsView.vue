@@ -24,11 +24,16 @@ const addComma = (value: string) => {
 
 const removeComma = (value: string) => Number(value.replace(/,/g, '')) || 0
 
+const MAX_ASSET = 99_000_000_000   // 990억
+const MAX_MONTHLY = 1_000_000_000  // 10억
+
 const handleTargetAsset = (value: string) => {
-  targetAsset.value = addComma(value)
+  const num = Math.min(Number(value.replace(/,/g, '')) || 0, MAX_ASSET)
+  targetAsset.value = addComma(String(num))
 }
 const handleMonthlyInvestment = (value: string) => {
-  monthlyInvestment.value = addComma(value)
+  const num = Math.min(Number(value.replace(/,/g, '')) || 0, MAX_MONTHLY)
+  monthlyInvestment.value = addComma(String(num))
 }
 
 const sliderValue = computed({
@@ -193,6 +198,7 @@ onMounted(loadData)
           hide-details
           suffix="원"
           class="glass-field"
+          maxlength="14"
         >
           <template #append-inner>
             <span
@@ -222,6 +228,7 @@ onMounted(loadData)
           hide-details
           suffix="원"
           class="glass-field"
+          maxlength="13"
         >
           <template #append-inner>
             <span

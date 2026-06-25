@@ -7,7 +7,7 @@ import type { PortfolioAsset } from '@/types/portfolio'
 import { showMessage } from '@/composables/useSnackbar'
 import { getStockPrice } from '@/services/market'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
-import { getTickerLabel, isEtfTicker, getTickerDisplayName } from '@/utils/tickerNames'
+import { getTickerLabel, isEtfTicker, getTickerDisplayName, TICKER_NAMES } from '@/utils/tickerNames'
 
 const loading = ref(false)
 
@@ -438,6 +438,40 @@ const refresh = async () => {
   isRefreshing.value = false
 }
 
+// ── 정렬 ─────────────────────────────────────────
+type SortKey = 'custom' | 'eval' | 'profit' | 'rate' | 'name'
+const SORT_STORAGE_KEY = 'firepath-portfolio-sort'
+const sortKey = ref<SortKey>((localStorage.getItem(SORT_STORAGE_KEY) as SortKey) ?? 'custom')
+
+const SORT_OPTIONS: { key: SortKey; label: string; emoji: string }[] = [
+  { key: 'custom', label: '직접 정렬',  emoji: '✋' },
+  { key: 'eval',   label: '평가금액순', emoji: '💰' },
+  { key: 'profit', label: '손익순',     emoji: '📈' },
+  { key: 'rate',   label: '수익률순',   emoji: '🎯' },
+  { key: 'name',   label: '이름순',     emoji: '🔤' },
+]
+
+const setSort = (key: SortKey) => {
+  sortKey.value = key
+  localStorage.setItem(SORT_STORAGE_KEY, key)
+  closeSwipe()
+}
+
+const sortedPortfolios = computed(() => {
+  if (sortKey.value === 'custom') return portfolios.value
+  const list = [...portfolios.value]
+  switch (sortKey.value) {
+    case 'eval':   return list.sort((a, b) => (b.evaluationAmountKrw ?? 0) - (a.evaluationAmountKrw ?? 0))
+    case 'profit': return list.sort((a, b) => (b.profitAmountKrw ?? 0) - (a.profitAmountKrw ?? 0))
+    case 'rate':   return list.sort((a, b) => (b.profitRate ?? 0) - (a.profitRate ?? 0))
+    case 'name': {
+      const getName = (ticker: string) => TICKER_NAMES[ticker.toUpperCase()] ?? ticker
+      return list.sort((a, b) => getName(a.ticker).localeCompare(getName(b.ticker), 'ko'))
+    }
+    default:       return list
+  }
+})
+
 const onGlobalMouseUp = () => {
   isDraggingSwipe.value = false
   endDrag()
@@ -562,10 +596,39 @@ onUnmounted(() => {
         </div>
       </div>
 
+      <!-- 정렬 바 -->
+      <div class="d-flex justify-space-between align-center mb-2">
+        <span style="font-size: 12px; color: rgba(var(--v-theme-on-surface), 0.4)">
+          총 {{ sortedPortfolios.length }}개 종목
+        </span>
+        <v-menu location="bottom end">
+          <template #activator="{ props }">
+            <button v-bind="props" class="sort-btn" :class="{ 'sort-btn-active': sortKey !== 'custom' }">
+              <v-icon size="12">mdi-sort</v-icon>
+              <span>{{ sortKey === 'custom' ? '정렬' : SORT_OPTIONS.find(o => o.key === sortKey)?.label }}</span>
+              <v-icon size="11">mdi-chevron-down</v-icon>
+            </button>
+          </template>
+          <v-list density="compact" rounded="lg" min-width="130" elevation="4">
+            <v-list-item
+              v-for="opt in SORT_OPTIONS"
+              :key="opt.key"
+              :active="sortKey === opt.key"
+              :color="sortKey === opt.key ? 'primary' : undefined"
+              @click="setSort(opt.key)"
+            >
+              <v-list-item-title style="font-size: 13px">
+                <span style="margin-right: 6px">{{ opt.emoji }}</span>{{ opt.label }}
+              </v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
+      </div>
+
       <!-- 자산 카드 목록 -->
       <TransitionGroup name="cards" tag="div">
         <div
-          v-for="item in portfolios"
+          v-for="item in sortedPortfolios"
           :key="item.id"
           class="portfolio-card-wrap mb-2"
           :data-id="item.id"
@@ -607,6 +670,7 @@ onUnmounted(() => {
               <div class="d-flex justify-space-between align-center mb-2">
                 <div class="d-flex align-center ga-2">
                   <v-icon
+                    v-if="sortKey === 'custom'"
                     class="drag-handle"
                     size="18"
                     style="
@@ -620,6 +684,7 @@ onUnmounted(() => {
                   >
                     mdi-drag-vertical
                   </v-icon>
+                  <div v-else style="width: 18px; flex-shrink: 0" />
                   <!-- 로고 -->
                   <div
                     class="ticker-logo-wrap"
@@ -859,6 +924,27 @@ onUnmounted(() => {
 }
 
 /* ── 드래그 카드 이동 애니메이션 ── */
+.sort-btn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
+  background: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+  transition: all 0.15s;
+}
+.sort-btn:active { opacity: 0.7; }
+.sort-btn-active {
+  border-color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.07);
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
