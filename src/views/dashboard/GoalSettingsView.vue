@@ -198,6 +198,7 @@ onMounted(loadData)
           hide-details
           suffix="원"
           class="glass-field"
+          maxlength="14"
         >
           <template #append-inner>
             <span
@@ -227,6 +228,7 @@ onMounted(loadData)
           hide-details
           suffix="원"
           class="glass-field"
+          maxlength="13"
         >
           <template #append-inner>
             <span
