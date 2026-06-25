@@ -320,11 +320,9 @@ const weekdays = ['일', '월', '화', '수', '목', '금', '토']
           배당 정보 없음: {{ noDividendTickers.join(', ') }}
         </div>
 
-        <div class="text-caption text-medium-emphasis text-center mt-2">
-          * 배당락일 기준 표시 · 과거 지급 패턴 기반 예상치로 실제와 다를 수 있어요
-        </div>
-        <div class="text-caption text-medium-emphasis text-center mt-1">
-          * 국내 주식·ETF는 다음 배당락일 예정 정보를 제공하지 않아요 (과거 이력만 표시)
+        <div class="notice-text text-caption text-medium-emphasis mt-2">
+          <div>* 배당락일 기준 표시 · 과거 지급 패턴 기반 예상치로 실제와 다를 수 있어요</div>
+          <div class="mt-1">* 국내 주식·ETF는 다음 배당락일 예정 정보를 제공하지 않아요 (과거 이력만 표시)</div>
         </div>
       </template>
     </template>
@@ -445,5 +443,9 @@ const weekdays = ['일', '월', '화', '수', '목', '금', '토']
 .event-ticker {
   flex: 1;
   min-width: 0;
+}
+.notice-text {
+  text-wrap: balance;
+  text-align: center;
 }
 </style>
