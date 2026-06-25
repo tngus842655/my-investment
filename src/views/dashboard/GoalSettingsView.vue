@@ -24,10 +24,17 @@ const addComma = (value: string) => {
 
 const removeComma = (value: string) => Number(value.replace(/,/g, '')) || 0
 
+const MAX_ASSET = 99_000_000_000   // 990억
+const MAX_MONTHLY = 1_000_000_000  // 10억
+
 const handleTargetAsset = (value: string) => {
+  const num = Number(value.replace(/,/g, '')) || 0
+  if (num > MAX_ASSET) return
   targetAsset.value = addComma(value)
 }
 const handleMonthlyInvestment = (value: string) => {
+  const num = Number(value.replace(/,/g, '')) || 0
+  if (num > MAX_MONTHLY) return
   monthlyInvestment.value = addComma(value)
 }
 
