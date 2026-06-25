@@ -5,9 +5,16 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { useAppTheme } from '@/composables/useAppTheme'
 
+const ADMIN_EMAIL = 'tngus842655@gmail.com'
+
 const router = useRouter()
 const { isDark, toggleTheme } = useAppTheme()
 const confirmDialog = ref(false)
+const isAdmin = ref(false)
+
+supabase.auth.getUser().then(({ data: { user } }) => {
+  isAdmin.value = user?.email === ADMIN_EMAIL
+})
 
 // 회원탈퇴 상태
 const deleteStep = ref(0) // 0: 닫힘, 1: 경고, 2: 이메일 확인
@@ -210,6 +217,24 @@ const logout = async () => {
         <v-icon size="16" style="color: rgba(var(--v-theme-on-surface), 0.35)">mdi-chevron-right</v-icon>
       </div>
     </div>
+
+    <!-- 관리자 섹션 -->
+    <template v-if="isAdmin">
+      <div class="section-label mb-2">관리자</div>
+      <div class="d-flex flex-column ga-2 mb-5">
+        <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/admin')">
+          <div class="menu-icon">
+            <v-icon size="18" color="primary">mdi-shield-crown-outline</v-icon>
+          </div>
+          <div>
+            <div class="text-body-2 font-weight-medium">관리자 페이지</div>
+            <div class="text-caption text-medium-emphasis">회원 가입 이력 조회</div>
+          </div>
+          <v-spacer />
+          <v-icon size="16" style="color: rgba(var(--v-theme-on-surface), 0.35)">mdi-chevron-right</v-icon>
+        </div>
+      </div>
+    </template>
 
     <!-- 계정 섹션 -->
     <div class="section-label mb-2">계정</div>
