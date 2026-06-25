@@ -66,17 +66,33 @@ onMounted(async () => {
     )
     if (!targets.length) { loading.value = false; return }
 
-    const { data, error } = await supabase.functions.invoke('etf-dividend', {
-      body: {
-        tickers: targets.map((p) => ({ ticker: p.ticker, currency: p.currency })),
-      },
-    })
-    if (error) throw error
+    const cacheKey = `dividend_cache_${targets.map((p) => p.ticker).sort().join(',')}`
+    const CACHE_TTL = 24 * 60 * 60 * 1000  // 24시간
+
+    let rawData: { data: TickerDividend[] }
+    const cached = localStorage.getItem(cacheKey)
+    if (cached) {
+      const { ts, payload } = JSON.parse(cached)
+      if (Date.now() - ts < CACHE_TTL) {
+        rawData = payload
+      } else {
+        localStorage.removeItem(cacheKey)
+      }
+    }
+
+    if (!rawData!) {
+      const { data, error } = await supabase.functions.invoke('etf-dividend', {
+        body: { tickers: targets.map((p) => ({ ticker: p.ticker, currency: p.currency })) },
+      })
+      if (error) throw error
+      rawData = data
+      localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), payload: data }))
+    }
 
     const tickerMap = new Map<string, Portfolio>(targets.map((p) => [p.ticker, p]))
     const events: CalendarEvent[] = []
 
-    for (const td of (data.data as TickerDividend[])) {
+    for (const td of (rawData.data as TickerDividend[])) {
       const port = tickerMap.get(td.ticker)
       if (!port) continue
       // 과거 배당 이력만 추가 (next는 우리가 직접 예측으로 대체)
