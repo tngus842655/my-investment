@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
+import { showMessage } from '@/composables/useSnackbar'
 
 const ADMIN_EMAIL = 'tngus842655@gmail.com'
 const router = useRouter()
@@ -37,12 +38,13 @@ const executeDelete = async () => {
       .from('signup_log')
       .update({ deleted_at: now })
       .eq('id', deleteTarget.value.id)
-    if (error) { console.error(error); return }
+    if (error) { showMessage('signup_log 오류: ' + error.message, 'error'); return }
 
     // Auth 계정 삭제 (Edge Function)
-    await supabase.functions.invoke('admin-delete-user', {
+    const { error: fnError } = await supabase.functions.invoke('admin-delete-user', {
       body: { email: deleteTarget.value.email },
     })
+    if (fnError) { showMessage('Auth 삭제 오류: ' + fnError.message, 'error'); return }
 
     const idx = logs.value.findIndex(l => l.id === deleteTarget.value!.id)
     if (idx !== -1) {
