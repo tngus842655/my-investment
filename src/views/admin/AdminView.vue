@@ -17,6 +17,32 @@ interface SignupLog {
 
 const logs = ref<SignupLog[]>([])
 
+const deleteTarget = ref<SignupLog | null>(null)
+const deleteDialog = ref(false)
+const deleteLoading = ref(false)
+
+const confirmDelete = (log: SignupLog) => {
+  deleteTarget.value = log
+  deleteDialog.value = true
+}
+
+const executeDelete = async () => {
+  if (!deleteTarget.value) return
+  deleteLoading.value = true
+  try {
+    const { error } = await supabase
+      .from('signup_log')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', deleteTarget.value.id)
+    if (error) { console.error(error); return }
+    const idx = logs.value.findIndex(l => l.id === deleteTarget.value!.id)
+    if (idx !== -1) logs.value[idx] = { ...logs.value[idx], deleted_at: new Date().toISOString() }
+    deleteDialog.value = false
+  } finally {
+    deleteLoading.value = false
+  }
+}
+
 // ── 통계 ─────────────────────────────────────────
 const stats = computed(() => {
   const total = logs.value.length
@@ -221,11 +247,20 @@ onMounted(async () => {
                 </v-icon>
                 <span class="log-email">{{ log.email }}</span>
               </div>
-              <v-chip
-                :color="log.deleted_at ? 'error' : 'primary'"
-                size="x-small"
-                variant="tonal"
-              >{{ log.deleted_at ? '탈퇴' : '활성' }}</v-chip>
+              <div class="d-flex align-center ga-2">
+                <v-chip
+                  :color="log.deleted_at ? 'error' : 'primary'"
+                  size="x-small"
+                  variant="tonal"
+                >{{ log.deleted_at ? '탈퇴' : '활성' }}</v-chip>
+                <button
+                  v-if="!log.deleted_at"
+                  class="del-btn"
+                  @click="confirmDelete(log)"
+                >
+                  <v-icon size="14">mdi-account-remove-outline</v-icon>
+                </button>
+              </div>
             </div>
             <div class="log-meta mt-1">
               <span>가입 {{ formatDate(log.signed_up_at) }}</span>
@@ -240,6 +275,22 @@ onMounted(async () => {
 
     </template>
   </v-container>
+
+  <!-- 탈퇴 처리 확인 다이얼로그 -->
+  <v-dialog v-model="deleteDialog" max-width="320">
+    <v-card rounded="xl" class="pa-2">
+      <v-card-title class="text-body-1 font-weight-bold pt-4 px-4">탈퇴 처리</v-card-title>
+      <v-card-text class="px-4 pb-2">
+        <div class="text-body-2 text-medium-emphasis mb-1">아래 회원을 탈퇴 처리합니다.</div>
+        <div class="text-body-2 font-weight-bold">{{ deleteTarget?.email }}</div>
+        <div class="text-caption text-error mt-2">이 작업은 되돌릴 수 없습니다.</div>
+      </v-card-text>
+      <v-card-actions class="px-4 pb-4 ga-2">
+        <v-btn variant="tonal" rounded="lg" block @click="deleteDialog = false">취소</v-btn>
+        <v-btn color="error" variant="flat" rounded="lg" block :loading="deleteLoading" @click="executeDelete">탈퇴 처리</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <style scoped>
@@ -331,4 +382,20 @@ onMounted(async () => {
 .log-deleted {
   color: rgba(var(--v-theme-error), 0.65);
 }
+
+.del-btn {
+  background: rgba(var(--v-theme-error), 0.08);
+  border: none;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: rgb(var(--v-theme-error));
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.del-btn:active { opacity: 1; }
 </style>
