@@ -9,6 +9,12 @@ import { getTickerLabel } from '@/utils/tickerNames'
 
 const router = useRouter()
 const loading = ref(true)
+const hideAsset = ref(localStorage.getItem('firepath-hide-asset') === 'true')
+
+const toggleHideAsset = () => {
+  hideAsset.value = !hideAsset.value
+  localStorage.setItem('firepath-hide-asset', String(hideAsset.value))
+}
 
 const targetAsset = ref(0)
 const currentAsset = ref(0)
@@ -142,13 +148,21 @@ onMounted(loadDashboard)
     <template v-else>
       <!-- 현재 자산 카드 -->
       <div class="glass-card pa-5 mb-3">
-        <div class="field-label mb-1">현재 자산</div>
+        <div class="d-flex align-center justify-space-between mb-1">
+          <div class="field-label">현재 자산</div>
+          <button class="hide-toggle-btn" @click="toggleHideAsset">
+            <v-icon size="18" :style="{ color: hideAsset ? 'rgb(var(--v-theme-primary))' : 'rgba(var(--v-theme-on-surface), 0.35)' }">
+              {{ hideAsset ? 'mdi-eye-off-outline' : 'mdi-eye-outline' }}
+            </v-icon>
+          </button>
+        </div>
         <div class="hero-amount font-weight-bold mb-1">
-          {{ currentAsset > 0 ? Math.round(currentAsset).toLocaleString('ko-KR') + '원' : '-' }}
+          <span v-if="hideAsset" class="asset-hidden">•••••</span>
+          <span v-else>{{ currentAsset > 0 ? Math.round(currentAsset).toLocaleString('ko-KR') + '원' : '-' }}</span>
         </div>
         <div class="text-body-2" style="color: rgba(var(--v-theme-on-surface), 0.45)">
           <template v-if="currentAsset > 0">
-            목표 자산 {{ formatShortMoney(targetAsset) }}원
+            목표 자산 <span v-if="hideAsset">•••</span><span v-else>{{ formatShortMoney(targetAsset) }}원</span>
           </template>
           <template v-else>
             <span
@@ -485,6 +499,25 @@ onMounted(loadDashboard)
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
   white-space: nowrap;
+}
+
+.hide-toggle-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: opacity 0.15s ease;
+  margin-right: -4px;
+}
+.hide-toggle-btn:active { opacity: 0.6; }
+
+.asset-hidden {
+  letter-spacing: 4px;
+  font-size: 24px;
 }
 
 </style>
