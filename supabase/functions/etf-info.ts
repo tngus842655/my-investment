@@ -17,7 +17,7 @@ const fetchEtfInfo = async (ticker: string) => {
 
   const [summaryRes, chartRes] = await Promise.allSettled([
     fetch(
-      `https://query1.finance.yahoo.com/v11/finance/quoteSummary/${symbol}?modules=summaryDetail%2CdefaultKeyStatistics%2Cprice`,
+      `https://query1.finance.yahoo.com/v11/finance/quoteSummary/${symbol}?modules=summaryDetail%2CdefaultKeyStatistics%2Cprice%2CfundProfile%2CquoteType`,
       { headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' } }
     ),
     fetch(
@@ -33,17 +33,17 @@ const fetchEtfInfo = async (ticker: string) => {
     const detail = data?.quoteSummary?.result?.[0]?.summaryDetail
     const stats = data?.quoteSummary?.result?.[0]?.defaultKeyStatistics
     const price = data?.quoteSummary?.result?.[0]?.price
+    const fund = data?.quoteSummary?.result?.[0]?.fundProfile
+    const quoteType = data?.quoteSummary?.result?.[0]?.quoteType
 
-    result.name = price?.longName ?? price?.shortName ?? ticker
+    result.name = quoteType?.longName ?? price?.longName ?? price?.shortName ?? ticker
     result.currency = detail?.currency ?? price?.currency ?? 'USD'
     result.currentPrice = price?.regularMarketPrice?.raw ?? null
-    result.dividendYield = detail?.dividendYield?.raw ?? detail?.trailingAnnualDividendYield?.raw ?? null
-    result.expenseRatio = stats?.annualReportExpenseRatio?.raw ?? null
-    result.week52High = detail?.fiftyTwoWeekHigh?.raw ?? price?.fiftyTwoWeekHigh?.raw ?? null
-    result.week52Low = detail?.fiftyTwoWeekLow?.raw ?? price?.fiftyTwoWeekLow?.raw ?? null
-    result.beta = stats?.beta?.raw ?? detail?.beta?.raw ?? null
-    // 디버그용 (확인 후 제거)
-    result._raw = { detail, stats, price }
+    result.dividendYield = detail?.yield?.raw ?? detail?.trailingAnnualDividendYield?.raw ?? detail?.dividendYield?.raw ?? null
+    result.expenseRatio = fund?.feesExpensesInvestment?.annualReportExpenseRatio?.raw ?? stats?.annualReportExpenseRatio?.raw ?? null
+    result.week52High = price?.fiftyTwoWeekHigh?.raw ?? detail?.fiftyTwoWeekHigh?.raw ?? null
+    result.week52Low = price?.fiftyTwoWeekLow?.raw ?? detail?.fiftyTwoWeekLow?.raw ?? null
+    result.beta = stats?.beta?.raw ?? stats?.beta3Year?.raw ?? null
   }
 
   if (chartRes.status === 'fulfilled' && chartRes.value.ok) {
