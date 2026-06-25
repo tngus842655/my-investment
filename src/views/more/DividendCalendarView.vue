@@ -213,16 +213,27 @@ function predictFutureDividends(
   }
   const avgInterval = intervals.reduce((s, v) => s + v, 0) / intervals.length
 
-  // 표준 주기로 스냅
-  let period: number
-  if (avgInterval <= 45) period = 30
-  else if (avgInterval <= 120) period = 91
-  else if (avgInterval <= 270) period = 182
-  else period = 365
+  // 표준 주기 감지
+  let freqMonths: number  // 몇 개월마다 배당
+  if (avgInterval <= 45) freqMonths = 1
+  else if (avgInterval <= 120) freqMonths = 3
+  else if (avgInterval <= 270) freqMonths = 6
+  else freqMonths = 12
 
-  // 최근 4회 평균 금액
-  const recent = sorted.slice(-4)
+  // 최근 N회 평균 금액 (주기에 맞게)
+  const recentCount = freqMonths === 1 ? 6 : 4
+  const recent = sorted.slice(-recentCount)
   const avgAmount = recent.reduce((s, d) => s + d.amount, 0) / recent.length
+
+  // 과거 이력에서 월 내 평균 지급일 계산 (월배당/분기배당에 활용)
+  const avgDayOfMonth = Math.round(
+    sorted.reduce((s, d) => s + new Date(d.date).getDate(), 0) / sorted.length
+  )
+
+  // 분기배당이면 어느 월에 지급하는지 패턴 추출 (예: 3,6,9,12월)
+  const payMonths = freqMonths > 1
+    ? [...new Set(sorted.map((d) => new Date(d.date).getMonth() + 1))].sort((a, b) => a - b)
+    : null
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -230,30 +241,40 @@ function predictFutureDividends(
   oneYearLater.setFullYear(oneYearLater.getFullYear() + 1)
 
   const predictions: CalendarEvent[] = []
-  const nextDate = new Date(sorted[sorted.length - 1].date)
-  nextDate.setDate(nextDate.getDate() + period)
+  const seen = new Set<string>()
 
-  while (nextDate <= oneYearLater) {
-    if (nextDate >= today) {
-      const adjusted = toNearestBusinessDay(new Date(nextDate))
-      const dateStr = adjusted.toISOString().slice(0, 10)
-      const totalKrw = currency === 'USD' ? avgAmount * quantity * rate : avgAmount * quantity
-      if (!predictions.find((p) => p.date === dateStr)) {
-        predictions.push({
-          date: dateStr,
-          ticker,
-          amountPerShare: avgAmount,
-          totalAmountKrw: Math.round(totalKrw),
-          currency,
-          quantity,
-          isNext: true,
-        })
-      }
-    }
-    nextDate.setDate(nextDate.getDate() + period)
+  const addPrediction = (year: number, month: number) => {
+    const maxDay = new Date(year, month, 0).getDate()
+    const day = Math.min(avgDayOfMonth, maxDay)
+    const candidate = toNearestBusinessDay(new Date(year, month - 1, day))
+    if (candidate < today || candidate > oneYearLater) return
+    const dateStr = candidate.toISOString().slice(0, 10)
+    if (seen.has(dateStr)) return
+    seen.add(dateStr)
+    const totalKrw = currency === 'USD' ? avgAmount * quantity * rate : avgAmount * quantity
+    predictions.push({ date: dateStr, ticker, amountPerShare: avgAmount, totalAmountKrw: Math.round(totalKrw), currency, quantity, isNext: true })
   }
 
-  return predictions
+  if (freqMonths === 1) {
+    // 월배당: 오늘부터 1년간 매월 avgDayOfMonth에 예측
+    const cursor = new Date(today)
+    cursor.setDate(1)
+    while (cursor <= oneYearLater) {
+      addPrediction(cursor.getFullYear(), cursor.getMonth() + 1)
+      cursor.setMonth(cursor.getMonth() + 1)
+    }
+  } else {
+    // 분기·반기·연배당: 과거 지급 월 패턴 기반으로 1년치 생성
+    const lastYear = new Date(sorted[sorted.length - 1].date).getFullYear()
+    for (let yearOffset = 0; yearOffset <= 1; yearOffset++) {
+      const targetYear = today.getFullYear() + yearOffset
+      for (const m of (payMonths ?? [])) {
+        addPrediction(targetYear, m)
+      }
+    }
+  }
+
+  return predictions.sort((a, b) => a.date.localeCompare(b.date))
 }
 
 function formatAmountPerShare(ev: CalendarEvent) {
