@@ -7,7 +7,7 @@ import type { PortfolioAsset } from '@/types/portfolio'
 import { showMessage } from '@/composables/useSnackbar'
 import { getStockPrice } from '@/services/market'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
-import { getTickerLabel, isEtfTicker, getTickerDisplayName } from '@/utils/tickerNames'
+import { getTickerLabel, isEtfTicker, getTickerDisplayName, TICKER_NAMES } from '@/utils/tickerNames'
 
 const loading = ref(false)
 
@@ -440,7 +440,8 @@ const refresh = async () => {
 
 // ── 정렬 ─────────────────────────────────────────
 type SortKey = 'custom' | 'eval' | 'profit' | 'rate' | 'name'
-const sortKey = ref<SortKey>('custom')
+const SORT_STORAGE_KEY = 'firepath-portfolio-sort'
+const sortKey = ref<SortKey>((localStorage.getItem(SORT_STORAGE_KEY) as SortKey) ?? 'custom')
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'custom', label: '직접 정렬' },
@@ -450,6 +451,12 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'name',   label: '이름순' },
 ]
 
+const setSort = (key: SortKey) => {
+  sortKey.value = key
+  localStorage.setItem(SORT_STORAGE_KEY, key)
+  closeSwipe()
+}
+
 const sortedPortfolios = computed(() => {
   if (sortKey.value === 'custom') return portfolios.value
   const list = [...portfolios.value]
@@ -457,7 +464,10 @@ const sortedPortfolios = computed(() => {
     case 'eval':   return list.sort((a, b) => (b.evaluationAmountKrw ?? 0) - (a.evaluationAmountKrw ?? 0))
     case 'profit': return list.sort((a, b) => (b.profitAmountKrw ?? 0) - (a.profitAmountKrw ?? 0))
     case 'rate':   return list.sort((a, b) => (b.profitRate ?? 0) - (a.profitRate ?? 0))
-    case 'name':   return list.sort((a, b) => a.ticker.localeCompare(b.ticker))
+    case 'name': {
+      const getName = (ticker: string) => TICKER_NAMES[ticker.toUpperCase()] ?? ticker
+      return list.sort((a, b) => getName(a.ticker).localeCompare(getName(b.ticker), 'ko'))
+    }
     default:       return list
   }
 })
@@ -605,7 +615,7 @@ onUnmounted(() => {
               :key="opt.key"
               :active="sortKey === opt.key"
               :color="sortKey === opt.key ? 'primary' : undefined"
-              @click="sortKey = opt.key; closeSwipe()"
+              @click="setSort(opt.key)"
             >
               <v-list-item-title style="font-size: 13px">{{ opt.label }}</v-list-item-title>
             </v-list-item>
