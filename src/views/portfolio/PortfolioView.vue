@@ -443,12 +443,12 @@ type SortKey = 'custom' | 'eval' | 'profit' | 'rate' | 'name'
 const SORT_STORAGE_KEY = 'firepath-portfolio-sort'
 const sortKey = ref<SortKey>((localStorage.getItem(SORT_STORAGE_KEY) as SortKey) ?? 'custom')
 
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'custom', label: '직접 정렬' },
-  { key: 'eval',   label: '평가금액순' },
-  { key: 'profit', label: '손익순' },
-  { key: 'rate',   label: '수익률순' },
-  { key: 'name',   label: '이름순' },
+const SORT_OPTIONS: { key: SortKey; label: string; emoji: string }[] = [
+  { key: 'custom', label: '직접 정렬',  emoji: '✋' },
+  { key: 'eval',   label: '평가금액순', emoji: '💰' },
+  { key: 'profit', label: '손익순',     emoji: '📈' },
+  { key: 'rate',   label: '수익률순',   emoji: '🎯' },
+  { key: 'name',   label: '이름순',     emoji: '🔤' },
 ]
 
 const setSort = (key: SortKey) => {
@@ -617,7 +617,9 @@ onUnmounted(() => {
               :color="sortKey === opt.key ? 'primary' : undefined"
               @click="setSort(opt.key)"
             >
-              <v-list-item-title style="font-size: 13px">{{ opt.label }}</v-list-item-title>
+              <v-list-item-title style="font-size: 13px">
+                <span style="margin-right: 6px">{{ opt.emoji }}</span>{{ opt.label }}
+              </v-list-item-title>
             </v-list-item>
           </v-list>
         </v-menu>
