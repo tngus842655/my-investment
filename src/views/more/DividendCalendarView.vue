@@ -1,0 +1,411 @@
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { supabase } from '@/services/supabase'
+import { showMessage } from '@/composables/useSnackbar'
+import { getTickerLabel } from '@/utils/tickerNames'
+import { getCachedExchangeRate } from '@/services/exchangeRateCache'
+
+const router = useRouter()
+const loading = ref(true)
+
+interface Portfolio {
+  ticker: string
+  asset_type: string
+  currency: string
+  quantity: number
+}
+
+interface DividendEvent {
+  date: string
+  amount: number
+  type: 'ex'
+}
+
+interface TickerDividend {
+  ticker: string
+  dividends: DividendEvent[]
+  currency: string
+}
+
+interface CalendarEvent {
+  date: string          // YYYY-MM-DD
+  ticker: string
+  amountPerShare: number
+  totalAmountKrw: number
+  currency: string
+  quantity: number
+}
+
+const portfolios = ref<Portfolio[]>([])
+const calendarEvents = ref<CalendarEvent[]>([])
+const exchangeRate = ref(1300)
+const selectedYear = ref(new Date().getFullYear())
+const selectedMonth = ref(new Date().getMonth() + 1)
+
+onMounted(async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const [portRes, rate] = await Promise.all([
+      supabase.from('portfolios')
+        .select('ticker, asset_type, currency, quantity')
+        .eq('user_id', user.id),
+      getCachedExchangeRate(),
+    ])
+    if (portRes.error) throw portRes.error
+
+    exchangeRate.value = rate
+    portfolios.value = portRes.data ?? []
+
+    // 현금 제외, 배당 가능 종목만
+    const targets = portfolios.value.filter(
+      (p) => p.asset_type !== '현금' && p.asset_type !== '암호화폐'
+    )
+    if (!targets.length) { loading.value = false; return }
+
+    const { data, error } = await supabase.functions.invoke('etf-dividend', {
+      body: {
+        tickers: targets.map((p) => ({ ticker: p.ticker, currency: p.currency })),
+      },
+    })
+    if (error) throw error
+
+    const tickerMap = new Map<string, Portfolio>(targets.map((p) => [p.ticker, p]))
+    const events: CalendarEvent[] = []
+
+    for (const td of (data.data as TickerDividend[])) {
+      const port = tickerMap.get(td.ticker)
+      if (!port) continue
+      for (const div of td.dividends) {
+        const totalUsd = div.amount * port.quantity
+        const totalKrw = port.currency === 'USD' ? totalUsd * rate : totalUsd
+        events.push({
+          date: div.date,
+          ticker: td.ticker,
+          amountPerShare: div.amount,
+          totalAmountKrw: Math.round(totalKrw),
+          currency: port.currency,
+          quantity: port.quantity,
+        })
+      }
+    }
+
+    calendarEvents.value = events.sort((a, b) => a.date.localeCompare(b.date))
+  } catch {
+    showMessage('배당 데이터를 불러오는 중 오류가 발생했습니다.', 'error')
+  } finally {
+    loading.value = false
+  }
+})
+
+// 선택된 년/월 이벤트
+const currentMonthEvents = computed(() => {
+  const prefix = `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}`
+  return calendarEvents.value.filter((e) => e.date.startsWith(prefix))
+})
+
+// 연간 배당 합계
+const annualTotalKrw = computed(() => {
+  const year = String(selectedYear.value)
+  return calendarEvents.value
+    .filter((e) => e.date.startsWith(year))
+    .reduce((s, e) => s + e.totalAmountKrw, 0)
+})
+
+// 이번달 배당 합계
+const monthTotalKrw = computed(() =>
+  currentMonthEvents.value.reduce((s, e) => s + e.totalAmountKrw, 0)
+)
+
+// 달력 렌더링용
+const calendarDays = computed(() => {
+  const year = selectedYear.value
+  const month = selectedMonth.value
+  const firstDay = new Date(year, month - 1, 1).getDay()
+  const daysInMonth = new Date(year, month, 0).getDate()
+  const days: { day: number | null; events: CalendarEvent[] }[] = []
+
+  for (let i = 0; i < firstDay; i++) days.push({ day: null, events: [] })
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+    days.push({
+      day: d,
+      events: calendarEvents.value.filter((e) => e.date === dateStr),
+    })
+  }
+  return days
+})
+
+const prevMonth = () => {
+  if (selectedMonth.value === 1) { selectedMonth.value = 12; selectedYear.value-- }
+  else selectedMonth.value--
+}
+const nextMonth = () => {
+  if (selectedMonth.value === 12) { selectedMonth.value = 1; selectedYear.value++ }
+  else selectedMonth.value++
+}
+
+// 클릭한 날 상세
+const selectedDate = ref<string | null>(null)
+const selectedDateEvents = computed(() => {
+  if (!selectedDate.value) return []
+  return calendarEvents.value.filter((e) => e.date === selectedDate.value)
+})
+
+const onDayClick = (day: number | null, events: CalendarEvent[]) => {
+  if (!day || !events.length) return
+  const dateStr = `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  selectedDate.value = selectedDate.value === dateStr ? null : dateStr
+}
+
+// 배당 없는 종목 목록
+const noDividendTickers = computed(() => {
+  const withDividend = new Set(calendarEvents.value.map((e) => e.ticker))
+  return portfolios.value
+    .filter((p) => p.asset_type !== '현금' && p.asset_type !== '암호화폐' && !withDividend.has(p.ticker))
+    .map((p) => p.ticker)
+})
+
+function formatKrw(v: number) {
+  if (v >= 100_000_000) return `${(v / 100_000_000).toFixed(1)}억원`
+  if (v >= 10_000) return `${Math.round(v / 10_000).toLocaleString()}만원`
+  return v.toLocaleString() + '원'
+}
+
+const weekdays = ['일', '월', '화', '수', '목', '금', '토']
+</script>
+
+<template>
+  <v-container class="pa-4 pa-sm-6">
+    <!-- 헤더 -->
+    <div class="d-flex align-center ga-2 mb-6">
+      <v-btn icon size="small" variant="text" @click="router.back()">
+        <v-icon>mdi-arrow-left</v-icon>
+      </v-btn>
+      <div>
+        <div class="text-h5 font-weight-bold">배당 캘린더</div>
+        <div class="text-body-2 text-medium-emphasis">보유 종목 배당락일 및 예상 배당금</div>
+      </div>
+    </div>
+
+    <div v-if="loading" class="d-flex justify-center py-12">
+      <v-progress-circular indeterminate color="primary" />
+    </div>
+
+    <template v-else>
+      <div v-if="!portfolios.filter(p => p.asset_type !== '현금' && p.asset_type !== '암호화폐').length"
+        class="text-center py-12 text-medium-emphasis">
+        <v-icon size="48" class="mb-3">mdi-calendar-blank</v-icon>
+        <div class="text-body-2">보유 종목이 없어요.</div>
+        <div class="text-caption mt-1">포트폴리오에 종목을 추가하면 배당 일정을 확인할 수 있어요.</div>
+      </div>
+
+      <template v-else>
+        <!-- 요약 카드 -->
+        <div class="d-flex ga-3 mb-4">
+          <v-card rounded="xl" class="summary-card flex-1 pa-4 text-center">
+            <div class="text-caption text-medium-emphasis mb-1">연간 예상 배당</div>
+            <div class="text-body-2 font-weight-bold text-primary">
+              {{ annualTotalKrw > 0 ? formatKrw(annualTotalKrw) : '-' }}
+            </div>
+          </v-card>
+          <v-card rounded="xl" class="summary-card flex-1 pa-4 text-center">
+            <div class="text-caption text-medium-emphasis mb-1">이번 달 배당</div>
+            <div class="text-body-2 font-weight-bold" :class="monthTotalKrw > 0 ? 'text-success' : ''">
+              {{ monthTotalKrw > 0 ? formatKrw(monthTotalKrw) : '-' }}
+            </div>
+          </v-card>
+          <v-card rounded="xl" class="summary-card flex-1 pa-4 text-center">
+            <div class="text-caption text-medium-emphasis mb-1">이번 달 지급</div>
+            <div class="text-body-2 font-weight-bold">
+              {{ currentMonthEvents.length > 0 ? currentMonthEvents.length + '건' : '-' }}
+            </div>
+          </v-card>
+        </div>
+
+        <!-- 월 이동 -->
+        <div class="d-flex align-center justify-space-between mb-3">
+          <v-btn icon size="small" variant="text" @click="prevMonth">
+            <v-icon>mdi-chevron-left</v-icon>
+          </v-btn>
+          <div class="text-body-1 font-weight-bold">
+            {{ selectedYear }}.{{ String(selectedMonth).padStart(2, '0') }}
+          </div>
+          <v-btn icon size="small" variant="text" @click="nextMonth">
+            <v-icon>mdi-chevron-right</v-icon>
+          </v-btn>
+        </div>
+
+        <!-- 달력 -->
+        <v-card rounded="xl" class="pa-3 mb-4">
+          <!-- 요일 헤더 -->
+          <div class="cal-grid mb-1">
+            <div
+              v-for="wd in weekdays" :key="wd"
+              class="cal-weekday"
+              :class="wd === '일' ? 'text-error' : wd === '토' ? 'text-primary' : ''"
+            >{{ wd }}</div>
+          </div>
+          <!-- 날짜 -->
+          <div class="cal-grid">
+            <div
+              v-for="(cell, i) in calendarDays"
+              :key="i"
+              class="cal-cell"
+              :class="{
+                'has-event': cell.events.length > 0,
+                'selected': cell.day !== null && selectedDate === `${selectedYear}-${String(selectedMonth).padStart(2,'0')}-${String(cell.day).padStart(2,'0')}`,
+                'sunday': cell.day !== null && (i % 7 === 0),
+                'saturday': cell.day !== null && (i % 7 === 6),
+              }"
+              @click="onDayClick(cell.day, cell.events)"
+            >
+              <span v-if="cell.day" class="cal-day-num">{{ cell.day }}</span>
+              <div v-if="cell.events.length" class="cal-dots">
+                <span
+                  v-for="ev in cell.events.slice(0, 3)"
+                  :key="ev.ticker"
+                  class="cal-dot"
+                />
+              </div>
+            </div>
+          </div>
+        </v-card>
+
+        <!-- 선택한 날 상세 -->
+        <v-card v-if="selectedDate && selectedDateEvents.length" rounded="xl" class="pa-4 mb-4">
+          <div class="text-body-2 font-weight-medium mb-3">
+            {{ selectedDate!.replace(/-/g, '.') }} 배당락
+          </div>
+          <div
+            v-for="(ev, i) in selectedDateEvents"
+            :key="ev.ticker"
+            class="event-row"
+            :class="{ 'border-top': i > 0 }"
+          >
+            <div class="event-ticker">
+              <div class="text-body-2 font-weight-medium">{{ ev.ticker }}</div>
+              <div class="text-caption text-medium-emphasis">{{ getTickerLabel(ev.ticker) }}</div>
+            </div>
+            <div class="text-right">
+              <div class="text-body-2 font-weight-bold text-primary">{{ formatKrw(ev.totalAmountKrw) }}</div>
+              <div class="text-caption text-medium-emphasis">
+                {{ ev.currency === 'USD' ? '$' : '₩' }}{{ ev.amountPerShare.toFixed(4) }} × {{ ev.quantity }}주
+              </div>
+            </div>
+          </div>
+        </v-card>
+
+        <!-- 이번 달 전체 일정 -->
+        <v-card rounded="xl" class="pa-4 mb-4">
+          <div class="text-body-2 font-weight-medium mb-3">
+            {{ selectedYear }}.{{ String(selectedMonth).padStart(2, '0') }} 배당 일정
+          </div>
+          <div v-if="!currentMonthEvents.length" class="text-center text-caption text-medium-emphasis py-4">
+            이번 달 배당 일정이 없어요.
+          </div>
+          <div
+            v-for="(ev, i) in currentMonthEvents"
+            :key="ev.ticker + ev.date"
+            class="event-row"
+            :class="{ 'border-top': i > 0 }"
+          >
+            <div class="event-date">{{ ev.date.slice(5).replace('-', '.') }}</div>
+            <div class="event-ticker">
+              <div class="text-body-2 font-weight-medium">{{ ev.ticker }}</div>
+            </div>
+            <div class="text-right">
+              <div class="text-body-2 font-weight-bold text-primary">{{ formatKrw(ev.totalAmountKrw) }}</div>
+            </div>
+          </div>
+        </v-card>
+
+        <!-- 배당 정보 없는 종목 안내 -->
+        <div v-if="noDividendTickers.length" class="text-caption text-medium-emphasis text-center">
+          배당 정보 없음: {{ noDividendTickers.join(', ') }}
+        </div>
+
+        <div class="text-caption text-medium-emphasis text-center mt-2">
+          * 배당락일 기준 표시 · 과거 지급 패턴 기반 예상치로 실제와 다를 수 있어요
+        </div>
+      </template>
+    </template>
+  </v-container>
+</template>
+
+<style scoped>
+.summary-card {
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.07);
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.cal-weekday {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 0;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+}
+.cal-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: default;
+  position: relative;
+  padding: 2px;
+}
+.cal-cell.has-event {
+  cursor: pointer;
+}
+.cal-cell.has-event:active {
+  opacity: 0.7;
+}
+.cal-cell.selected {
+  background: rgba(var(--v-theme-primary), 0.15);
+}
+.cal-day-num {
+  font-size: 12px;
+  line-height: 1;
+}
+.cal-cell.sunday .cal-day-num { color: rgb(var(--v-theme-error)); }
+.cal-cell.saturday .cal-day-num { color: rgb(var(--v-theme-primary)); }
+.cal-dots {
+  display: flex;
+  gap: 2px;
+  margin-top: 2px;
+}
+.cal-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgb(var(--v-theme-primary));
+}
+.event-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+}
+.border-top {
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.06);
+}
+.event-date {
+  font-size: 13px;
+  color: rgba(var(--v-theme-on-surface), 0.55);
+  width: 36px;
+  flex-shrink: 0;
+}
+.event-ticker {
+  flex: 1;
+  min-width: 0;
+}
+</style>
