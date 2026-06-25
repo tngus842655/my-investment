@@ -297,7 +297,7 @@ const logout = async () => {
   object-fit: contain;
   mix-blend-mode: multiply;
 }
-.v-theme--dark .header-icon {
+:global(.v-theme--dark) .header-icon {
   mix-blend-mode: normal;
   filter: brightness(0) invert(1);
 }

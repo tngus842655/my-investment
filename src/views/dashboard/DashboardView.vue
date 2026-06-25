@@ -320,7 +320,7 @@ onMounted(loadDashboard)
   object-fit: contain;
   mix-blend-mode: multiply;
 }
-.v-theme--dark .header-logo {
+:global(.v-theme--dark) .header-logo {
   mix-blend-mode: normal;
   filter: brightness(0) invert(1);
 }

@@ -774,7 +774,7 @@ onUnmounted(() => {
   object-fit: contain;
   mix-blend-mode: multiply;
 }
-.v-theme--dark .header-icon {
+:global(.v-theme--dark) .header-icon {
   mix-blend-mode: normal;
   filter: brightness(0) invert(1);
 }
@@ -807,7 +807,7 @@ onUnmounted(() => {
 .ticker-logo-blend {
   mix-blend-mode: multiply;
 }
-.v-theme--dark .ticker-logo-blend {
+:global(.v-theme--dark) .ticker-logo-blend {
   mix-blend-mode: normal;
   filter: brightness(0) invert(1);
 }
