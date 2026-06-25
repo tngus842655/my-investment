@@ -464,12 +464,14 @@ onMounted(loadData)
             v-for="(s, i) in scenarios"
             :key="s.rate"
             class="scenario-col"
-            :class="{ 'scenario-active': i === 1 }"
+            :class="i === 0 ? 'scenario-low' : i === 2 ? 'scenario-high' : 'scenario-mid'"
           >
-            <div class="scenario-rate">{{ s.label }}</div>
-            <div class="scenario-badge" :class="i === 0 ? 'badge-low' : i === 2 ? 'badge-high' : 'badge-mid'">
-              {{ i === 0 ? '보수적' : i === 2 ? '낙관적' : '현재' }}
+            <div class="scenario-emoji">{{ i === 0 ? '🐢' : i === 2 ? '🚀' : '📍' }}</div>
+            <div class="scenario-name" :class="i === 0 ? 'name-low' : i === 2 ? 'name-high' : 'name-mid'">
+              {{ i === 0 ? '보수적' : i === 2 ? '낙관적' : '현재 계획' }}
             </div>
+            <div class="scenario-rate-label">연 {{ s.rate }}%</div>
+            <div class="scenario-divider" />
             <div class="scenario-date">{{ formatScenarioDate(s.months) }}</div>
           </div>
         </div>
@@ -600,35 +602,52 @@ onMounted(loadData)
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding: 10px 6px;
-  border-radius: 12px;
-  background: rgba(var(--v-theme-on-surface), 0.03);
+  gap: 4px;
+  padding: 14px 6px 12px;
+  border-radius: 16px;
 }
-.scenario-active {
+.scenario-low {
+  background: rgba(var(--v-theme-on-surface), 0.04);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.07);
+}
+.scenario-mid {
   background: rgba(var(--v-theme-primary), 0.08);
   border: 1px solid rgba(var(--v-theme-primary), 0.2);
 }
-.scenario-rate {
-  font-size: 17px;
+.scenario-high {
+  background: rgba(76, 175, 80, 0.07);
+  border: 1px solid rgba(76, 175, 80, 0.2);
+}
+.scenario-emoji {
+  font-size: 22px;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.scenario-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.name-low  { color: rgba(var(--v-theme-on-surface), 0.5); }
+.name-mid  { color: rgb(var(--v-theme-primary)); }
+.name-high { color: #4caf50; }
+.scenario-rate-label {
+  font-size: 13px;
   font-weight: 700;
   color: rgb(var(--v-theme-on-surface));
 }
-.scenario-badge {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 7px;
-  border-radius: 20px;
+.scenario-divider {
+  width: 24px;
+  height: 1px;
+  background: rgba(var(--v-theme-on-surface), 0.1);
+  margin: 4px 0;
 }
-.badge-low { background: rgba(var(--v-theme-on-surface), 0.08); color: rgba(var(--v-theme-on-surface), 0.5); }
-.badge-mid { background: rgba(var(--v-theme-primary), 0.15); color: rgb(var(--v-theme-primary)); }
-.badge-high { background: rgba(76, 175, 80, 0.15); color: #4caf50; }
 .scenario-date {
   font-size: 10px;
   font-weight: 500;
-  color: rgba(var(--v-theme-on-surface), 0.55);
+  color: rgba(var(--v-theme-on-surface), 0.5);
   text-align: center;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 /* 연도별 추이 테이블 */
