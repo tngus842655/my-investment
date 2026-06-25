@@ -63,7 +63,7 @@ const fmt = {
   shortDate: (d: string | null) => {
     if (!d) return '-'
     const [y, m] = d.split('-')
-    return `${y?.slice(2)}.${m}`  // '1999-03-01' → '99.03'
+    return `${y}.${m}`  // '1999-03-01' → '1999.03'
   },
 }
 
@@ -305,15 +305,15 @@ const better = (a: number | null, b: number | null, higherIsBetter: boolean): 'a
   color: rgba(var(--v-theme-on-surface), 0.7);
 }
 .metric-val {
-  min-width: 72px;
+  min-width: 84px;
 }
 .date-val {
   font-size: 11px;
-  min-width: 72px;
+  min-width: 84px;
   white-space: nowrap;
 }
 .col-header {
-  min-width: 72px;
+  min-width: 84px;
   font-size: 12px;
   font-weight: 700;
   text-align: right;
