@@ -153,10 +153,10 @@ const better = (a: number | null, b: number | null, higherIsBetter: boolean): 'a
       </div>
 
       <!-- 컬럼 헤더 -->
-      <div v-if="dataB" class="d-flex px-1 mb-1">
+      <div v-if="dataB" class="d-flex align-center px-2 mb-1">
         <div class="flex-1" />
-        <div class="col-header text-right">{{ dataA.ticker }}</div>
-        <div class="col-header text-right">{{ dataB.ticker }}</div>
+        <div class="col-header">{{ dataA.ticker }}</div>
+        <div class="col-header">{{ dataB.ticker }}</div>
       </div>
 
       <!-- 수익률 섹션 -->
@@ -175,11 +175,12 @@ const better = (a: number | null, b: number | null, higherIsBetter: boolean): 'a
           </div>
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
-          <div class="metric-label text-caption text-medium-emphasis">
-            상장일 기준<span v-if="dataB"> · 기간 다르면 단순 비교 불가</span>
-          </div>
-          <div class="date-val text-medium-emphasis text-right">{{ dataA.inceptionDate ?? '-' }}</div>
-          <div v-if="dataB" class="date-val text-medium-emphasis text-right">{{ dataB.inceptionDate ?? '-' }}</div>
+          <div class="metric-label text-caption text-medium-emphasis">상장일 기준</div>
+          <div class="metric-val text-caption text-medium-emphasis text-right">{{ dataA.inceptionDate ?? '-' }}</div>
+          <div v-if="dataB" class="metric-val text-caption text-medium-emphasis text-right">{{ dataB.inceptionDate ?? '-' }}</div>
+        </div>
+        <div v-if="dataB" class="metric-row d-flex align-center px-4 py-2">
+          <div class="metric-label text-caption text-warning">⚠ 상장 기간이 다르면 CAGR 단순 비교는 의미 없어요</div>
         </div>
         <div class="metric-row d-flex align-center px-4 py-3">
           <div class="metric-label text-caption">52주 최고</div>
@@ -289,16 +290,12 @@ const better = (a: number | null, b: number | null, higherIsBetter: boolean): 'a
 .metric-val {
   min-width: 72px;
 }
-.date-val {
-  font-size: 11px;
-  min-width: 72px;
-  white-space: nowrap;
-}
 .col-header {
   min-width: 72px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  color: rgba(var(--v-theme-on-surface), 0.45);
-  letter-spacing: 0.04em;
+  text-align: right;
+  color: rgba(var(--v-theme-on-surface), 0.75);
+  letter-spacing: 0.03em;
 }
 </style>
