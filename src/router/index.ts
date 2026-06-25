@@ -15,6 +15,7 @@ import FireSimulatorView from '@/views/more/FireSimulatorView.vue'
 import FireHistoryView from '@/views/more/FireHistoryView.vue'
 import AssetGrowthView from '@/views/more/AssetGrowthView.vue'
 import DividendCalendarView from '@/views/more/DividendCalendarView.vue'
+import EtfAnalysisView from '@/views/more/EtfAnalysisView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -89,6 +90,11 @@ const router = createRouter({
           path: 'dividend-calendar',
           name: 'dividendCalendar',
           component: DividendCalendarView,
+        },
+        {
+          path: 'etf-analysis',
+          name: 'etfAnalysis',
+          component: EtfAnalysisView,
         },
       ],
     },
