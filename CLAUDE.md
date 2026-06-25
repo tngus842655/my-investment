@@ -8,17 +8,18 @@
 
 - [ ] `.env`를 `.gitignore`에 추가할 것 (현재 2PC 개발 편의상 저장소에 포함되어 있음 — API 키 노출 주의!)
 
-
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Git Push 규칙
 
 사용자가 "push" 라고 말하면 아래 순서로 develop까지 반영한다:
+
 1. 현재 작업 브랜치에 `git push -u origin <branch>`
 2. GitHub MCP로 해당 브랜치 → `develop` PR 생성
 3. PR을 squash merge로 develop에 머지
 
 사용자가 "main에 반영" 이라고 말하면 아래 순서로 진행한다:
+
 1. 현재 작업 브랜치에 `git push -u origin <branch>`
 2. GitHub API(curl + $GITHUB_TOKEN) 또는 GitHub MCP로 해당 브랜치 → `main` PR 생성
 3. PR을 squash merge로 main에 머지
@@ -26,7 +27,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 개요
 
-**MY INVESTMENT** - 개인 FIRE(Financial Independence, Retire Early) 목표 관리 PWA. 투자 포트폴리오 추적 및 목표 달성률을 확인하는 앱.
+**Fire Path** - 개인 FIRE(Financial Independence, Retire Early) 목표 관리 PWA. 투자 포트폴리오 추적 및 목표 달성률을 확인하는 앱.
 
 ## 주요 명령어
 
