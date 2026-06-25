@@ -293,10 +293,10 @@ const weekdays = ['일', '월', '화', '수', '목', '금', '토']
           >
             <div class="event-ticker">
               <div class="d-flex align-center ga-1">
-                <span class="text-body-2 font-weight-medium">{{ ev.ticker }}</span>
+                <span class="text-body-2 font-weight-medium">{{ getTickerDisplayName(ev.ticker) }}</span>
                 <v-chip v-if="ev.isNext" size="x-small" color="warning" variant="tonal">예정</v-chip>
               </div>
-              <div class="text-caption text-medium-emphasis">{{ getTickerDisplayName(ev.ticker) }}</div>
+              <div class="text-caption text-medium-emphasis">{{ ev.ticker }}</div>
             </div>
             <div class="text-right">
               <div class="text-body-2 font-weight-bold" :class="ev.isNext ? 'text-warning' : 'text-primary'">
@@ -326,7 +326,7 @@ const weekdays = ['일', '월', '화', '수', '목', '금', '토']
             <div class="event-date">{{ ev.date.slice(5).replace('-', '.') }}</div>
             <div class="event-ticker">
               <div class="d-flex align-center ga-1">
-                <span class="text-body-2 font-weight-medium">{{ ev.ticker }}</span>
+                <span class="text-body-2 font-weight-medium">{{ getTickerDisplayName(ev.ticker) }}</span>
                 <v-chip v-if="ev.isNext" size="x-small" color="warning" variant="tonal">예정</v-chip>
               </div>
             </div>
