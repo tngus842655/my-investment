@@ -18,14 +18,23 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
   }
 
+  const supabaseAdmin = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  )
+
+  // 서비스 롤로 호출자 이메일 확인
   const supabaseUser = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_ANON_KEY')!,
     { global: { headers: { Authorization: authHeader } } },
   )
-
   const { data: { user } } = await supabaseUser.auth.getUser()
-  if (!user || user.email !== ADMIN_EMAIL) {
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+  }
+  const { data: { user: callerUser } } = await supabaseAdmin.auth.admin.getUserById(user.id)
+  if (!callerUser || callerUser.email !== ADMIN_EMAIL) {
     return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: corsHeaders })
   }
 
@@ -33,11 +42,6 @@ Deno.serve(async (req) => {
   if (!email) {
     return new Response(JSON.stringify({ error: 'email required' }), { status: 400, headers: corsHeaders })
   }
-
-  const supabaseAdmin = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-  )
 
   const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers()
   if (listError) {
