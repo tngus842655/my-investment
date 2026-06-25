@@ -41,10 +41,24 @@ const executeDelete = async () => {
     if (error) { showMessage('signup_log 오류: ' + error.message, 'error'); return }
 
     // Auth 계정 삭제 (Edge Function)
-    const { error: fnError } = await supabase.functions.invoke('admin-delete-user', {
-      body: { email: deleteTarget.value.email },
-    })
-    if (fnError) { showMessage('Auth 삭제 오류: ' + fnError.message, 'error'); return }
+    const { data: { session } } = await supabase.auth.getSession()
+    const fnRes = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ email: deleteTarget.value.email }),
+      },
+    )
+    if (!fnRes.ok) {
+      const fnErr = await fnRes.json().catch(() => ({ error: fnRes.statusText }))
+      showMessage('Auth 삭제 오류: ' + fnErr.error, 'error')
+      return
+    }
 
     const idx = logs.value.findIndex(l => l.id === deleteTarget.value!.id)
     if (idx !== -1) {
