@@ -161,12 +161,19 @@ const better = (a: number | null, b: number | null, higherIsBetter: boolean): 'a
       <v-card rounded="xl" class="mb-3 overflow-hidden">
         <div class="d-flex align-center px-4 pt-3 pb-1">
           <div class="section-title flex-1">수익률</div>
-          <template v-if="dataB">
-            <div class="col-header">{{ dataA.ticker }}</div>
-            <div class="col-header">{{ dataB.ticker }}</div>
-          </template>
         </div>
 
+        <div v-if="dataB" class="d-flex align-center px-4 pb-1">
+          <div class="metric-label" />
+          <div class="col-header">{{ dataA.ticker }}</div>
+          <div class="col-header">{{ dataB.ticker }}</div>
+        </div>
+
+        <div class="metric-row d-flex align-center px-4 py-2">
+          <div class="metric-label text-caption text-medium-emphasis">상장일</div>
+          <div class="metric-val text-caption text-medium-emphasis text-right">{{ fmt.shortDate(dataA.inceptionDate) }}</div>
+          <div v-if="dataB" class="metric-val text-caption text-medium-emphasis text-right">{{ fmt.shortDate(dataB.inceptionDate) }}</div>
+        </div>
         <div class="metric-row d-flex align-center px-4 py-3">
           <div class="metric-label text-caption">CAGR (연평균 수익률)</div>
           <div class="metric-val text-body-2 font-weight-bold text-right"
@@ -177,13 +184,6 @@ const better = (a: number | null, b: number | null, higherIsBetter: boolean): 'a
             :class="better(dataA.cagr, dataB.cagr, true) === 'b' ? 'text-success' : ''">
             {{ fmt.pct(dataB.cagr) }}
           </div>
-        </div>
-        <div class="metric-row d-flex align-center px-4 py-2">
-          <div class="metric-label text-caption text-medium-emphasis">
-            상장일 기준<span v-if="dataB"> · 기간 다르면 비교 불가</span>
-          </div>
-          <div class="metric-val text-caption text-medium-emphasis text-right">{{ fmt.shortDate(dataA.inceptionDate) }}</div>
-          <div v-if="dataB" class="metric-val text-caption text-medium-emphasis text-right">{{ fmt.shortDate(dataB.inceptionDate) }}</div>
         </div>
         <div class="metric-row d-flex align-center px-4 py-3">
           <div class="metric-label text-caption">52주 최고</div>
@@ -201,10 +201,11 @@ const better = (a: number | null, b: number | null, higherIsBetter: boolean): 'a
       <v-card rounded="xl" class="mb-3 overflow-hidden">
         <div class="d-flex align-center px-4 pt-3 pb-1">
           <div class="section-title flex-1">리스크</div>
-          <template v-if="dataB">
-            <div class="col-header">{{ dataA.ticker }}</div>
-            <div class="col-header">{{ dataB.ticker }}</div>
-          </template>
+        </div>
+        <div v-if="dataB" class="d-flex align-center px-4 pb-1">
+          <div class="metric-label" />
+          <div class="col-header">{{ dataA.ticker }}</div>
+          <div class="col-header">{{ dataB.ticker }}</div>
         </div>
 
         <div class="metric-row d-flex align-center px-4 py-3">
@@ -246,10 +247,11 @@ const better = (a: number | null, b: number | null, higherIsBetter: boolean): 'a
       <v-card rounded="xl" class="mb-4 overflow-hidden">
         <div class="d-flex align-center px-4 pt-3 pb-1">
           <div class="section-title flex-1">배당 & 비용</div>
-          <template v-if="dataB">
-            <div class="col-header">{{ dataA.ticker }}</div>
-            <div class="col-header">{{ dataB.ticker }}</div>
-          </template>
+        </div>
+        <div v-if="dataB" class="d-flex align-center px-4 pb-1">
+          <div class="metric-label" />
+          <div class="col-header">{{ dataA.ticker }}</div>
+          <div class="col-header">{{ dataB.ticker }}</div>
         </div>
 
         <div class="metric-row d-flex align-center px-4 py-3">
