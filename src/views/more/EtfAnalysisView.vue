@@ -97,6 +97,59 @@ const isWinner = (a: number | null, b: number | null, higherIsBetter: boolean, s
   return better(a, b, higherIsBetter) === side
 }
 
+// FIRE 적합도 점수 (0~100)
+const calcFireScore = (info: EtfInfo): { score: number; stars: number; label: string } => {
+  let score = 0, max = 0
+
+  if (info.cagr != null) {
+    max += 35
+    score += info.cagr >= 0.15 ? 35 : info.cagr >= 0.10 ? 28 : info.cagr >= 0.07 ? 20 : info.cagr >= 0.04 ? 12 : 5
+  }
+  if (info.mdd != null) {
+    max += 25
+    score += info.mdd >= -0.20 ? 25 : info.mdd >= -0.35 ? 18 : info.mdd >= -0.50 ? 10 : 4
+  }
+  if (info.expenseRatio != null) {
+    max += 25
+    score += info.expenseRatio <= 0.001 ? 25 : info.expenseRatio <= 0.003 ? 20 : info.expenseRatio <= 0.005 ? 14 : info.expenseRatio <= 0.01 ? 8 : 3
+  }
+  if (info.volatility != null) {
+    max += 15
+    score += info.volatility <= 0.12 ? 15 : info.volatility <= 0.18 ? 11 : info.volatility <= 0.25 ? 6 : 2
+  }
+
+  const normalized = max > 0 ? Math.round((score / max) * 100) : 0
+  const stars = normalized >= 90 ? 5 : normalized >= 75 ? 4 : normalized >= 60 ? 3 : normalized >= 45 ? 2 : 1
+  const label = normalized >= 90 ? '장기 적립식 투자 강력 추천'
+    : normalized >= 75 ? '장기 적립식 투자 추천'
+    : normalized >= 60 ? '장기 투자 적합'
+    : normalized >= 45 ? '단기 투자 적합'
+    : 'FIRE 투자에 주의 필요'
+
+  return { score: normalized, stars, label }
+}
+
+const starStr = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n)
+
+// 종합 승패 집계 (6개 항목)
+const scoreResult = computed(() => {
+  const a = dataA.value
+  const b = dataB.value
+  if (!a || !b) return null
+
+  let aWins = 0, bWins = 0
+  ;[
+    better(a.cagr,         b.cagr,         true),
+    better(a.mdd,          b.mdd,          true),
+    better(a.expenseRatio, b.expenseRatio, false),
+    better(a.dividendYield,b.dividendYield,true),
+    better(a.volatility,   b.volatility,   false),
+    better(a.beta,         b.beta,         false),
+  ].forEach(w => { if (w === 'a') aWins++; else if (w === 'b') bWins++ })
+
+  return { aWins, bWins }
+})
+
 const getEtfTags = (info: EtfInfo) => {
   const tags: Array<{ label: string; color: string }> = []
   const name = (info.name ?? '').toLowerCase()
@@ -468,6 +521,52 @@ const aiData = computed(() => {
         </template>
       </v-card>
 
+      <!-- 종합 비교 결과 -->
+      <v-card v-if="scoreResult" rounded="xl" class="mb-3 pa-4">
+        <div class="d-flex align-center ga-2 mb-3">
+          <v-icon size="18" color="primary">mdi-podium</v-icon>
+          <div class="section-title">종합 비교 결과</div>
+        </div>
+        <div class="d-flex align-center">
+          <div class="flex-1 text-center py-2">
+            <div class="text-caption text-medium-emphasis mb-1">{{ dataA!.ticker }}</div>
+            <div class="d-flex align-center justify-center ga-1">
+              <span v-if="scoreResult.aWins > scoreResult.bWins" style="font-size:18px">🏆</span>
+              <span class="text-h4 font-weight-bold" :class="scoreResult.aWins >= scoreResult.bWins ? 'text-primary' : 'text-medium-emphasis'">{{ scoreResult.aWins }}</span>
+              <span class="text-body-2 text-medium-emphasis">승</span>
+            </div>
+          </div>
+          <div class="text-body-2 text-medium-emphasis">vs</div>
+          <div class="flex-1 text-center py-2">
+            <div class="text-caption text-medium-emphasis mb-1">{{ dataB!.ticker }}</div>
+            <div class="d-flex align-center justify-center ga-1">
+              <span v-if="scoreResult.bWins > scoreResult.aWins" style="font-size:18px">🏆</span>
+              <span class="text-h4 font-weight-bold" :class="scoreResult.bWins >= scoreResult.aWins ? 'text-primary' : 'text-medium-emphasis'">{{ scoreResult.bWins }}</span>
+              <span class="text-body-2 text-medium-emphasis">승</span>
+            </div>
+          </div>
+        </div>
+        <div class="text-caption text-medium-emphasis text-center mt-1">CAGR · MDD · 변동성 · 베타 · 배당률 · 운용보수 6개 항목 기준</div>
+      </v-card>
+
+      <!-- FIRE 적합도 -->
+      <v-card rounded="xl" class="mb-4 pa-4">
+        <div class="d-flex align-center ga-2 mb-3">
+          <v-icon size="18" color="primary">mdi-fire</v-icon>
+          <div class="section-title">FIRE 적합도</div>
+        </div>
+        <div class="d-flex ga-3">
+          <template v-for="info in ([dataA, dataB].filter(Boolean) as EtfInfo[])" :key="info.ticker">
+            <div class="fire-score-card flex-1 pa-3 text-center">
+              <div class="text-caption text-medium-emphasis mb-1">{{ info.ticker }}</div>
+              <div class="fire-stars mb-1">{{ starStr(calcFireScore(info).stars) }}</div>
+              <div class="text-h6 font-weight-bold text-primary">{{ calcFireScore(info).score }}<span class="text-body-2 text-medium-emphasis">점</span></div>
+              <div class="text-caption mt-1">{{ calcFireScore(info).label }}</div>
+            </div>
+          </template>
+        </div>
+      </v-card>
+
       <div class="text-caption text-medium-emphasis">
         * Yahoo Finance 데이터 기반 · 투자 판단의 참고 자료로만 활용하세요.
       </div>
@@ -531,5 +630,15 @@ const aiData = computed(() => {
 .ai-winner-row {
   background: rgba(var(--v-theme-primary), 0.08);
   border-radius: 12px;
+}
+.fire-score-card {
+  background: rgba(var(--v-theme-primary), 0.05);
+  border: 1px solid rgba(var(--v-theme-primary), 0.12);
+  border-radius: 14px;
+}
+.fire-stars {
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: #f59e0b;
 }
 </style>
