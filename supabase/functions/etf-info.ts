@@ -17,8 +17,8 @@ const fetchEtfInfo = async (ticker: string) => {
 
   const [summaryRes, chartRes] = await Promise.allSettled([
     fetch(
-      `https://query1.finance.yahoo.com/v11/finance/quoteSummary/${symbol}?modules=summaryDetail%2CdefaultKeyStatistics%2Cprice%2CfundProfile%2CquoteType`,
-      { headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' } }
+      `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${symbol}?modules=summaryDetail,defaultKeyStatistics,price,fundProfile,quoteType`,
+      { headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json', 'Accept-Language': 'en-US' } }
     ),
     fetch(
       `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1mo&period1=${from}&period2=${now}`,
@@ -27,6 +27,13 @@ const fetchEtfInfo = async (ticker: string) => {
   ])
 
   const result: Record<string, unknown> = { ticker }
+
+  if (summaryRes.status === 'rejected') {
+    result._summaryError = summaryRes.reason?.message ?? 'fetch failed'
+  } else if (!summaryRes.value.ok) {
+    result._summaryError = `HTTP ${summaryRes.value.status}`
+    result._summaryBody = await summaryRes.value.text()
+  }
 
   if (summaryRes.status === 'fulfilled' && summaryRes.value.ok) {
     const data = await summaryRes.value.json()
