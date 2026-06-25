@@ -17,7 +17,7 @@ const fetchEtfInfo = async (ticker: string) => {
 
   const [summaryRes, chartRes] = await Promise.allSettled([
     fetch(
-      `https://query1.finance.yahoo.com/v11/finance/quoteSummary/${symbol}?modules=summaryDetail,defaultKeyStatistics,price`,
+      `https://query1.finance.yahoo.com/v11/finance/quoteSummary/${symbol}?modules=summaryDetail%2CdefaultKeyStatistics%2Cprice`,
       { headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' } }
     ),
     fetch(
@@ -35,19 +35,21 @@ const fetchEtfInfo = async (ticker: string) => {
     const price = data?.quoteSummary?.result?.[0]?.price
 
     result.name = price?.longName ?? price?.shortName ?? ticker
-    result.currency = detail?.currency ?? 'USD'
+    result.currency = detail?.currency ?? price?.currency ?? 'USD'
     result.currentPrice = price?.regularMarketPrice?.raw ?? null
-    result.dividendYield = detail?.dividendYield?.raw ?? null      // 배당률 (소수, 예: 0.035)
-    result.expenseRatio = stats?.annualReportExpenseRatio?.raw ?? null  // 운용보수
-    result.week52High = detail?.fiftyTwoWeekHigh?.raw ?? null
-    result.week52Low = detail?.fiftyTwoWeekLow?.raw ?? null
-    result.beta = stats?.beta?.raw ?? null
+    result.dividendYield = detail?.dividendYield?.raw ?? detail?.trailingAnnualDividendYield?.raw ?? null
+    result.expenseRatio = stats?.annualReportExpenseRatio?.raw ?? null
+    result.week52High = detail?.fiftyTwoWeekHigh?.raw ?? price?.fiftyTwoWeekHigh?.raw ?? null
+    result.week52Low = detail?.fiftyTwoWeekLow?.raw ?? price?.fiftyTwoWeekLow?.raw ?? null
+    result.beta = stats?.beta?.raw ?? detail?.beta?.raw ?? null
+    // 디버그용 (확인 후 제거)
+    result._raw = { detail, stats, price }
   }
 
   if (chartRes.status === 'fulfilled' && chartRes.value.ok) {
     const data = await chartRes.value.json()
     const closes: number[] = data?.chart?.result?.[0]?.indicators?.quote?.[0]?.close ?? []
-    const timestamps: number[] = data?.chart?.result?.[0]?.timestamps ?? []
+    const timestamps: number[] = data?.chart?.result?.[0]?.timestamp ?? []  // 'timestamp' (not 'timestamps')
 
     const valid = closes
       .map((c, i) => ({ c, t: timestamps[i] }))
