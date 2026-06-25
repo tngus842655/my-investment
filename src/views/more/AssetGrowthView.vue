@@ -13,15 +13,22 @@ interface HistoryPoint {
 }
 
 const history = ref<HistoryPoint[]>([])
+const targetAsset = ref(0)
+const investmentPrincipal = ref(0)
 
 onMounted(async () => {
   try {
-    const { data, error } = await supabase
-      .from('asset_history')
-      .select('recorded_at, current_asset')
-      .order('recorded_at', { ascending: true })
-    if (error) throw error
-    history.value = data ?? []
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const [histRes, goalRes, summaryRes] = await Promise.all([
+      supabase.from('asset_history').select('recorded_at, current_asset').order('recorded_at', { ascending: true }),
+      supabase.from('investment_goals').select('target_asset').eq('user_id', user.id).maybeSingle(),
+      supabase.from('asset_summary').select('investment_principal').eq('user_id', user.id).maybeSingle(),
+    ])
+    if (histRes.error) throw histRes.error
+    history.value = histRes.data ?? []
+    targetAsset.value = goalRes.data?.target_asset ?? 0
+    investmentPrincipal.value = summaryRes.data?.investment_principal ?? 0
   } catch {
     showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
   } finally {
@@ -31,17 +38,16 @@ onMounted(async () => {
 
 // 일별 데이터를 월별로 집계 (해당 월 마지막 기록값 사용)
 interface MonthlyPoint {
-  month: string   // 'YYYY-MM'
-  label: string   // 'YY.MM'
+  month: string
+  label: string
   asset: number
-  change: number  // 전월 대비 증감
+  change: number
 }
 
 const monthlyData = computed<MonthlyPoint[]>(() => {
   const all = history.value
   if (!all.length) return []
 
-  // 월별 마지막 값 추출
   const map = new Map<string, number>()
   for (const p of all) {
     const month = p.recorded_at.slice(0, 7)
@@ -55,7 +61,7 @@ const monthlyData = computed<MonthlyPoint[]>(() => {
       month,
       label: month.slice(2).replace('-', '.'),
       asset,
-      change: asset - prev,
+      change: i === 0 ? 0 : asset - prev,
     }
   })
 })
@@ -77,8 +83,8 @@ const filteredData = computed(() => {
 
 // ── SVG 바 차트 ────────────────────────────────────
 const VW = 300
-const VH = 180
-const PAD = { top: 20, right: 8, bottom: 36, left: 44 }
+const VH = 200
+const PAD = { top: 24, right: 8, bottom: 36, left: 44 }
 const PW = VW - PAD.left - PAD.right
 const PH = VH - PAD.top - PAD.bottom
 
@@ -86,43 +92,48 @@ const chartData = computed(() => {
   const pts = filteredData.value
   if (!pts.length) return null
 
-  const maxAsset = Math.max(...pts.map((p) => p.asset))
-  const barW = Math.max(4, PW / pts.length - 4)
+  const maxAsset = Math.max(...pts.map((p) => p.asset), targetAsset.value || 0)
+  const yMax = maxAsset * 1.12
+  const barW = Math.max(4, PW / pts.length - 5)
 
   const toX = (i: number) => PAD.left + (i / pts.length) * PW + PW / pts.length / 2
-  const toBarH = (asset: number) => (asset / (maxAsset * 1.1)) * PH
-  const toBarY = (asset: number) => PAD.top + PH - toBarH(asset)
+  const toH = (v: number) => (v / yMax) * PH
+  const toY = (v: number) => PAD.top + PH - toH(v)
 
   // Y축 눈금 3개
-  const yMax = maxAsset * 1.1
   const yTicks = [0, yMax / 2, yMax].map((v) => ({
     value: v,
-    y: PAD.top + PH - (v / yMax) * PH,
+    y: toY(v),
     label: formatShort(v),
   }))
 
-  // X축: 월 라벨 (최대 6개)
+  // X축 레이블 (최대 6개)
   const step = Math.ceil(pts.length / 6)
   const xLabels = pts
-    .map((p, i) => ({ x: toX(i), label: p.label, i }))
+    .map((p, i) => ({ x: toX(i), label: p.label }))
     .filter((_, i) => i % step === 0 || i === pts.length - 1)
 
-  return { pts, barW, toX, toBarH, toBarY, yTicks, xLabels }
+  // 목표 자산 기준선 Y 위치
+  const targetY = targetAsset.value > 0 && targetAsset.value <= yMax
+    ? toY(targetAsset.value)
+    : null
+
+  // 최고 자산 달 인덱스
+  const maxIdx = pts.reduce((mi, p, i) => (p.asset > pts[mi]!.asset ? i : mi), 0)
+
+  return { pts, barW, toX, toH, toY, yTicks, xLabels, targetY, maxIdx }
 })
 
 // 툴팁
 const tooltip = ref<{ x: number; y: number; pt: MonthlyPoint } | null>(null)
-const svgRef = ref<SVGSVGElement | null>(null)
 
 const onChartClick = (pt: MonthlyPoint, x: number, y: number) => {
-  if (tooltip.value?.pt.month === pt.month) {
-    tooltip.value = null
-  } else {
-    tooltip.value = { x, y, pt }
-  }
+  tooltip.value = tooltip.value?.pt.month === pt.month ? null : { x, y, pt }
 }
 
-// 요약 통계
+// ── 요약 통계 ────────────────────────────────────
+const latestAsset = computed(() => filteredData.value[filteredData.value.length - 1]?.asset ?? 0)
+
 const totalGrowth = computed(() => {
   const pts = filteredData.value
   if (pts.length < 2) return null
@@ -131,22 +142,29 @@ const totalGrowth = computed(() => {
   return { amount: last - first, pct: first > 0 ? ((last - first) / first) * 100 : 0 }
 })
 
+const avgMonthlyGrowth = computed(() => {
+  const pts = filteredData.value
+  const changes = pts.slice(1).map((p) => p.change)
+  if (!changes.length) return 0
+  return changes.reduce((s, v) => s + v, 0) / changes.length
+})
+
 const bestMonth = computed(() => {
   const pts = filteredData.value.slice(1)
   if (!pts.length) return null
   return pts.reduce((best, p) => (p.change > best.change ? p : best), pts[0]!)
 })
 
-const latestAsset = computed(() => {
-  const pts = filteredData.value
-  return pts[pts.length - 1]?.asset ?? 0
-})
+// 원금 vs 수익
+const profitAmount = computed(() => latestAsset.value - investmentPrincipal.value)
 
 function formatShort(v: number) {
-  if (v >= 100_000_000) return `${(v / 100_000_000).toFixed(0)}억`
-  if (v >= 10_000_000) return `${(v / 10_000_000).toFixed(0)}천만`
-  if (v >= 10_000) return `${Math.round(v / 10_000).toLocaleString()}만`
-  return v.toLocaleString()
+  const abs = Math.abs(v)
+  const sign = v < 0 ? '-' : ''
+  if (abs >= 100_000_000) return `${sign}${(abs / 100_000_000).toFixed(1)}억`
+  if (abs >= 10_000_000) return `${sign}${(abs / 10_000_000).toFixed(1)}천만`
+  if (abs >= 10_000) return `${sign}${Math.round(abs / 10_000).toLocaleString()}만`
+  return `${sign}${abs.toLocaleString()}`
 }
 
 function formatFull(v: number) {
@@ -179,31 +197,71 @@ function formatFull(v: number) {
       </div>
 
       <template v-else>
-        <!-- 요약 카드 3개 -->
-        <div class="d-flex ga-3 mb-4">
-          <v-card rounded="xl" class="summary-card flex-1 pa-4 text-center">
+        <!-- 요약 카드 4개 -->
+        <div class="summary-grid mb-4">
+          <v-card rounded="xl" class="summary-card pa-4 text-center">
             <div class="text-caption text-medium-emphasis mb-1">현재 자산</div>
-            <div class="text-body-1 font-weight-bold text-primary">{{ formatShort(latestAsset) }}</div>
+            <div class="text-body-2 font-weight-bold text-primary">{{ formatShort(latestAsset) }}</div>
           </v-card>
-          <v-card rounded="xl" class="summary-card flex-1 pa-4 text-center">
+          <v-card rounded="xl" class="summary-card pa-4 text-center">
             <div class="text-caption text-medium-emphasis mb-1">기간 증감</div>
             <div
               v-if="totalGrowth"
-              class="text-body-1 font-weight-bold"
+              class="text-body-2 font-weight-bold"
               :class="totalGrowth.amount >= 0 ? 'text-success' : 'text-error'"
             >
               {{ totalGrowth.amount >= 0 ? '+' : '' }}{{ totalGrowth.pct.toFixed(1) }}%
             </div>
-            <div v-else class="text-body-1 font-weight-bold text-medium-emphasis">-</div>
+            <div v-else class="text-body-2 font-weight-bold text-medium-emphasis">-</div>
           </v-card>
-          <v-card rounded="xl" class="summary-card flex-1 pa-4 text-center">
+          <v-card rounded="xl" class="summary-card pa-4 text-center">
+            <div class="text-caption text-medium-emphasis mb-1">월 평균 증가</div>
+            <div
+              class="text-body-2 font-weight-bold"
+              :class="avgMonthlyGrowth >= 0 ? 'text-success' : 'text-error'"
+            >
+              {{ avgMonthlyGrowth >= 0 ? '+' : '' }}{{ formatShort(avgMonthlyGrowth) }}
+            </div>
+          </v-card>
+          <v-card rounded="xl" class="summary-card pa-4 text-center">
             <div class="text-caption text-medium-emphasis mb-1">최고 증가월</div>
-            <div v-if="bestMonth" class="text-body-1 font-weight-bold text-success">
+            <div v-if="bestMonth" class="text-body-2 font-weight-bold text-success">
               {{ bestMonth.label }}
             </div>
-            <div v-else class="text-body-1 font-weight-bold text-medium-emphasis">-</div>
+            <div v-else class="text-body-2 font-weight-bold text-medium-emphasis">-</div>
           </v-card>
         </div>
+
+        <!-- 원금 vs 수익 바 -->
+        <v-card v-if="investmentPrincipal > 0" rounded="xl" class="pa-4 mb-4">
+          <div class="d-flex justify-space-between align-center mb-2">
+            <div class="text-body-2 font-weight-medium">원금 vs 수익</div>
+            <div class="text-caption" :class="profitAmount >= 0 ? 'text-success' : 'text-error'">
+              수익 {{ profitAmount >= 0 ? '+' : '' }}{{ formatShort(profitAmount) }}
+            </div>
+          </div>
+          <div class="profit-bar-wrap">
+            <div
+              class="profit-bar-principal"
+              :style="{ width: latestAsset > 0 ? (investmentPrincipal / latestAsset * 100).toFixed(1) + '%' : '100%' }"
+            />
+            <div
+              v-if="profitAmount > 0"
+              class="profit-bar-profit"
+              :style="{ width: (profitAmount / latestAsset * 100).toFixed(1) + '%' }"
+            />
+          </div>
+          <div class="d-flex ga-3 mt-2">
+            <div class="d-flex align-center ga-1">
+              <span class="legend-dot principal" />
+              <span class="text-caption text-medium-emphasis">원금 {{ formatShort(investmentPrincipal) }}</span>
+            </div>
+            <div class="d-flex align-center ga-1">
+              <span class="legend-dot profit" />
+              <span class="text-caption text-medium-emphasis">수익 {{ formatShort(Math.max(profitAmount, 0)) }}</span>
+            </div>
+          </div>
+        </v-card>
 
         <!-- 기간 탭 -->
         <div class="d-flex ga-2 mb-3">
@@ -225,7 +283,6 @@ function formatFull(v: number) {
           </div>
           <svg
             v-else
-            ref="svgRef"
             :viewBox="`0 0 ${VW} ${VH}`"
             width="100%"
             style="overflow: visible"
@@ -244,21 +301,46 @@ function formatFull(v: number) {
               >{{ tick.label }}</text>
             </template>
 
+            <!-- 목표 자산 기준선 -->
+            <template v-if="chartData.targetY !== null">
+              <line
+                :x1="PAD.left" :y1="chartData.targetY"
+                :x2="VW - PAD.right" :y2="chartData.targetY"
+                stroke="rgba(var(--v-theme-primary), 0.5)" stroke-width="1.5" stroke-dasharray="5,4"
+              />
+              <text
+                :x="VW - PAD.right + 2" :y="chartData.targetY + 4"
+                font-size="8" fill="rgb(var(--v-theme-primary))"
+              >목표</text>
+            </template>
+
             <!-- 바 -->
             <g
               v-for="(pt, i) in chartData.pts"
               :key="pt.month"
               style="cursor: pointer"
-              @click="onChartClick(pt, chartData.toX(i), chartData.toBarY(pt.asset))"
+              @click="onChartClick(pt, chartData.toX(i), chartData.toY(pt.asset))"
             >
               <rect
                 :x="chartData.toX(i) - chartData.barW / 2"
-                :y="chartData.toBarY(pt.asset)"
+                :y="chartData.toY(pt.asset)"
                 :width="chartData.barW"
-                :height="chartData.toBarH(pt.asset)"
+                :height="chartData.toH(pt.asset)"
                 :rx="3"
-                :fill="tooltip?.pt.month === pt.month ? 'rgb(var(--v-theme-primary))' : 'rgba(var(--v-theme-primary), 0.45)'"
+                :fill="tooltip?.pt.month === pt.month
+                  ? 'rgb(var(--v-theme-primary))'
+                  : i === chartData.maxIdx
+                    ? 'rgba(var(--v-theme-primary), 0.75)'
+                    : 'rgba(var(--v-theme-primary), 0.4)'"
               />
+              <!-- 최고점 마커 -->
+              <text
+                v-if="i === chartData.maxIdx"
+                :x="chartData.toX(i)"
+                :y="chartData.toY(pt.asset) - 5"
+                text-anchor="middle" font-size="9"
+                fill="rgb(var(--v-theme-primary))"
+              >▲</text>
             </g>
 
             <!-- X축 레이블 -->
@@ -278,16 +360,16 @@ function formatFull(v: number) {
                 :x2="tooltip.x" :y2="PAD.top + PH"
                 stroke="rgba(var(--v-theme-on-surface), 0.2)" stroke-width="1" stroke-dasharray="3,3"
               />
-              <g :transform="`translate(${Math.min(tooltip.x + 6, VW - 110)}, ${Math.max(tooltip.y - 44, PAD.top)})`">
-                <rect width="104" height="42" rx="6"
+              <g :transform="`translate(${Math.min(tooltip.x + 6, VW - 112)}, ${Math.max(tooltip.y - 48, PAD.top)})`">
+                <rect width="108" height="46" rx="6"
                   fill="rgb(var(--v-theme-surface))"
                   stroke="rgba(var(--v-theme-on-surface),0.12)" stroke-width="1" />
                 <text x="8" y="14" font-size="9" fill="rgba(var(--v-theme-on-surface), 0.55)">{{ tooltip.pt.month }}</text>
-                <text x="8" y="28" font-size="10" font-weight="bold" fill="rgb(var(--v-theme-primary))">{{ formatShort(tooltip.pt.asset) }}</text>
+                <text x="8" y="29" font-size="11" font-weight="bold" fill="rgb(var(--v-theme-primary))">{{ formatShort(tooltip.pt.asset) }}</text>
                 <text
-                  x="8" y="40" font-size="9"
-                  :fill="tooltip.pt.change >= 0 ? 'rgb(var(--v-theme-success))' : 'rgb(var(--v-theme-error))'"
-                >{{ tooltip.pt.change >= 0 ? '+' : '' }}{{ formatShort(tooltip.pt.change) }}</text>
+                  x="8" y="42" font-size="9"
+                  :fill="tooltip.pt.change > 0 ? 'rgb(var(--v-theme-success))' : tooltip.pt.change < 0 ? 'rgb(var(--v-theme-error))' : 'rgba(var(--v-theme-on-surface),0.4)'"
+                >{{ tooltip.pt.change === 0 ? '기준월' : (tooltip.pt.change > 0 ? '+' : '') + formatShort(tooltip.pt.change) }}</text>
               </g>
             </template>
           </svg>
@@ -308,7 +390,7 @@ function formatFull(v: number) {
               class="month-change"
               :class="pt.change > 0 ? 'text-success' : pt.change < 0 ? 'text-error' : 'text-medium-emphasis'"
             >
-              {{ pt.change > 0 ? '+' : '' }}{{ formatShort(pt.change) }}
+              {{ pt.change === 0 ? '-' : (pt.change > 0 ? '+' : '') + formatShort(pt.change) }}
             </span>
           </div>
         </v-card>
@@ -318,6 +400,11 @@ function formatFull(v: number) {
 </template>
 
 <style scoped>
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
 .summary-card {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(var(--v-theme-on-surface), 0.07);
@@ -339,6 +426,35 @@ function formatFull(v: number) {
   border-color: rgb(var(--v-theme-primary));
   color: #fff;
 }
+.profit-bar-wrap {
+  height: 10px;
+  border-radius: 6px;
+  background: rgba(var(--v-theme-on-surface), 0.08);
+  display: flex;
+  overflow: hidden;
+}
+.profit-bar-principal {
+  height: 100%;
+  background: rgba(var(--v-theme-primary), 0.5);
+  transition: width 0.4s ease;
+}
+.profit-bar-profit {
+  height: 100%;
+  background: rgb(var(--v-theme-success));
+  transition: width 0.4s ease;
+}
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.legend-dot.principal {
+  background: rgba(var(--v-theme-primary), 0.5);
+}
+.legend-dot.profit {
+  background: rgb(var(--v-theme-success));
+}
 .month-row {
   display: flex;
   align-items: center;
@@ -358,11 +474,13 @@ function formatFull(v: number) {
   font-size: 13px;
   font-weight: 600;
   text-align: right;
+  white-space: nowrap;
 }
 .month-change {
-  width: 64px;
+  width: 56px;
   font-size: 12px;
   text-align: right;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 </style>
