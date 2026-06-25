@@ -124,12 +124,35 @@ const chartData = computed(() => {
   return { pts, barW, toX, toH, toY, yTicks, xLabels, targetY, maxIdx }
 })
 
-// 툴팁
+// 툴팁 + 선택된 월
 const tooltip = ref<{ x: number; y: number; pt: MonthlyPoint } | null>(null)
+const selectedMonth = ref<string | null>(null)
 
 const onChartClick = (pt: MonthlyPoint, x: number, y: number) => {
-  tooltip.value = tooltip.value?.pt.month === pt.month ? null : { x, y, pt }
+  if (tooltip.value?.pt.month === pt.month) {
+    tooltip.value = null
+    selectedMonth.value = null
+  } else {
+    tooltip.value = { x, y, pt }
+    selectedMonth.value = pt.month
+  }
 }
+
+// 선택된 월의 일별 상세
+const dailyDetail = computed(() => {
+  if (!selectedMonth.value) return []
+  return history.value
+    .filter((p) => p.recorded_at.startsWith(selectedMonth.value!))
+    .map((p, i, arr) => {
+      const prev = i > 0 ? arr[i - 1]!.current_asset : p.current_asset
+      return {
+        date: p.recorded_at,
+        asset: p.current_asset,
+        change: i === 0 ? 0 : p.current_asset - prev,
+      }
+    })
+    .reverse()
+})
 
 // ── 요약 통계 ────────────────────────────────────
 const latestAsset = computed(() => filteredData.value[filteredData.value.length - 1]?.asset ?? 0)
@@ -270,7 +293,7 @@ function formatFull(v: number) {
             :key="p.value"
             class="period-btn"
             :class="{ active: selectedPeriod === p.value }"
-            @click="selectedPeriod = p.value; tooltip = null"
+            @click="selectedPeriod = p.value; tooltip = null; selectedMonth = null"
           >
             {{ p.label }}
           </button>
@@ -375,24 +398,61 @@ function formatFull(v: number) {
           </svg>
         </v-card>
 
-        <!-- 월별 상세 테이블 -->
+        <!-- 상세 테이블 -->
         <v-card rounded="xl" class="pa-4">
-          <div class="text-body-2 font-weight-medium mb-3">월별 상세</div>
-          <div
-            v-for="(pt, i) in [...filteredData].reverse()"
-            :key="pt.month"
-            class="month-row"
-            :class="{ 'border-top': i > 0 }"
-          >
-            <span class="month-label">{{ pt.month }}</span>
-            <span class="month-asset">{{ formatFull(pt.asset) }}</span>
-            <span
-              class="month-change"
-              :class="pt.change > 0 ? 'text-success' : pt.change < 0 ? 'text-error' : 'text-medium-emphasis'"
-            >
-              {{ pt.change === 0 ? '-' : (pt.change > 0 ? '+' : '') + formatShort(pt.change) }}
-            </span>
+          <!-- 헤더 -->
+          <div class="d-flex align-center mb-3">
+            <template v-if="selectedMonth">
+              <v-btn icon size="x-small" variant="text" class="mr-1" @click="selectedMonth = null; tooltip = null">
+                <v-icon size="16">mdi-arrow-left</v-icon>
+              </v-btn>
+              <div class="text-body-2 font-weight-medium">{{ selectedMonth }} 일별 상세</div>
+            </template>
+            <div v-else class="text-body-2 font-weight-medium">월별 상세</div>
+            <v-spacer />
+            <div v-if="!selectedMonth" class="text-caption text-medium-emphasis">막대 클릭 시 일별 보기</div>
           </div>
+
+          <!-- 월별 뷰 -->
+          <template v-if="!selectedMonth">
+            <div
+              v-for="(pt, i) in [...filteredData].reverse()"
+              :key="pt.month"
+              class="month-row"
+              :class="{ 'border-top': i > 0 }"
+            >
+              <span class="month-label">{{ pt.month }}</span>
+              <span class="month-asset">{{ formatFull(pt.asset) }}</span>
+              <span
+                class="month-change"
+                :class="pt.change > 0 ? 'text-success' : pt.change < 0 ? 'text-error' : 'text-medium-emphasis'"
+              >
+                {{ pt.change === 0 ? '-' : (pt.change > 0 ? '+' : '') + formatShort(pt.change) }}
+              </span>
+            </div>
+          </template>
+
+          <!-- 일별 뷰 -->
+          <template v-else>
+            <div v-if="!dailyDetail.length" class="text-center text-caption text-medium-emphasis py-4">
+              해당 월 데이터가 없습니다.
+            </div>
+            <div
+              v-for="(pt, i) in dailyDetail"
+              :key="pt.date"
+              class="month-row"
+              :class="{ 'border-top': i > 0 }"
+            >
+              <span class="month-label">{{ pt.date.slice(5).replace('-', '/') }}</span>
+              <span class="month-asset">{{ formatFull(pt.asset) }}</span>
+              <span
+                class="month-change"
+                :class="pt.change > 0 ? 'text-success' : pt.change < 0 ? 'text-error' : 'text-medium-emphasis'"
+              >
+                {{ pt.change === 0 ? '-' : (pt.change > 0 ? '+' : '') + formatShort(pt.change) }}
+              </span>
+            </div>
+          </template>
         </v-card>
       </template>
     </template>
