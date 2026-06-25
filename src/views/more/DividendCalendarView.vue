@@ -151,6 +151,7 @@ const nextMonth = () => {
 
 // 클릭한 날 상세
 const selectedDate = ref<string | null>(null)
+const showSheet = ref(false)
 const selectedDateEvents = computed(() => {
   if (!selectedDate.value) return []
   return calendarEvents.value.filter((e) => e.date === selectedDate.value)
@@ -159,7 +160,15 @@ const selectedDateEvents = computed(() => {
 const onDayClick = (day: number | null, events: CalendarEvent[]) => {
   if (!day || !events.length) return
   const dateStr = `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-  selectedDate.value = selectedDate.value === dateStr ? null : dateStr
+  selectedDate.value = dateStr
+  showSheet.value = true
+}
+
+function formatAmountPerShare(ev: CalendarEvent) {
+  if (ev.amountPerShare <= 0) return '?'
+  return ev.currency === 'KRW'
+    ? Math.round(ev.amountPerShare).toLocaleString()
+    : ev.amountPerShare.toFixed(4)
 }
 
 // 배당 없는 종목 목록
@@ -277,38 +286,6 @@ const weekdays = ['일', '월', '화', '수', '목', '금', '토']
           </div>
         </v-card>
 
-        <!-- 선택한 날 상세 -->
-        <v-card v-if="selectedDate && selectedDateEvents.length" rounded="xl" class="pa-4 mb-4">
-          <div class="d-flex align-center ga-2 mb-3">
-            <div class="text-body-2 font-weight-medium">
-              {{ selectedDate!.replace(/-/g, '.') }} 배당락
-            </div>
-            <v-chip v-if="selectedDateEvents.some(e => e.isNext)" size="x-small" color="warning" variant="tonal">예정</v-chip>
-          </div>
-          <div
-            v-for="(ev, i) in selectedDateEvents"
-            :key="ev.ticker"
-            class="event-row"
-            :class="{ 'border-top': i > 0 }"
-          >
-            <div class="event-ticker">
-              <div class="d-flex align-center ga-1">
-                <span class="text-body-2 font-weight-medium">{{ getTickerDisplayName(ev.ticker) }}</span>
-                <v-chip v-if="ev.isNext" size="x-small" color="warning" variant="tonal">예정</v-chip>
-              </div>
-              <div class="text-caption text-medium-emphasis">{{ ev.ticker }}</div>
-            </div>
-            <div class="text-right">
-              <div class="text-body-2 font-weight-bold" :class="ev.isNext ? 'text-warning' : 'text-primary'">
-                {{ ev.totalAmountKrw > 0 ? formatKrw(ev.totalAmountKrw) : '금액 미정' }}
-              </div>
-              <div class="text-caption text-medium-emphasis">
-                {{ ev.currency === 'USD' ? '$' : '₩' }}{{ ev.amountPerShare > 0 ? ev.amountPerShare.toFixed(4) : '?' }} × {{ ev.quantity }}주
-              </div>
-            </div>
-          </div>
-        </v-card>
-
         <!-- 이번 달 전체 일정 -->
         <v-card rounded="xl" class="pa-4 mb-4">
           <div class="text-body-2 font-weight-medium mb-3">
@@ -349,6 +326,45 @@ const weekdays = ['일', '월', '화', '수', '목', '금', '토']
       </template>
     </template>
   </v-container>
+
+  <!-- 날짜 클릭 바텀시트 -->
+  <v-bottom-sheet v-model="showSheet" :scrim="true">
+    <v-card rounded="t-xl" class="pa-5">
+      <div class="d-flex align-center ga-2 mb-4">
+        <div class="text-body-1 font-weight-bold">
+          {{ selectedDate?.replace(/-/g, '.') }} 배당락
+        </div>
+        <v-chip v-if="selectedDateEvents.some(e => e.isNext)" size="x-small" color="warning" variant="tonal">예정</v-chip>
+        <v-spacer />
+        <v-btn icon size="x-small" variant="text" @click="showSheet = false">
+          <v-icon size="18">mdi-close</v-icon>
+        </v-btn>
+      </div>
+      <div
+        v-for="(ev, i) in selectedDateEvents"
+        :key="ev.ticker"
+        class="event-row"
+        :class="{ 'border-top': i > 0 }"
+      >
+        <div class="event-ticker">
+          <div class="d-flex align-center ga-1">
+            <span class="text-body-2 font-weight-medium">{{ getTickerDisplayName(ev.ticker) }}</span>
+            <v-chip v-if="ev.isNext" size="x-small" color="warning" variant="tonal">예정</v-chip>
+          </div>
+          <div class="text-caption text-medium-emphasis">{{ ev.ticker }}</div>
+        </div>
+        <div class="text-right">
+          <div class="text-body-2 font-weight-bold" :class="ev.isNext ? 'text-warning' : 'text-primary'">
+            {{ ev.totalAmountKrw > 0 ? formatKrw(ev.totalAmountKrw) : '금액 미정' }}
+          </div>
+          <div class="text-caption text-medium-emphasis">
+            {{ ev.currency === 'USD' ? '$' : '₩' }}{{ formatAmountPerShare(ev) }} × {{ ev.quantity }}주
+          </div>
+        </div>
+      </div>
+      <div style="height: env(safe-area-inset-bottom, 8px)" />
+    </v-card>
+  </v-bottom-sheet>
 </template>
 
 <style scoped>
