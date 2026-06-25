@@ -163,10 +163,6 @@ const onKeydown = (e: KeyboardEvent) => { if (e.key === 'Enter') signIn() }
   height: 100px;
   object-fit: contain;
   display: block;
-  mix-blend-mode: multiply;
-}
-:global(.v-theme--dark) .brand-logo {
-  mix-blend-mode: normal;
 }
 
 .brand-icon {

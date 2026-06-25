@@ -340,10 +340,6 @@ onMounted(loadData)
   width: 28px;
   height: 28px;
   object-fit: contain;
-  mix-blend-mode: multiply;
-}
-:global(.v-theme--dark) .header-icon {
-  mix-blend-mode: normal;
 }
 
 .glass-card {

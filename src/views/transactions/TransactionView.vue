@@ -502,10 +502,6 @@ onMounted(loadTransactions)
   width: 32px;
   height: 32px;
   object-fit: contain;
-  mix-blend-mode: multiply;
-}
-:global(.v-theme--dark) .header-icon {
-  mix-blend-mode: normal;
 }
 
 .glass-card {

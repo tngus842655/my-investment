@@ -772,10 +772,6 @@ onUnmounted(() => {
   width: 32px;
   height: 32px;
   object-fit: contain;
-  mix-blend-mode: multiply;
-}
-:global(.v-theme--dark) .header-icon {
-  mix-blend-mode: normal;
 }
 
 .glass-card {
@@ -804,10 +800,6 @@ onUnmounted(() => {
   object-fit: contain;
 }
 .ticker-logo-blend {
-  mix-blend-mode: multiply;
-}
-:global(.v-theme--dark) .ticker-logo-blend {
-  mix-blend-mode: normal;
 }
 .logo-bg-etf {
   background: #e8f4ff;

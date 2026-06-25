@@ -318,10 +318,6 @@ onMounted(loadDashboard)
   width: 36px;
   height: 36px;
   object-fit: contain;
-  mix-blend-mode: multiply;
-}
-:global(.v-theme--dark) .header-logo {
-  mix-blend-mode: normal;
 }
 
 .glass-card {
