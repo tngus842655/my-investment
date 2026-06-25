@@ -168,9 +168,11 @@ const better = (a: number | null, b: number | null, higherIsBetter: boolean): 'a
           </div>
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
-          <div class="metric-label text-caption text-medium-emphasis">상장 이후 기준</div>
-          <div class="metric-val text-caption text-medium-emphasis text-right">{{ dataA.inceptionDate ?? '-' }}</div>
-          <div v-if="dataB" class="metric-val text-caption text-medium-emphasis text-right">{{ dataB.inceptionDate ?? '-' }}</div>
+          <div class="metric-label text-caption text-medium-emphasis">
+            상장일 기준<span v-if="dataB"> · 기간 다르면 단순 비교 불가</span>
+          </div>
+          <div class="date-val text-medium-emphasis text-right">{{ dataA.inceptionDate ?? '-' }}</div>
+          <div v-if="dataB" class="date-val text-medium-emphasis text-right">{{ dataB.inceptionDate ?? '-' }}</div>
         </div>
         <div class="metric-row d-flex align-center px-4 py-3">
           <div class="metric-label text-caption">52주 최고</div>
@@ -278,6 +280,11 @@ const better = (a: number | null, b: number | null, higherIsBetter: boolean): 'a
   color: rgba(var(--v-theme-on-surface), 0.7);
 }
 .metric-val {
-  min-width: 80px;
+  min-width: 72px;
+}
+.date-val {
+  font-size: 11px;
+  min-width: 72px;
+  white-space: nowrap;
 }
 </style>
