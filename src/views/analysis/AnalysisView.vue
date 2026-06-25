@@ -154,6 +154,55 @@ const hasData = computed(() =>
   annualReturn.value !== null && monthlyInvestment.value > 0 && currentAsset.value >= 0,
 )
 
+// ── 시나리오 비교 ─────────────────────────────────
+interface Scenario { rate: number; label: string; months: number | null }
+
+const scenarios = computed<Scenario[]>(() => {
+  const T = targetAsset.value
+  const C = currentAsset.value
+  const M = monthlyInvestment.value
+  const base = annualReturn.value ?? 0
+  if (!T || !M) return []
+
+  return [-2, 0, 2].map((delta) => {
+    const rate = base + delta
+    const r = rate / 100 / 12
+    let months: number | null = null
+    if (C >= T) {
+      months = 0
+    } else if (r === 0) {
+      months = M > 0 ? Math.ceil((T - C) / M) : null
+    } else {
+      const num = T * r + M
+      const den = C * r + M
+      if (den > 0 && num / den > 1) {
+        months = Math.ceil(Math.log(num / den) / Math.log(1 + r))
+      }
+    }
+    return { rate, label: `${rate}%`, months }
+  })
+})
+
+const formatScenarioDate = (months: number | null) => {
+  if (months === null) return '-'
+  if (months === 0) return '달성!'
+  const d = new Date()
+  d.setMonth(d.getMonth() + months)
+  const y = Math.floor(months / 12)
+  const m = months % 12
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')} (${y > 0 ? y + '년 ' : ''}${m > 0 ? m + '개월' : ''})`
+}
+
+// ── 연도별 추이 테이블 ─────────────────────────────
+const yearlyRows = computed(() => {
+  const T = targetAsset.value
+  return projection.value.map((p) => ({
+    year: p.year,
+    asset: p.asset,
+    rate: T > 0 ? Math.min(Math.round((p.asset / T) * 100), 100) : null,
+  }))
+})
+
 const loadData = async () => {
   loading.value = true
   try {
@@ -315,7 +364,7 @@ onMounted(loadData)
       </div>
 
       <!-- 예상 요약 스탯 -->
-      <div class="stat-grid">
+      <div class="stat-grid mb-3">
         <div class="stat-card text-center">
           <div class="stat-label">총 투자금 (예상)</div>
           <div class="stat-value">{{ formatShortMoney(currentAsset + totalInvested) }}원</div>
@@ -329,6 +378,49 @@ onMounted(loadData)
         <div class="stat-card text-center" style="grid-column: 1 / -1">
           <div class="stat-label">최종 자산 (예상)</div>
           <div class="stat-value-lg">{{ formatShortMoney(finalAsset) }}원</div>
+        </div>
+      </div>
+
+      <!-- 수익률 시나리오 비교 -->
+      <div v-if="scenarios.length" class="glass-card pa-4 mb-3">
+        <div class="section-title mb-3">수익률 시나리오 비교</div>
+        <div class="scenario-grid">
+          <div
+            v-for="(s, i) in scenarios"
+            :key="s.rate"
+            class="scenario-col"
+            :class="{ 'scenario-active': i === 1 }"
+          >
+            <div class="scenario-rate">{{ s.label }}</div>
+            <div class="scenario-badge" :class="i === 0 ? 'badge-low' : i === 2 ? 'badge-high' : 'badge-mid'">
+              {{ i === 0 ? '보수적' : i === 2 ? '낙관적' : '현재' }}
+            </div>
+            <div class="scenario-date">{{ formatScenarioDate(s.months) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 연도별 자산 추이 -->
+      <div class="glass-card pa-4">
+        <div class="section-title mb-3">연도별 자산 추이</div>
+        <div class="yearly-table">
+          <div class="yearly-header">
+            <span>연도</span>
+            <span>예상 자산</span>
+            <span v-if="targetAsset > 0">달성률</span>
+          </div>
+          <div
+            v-for="row in yearlyRows"
+            :key="row.year"
+            class="yearly-row"
+            :class="{ 'yearly-goal': row.rate !== null && row.rate >= 100 }"
+          >
+            <span class="yearly-year">{{ row.year }}</span>
+            <span class="yearly-asset">{{ formatShortMoney(row.asset) }}원</span>
+            <span v-if="targetAsset > 0" class="yearly-rate" :class="row.rate !== null && row.rate >= 100 ? 'text-primary' : ''">
+              {{ row.rate !== null ? row.rate + '%' : '-' }}
+            </span>
+          </div>
         </div>
       </div>
     </template>
@@ -399,5 +491,97 @@ onMounted(loadData)
   font-size: 20px;
   font-weight: 700;
   color: rgb(var(--v-theme-on-surface));
+}
+
+.section-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+  text-transform: uppercase;
+}
+
+/* 시나리오 비교 */
+.scenario-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+.scenario-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 6px;
+  border-radius: 12px;
+  background: rgba(var(--v-theme-on-surface), 0.03);
+}
+.scenario-active {
+  background: rgba(var(--v-theme-primary), 0.08);
+  border: 1px solid rgba(var(--v-theme-primary), 0.2);
+}
+.scenario-rate {
+  font-size: 17px;
+  font-weight: 700;
+  color: rgb(var(--v-theme-on-surface));
+}
+.scenario-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+}
+.badge-low { background: rgba(var(--v-theme-on-surface), 0.08); color: rgba(var(--v-theme-on-surface), 0.5); }
+.badge-mid { background: rgba(var(--v-theme-primary), 0.15); color: rgb(var(--v-theme-primary)); }
+.badge-high { background: rgba(76, 175, 80, 0.15); color: #4caf50; }
+.scenario-date {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(var(--v-theme-on-surface), 0.55);
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* 연도별 추이 테이블 */
+.yearly-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.yearly-header {
+  display: grid;
+  grid-template-columns: 56px 1fr 56px;
+  padding: 0 4px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.yearly-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 56px;
+  padding: 8px 4px;
+  border-radius: 8px;
+  align-items: center;
+  transition: background 0.15s;
+}
+.yearly-row:active { background: rgba(var(--v-theme-on-surface), 0.04); }
+.yearly-goal { background: rgba(var(--v-theme-primary), 0.06); }
+.yearly-year {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+}
+.yearly-asset {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+}
+.yearly-rate {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+  text-align: right;
 }
 </style>
