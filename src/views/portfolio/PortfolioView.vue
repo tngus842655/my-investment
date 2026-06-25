@@ -510,33 +510,6 @@ onUnmounted(() => {
           style="border-color: rgba(var(--v-theme-on-surface), 0.15)"
           @click="refresh"
         />
-        <!-- 정렬 메뉴 -->
-        <v-menu location="bottom end">
-          <template #activator="{ props }">
-            <v-btn
-              v-bind="props"
-              variant="outlined"
-              size="small"
-              rounded="lg"
-              elevation="0"
-              :color="sortKey !== 'custom' ? 'primary' : undefined"
-              style="border-color: rgba(var(--v-theme-on-surface), 0.15); min-width: 0; padding: 0 10px"
-            >
-              <v-icon size="16">mdi-sort</v-icon>
-            </v-btn>
-          </template>
-          <v-list density="compact" rounded="lg" min-width="140">
-            <v-list-item
-              v-for="opt in SORT_OPTIONS"
-              :key="opt.key"
-              :active="sortKey === opt.key"
-              active-color="primary"
-              @click="sortKey = opt.key; closeSwipe()"
-            >
-              <v-list-item-title style="font-size: 13px">{{ opt.label }}</v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-menu>
         <v-btn
           color="primary"
           prepend-icon="mdi-plus"
@@ -583,6 +556,30 @@ onUnmounted(() => {
     <template v-else>
       <!-- 총 요약 카드 -->
       <div class="glass-card pa-4 mb-4">
+        <div class="d-flex justify-space-between align-center mb-3">
+          <span style="font-size: 11px; font-weight: 600; color: rgba(var(--v-theme-on-surface), 0.4); letter-spacing: 0.04em; text-transform: uppercase">요약</span>
+          <!-- 정렬 메뉴 -->
+          <v-menu location="bottom end">
+            <template #activator="{ props }">
+              <button v-bind="props" class="sort-btn" :class="{ 'sort-btn-active': sortKey !== 'custom' }">
+                <v-icon size="12">mdi-sort</v-icon>
+                <span>{{ sortKey === 'custom' ? '정렬' : SORT_OPTIONS.find(o => o.key === sortKey)?.label }}</span>
+                <v-icon size="11">mdi-chevron-down</v-icon>
+              </button>
+            </template>
+            <v-list density="compact" rounded="lg" min-width="130" elevation="4">
+              <v-list-item
+                v-for="opt in SORT_OPTIONS"
+                :key="opt.key"
+                :active="sortKey === opt.key"
+                :color="sortKey === opt.key ? 'primary' : undefined"
+                @click="sortKey = opt.key; closeSwipe()"
+              >
+                <v-list-item-title style="font-size: 13px">{{ opt.label }}</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </div>
         <div class="summary-grid">
           <div class="summary-row">
             <span class="text-caption text-medium-emphasis">매입금액</span>
@@ -611,15 +608,6 @@ onUnmounted(() => {
             >
           </div>
         </div>
-      </div>
-
-      <!-- 정렬 중 안내 칩 -->
-      <div v-if="sortKey !== 'custom'" class="d-flex align-center ga-2 mb-3">
-        <v-icon size="14" color="primary">mdi-sort</v-icon>
-        <span style="font-size: 12px; color: rgba(var(--v-theme-on-surface), 0.55)">
-          {{ SORT_OPTIONS.find(o => o.key === sortKey)?.label }} 적용 중
-        </span>
-        <v-btn size="x-small" variant="text" color="primary" @click="sortKey = 'custom'">초기화</v-btn>
       </div>
 
       <!-- 자산 카드 목록 -->
@@ -921,6 +909,27 @@ onUnmounted(() => {
 }
 
 /* ── 드래그 카드 이동 애니메이션 ── */
+.sort-btn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
+  background: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+  transition: all 0.15s;
+}
+.sort-btn:active { opacity: 0.7; }
+.sort-btn-active {
+  border-color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.07);
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
