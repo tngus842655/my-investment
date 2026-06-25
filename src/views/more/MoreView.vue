@@ -151,7 +151,7 @@ const logout = async () => {
     <!-- 투자 도구 섹션 -->
     <div class="section-label mb-2">투자 도구</div>
     <div class="d-flex flex-column ga-2 mb-5">
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3 menu-disabled">
+      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/etf-analysis')">
         <div class="menu-icon">
           <v-icon size="18" color="primary">mdi-chart-box-outline</v-icon>
         </div>
@@ -160,7 +160,7 @@ const logout = async () => {
           <div class="text-caption text-medium-emphasis">CAGR · MDD · 변동성 · 배당률 · 운용보수</div>
         </div>
         <v-spacer />
-        <v-chip size="x-small" color="primary" variant="tonal">준비중</v-chip>
+        <v-icon size="16" style="color: rgba(var(--v-theme-on-surface), 0.35)">mdi-chevron-right</v-icon>
       </div>
 
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3 menu-disabled">
@@ -175,7 +175,7 @@ const logout = async () => {
         <v-chip size="x-small" color="primary" variant="tonal">준비중</v-chip>
       </div>
 
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3 menu-disabled">
+      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/dividend-calendar')">
         <div class="menu-icon">
           <v-icon size="18" color="primary">mdi-calendar-month-outline</v-icon>
         </div>
@@ -184,7 +184,7 @@ const logout = async () => {
           <div class="text-caption text-medium-emphasis">배당락일 · 지급일 일정 확인</div>
         </div>
         <v-spacer />
-        <v-chip size="x-small" color="primary" variant="tonal">준비중</v-chip>
+        <v-icon size="16" style="color: rgba(var(--v-theme-on-surface), 0.35)">mdi-chevron-right</v-icon>
       </div>
     </div>
 
