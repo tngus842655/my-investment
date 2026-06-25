@@ -239,12 +239,12 @@ function predictFutureDividends(
 ): CalendarEvent[] {
   if (pastDivs.length < 2) return []
 
-  const sorted = [...pastDivs].sort((a, b) => a.date.localeCompare(b.date))
+  const sorted: DividendEvent[] = [...pastDivs].sort((a, b) => a.date.localeCompare(b.date))
 
   // 배당 주기 감지
   const intervals: number[] = []
   for (let i = 1; i < sorted.length; i++) {
-    const diff = (new Date(sorted[i].date).getTime() - new Date(sorted[i - 1].date).getTime()) / 86400000
+    const diff = (new Date(sorted[i]!.date).getTime() - new Date(sorted[i - 1]!.date).getTime()) / 86400000
     intervals.push(diff)
   }
   const avgInterval = intervals.reduce((s, v) => s + v, 0) / intervals.length
@@ -269,9 +269,9 @@ function predictFutureDividends(
     const key = `${n}-${weekday}`
     freq[key] = (freq[key] ?? 0) + 1
   }
-  const topKey = Object.entries(freq).sort((a, b) => b[1] - a[1])[0]
-  const [topN, topWeekday] = topKey[0].split('-').map(Number)
-  const nthWeekdayConsistency = topKey[1] / sorted.length  // 일치율
+  const topKey = Object.entries(freq).sort((a, b) => b[1]! - a[1]!)[0]!
+  const [topN, topWeekday] = topKey[0].split('-').map(Number) as [number, number]
+  const nthWeekdayConsistency = topKey[1]! / sorted.length  // 일치율
 
   // 평균 날짜 일관성 (표준편차가 낮을수록 날짜 기반이 유리)
   const avgDay = sorted.reduce((s, d) => s + new Date(d.date).getDate(), 0) / sorted.length
