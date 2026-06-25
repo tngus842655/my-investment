@@ -233,6 +233,56 @@ const formatScenarioDate = (months: number | null) => {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')} (${y > 0 ? y + '년 ' : ''}${m > 0 ? m + '개월' : ''})`
 }
 
+// ── FIRE Tip ─────────────────────────────────────
+const calcMonths = (T: number, C: number, M: number, annualRate: number): number | null => {
+  if (C >= T) return 0
+  const r = annualRate / 100 / 12
+  if (r === 0) return M > 0 ? Math.ceil((T - C) / M) : null
+  const num = T * r + M
+  const den = C * r + M
+  if (den <= 0 || num / den <= 1) return null
+  return Math.ceil(Math.log(num / den) / Math.log(1 + r))
+}
+
+const fireTip = computed(() => {
+  const T = targetAsset.value
+  const C = currentAsset.value
+  const M = monthlyInvestment.value
+  const rate = annualReturn.value
+  if (!T || !M || rate === null) return null
+
+  const baseMo = calcMonths(T, C, M, rate)
+  if (baseMo === null || baseMo === 0) return null
+
+  // 팁 1: 월 투자금 50만원 증가
+  const INVEST_BUMP = 500_000
+  const investMo = calcMonths(T, C, M + INVEST_BUMP, rate)
+  const investDiff = investMo !== null ? baseMo - investMo : null
+
+  // 팁 2: 수익률 1% 증가
+  const rateMo = calcMonths(T, C, M, rate + 1)
+  const rateDiff = rateMo !== null ? baseMo - rateMo : null
+
+  // 더 임팩트 큰 팁 선택
+  if (investDiff !== null && (rateDiff === null || investDiff >= rateDiff)) {
+    const y = Math.floor(investDiff / 12)
+    const mo = investDiff % 12
+    const diffStr = y > 0 ? `${y}년 ${mo > 0 ? mo + '개월' : ''}` : `${investDiff}개월`
+    return {
+      body: `월 투자금을 <strong>50만원</strong> 늘리면\n목표 달성이 약 <strong>${diffStr}</strong> 빨라집니다.`,
+    }
+  }
+  if (rateDiff !== null && rateDiff > 0) {
+    const y = Math.floor(rateDiff / 12)
+    const mo = rateDiff % 12
+    const diffStr = y > 0 ? `${y}년 ${mo > 0 ? mo + '개월' : ''}` : `${rateDiff}개월`
+    return {
+      body: `연평균 수익률이 <strong>1%</strong> 높아지면\n목표 달성이 약 <strong>${diffStr}</strong> 앞당겨집니다.`,
+    }
+  }
+  return null
+})
+
 // ── 연도별 추이 테이블 ─────────────────────────────
 const yearlyRows = computed(() => {
   const T = targetAsset.value
@@ -477,6 +527,15 @@ onMounted(loadData)
         </div>
       </div>
 
+      <!-- FIRE Tip -->
+      <div v-if="fireTip" class="tip-card mb-3">
+        <div class="tip-header">
+          <span class="tip-emoji">💡</span>
+          <span class="tip-title">FIRE Tip</span>
+        </div>
+        <div class="tip-body" v-html="fireTip.body.replace('\n', '<br>')" />
+      </div>
+
       <!-- 연도별 자산 추이 -->
       <div class="glass-card pa-4">
         <div class="section-title mb-3">연도별 자산 추이</div>
@@ -568,6 +627,35 @@ onMounted(loadData)
   font-size: 20px;
   font-weight: 700;
   color: rgb(var(--v-theme-on-surface));
+}
+
+.tip-card {
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(var(--v-theme-primary), 0.08) 0%, rgba(var(--v-theme-primary), 0.04) 100%);
+  border: 1px solid rgba(var(--v-theme-primary), 0.18);
+}
+.tip-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.tip-emoji { font-size: 16px; }
+.tip-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgb(var(--v-theme-primary));
+  letter-spacing: 0.03em;
+}
+.tip-body {
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(var(--v-theme-on-surface), 0.75);
+}
+.tip-body :deep(strong) {
+  color: rgb(var(--v-theme-on-surface));
+  font-weight: 700;
 }
 
 .next-milestone-bar {
