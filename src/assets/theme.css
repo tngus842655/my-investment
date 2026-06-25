@@ -109,3 +109,18 @@
 .v-theme--dark .v-field--variant-outlined.v-field--focused .v-field__outline {
   --v-field-border-color: rgba(0, 212, 184, 0.6);
 }
+
+/* v-tooltip 가독성 개선 */
+.v-tooltip .v-overlay__content {
+  background: rgba(30, 30, 40, 0.92) !important;
+  color: #fff !important;
+  font-size: 12px !important;
+  line-height: 1.6 !important;
+  max-width: 220px !important;
+  padding: 8px 12px !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18) !important;
+}
+.v-theme--light .v-tooltip .v-overlay__content {
+  background: rgba(20, 20, 30, 0.88) !important;
+}
