@@ -60,6 +60,11 @@ const fmt = {
     return currency === 'KRW' ? `₩${Math.round(v).toLocaleString()}` : `$${v.toFixed(2)}`
   },
   num: (v: number | null, digits = 2) => v == null ? '-' : v.toFixed(digits),
+  shortDate: (d: string | null) => {
+    if (!d) return '-'
+    const [y, m] = d.split('-')
+    return `${y?.slice(2)}.${m}`  // '1999-03-01' → '99.03'
+  },
 }
 
 const better = (a: number | null, b: number | null, higherIsBetter: boolean): 'a' | 'b' | null => {
@@ -176,10 +181,10 @@ const better = (a: number | null, b: number | null, higherIsBetter: boolean): 'a
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
           <div class="metric-label text-caption text-medium-emphasis">
-            상장일 기준<span v-if="dataB"> · 기간 다르면 단순 비교 불가</span>
+            상장일 기준<span v-if="dataB"> · 기간 다르면 비교 불가</span>
           </div>
-          <div class="date-val text-medium-emphasis text-right">{{ dataA.inceptionDate ?? '-' }}</div>
-          <div v-if="dataB" class="date-val text-medium-emphasis text-right">{{ dataB.inceptionDate ?? '-' }}</div>
+          <div class="metric-val text-caption text-medium-emphasis text-right">{{ fmt.shortDate(dataA.inceptionDate) }}</div>
+          <div v-if="dataB" class="metric-val text-caption text-medium-emphasis text-right">{{ fmt.shortDate(dataB.inceptionDate) }}</div>
         </div>
         <div class="metric-row d-flex align-center px-4 py-3">
           <div class="metric-label text-caption">52주 최고</div>
@@ -296,9 +301,9 @@ const better = (a: number | null, b: number | null, higherIsBetter: boolean): 'a
 }
 .col-header {
   min-width: 72px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  color: rgba(var(--v-theme-on-surface), 0.45);
-  letter-spacing: 0.04em;
+  text-align: right;
+  color: rgba(var(--v-theme-on-surface), 0.8);
 }
 </style>
