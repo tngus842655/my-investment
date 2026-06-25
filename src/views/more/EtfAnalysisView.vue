@@ -302,7 +302,11 @@ const aiData = computed(() => {
               <div class="text-body-2 font-weight-bold">{{ info.ticker }}</div>
               <div class="text-body-2 font-weight-bold text-primary">{{ fmt.price(info.currentPrice, info.currency) }}</div>
             </div>
-            <div v-if="info.fundFamily" class="text-caption text-medium-emphasis mt-1" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ info.fundFamily }}</div>
+            <v-tooltip v-if="info.fundFamily" :text="info.fundFamily" location="bottom" open-on-click open-on-hover>
+              <template #activator="{ props }">
+                <div v-bind="props" class="fund-family-label text-caption text-medium-emphasis mt-1">{{ info.fundFamily }}</div>
+              </template>
+            </v-tooltip>
           </div>
         </template>
       </div>
@@ -581,5 +585,12 @@ const aiData = computed(() => {
   font-size: 18px;
   letter-spacing: 2px;
   color: #f59e0b;
+}
+.fund-family-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+  max-width: 100%;
 }
 </style>
