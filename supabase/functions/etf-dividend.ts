@@ -25,7 +25,7 @@ const yahooSymbol = (ticker: string, currency: string): string => {
 const fetchDividends = async (ticker: string, currency: string): Promise<TickerDividend> => {
   const symbol = yahooSymbol(ticker, currency)
   const now = Math.floor(Date.now() / 1000)
-  const from = now - 60 * 60 * 24 * 365 * 2
+  const from = now - 60 * 60 * 24 * 365 * 5
 
   // 과거 배당 이력 + 다음 배당락일 동시 조회
   const [chartRes, summaryRes] = await Promise.allSettled([
