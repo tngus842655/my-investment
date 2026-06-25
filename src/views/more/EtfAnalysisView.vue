@@ -291,7 +291,7 @@ const aiData = computed(() => {
       <!-- ETF 카드 -->
       <div class="d-flex ga-2 mb-3">
         <template v-for="info in ([dataA, dataB].filter(Boolean) as EtfInfo[])" :key="info.ticker">
-          <div class="etf-card flex-1 pa-2">
+          <div class="etf-card pa-2">
             <div class="d-flex align-center ga-1 mb-1 flex-wrap">
               <v-chip
                 v-for="tag in getEtfTags(info)" :key="tag.label"
@@ -518,6 +518,8 @@ const aiData = computed(() => {
   background: rgba(var(--v-theme-primary), 0.05);
   border: 1px solid rgba(var(--v-theme-primary), 0.12);
   border-radius: 16px;
+  flex: 1 1 0;
+  min-width: 0;
 }
 .section-title {
   font-size: 11px;
