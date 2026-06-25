@@ -11,15 +11,9 @@
 - 도메인 구매 후 Resend 연결 → 이메일 인증 재활성화
 - 현재 임시로 이메일 인증 OFF 상태
 
-### signup_log RLS 정책 적용
-- 현재 UNRESTRICTED 상태 (RLS 비활성화)
-- RLS 활성화 + 관리자 전용 조회/수정 정책 필요
-- SQL 준비됨 (직전 대화 참고)
-
 ---
 
 ## ⚠️ 서비스 오픈 전 체크리스트
 
 - [ ] `.env` `.gitignore` 추가 (현재 저장소에 포함됨 — API 키 노출 주의!)
 - [ ] 이메일 인증 재활성화 (도메인 + Resend SMTP 연결 후)
-- [ ] signup_log RLS 정책 적용
