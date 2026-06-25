@@ -355,11 +355,11 @@ const aiData = computed(() => {
             </v-tooltip>
           </div>
           <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.cagr, dataB?.cagr ?? null, true, 'a')">
-            <span v-if="isWinner(dataA!.cagr, dataB?.cagr ?? null, true, 'a')">🏆</span>
+            <span class="trophy-slot">{{ isWinner(dataA!.cagr, dataB?.cagr ?? null, true, 'a') ? "🏆" : "" }}</span>
             {{ fmt.pct(dataA!.cagr) }}
           </div>
           <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.cagr, dataB.cagr, true, 'b')">
-            <span v-if="isWinner(dataA!.cagr, dataB.cagr, true, 'b')">🏆</span>
+            <span class="trophy-slot">{{ isWinner(dataA!.cagr, dataB.cagr, true, 'b') ? "🏆" : "" }}</span>
             {{ fmt.pct(dataB.cagr) }}
           </div>
         </div>
@@ -397,11 +397,11 @@ const aiData = computed(() => {
           </div>
           <!-- MDD는 음수값 → 0에 가까울수록(높을수록) 낙폭 적음 → higherIsBetter: true -->
           <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.mdd, dataB?.mdd ?? null, true, 'a')">
-            <span v-if="isWinner(dataA!.mdd, dataB?.mdd ?? null, true, 'a')">🏆</span>
+            <span class="trophy-slot">{{ isWinner(dataA!.mdd, dataB?.mdd ?? null, true, 'a') ? "🏆" : "" }}</span>
             {{ fmt.pct(dataA!.mdd) }}
           </div>
           <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.mdd, dataB.mdd, true, 'b')">
-            <span v-if="isWinner(dataA!.mdd, dataB.mdd, true, 'b')">🏆</span>
+            <span class="trophy-slot">{{ isWinner(dataA!.mdd, dataB.mdd, true, 'b') ? "🏆" : "" }}</span>
             {{ fmt.pct(dataB.mdd) }}
           </div>
         </div>
@@ -415,11 +415,11 @@ const aiData = computed(() => {
             </v-tooltip>
           </div>
           <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.volatility, dataB?.volatility ?? null, false, 'a')">
-            <span v-if="isWinner(dataA!.volatility, dataB?.volatility ?? null, false, 'a')">🏆</span>
+            <span class="trophy-slot">{{ isWinner(dataA!.volatility, dataB?.volatility ?? null, false, 'a') ? "🏆" : "" }}</span>
             {{ fmt.pct(dataA!.volatility) }}
           </div>
           <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.volatility, dataB.volatility, false, 'b')">
-            <span v-if="isWinner(dataA!.volatility, dataB.volatility, false, 'b')">🏆</span>
+            <span class="trophy-slot">{{ isWinner(dataA!.volatility, dataB.volatility, false, 'b') ? "🏆" : "" }}</span>
             {{ fmt.pct(dataB.volatility) }}
           </div>
         </div>
@@ -433,11 +433,11 @@ const aiData = computed(() => {
             </v-tooltip>
           </div>
           <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.beta, dataB?.beta ?? null, false, 'a')">
-            <span v-if="isWinner(dataA!.beta, dataB?.beta ?? null, false, 'a')">🏆</span>
+            <span class="trophy-slot">{{ isWinner(dataA!.beta, dataB?.beta ?? null, false, 'a') ? "🏆" : "" }}</span>
             {{ fmt.num(dataA!.beta) }}
           </div>
           <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.beta, dataB.beta, false, 'b')">
-            <span v-if="isWinner(dataA!.beta, dataB.beta, false, 'b')">🏆</span>
+            <span class="trophy-slot">{{ isWinner(dataA!.beta, dataB.beta, false, 'b') ? "🏆" : "" }}</span>
             {{ fmt.num(dataB.beta) }}
           </div>
         </div>
@@ -464,11 +464,11 @@ const aiData = computed(() => {
             </v-tooltip>
           </div>
           <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.dividendYield, dataB?.dividendYield ?? null, true, 'a')">
-            <span v-if="isWinner(dataA!.dividendYield, dataB?.dividendYield ?? null, true, 'a')">🏆</span>
+            <span class="trophy-slot">{{ isWinner(dataA!.dividendYield, dataB?.dividendYield ?? null, true, 'a') ? "🏆" : "" }}</span>
             {{ fmt.pct(dataA!.dividendYield) }}
           </div>
           <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.dividendYield, dataB.dividendYield, true, 'b')">
-            <span v-if="isWinner(dataA!.dividendYield, dataB.dividendYield, true, 'b')">🏆</span>
+            <span class="trophy-slot">{{ isWinner(dataA!.dividendYield, dataB.dividendYield, true, 'b') ? "🏆" : "" }}</span>
             {{ fmt.pct(dataB.dividendYield) }}
           </div>
         </div>
@@ -482,11 +482,11 @@ const aiData = computed(() => {
             </v-tooltip>
           </div>
           <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.expenseRatio, dataB?.expenseRatio ?? null, false, 'a')">
-            <span v-if="isWinner(dataA!.expenseRatio, dataB?.expenseRatio ?? null, false, 'a')">🏆</span>
+            <span class="trophy-slot">{{ isWinner(dataA!.expenseRatio, dataB?.expenseRatio ?? null, false, 'a') ? "🏆" : "" }}</span>
             {{ dataA!.expenseRatio != null ? fmt.pct(dataA!.expenseRatio, 2) : '-' }}
           </div>
           <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.expenseRatio, dataB.expenseRatio, false, 'b')">
-            <span v-if="isWinner(dataA!.expenseRatio, dataB.expenseRatio, false, 'b')">🏆</span>
+            <span class="trophy-slot">{{ isWinner(dataA!.expenseRatio, dataB.expenseRatio, false, 'b') ? "🏆" : "" }}</span>
             {{ dataB.expenseRatio != null ? fmt.pct(dataB.expenseRatio, 2) : '-' }}
           </div>
         </div>
@@ -519,52 +519,6 @@ const aiData = computed(() => {
 
           <div class="text-body-2 text-medium-emphasis mt-3">{{ aiData.closing }}</div>
         </template>
-      </v-card>
-
-      <!-- 종합 비교 결과 -->
-      <v-card v-if="scoreResult" rounded="xl" class="mb-3 pa-4">
-        <div class="d-flex align-center ga-2 mb-3">
-          <v-icon size="18" color="primary">mdi-podium</v-icon>
-          <div class="section-title">종합 비교 결과</div>
-        </div>
-        <div class="d-flex align-center">
-          <div class="flex-1 text-center py-2">
-            <div class="text-caption text-medium-emphasis mb-1">{{ dataA!.ticker }}</div>
-            <div class="d-flex align-center justify-center ga-1">
-              <span v-if="scoreResult.aWins > scoreResult.bWins" style="font-size:18px">🏆</span>
-              <span class="text-h4 font-weight-bold" :class="scoreResult.aWins >= scoreResult.bWins ? 'text-primary' : 'text-medium-emphasis'">{{ scoreResult.aWins }}</span>
-              <span class="text-body-2 text-medium-emphasis">승</span>
-            </div>
-          </div>
-          <div class="text-body-2 text-medium-emphasis">vs</div>
-          <div class="flex-1 text-center py-2">
-            <div class="text-caption text-medium-emphasis mb-1">{{ dataB!.ticker }}</div>
-            <div class="d-flex align-center justify-center ga-1">
-              <span v-if="scoreResult.bWins > scoreResult.aWins" style="font-size:18px">🏆</span>
-              <span class="text-h4 font-weight-bold" :class="scoreResult.bWins >= scoreResult.aWins ? 'text-primary' : 'text-medium-emphasis'">{{ scoreResult.bWins }}</span>
-              <span class="text-body-2 text-medium-emphasis">승</span>
-            </div>
-          </div>
-        </div>
-        <div class="text-caption text-medium-emphasis text-center mt-1">CAGR · MDD · 변동성 · 베타 · 배당률 · 운용보수 6개 항목 기준</div>
-      </v-card>
-
-      <!-- FIRE 적합도 -->
-      <v-card rounded="xl" class="mb-4 pa-4">
-        <div class="d-flex align-center ga-2 mb-3">
-          <v-icon size="18" color="primary">mdi-fire</v-icon>
-          <div class="section-title">FIRE 적합도</div>
-        </div>
-        <div class="d-flex ga-3">
-          <template v-for="info in ([dataA, dataB].filter(Boolean) as EtfInfo[])" :key="info.ticker">
-            <div class="fire-score-card flex-1 pa-3 text-center">
-              <div class="text-caption text-medium-emphasis mb-1">{{ info.ticker }}</div>
-              <div class="fire-stars mb-1">{{ starStr(calcFireScore(info).stars) }}</div>
-              <div class="text-h6 font-weight-bold text-primary">{{ calcFireScore(info).score }}<span class="text-body-2 text-medium-emphasis">점</span></div>
-              <div class="text-caption mt-1">{{ calcFireScore(info).label }}</div>
-            </div>
-          </template>
-        </div>
       </v-card>
 
       <div class="text-caption text-medium-emphasis">
@@ -622,6 +576,11 @@ const aiData = computed(() => {
 }
 .loser {
   color: rgb(var(--v-theme-error));
+}
+.trophy-slot {
+  width: 18px;
+  font-size: 12px;
+  flex-shrink: 0;
 }
 .ai-card {
   background: rgba(var(--v-theme-primary), 0.04);
