@@ -214,7 +214,15 @@ const aiSummary = computed((): string => {
           @keyup.enter="fetchInfo"
         />
       </div>
-      <div class="d-flex justify-end">
+      <div class="d-flex align-center ga-2">
+        <v-btn
+          v-if="dataA || inputA || inputB"
+          variant="text"
+          size="small"
+          rounded="lg"
+          @click="inputA = ''; inputB = ''; dataA = null; dataB = null"
+        >초기화</v-btn>
+        <v-spacer />
         <v-btn color="primary" rounded="lg" :loading="loading" @click="fetchInfo">분석</v-btn>
       </div>
     </v-card>
@@ -265,11 +273,6 @@ const aiSummary = computed((): string => {
           <div class="metric-label text-caption">운용사</div>
           <div class="metric-val text-caption text-right">{{ dataA!.fundFamily ?? '-' }}</div>
           <div v-if="dataB" class="metric-val text-caption text-right">{{ dataB.fundFamily ?? '-' }}</div>
-        </div>
-        <div class="metric-row d-flex align-center px-4 py-2">
-          <div class="metric-label text-caption">카테고리</div>
-          <div class="metric-val text-caption text-right">{{ dataA!.category ?? '-' }}</div>
-          <div v-if="dataB" class="metric-val text-caption text-right">{{ dataB.category ?? '-' }}</div>
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
           <div class="metric-label text-caption">운용자산 (AUM)</div>
