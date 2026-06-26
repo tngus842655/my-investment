@@ -82,12 +82,9 @@ const signIn = async () => {
     if (user) { supabase.from('login_log').insert({ user_id: user.id, email: user.email }).then(() => {}) }
     if (!user) return
 
-    const [goalResult, assetResult] = await Promise.all([
-      supabase.from('investment_goals').select('id').eq('user_id', user.id).maybeSingle(),
-      supabase.from('asset_summary').select('id').eq('user_id', user.id).maybeSingle(),
-    ])
+    const { data: goal } = await supabase.from('investment_goals').select('id').eq('user_id', user.id).maybeSingle()
 
-    if (!goalResult.data || !assetResult.data) { router.push('/goalSettings'); return }
+    if (!goal) { router.push('/goalSettings'); return }
     router.push('/dashboard')
   } finally {
     loading.value = false
