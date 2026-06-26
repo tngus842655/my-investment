@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
 const contentRef = ref<HTMLElement | null>(null)
 
-watch(() => route.path, () => {
+watch(() => route.path, async () => {
+  await nextTick()
   contentRef.value?.scrollTo({ top: 0 })
+  // window도 같이 초기화 (사파리 대응)
+  window.scrollTo({ top: 0 })
 })
 
 const tabs = [
