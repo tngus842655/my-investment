@@ -145,8 +145,11 @@ onMounted(async () => {
         <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-chart-bar" class="mb-2" @click="router.push('/admin/stats')">
           통계
         </v-btn>
-        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-lock-reset" @click="router.push('/admin/reset-password')">
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-lock-reset" class="mb-2" @click="router.push('/admin/reset-password')">
           회원 비밀번호 재설정
+        </v-btn>
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-database-sync-outline" @click="router.push('/admin/data')">
+          데이터 관리
         </v-btn>
       </div>
     </template>
