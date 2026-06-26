@@ -24,8 +24,8 @@ const addComma = (value: string) => {
 
 const removeComma = (value: string) => Number(value.replace(/,/g, '')) || 0
 
-const MAX_ASSET = 99_000_000_000   // 990억
-const MAX_MONTHLY = 1_000_000_000  // 10억
+const MAX_ASSET = 100_000_000_000  // 1000억
+const MAX_MONTHLY = 100_000_000    // 1억
 
 const handleTargetAsset = (value: string) => {
   const num = Math.min(Number(value.replace(/,/g, '')) || 0, MAX_ASSET)
@@ -99,9 +99,26 @@ const loadData = async () => {
 }
 
 const save = async () => {
-  if (!targetAsset.value) {
+  const targetNum = removeComma(targetAsset.value)
+  if (!targetAsset.value || targetNum <= 0) {
     showMessage('목표 자산을 입력해주세요.', 'warning')
     return
+  }
+  if (targetNum < 10000) {
+    showMessage('목표 자산은 최소 10,000원 이상 입력해주세요.', 'warning')
+    return
+  }
+  const monthlyNum = removeComma(monthlyInvestment.value)
+  if (monthlyInvestment.value && monthlyNum <= 0) {
+    showMessage('월 투자금은 0보다 커야 합니다.', 'warning')
+    return
+  }
+  if (targetDate.value) {
+    const today = new Date().toISOString().slice(0, 10)
+    if (targetDate.value <= today) {
+      showMessage('목표일은 오늘 이후 날짜로 설정해주세요.', 'warning')
+      return
+    }
   }
 
   loading.value = true
@@ -316,6 +333,7 @@ onMounted(loadData)
           density="comfortable"
           hide-details
           class="glass-field"
+          :min="new Date(Date.now() + 86400000).toISOString().slice(0, 10)"
         />
       </div>
 
