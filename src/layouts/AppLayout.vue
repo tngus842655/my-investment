@@ -1,8 +1,14 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
+const contentRef = ref<HTMLElement | null>(null)
+
+watch(() => route.path, () => {
+  contentRef.value?.scrollTo({ top: 0 })
+})
 
 const tabs = [
   { label: '홈', desc: '대시보드', icon: 'mdi-home-outline', activeIcon: 'mdi-home', route: '/dashboard', img: null },
@@ -17,7 +23,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
 
 <template>
   <div class="app-layout">
-    <main class="app-content">
+    <main ref="contentRef" class="app-content">
       <RouterView />
     </main>
 
