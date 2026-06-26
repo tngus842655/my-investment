@@ -24,6 +24,8 @@ import AdminLoginLogView from '@/views/admin/AdminLoginLogView.vue'
 import AdminSignupLogView from '@/views/admin/AdminSignupLogView.vue'
 import AdminStatsView from '@/views/admin/AdminStatsView.vue'
 import AdminMembersView from '@/views/admin/AdminMembersView.vue'
+import AdminDataView from '@/views/admin/AdminDataView.vue'
+import AdminTickerView from '@/views/admin/AdminTickerView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -67,6 +69,18 @@ const router = createRouter({
       path: '/admin/members',
       name: 'adminMembers',
       component: AdminMembersView,
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/admin/data',
+      name: 'adminData',
+      component: AdminDataView,
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/admin/tickers',
+      name: 'adminTickers',
+      component: AdminTickerView,
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {

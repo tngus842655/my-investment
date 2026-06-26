@@ -342,7 +342,7 @@ const reset = (closeDialog = true) => {
 
 <template>
   <v-dialog v-model="dialog" max-width="480">
-    <v-card rounded="xl" class="glass-dialog" style="overflow: hidden">
+    <v-card rounded="xl" class="glass-dialog" style="overflow: hidden; display: flex; flex-direction: column; max-height: 90dvh">
       <!-- 컬러 헤더 -->
       <div class="dialog-header" :class="txType === 'BUY' ? 'header-buy' : 'header-sell'">
         <div class="text-h6 font-weight-bold" style="color: white">{{ isEditMode ? '거래 수정' : '거래 추가' }}</div>
@@ -366,7 +366,7 @@ const reset = (closeDialog = true) => {
         </div>
       </div>
 
-      <v-card-text class="pt-4 pb-2">
+      <v-card-text class="pt-4 pb-2" style="overflow-y: auto; flex: 1">
         <!-- 종목 선택 -->
         <v-select
           v-model="selectedPortfolioId"
