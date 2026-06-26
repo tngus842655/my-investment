@@ -3,6 +3,8 @@ import { ref, computed, watch } from 'vue'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
+import { getTickerDisplayName, TICKER_NAMES } from '@/utils/tickerNames'
+import { getStockPrice } from '@/services/market'
 
 type TransactionType = 'BUY' | 'SELL'
 
@@ -85,10 +87,12 @@ const effectiveCurrency = computed(() => {
 })
 
 const portfolioItems = computed(() => [
-  ...portfolios.value.map((p) => ({
-    title: `${p.ticker} · ${p.asset_type}`,
-    value: p.id,
-  })),
+  ...portfolios.value.map((p) => {
+    const name = getTickerDisplayName(p.ticker)
+    const label = name !== p.ticker ? name : p.ticker
+    const assetLabel = p.asset_type.replace('주식', '')
+    return { title: `${label} · ${assetLabel}`, value: p.id }
+  }),
   { title: '+ 새 종목 추가', value: NEW_PORTFOLIO_VALUE },
 ])
 
@@ -245,6 +249,23 @@ const handleUnitPrice = (v: string) => {
 
 const save = async () => {
   if (!canSave.value) return
+  if (isNewPortfolio.value && newAssetType.value !== '현금') {
+    const t = newTicker.value.trim().toUpperCase()
+    if (newAssetType.value === '해외주식') {
+      saving.value = true
+      try {
+        await getStockPrice(t, '해외주식', 'USD')
+      } catch {
+        showMessage('유효하지 않은 티커입니다. 티커를 다시 확인해주세요.', 'error')
+        saving.value = false
+        return
+      }
+    } else if (!TICKER_NAMES[t]) {
+      const label = newAssetType.value === '국내주식' ? '종목코드' : '코인 영문코드'
+      showMessage(`등록되지 않은 ${label}입니다. 다시 확인해주세요.`, 'error')
+      return
+    }
+  }
   saving.value = true
   try {
     const { data: { user } } = await supabase.auth.getUser()
@@ -345,7 +366,7 @@ const reset = (closeDialog = true) => {
     <v-card rounded="xl" class="glass-dialog" style="overflow: hidden; display: flex; flex-direction: column; max-height: 90dvh">
       <!-- 컬러 헤더 -->
       <div class="dialog-header" :class="txType === 'BUY' ? 'header-buy' : 'header-sell'">
-        <div class="text-h6 font-weight-bold" style="color: white">{{ isEditMode ? '거래 수정' : '거래 추가' }}</div>
+        <div class="text-h6 font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">{{ isEditMode ? '거래 수정' : '거래 추가' }}</div>
         <div class="type-toggle mt-3">
           <button
             class="toggle-btn"
@@ -562,6 +583,7 @@ const reset = (closeDialog = true) => {
   gap: 8px;
 }
 .toggle-btn {
+  color: rgba(var(--v-theme-on-surface), 0.45);
   flex: 1;
   display: flex;
   align-items: center;

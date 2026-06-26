@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
+import { getExchangeRate } from '@/services/market'
+import { getTickerDisplayName } from '@/utils/tickerNames'
 import TransactionAddDialog from './TransactionAddDialog.vue'
 
 type TransactionType = 'BUY' | 'SELL' | 'INITIAL'
@@ -22,15 +24,54 @@ interface Transaction {
   }
 }
 
+const PAGE_SIZE = 30
 const loading = ref(false)
+const loadingMore = ref(false)
+const hasMore = ref(true)
+const currentPage = ref(0)
 const transactions = ref<Transaction[]>([])
 const filter = ref<FilterType>('ALL')
-const dateSearch = ref('')
+const selectedYear = ref<number | null>(null)
+const selectedMonth = ref<number | null>(null)
 
-const parsedDateFilter = computed(() => {
-  const v = dateSearch.value.replace(/\D/g, '')
-  if (v.length === 6) return v.slice(0, 4) + '-' + v.slice(4, 6)
-  if (v.length === 8) return v.slice(0, 4) + '-' + v.slice(4, 6) + '-' + v.slice(6, 8)
+const yearOptions = ref<number[]>([])
+const monthOptions = ref<number[]>([])
+
+const loadYearOptions = async () => {
+  const { data } = await supabase
+    .from('transactions')
+    .select('transaction_date')
+    .eq('user_id', userId)
+    .neq('transaction_type', 'INITIAL')
+  if (!data) return
+  const years = [...new Set(data.map((t) => parseInt(t.transaction_date.slice(0, 4))))]
+  yearOptions.value = years.sort((a, b) => b - a)
+}
+
+const loadMonthOptions = async (year: number) => {
+  const { data } = await supabase
+    .from('transactions')
+    .select('transaction_date')
+    .eq('user_id', userId)
+    .neq('transaction_type', 'INITIAL')
+    .gte('transaction_date', `${year}-01-01`)
+    .lte('transaction_date', `${year}-12-31`)
+  if (!data) return
+  const months = [...new Set(data.map((t) => parseInt(t.transaction_date.slice(5, 7))))]
+  monthOptions.value = months.sort((a, b) => a - b)
+}
+
+watch(selectedYear, (y) => {
+  selectedMonth.value = null
+  if (y) loadMonthOptions(y)
+  else monthOptions.value = []
+})
+
+const parsedDateFilter = computed<string | null>(() => {
+  if (!selectedYear.value) return null
+  const y = selectedYear.value
+  const m = selectedMonth.value
+  if (m) return `${y}-${String(m).padStart(2, '0')}`
   return null
 })
 
@@ -46,36 +87,121 @@ const swipeTouchStartX = ref(0)
 const swipeTouchStartY = ref(0)
 const isDraggingSwipe = ref(false)
 
-// ── 데이터 로드 ───────────────────────────────────
-const loadTransactions = async () => {
-  loading.value = true
+// stat용 전체 데이터 (경량)
+interface TotalRow { transaction_type: string; quantity: number; unit_price: number; portfolios: { currency: string } | null }
+const totalsData = ref<TotalRow[]>([])
+
+let userId = ''
+
+async function buildQuery(from: number, to: number) {
+  let q = supabase
+    .from('transactions')
+    .select('*, portfolios(ticker, asset_type, currency)')
+    .eq('user_id', userId)
+    .neq('transaction_type', 'INITIAL')
+    .order('transaction_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .range(from, to)
+
+  if (filter.value !== 'ALL') q = q.eq('transaction_type', filter.value)
+  const df = parsedDateFilter.value
+  if (df) {
+    if (df.length === 7) {
+      // YYYY-MM → 해당 월 전체
+      const [y, m] = df.split('-').map(Number)
+      const lastDay = new Date(y!, m!, 0).getDate()
+      q = q.gte('transaction_date', `${df}-01`).lte('transaction_date', `${df}-${lastDay}`)
+    } else {
+      // YYYY-MM-DD → 해당 날짜만
+      q = q.eq('transaction_date', df)
+    }
+  }
+  return q
+}
+
+// ── 페이지 로드 ───────────────────────────────────
+const loadPage = async (pageNum: number) => {
+  if (pageNum === 0) {
+    if (transactions.value.length === 0) loading.value = true
+    else loadingMore.value = true
+  } else loadingMore.value = true
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return
-
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*, portfolios(ticker, asset_type, currency)')
-      .eq('user_id', user.id)
-      .neq('transaction_type', 'INITIAL')
-      .order('transaction_date', { ascending: false })
-      .order('created_at', { ascending: false })
-
-    // 현금 자산 거래 제외
-    const filtered = (data ?? []).filter(
-      (tx) => (tx.portfolios as { asset_type: string } | null)?.asset_type !== '현금',
-    )
-
+    const from = pageNum * PAGE_SIZE
+    const to = from + PAGE_SIZE - 1
+    const q = await buildQuery(from, to)
+    const { data, error } = await q
     if (error) throw error
-    transactions.value = filtered as Transaction[]
+
+    const rows = (data ?? []).filter(
+      (tx) => (tx.portfolios as { asset_type: string } | null)?.asset_type !== '현금',
+    ) as Transaction[]
+
+    if (pageNum === 0) transactions.value = rows
+    else transactions.value = [...transactions.value, ...rows]
+
+    hasMore.value = (data ?? []).length === PAGE_SIZE
+    currentPage.value = pageNum
   } catch (e) {
     console.error(e)
     showMessage('거래내역 조회 중 오류가 발생했습니다.', 'error')
   } finally {
     loading.value = false
+    loadingMore.value = false
   }
+}
+
+const resetAndLoad = async () => {
+  currentPage.value = 0
+  hasMore.value = true
+  await loadPage(0)
+  await nextTick()
+  if (observer && sentinel.value) {
+    observer.unobserve(sentinel.value)
+    observer.observe(sentinel.value)
+  }
+}
+
+const loadMore = async () => {
+  if (!hasMore.value || loadingMore.value) return
+  await loadPage(currentPage.value + 1)
+}
+
+const getScrollContainer = () =>
+  document.querySelector<HTMLElement>('.app-content') ?? window as unknown as HTMLElement
+
+const refreshWithScroll = async () => {
+  const container = getScrollContainer()
+  const scrollY = container instanceof HTMLElement ? container.scrollTop : window.scrollY
+  await Promise.all([resetAndLoad(), loadTotals()])
+  await nextTick()
+  if (container instanceof HTMLElement) container.scrollTop = scrollY
+  else window.scrollTo({ top: scrollY })
+}
+
+const refresh = () => { resetAndLoad(); loadTotals() }
+
+// stat 전용 조회 (현재 필터/날짜 조건 반영)
+const loadTotals = async () => {
+  let q = supabase
+    .from('transactions')
+    .select('transaction_type, quantity, unit_price, portfolios(currency)')
+    .eq('user_id', userId)
+    .neq('transaction_type', 'INITIAL')
+
+  if (filter.value !== 'ALL') q = q.eq('transaction_type', filter.value)
+  const df = parsedDateFilter.value
+  if (df) {
+    if (df.length === 7) {
+      const [y, m] = df.split('-').map(Number)
+      const lastDay = new Date(y!, m!, 0).getDate()
+      q = q.gte('transaction_date', `${df}-01`).lte('transaction_date', `${df}-${lastDay}`)
+    } else {
+      q = q.eq('transaction_date', df)
+    }
+  }
+
+  const { data } = await q
+  totalsData.value = (data ?? []) as TotalRow[]
 }
 
 // ── 삭제 ─────────────────────────────────────────
@@ -85,9 +211,11 @@ const deleteTx = async () => {
     const { error } = await supabase.from('transactions').delete().eq('id', selectedTx.value.id)
     if (error) throw error
     showMessage('거래내역이 삭제되었습니다.', 'success')
+    const deletedId = selectedTx.value.id
     deleteDialog.value = false
     selectedTx.value = null
-    await loadTransactions()
+    transactions.value = transactions.value.filter((t) => t.id !== deletedId)
+    loadTotals()
   } catch (e) {
     console.error(e)
     showMessage('삭제 중 오류가 발생했습니다.', 'error')
@@ -106,18 +234,29 @@ const openDeleteDialog = (item: Transaction) => {
   deleteDialog.value = true
 }
 
-// ── 필터 + 그룹 ───────────────────────────────────
-const filtered = computed(() => {
-  let list = transactions.value
-  if (filter.value !== 'ALL') list = list.filter((t) => t.transaction_type === filter.value)
-  const df = parsedDateFilter.value
-  if (df) list = list.filter((t) => t.transaction_date.startsWith(df))
-  return list
+watch(filter, () => { resetAndLoad(); loadTotals() })
+watch(parsedDateFilter, () => {
+  resetAndLoad()
+  loadTotals()
 })
 
+// ── 무한스크롤 (IntersectionObserver) ────────────
+const sentinel = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
+
+const setupObserver = () => {
+  if (!sentinel.value) return
+  observer = new IntersectionObserver(
+    (entries) => { if (entries[0]?.isIntersecting) loadMore() },
+    { threshold: 0.1 },
+  )
+  observer.observe(sentinel.value)
+}
+
+// ── 그룹 (표시용) ─────────────────────────────────
 const grouped = computed(() => {
   const map = new Map<string, Transaction[]>()
-  for (const t of filtered.value) {
+  for (const t of transactions.value) {
     const key = t.transaction_date.slice(0, 7)
     if (!map.has(key)) map.set(key, [])
     map.get(key)!.push(t)
@@ -125,36 +264,31 @@ const grouped = computed(() => {
   return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]))
 })
 
-// 최근 달만 기본 펼침
-const latestMonthKey = computed(() => grouped.value[0]?.[0] ?? null)
-const collapsedMonths = ref(new Set<string>())
+const usdToKrw = ref(0)
 
-const isCollapsed = (key: string) => {
-  if (collapsedMonths.value.has(key)) return true
-  if (collapsedMonths.value.has('__expanded__' + key)) return false
-  return key !== latestMonthKey.value
-}
-
-const toggleMonth = (key: string) => {
-  if (isCollapsed(key)) {
-    collapsedMonths.value.delete(key)
-    collapsedMonths.value.add('__expanded__' + key)
-  } else {
-    collapsedMonths.value.delete('__expanded__' + key)
-    collapsedMonths.value.add(key)
-  }
-}
-
-const totalBuy = computed(() =>
-  transactions.value
-    .filter((t) => t.transaction_type === 'BUY')
-    .reduce((s, t) => s + t.quantity * t.unit_price, 0),
+const hasUSD = computed(() =>
+  totalsData.value.some((t) => t.portfolios?.currency === 'USD'),
 )
-const totalSell = computed(() =>
-  transactions.value
-    .filter((t) => t.transaction_type === 'SELL')
-    .reduce((s, t) => s + t.quantity * t.unit_price, 0),
-)
+
+const totalBuy = computed(() => {
+  const krw = totalsData.value
+    .filter((t) => t.transaction_type === 'BUY' && t.portfolios?.currency === 'KRW')
+    .reduce((s, t) => s + t.quantity * t.unit_price, 0)
+  const usd = totalsData.value
+    .filter((t) => t.transaction_type === 'BUY' && t.portfolios?.currency === 'USD')
+    .reduce((s, t) => s + t.quantity * t.unit_price, 0)
+  return krw + usd * (usdToKrw.value || 1)
+})
+
+const totalSell = computed(() => {
+  const krw = totalsData.value
+    .filter((t) => t.transaction_type === 'SELL' && t.portfolios?.currency === 'KRW')
+    .reduce((s, t) => s + t.quantity * t.unit_price, 0)
+  const usd = totalsData.value
+    .filter((t) => t.transaction_type === 'SELL' && t.portfolios?.currency === 'USD')
+    .reduce((s, t) => s + t.quantity * t.unit_price, 0)
+  return krw + usd * (usdToKrw.value || 1)
+})
 
 // ── 포맷 유틸 ─────────────────────────────────────
 const formatMonthLabel = (key: string) => {
@@ -245,7 +379,19 @@ const closeSwipe = () => {
   swipedId.value = null
 }
 
-onMounted(loadTransactions)
+onMounted(async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  userId = user.id
+  await Promise.all([resetAndLoad(), loadTotals(), loadYearOptions()])
+  try { usdToKrw.value = await getExchangeRate('USD', 'KRW') } catch {}
+  await nextTick()
+  setupObserver()
+})
+
+onUnmounted(() => {
+  observer?.disconnect()
+})
 </script>
 
 <template>
@@ -270,7 +416,7 @@ onMounted(loadTransactions)
           elevation="0"
           :loading="loading"
           style="border-color: rgba(var(--v-theme-on-surface), 0.15)"
-          @click="loadTransactions"
+          @click="refresh"
         />
         <v-btn
           color="primary"
@@ -300,6 +446,9 @@ onMounted(loadTransactions)
 
     <template v-else>
       <!-- 요약 stat grid -->
+      <div v-if="hasUSD && usdToKrw" class="text-right mb-1" style="font-size: 10px; color: rgba(var(--v-theme-on-surface), 0.35)">
+        적용환율 {{ Math.round(usdToKrw).toLocaleString() }}원 (전일 기준)
+      </div>
       <div class="stat-grid mb-4">
         <div class="stat-card">
           <div class="d-flex align-center ga-1 mb-1">
@@ -307,10 +456,10 @@ onMounted(loadTransactions)
             <span class="stat-label">총 매수</span>
           </div>
           <div class="stat-value">
-            {{ formatStatAmount(totalBuy) }}<span class="stat-unit">원~</span>
+            {{ formatStatAmount(totalBuy) }}<span class="stat-unit">원</span>
           </div>
           <div class="text-caption text-disabled">
-            {{ transactions.filter((t) => t.transaction_type === 'BUY').length }}건
+            {{ totalsData.filter((t) => t.transaction_type === 'BUY').length }}건
           </div>
         </div>
         <div class="stat-card">
@@ -319,10 +468,10 @@ onMounted(loadTransactions)
             <span class="stat-label">총 매도</span>
           </div>
           <div class="stat-value">
-            {{ formatStatAmount(totalSell) }}<span class="stat-unit">원~</span>
+            {{ formatStatAmount(totalSell) }}<span class="stat-unit">원</span>
           </div>
           <div class="text-caption text-disabled">
-            {{ transactions.filter((t) => t.transaction_type === 'SELL').length }}건
+            {{ totalsData.filter((t) => t.transaction_type === 'SELL').length }}건
           </div>
         </div>
       </div>
@@ -342,31 +491,39 @@ onMounted(loadTransactions)
         </button>
       </div>
 
-      <!-- 날짜 검색 -->
-      <v-text-field
-        v-model="dateSearch"
-        placeholder="날짜 검색 (예: 202606 또는 20260626)"
-        variant="outlined"
-        density="compact"
-        rounded="lg"
-        hide-details
-        clearable
-        prepend-inner-icon="mdi-calendar-search-outline"
-        bg-color="transparent"
-        class="mb-4"
-        maxlength="8"
-        @click="closeSwipe"
-      />
+      <!-- 날짜 드롭다운 + 건수 -->
+      <div class="d-flex align-center mb-3 ga-2">
+        <div class="date-filter-wrap">
+          <select v-model="selectedYear" class="date-select">
+            <option :value="null">연도</option>
+            <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}년</option>
+          </select>
+          <select v-model="selectedMonth" class="date-select" :disabled="!selectedYear">
+            <option :value="null">월</option>
+            <option v-for="m in monthOptions" :key="m" :value="m">{{ m }}월</option>
+          </select>
+          <button v-if="selectedYear" class="date-clear-btn" @click="selectedYear = null; selectedMonth = null">
+            <v-icon size="12">mdi-close</v-icon>
+          </button>
+          <span class="date-hint">거래 있는 기간만 조회됩니다</span>
+        </div>
+        <span class="text-caption text-disabled flex-shrink-0 ml-auto">총 {{ totalsData.length }}건</span>
+      </div>
 
       <!-- 빈 상태 -->
-      <template v-if="filtered.length === 0">
+      <template v-if="transactions.length === 0 && !loading">
         <div class="glass-card py-12 text-center">
           <v-icon size="48" color="primary" class="mb-4" style="opacity: 0.4"
             >mdi-swap-horizontal</v-icon
           >
-          <div class="text-h6 font-weight-medium text-medium-emphasis">거래내역이 없습니다</div>
-          <div class="text-body-2 text-disabled mt-1">거래 추가 버튼으로 첫 거래를 기록하세요.</div>
+          <div class="text-h6 font-weight-medium text-medium-emphasis">
+            {{ parsedDateFilter || filter !== 'ALL' ? '검색 결과가 없습니다' : '거래내역이 없습니다' }}
+          </div>
+          <div class="text-body-2 text-disabled mt-1">
+            {{ parsedDateFilter || filter !== 'ALL' ? '다른 날짜나 필터를 선택해보세요.' : '거래 추가 버튼으로 첫 거래를 기록하세요.' }}
+          </div>
           <v-btn
+            v-if="!parsedDateFilter && filter === 'ALL'"
             color="primary"
             variant="tonal"
             rounded="lg"
@@ -382,15 +539,6 @@ onMounted(loadTransactions)
       <!-- 타임라인 -->
       <template v-else>
         <div v-for="[monthKey, items] in grouped" :key="monthKey" class="mb-2">
-          <button class="month-label mb-2 month-toggle" @click="toggleMonth(monthKey)">
-            <span>{{ formatMonthLabel(monthKey) }}</span>
-            <span class="ml-2 text-disabled">{{ items.length }}건</span>
-            <v-icon size="14" class="ml-1" style="color: rgba(var(--v-theme-on-surface), 0.35)">
-              {{ isCollapsed(monthKey) ? 'mdi-chevron-down' : 'mdi-chevron-up' }}
-            </v-icon>
-          </button>
-
-          <template v-if="!isCollapsed(monthKey)">
           <div
             v-for="item in items"
             :key="item.id"
@@ -419,87 +567,52 @@ onMounted(loadTransactions)
               @mouseup="(e) => onSwipeMouseUp(e, item.id)"
             >
               <div
-                class="glass-card tx-card pa-3"
+                class="glass-card tx-card"
                 :class="item.transaction_type === 'BUY' ? 'border-buy-left' : 'border-sell-left'"
               >
-                <div class="d-flex align-start ga-3">
-                  <!-- 타입 아이콘 뱃지 -->
-                  <div
-                    class="type-badge"
-                    :class="item.transaction_type === 'BUY' ? 'type-buy' : 'type-sell'"
-                  >
-                    <v-icon size="16">
-                      {{
-                        item.transaction_type === 'BUY'
-                          ? 'mdi-arrow-down-bold'
-                          : 'mdi-arrow-up-bold'
-                      }}
-                    </v-icon>
+                <div class="d-flex align-center ga-2">
+                  <!-- 타입 아이콘 -->
+                  <div class="type-badge" :class="item.transaction_type === 'BUY' ? 'type-buy' : 'type-sell'">
+                    <v-icon size="14">{{ item.transaction_type === 'BUY' ? 'mdi-arrow-down-bold' : 'mdi-arrow-up-bold' }}</v-icon>
                   </div>
 
                   <!-- 종목 정보 -->
                   <div class="flex-grow-1 min-width-0">
+                    <!-- 1줄: 종목명 + 배지 + 날짜 -->
                     <div class="d-flex align-center justify-space-between mb-1">
-                      <div class="d-flex align-center ga-1 flex-wrap">
-                        <span class="text-body-2 font-weight-bold">{{
-                          item.portfolios?.ticker
-                        }}</span>
-                        <v-chip
-                          :color="assetTypeColor(item.portfolios?.asset_type)"
-                          size="x-small"
-                          variant="tonal"
-                        >
-                          {{ item.portfolios?.asset_type }}
-                        </v-chip>
+                      <div class="d-flex align-center ga-1 flex-grow-1 min-width-0">
+                        <span class="tx-name">{{ getTickerDisplayName(item.portfolios?.ticker) }}</span>
+                        <span v-if="getTickerDisplayName(item.portfolios?.ticker) !== item.portfolios?.ticker" class="tx-ticker flex-shrink-0">{{ item.portfolios?.ticker }}</span>
+                        <span class="asset-badge flex-shrink-0" :style="`color: rgb(var(--v-theme-${assetTypeColor(item.portfolios?.asset_type)}))`">{{ item.portfolios?.asset_type }}</span>
+                        <span class="tx-type-badge flex-shrink-0" :class="item.transaction_type === 'BUY' ? 'badge-buy' : 'badge-sell'">{{ item.transaction_type === 'BUY' ? '매수' : '매도' }}</span>
                       </div>
-                      <div class="d-flex align-center ga-1 flex-shrink-0">
-                        <v-chip
-                          :color="item.transaction_type === 'BUY' ? 'teal' : 'error'"
-                          size="x-small"
-                          variant="tonal"
-                        >
-                          {{ item.transaction_type === 'BUY' ? '매수' : '매도' }}
-                        </v-chip>
+                      <div class="d-flex align-center ga-1">
+                        <v-tooltip v-if="item.memo" :text="item.memo" location="top">
+                          <template #activator="{ props }">
+                            <v-icon v-bind="props" size="12" style="color: rgba(var(--v-theme-on-surface), 0.35); cursor: pointer">mdi-note-text-outline</v-icon>
+                          </template>
+                        </v-tooltip>
                         <span class="date-label">{{ formatDate(item.transaction_date) }}</span>
                       </div>
                     </div>
-
-                    <div class="d-flex align-center ga-1 mb-1">
-                      <span class="text-caption text-medium-emphasis">
-                        {{
-                          item.quantity % 1 === 0
-                            ? item.quantity
-                            : Number(item.quantity).toFixed(4)
-                        }}주
-                      </span>
-                      <span class="text-caption text-disabled">×</span>
-                      <span class="text-caption text-medium-emphasis">{{
-                        formatUnitPrice(item)
-                      }}</span>
-                    </div>
-
-                    <v-divider class="mb-2" />
-
+                    <!-- 2줄: 수량 × 단가 / 금액 -->
                     <div class="d-flex align-center justify-space-between">
-                      <div
-                        class="text-body-2 font-weight-bold"
-                        :class="item.transaction_type === 'BUY' ? 'text-teal' : 'text-error'"
-                      >
-                        {{ item.transaction_type === 'SELL' ? '-' : '' }}{{ formatAmount(item) }}
-                      </div>
-                      <div v-if="item.memo" class="d-flex align-center ga-1">
-                        <v-icon size="11" style="color: rgba(var(--v-theme-on-surface), 0.35)">
-                          mdi-note-text-outline
-                        </v-icon>
-                        <span class="memo-text">{{ item.memo }}</span>
-                      </div>
+                      <span class="tx-detail">{{ item.quantity % 1 === 0 ? item.quantity : Number(item.quantity).toFixed(4) }}주 × {{ formatUnitPrice(item) }}</span>
+                      <span class="tx-amount" :class="item.transaction_type === 'BUY' ? 'amount-plus' : 'amount-minus'">
+                        {{ item.transaction_type === 'BUY' ? '+' : '-' }}{{ formatAmount(item) }}
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          </template>
+        </div>
+
+        <!-- 무한스크롤 sentinel -->
+        <div ref="sentinel" style="height: 1px" />
+        <div v-if="loadingMore" class="text-center py-4">
+          <v-progress-circular indeterminate size="24" color="primary" />
         </div>
       </template>
     </template>
@@ -509,7 +622,7 @@ onMounted(loadTransactions)
   <TransactionAddDialog
     v-model="addDialog"
     :initial-type="filter === 'SELL' ? 'SELL' : 'BUY'"
-    @saved="loadTransactions"
+    @saved="refresh"
   />
 
   <!-- 거래 수정 다이얼로그 -->
@@ -528,7 +641,7 @@ onMounted(loadTransactions)
           }
         : null
     "
-    @saved="loadTransactions"
+    @saved="refreshWithScroll"
   />
 
   <!-- 삭제 확인 -->
@@ -647,9 +760,9 @@ onMounted(loadTransactions)
 .month-toggle:active { opacity: 0.6; }
 
 .type-badge {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -665,18 +778,59 @@ onMounted(loadTransactions)
 }
 
 .date-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: rgba(var(--v-theme-on-surface), 0.4);
+  font-size: 10px;
+  font-weight: 400;
+  color: rgba(var(--v-theme-on-surface), 0.3);
+  flex-shrink: 0;
 }
 
-.memo-text {
-  font-size: 11px;
-  color: rgba(var(--v-theme-on-surface), 0.4);
-  max-width: 100px;
+.tx-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+}
+.tx-ticker {
+  font-size: 10px;
+  color: rgba(var(--v-theme-on-surface), 0.35);
+  flex-shrink: 0;
+}
+.asset-badge {
+  font-size: 9px;
+  font-weight: 600;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+.tx-type-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.badge-buy {
+  background: rgba(0, 150, 136, 0.12);
+  color: #009688;
+}
+.badge-sell {
+  background: rgba(211, 47, 47, 0.1);
+  color: #d32f2f;
+}
+.tx-detail {
+  font-size: 11px;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+.tx-amount {
+  font-size: 13px;
+  font-weight: 700;
+}
+.amount-minus {
+  color: rgb(var(--v-theme-error));
+}
+.amount-plus {
+  color: #009688;
 }
 
 .text-teal {
@@ -685,7 +839,8 @@ onMounted(loadTransactions)
 
 .tx-card {
   border-left: 3px solid transparent !important;
-  border-radius: 20px !important;
+  border-radius: 16px !important;
+  padding: 10px 12px !important;
 }
 .border-buy-left {
   border-left-color: #009688 !important;
@@ -697,7 +852,7 @@ onMounted(loadTransactions)
 .tx-card-wrap {
   position: relative;
   overflow: hidden;
-  border-radius: 20px;
+  border-radius: 16px;
 }
 .swipe-actions {
   position: absolute;
@@ -747,4 +902,55 @@ onMounted(loadTransactions)
 .min-width-0 {
   min-width: 0;
 }
+
+.date-filter-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(var(--v-theme-on-surface), 0.05);
+  border-radius: 12px;
+  padding: 4px 6px;
+}
+.date-select {
+  height: 28px;
+  padding: 0 22px 0 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgb(var(--v-theme-on-surface));
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24'%3E%3Cpath fill='%23888' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 4px center;
+  background-color: rgb(var(--v-theme-surface));
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.date-select:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.date-hint {
+  font-size: 10px;
+  color: rgba(var(--v-theme-on-surface), 0.35);
+  white-space: nowrap;
+  padding: 0 4px;
+}
+.date-clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(var(--v-theme-on-surface), 0.1);
+  color: rgba(var(--v-theme-on-surface), 0.5);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 </style>
