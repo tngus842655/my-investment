@@ -114,6 +114,26 @@ const grouped = computed(() => {
   return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]))
 })
 
+// 최근 달만 기본 펼침
+const latestMonthKey = computed(() => grouped.value[0]?.[0] ?? null)
+const collapsedMonths = ref(new Set<string>())
+
+const isCollapsed = (key: string) => {
+  if (collapsedMonths.value.has(key)) return true
+  if (collapsedMonths.value.has('__expanded__' + key)) return false
+  return key !== latestMonthKey.value
+}
+
+const toggleMonth = (key: string) => {
+  if (isCollapsed(key)) {
+    collapsedMonths.value.delete(key)
+    collapsedMonths.value.add('__expanded__' + key)
+  } else {
+    collapsedMonths.value.delete('__expanded__' + key)
+    collapsedMonths.value.add(key)
+  }
+}
+
 const totalBuy = computed(() =>
   transactions.value
     .filter((t) => t.transaction_type === 'BUY')
@@ -335,11 +355,15 @@ onMounted(loadTransactions)
       <!-- 타임라인 -->
       <template v-else>
         <div v-for="[monthKey, items] in grouped" :key="monthKey" class="mb-2">
-          <div class="month-label mb-2">
+          <button class="month-label mb-2 month-toggle" @click="toggleMonth(monthKey)">
             <span>{{ formatMonthLabel(monthKey) }}</span>
             <span class="ml-2 text-disabled">{{ items.length }}건</span>
-          </div>
+            <v-icon size="14" class="ml-1" style="color: rgba(var(--v-theme-on-surface), 0.35)">
+              {{ isCollapsed(monthKey) ? 'mdi-chevron-down' : 'mdi-chevron-up' }}
+            </v-icon>
+          </button>
 
+          <template v-if="!isCollapsed(monthKey)">
           <div
             v-for="item in items"
             :key="item.id"
@@ -448,6 +472,7 @@ onMounted(loadTransactions)
               </div>
             </div>
           </div>
+          </template>
         </div>
       </template>
     </template>
@@ -582,6 +607,17 @@ onMounted(loadTransactions)
   color: rgba(var(--v-theme-on-surface), 0.45);
   padding: 0 2px;
 }
+.month-toggle {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: opacity 0.15s;
+}
+.month-toggle:active { opacity: 0.6; }
 
 .type-badge {
   width: 36px;

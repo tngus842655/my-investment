@@ -96,6 +96,7 @@ onMounted(async () => {
             variant="outlined"
             density="comfortable"
             hide-details="auto"
+            autocomplete="email"
             class="mb-4"
             bg-color="transparent"
           />
@@ -110,6 +111,7 @@ onMounted(async () => {
             variant="outlined"
             density="comfortable"
             hide-details="auto"
+            autocomplete="new-password"
             class="mb-4"
             bg-color="transparent"
           />
@@ -124,6 +126,7 @@ onMounted(async () => {
             variant="outlined"
             density="comfortable"
             hide-details="auto"
+            autocomplete="new-password"
             class="mb-6"
             bg-color="transparent"
           />
