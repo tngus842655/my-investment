@@ -112,10 +112,47 @@ const totalLabel = computed(() => {
   return `${Math.round(v).toLocaleString()}원`
 })
 
+const MIN_TX_DATE = '2000-01-01'
+
+const newTickerError = computed(() => {
+  if (!isNewPortfolio.value || !newTicker.value.trim() || newAssetType.value === '현금') return ''
+  if (newAssetType.value === '국내주식' && !/^\d{6}$/.test(newTicker.value.trim())) return '6자리 숫자를 입력해주세요. (예: 005930)'
+  if (newAssetType.value === '해외주식' && !/^[A-Za-z]{1,10}$/.test(newTicker.value.trim())) return '영문자만 입력해주세요. (예: AAPL)'
+  return ''
+})
+
+const quantityError = computed(() => {
+  if (!quantity.value) return ''
+  const q = Number(quantity.value)
+  if (q <= 0) return '수량은 0보다 커야 합니다.'
+  if (q > maxQuantity.value) return `수량은 ${maxQuantity.value.toLocaleString()} 이하로 입력해주세요.`
+  const decStr = String(quantity.value).split('.')[1] ?? ''
+  if (decStr.length > 8) return '소수점 8자리까지 입력 가능합니다.'
+  return ''
+})
+
+const unitPriceError = computed(() => {
+  if (!unitPrice.value) return ''
+  const p = removeComma(unitPrice.value)
+  if (p <= 0) return '거래단가는 0보다 커야 합니다.'
+  if (p > maxPrice.value) {
+    const unit = effectiveAssetType.value === '해외주식' ? '$' : ''
+    const suffix = effectiveAssetType.value === '해외주식' ? '' : '원'
+    return `거래단가는 ${unit}${maxPrice.value.toLocaleString()}${suffix} 이하로 입력해주세요.`
+  }
+  return ''
+})
+
+const txDateError = computed(() => {
+  if (!txDate.value) return ''
+  if (txDate.value < MIN_TX_DATE) return `${MIN_TX_DATE} 이후 날짜를 입력해주세요.`
+  return ''
+})
+
 const isNewPortfolioValid = computed(() =>
   !isNewPortfolio.value || (
     newAssetType.value &&
-    (newAssetType.value === '현금' || newTicker.value.trim()) &&
+    (newAssetType.value === '현금' || (newTicker.value.trim() && !newTickerError.value)) &&
     newCurrency.value
   ),
 )
@@ -125,7 +162,10 @@ const isValid = computed(() =>
   selectedPortfolioId.value !== NEW_PORTFOLIO_VALUE &&
   Number(quantity.value) > 0 &&
   removeComma(unitPrice.value) > 0 &&
-  txDate.value,
+  txDate.value &&
+  !quantityError.value &&
+  !unitPriceError.value &&
+  !txDateError.value,
 )
 
 // 새 종목 입력 완료 여부 (저장 버튼 활성화용)
@@ -134,7 +174,10 @@ const canSave = computed(() => {
     return isNewPortfolioValid.value &&
       Number(quantity.value) > 0 &&
       removeComma(unitPrice.value) > 0 &&
-      txDate.value
+      txDate.value &&
+      !quantityError.value &&
+      !unitPriceError.value &&
+      !txDateError.value
   }
   return isValid.value
 })
@@ -175,14 +218,30 @@ watch(dialog, async (opened) => {
   }
 })
 
+// 선택된 종목 또는 새 종목 입력 기준으로 암호화폐 여부 판단
+const effectiveAssetType = computed(() =>
+  isNewPortfolio.value ? newAssetType.value : (selectedPortfolio.value?.asset_type ?? ''),
+)
+const isCrypto = computed(() => effectiveAssetType.value === '암호화폐')
+const maxPrice = computed(() => {
+  if (isCrypto.value) return 999_999_999                          // 암호화폐: 10억 KRW
+  if (effectiveAssetType.value === '해외주식') return 1_000_000  // 해외주식: $100만 USD
+  if (effectiveAssetType.value === '현금') return 10_000_000_000 // 현금: 100억 KRW/USD
+  return 100_000_000                                              // 국내주식: 1억 KRW
+})
+const maxQuantity = computed(() => isCrypto.value ? 99_999_999 : 100_000)     // 암호화폐 1억 / 주식·현금 10만
+
 const addComma = (v: string) => {
   const num = v.replace(/[^0-9.]/g, '')
   const parts = num.split('.')
-  const int = (parts[0] ?? '').replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-  return parts[1] !== undefined ? `${int}.${parts[1]}` : int
+  const formatted = (parts[0] ?? '').replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  if (parts[1] !== undefined) return `${formatted}.${parts[1].slice(0, 8)}`
+  return formatted
 }
 const removeComma = (v: string) => Number(v.replace(/,/g, '')) || 0
-const handleUnitPrice = (v: string) => { unitPrice.value = addComma(v) }
+const handleUnitPrice = (v: string) => {
+  unitPrice.value = addComma(v)
+}
 
 const save = async () => {
   if (!canSave.value) return
@@ -358,6 +417,8 @@ const reset = (closeDialog = true) => {
               density="comfortable"
               rounded="lg"
               class="mb-2"
+              maxlength="20"
+              :error-messages="newTickerError"
             />
             <v-select
               v-model="newCurrency"
@@ -380,10 +441,12 @@ const reset = (closeDialog = true) => {
             type="number"
             step="0.0001"
             min="0"
+            :max="maxQuantity"
             prepend-inner-icon="mdi-counter"
             variant="outlined"
             density="comfortable"
             rounded="lg"
+            :error-messages="quantityError"
           />
           <v-text-field
             :model-value="unitPrice"
@@ -393,6 +456,7 @@ const reset = (closeDialog = true) => {
             density="comfortable"
             rounded="lg"
             :prepend-inner-icon="effectiveCurrency === 'USD' ? 'mdi-currency-usd' : 'mdi-currency-krw'"
+            :error-messages="unitPriceError"
           />
         </div>
 
@@ -406,7 +470,9 @@ const reset = (closeDialog = true) => {
           density="comfortable"
           rounded="lg"
           class="mt-3"
+          :min="MIN_TX_DATE"
           :max="new Date().toISOString().slice(0, 10)"
+          :error-messages="txDateError"
         />
 
         <!-- 메모 -->

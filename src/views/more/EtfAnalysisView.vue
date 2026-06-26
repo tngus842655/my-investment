@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
@@ -27,26 +27,43 @@ interface EtfInfo {
 
 const inputA = ref('')
 const inputB = ref('')
+
+watch(inputA, () => { notFoundA.value = false })
+watch(inputB, () => { notFoundB.value = false })
 const dataA = ref<EtfInfo | null>(null)
 const dataB = ref<EtfInfo | null>(null)
 const loading = ref(false)
+const notFoundA = ref(false)
+const notFoundB = ref(false)
+
+const isEmptyResult = (info: EtfInfo) =>
+  info.currentPrice == null && info.totalAssets == null && info.cagr == null && info.mdd == null
+
+const TICKER_REGEX = /^[A-Za-z0-9.\-]{1,15}$/
 
 const fetchInfo = async () => {
   const tA = inputA.value.trim().toUpperCase()
   const tB = inputB.value.trim().toUpperCase()
   if (!tA) { showMessage('티커를 입력해주세요.', 'warning'); return }
+  if (!TICKER_REGEX.test(tA)) { showMessage('올바른 티커 형식이 아닙니다. (예: SPY, QQQ)', 'warning'); return }
+  if (tB && !TICKER_REGEX.test(tB)) { showMessage('비교 티커 형식이 올바르지 않습니다. (예: QQQ)', 'warning'); return }
+  if (tB && tA === tB) { showMessage('두 티커가 동일합니다. 서로 다른 티커를 입력해주세요.', 'warning'); return }
 
   const tickers = [tA, tB].filter(Boolean)
   loading.value = true
   dataA.value = null
   dataB.value = null
+  notFoundA.value = false
+  notFoundB.value = false
 
   try {
     const { data, error } = await supabase.functions.invoke('etf-info', { body: { tickers } })
     if (error) throw error
     const list: EtfInfo[] = data.data
-    dataA.value = list[0] ?? null
-    dataB.value = list[1] ?? null
+    const resA = list[0] ?? null
+    const resB = list[1] ?? null
+    if (resA && isEmptyResult(resA)) { notFoundA.value = true } else { dataA.value = resA }
+    if (resB && isEmptyResult(resB)) { notFoundB.value = true } else { dataB.value = resB }
   } catch {
     showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
   } finally {
@@ -247,6 +264,7 @@ const aiData = computed(() => {
           density="compact"
           rounded="lg"
           hide-details
+          maxlength="6"
           style="flex:1"
           @keyup.enter="fetchInfo"
         />
@@ -258,6 +276,7 @@ const aiData = computed(() => {
           density="compact"
           rounded="lg"
           hide-details
+          maxlength="6"
           style="flex:1"
           @keyup.enter="fetchInfo"
         />
@@ -279,6 +298,27 @@ const aiData = computed(() => {
     <div v-if="loading" class="d-flex justify-center py-12">
       <v-progress-circular indeterminate color="primary" />
     </div>
+
+    <!-- 미발견 안내 -->
+    <v-alert
+      v-if="!loading && (notFoundA || notFoundB)"
+      type="warning"
+      variant="tonal"
+      rounded="xl"
+      class="mb-3"
+      icon="mdi-magnify-close"
+    >
+      <template v-if="notFoundA && notFoundB">
+        <strong>{{ inputA.trim().toUpperCase() }}</strong>, <strong>{{ inputB.trim().toUpperCase() }}</strong> 모두 찾을 수 없는 티커입니다.
+      </template>
+      <template v-else-if="notFoundA">
+        <strong>{{ inputA.trim().toUpperCase() }}</strong> 티커를 찾을 수 없습니다.
+      </template>
+      <template v-else>
+        <strong>{{ inputB.trim().toUpperCase() }}</strong> 티커를 찾을 수 없습니다.
+      </template>
+      <div class="text-caption mt-1 opacity-80">미국 ETF(SPY, QQQ 등) 또는 국내 ETF 코드(069500 등)를 확인해주세요.</div>
+    </v-alert>
 
     <!-- 빈 상태 -->
     <div v-else-if="!dataA" class="text-center py-12 text-medium-emphasis">

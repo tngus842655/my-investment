@@ -131,19 +131,82 @@ watch(dialog, async (opened) => {
   }
 })
 
+const isCrypto = computed(() => assetType.value === '암호화폐')
+const maxPrice = computed(() => {
+  if (isCrypto.value) return 999_999_999               // 암호화폐: 10억 KRW
+  if (assetType.value === '해외주식') return 1_000_000  // 해외주식: $100만 USD
+  if (assetType.value === '현금') return 10_000_000_000 // 현금: 100억 KRW/USD
+  return 100_000_000                                    // 국내주식: 1억 KRW
+})
+const maxQuantity = computed(() => isCrypto.value ? 99_999_999 : 100_000)      // 암호화폐 1억 / 주식·현금 10만
+
+const maxQuantityDigits = computed(() => String(maxQuantity.value).length + 2)
+const maxPriceDigits = computed(() => String(Math.floor(maxPrice.value)).length + 2)
+
 const addComma = (v: string) => {
   const num = v.replace(/[^0-9.]/g, '')
   const parts = num.split('.')
-  const int = (parts[0] ?? '').replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-  return parts[1] !== undefined ? `${int}.${parts[1]}` : int
+  const formatted = (parts[0] ?? '').replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  if (parts[1] !== undefined) return `${formatted}.${parts[1].slice(0, 8)}`
+  return formatted
 }
 const removeComma = (v: string) => Number(v.replace(/,/g, '')) || 0
+
+const handleQuantity = (v: string) => {
+  const intPart = v.split('.')[0].replace(/[^0-9]/g, '')
+  if (/^0\d/.test(intPart)) return
+  if (intPart.length > maxQuantityDigits.value) return
+  initQuantity.value = v
+}
+
 const handleAvgPrice = (v: string) => {
+  const intPart = v.replace(/[^0-9.]/g, '').split('.')[0]
+  if (/^0\d/.test(intPart)) return
+  if (intPart.length > maxPriceDigits.value) return
   initAvgPrice.value = addComma(v)
 }
 
+const tickerMaxLength = computed(() => {
+  if (assetType.value === '해외주식') return 5
+  if (assetType.value === '국내주식') return 6
+  return 10  // 암호화폐
+})
+
+const tickerError = computed(() => {
+  if (!ticker.value.trim() || assetType.value === '현금') return ''
+  if (ticker.value.trim().length > tickerMaxLength.value) return `티커는 ${tickerMaxLength.value}자 이하로 입력해주세요.`
+  if (assetType.value === '국내주식' && !/^\d{6}$/.test(ticker.value.trim())) return '국내주식 종목코드는 6자리 숫자입니다. (예: 005930)'
+  if (assetType.value === '해외주식' && !/^[A-Za-z]{1,5}$/.test(ticker.value.trim())) return '해외주식 티커는 영문자 5자 이하로 입력해주세요. (예: AAPL)'
+  return ''
+})
+
+const quantityError = computed(() => {
+  const q = Number(initQuantity.value)
+  if (initQuantity.value && q <= 0) return '수량은 0보다 커야 합니다.'
+  if (initQuantity.value && q > maxQuantity.value) return `수량은 ${maxQuantity.value.toLocaleString()} 이하로 입력해주세요.`
+  const dec = String(initQuantity.value).split('.')[1] ?? ''
+  if (dec.length > 8) return '소수점 8자리까지 입력 가능합니다.'
+  return ''
+})
+
+const avgPriceError = computed(() => {
+  const p = removeComma(initAvgPrice.value)
+  if (initAvgPrice.value && p <= 0) return '단가는 0보다 커야 합니다.'
+  if (initAvgPrice.value && p > maxPrice.value) {
+    const unit = assetType.value === '해외주식' ? '$' : ''
+    const suffix = assetType.value === '해외주식' ? '' : '원'
+    return `단가는 ${unit}${maxPrice.value.toLocaleString()}${suffix} 이하로 입력해주세요.`
+  }
+  return ''
+})
+
 const isValid = computed(
-  () => assetType.value && (assetType.value === '현금' || ticker.value.trim()) && currency.value,
+  () =>
+    assetType.value &&
+    (assetType.value === '현금' || (ticker.value.trim() && !tickerError.value)) &&
+    currency.value &&
+    !quantityError.value &&
+    !avgPriceError.value,
 )
 
 const save = async () => {
@@ -318,7 +381,9 @@ const reset = (closeDialog = true) => {
           prepend-inner-icon="mdi-finance"
           variant="outlined"
           class="mt-3"
+          :maxlength="tickerMaxLength"
           :hint="isEditMode && assetType !== '현금' ? '티커/코드는 수정할 수 없습니다.' : ''"
+          :error-messages="!isEditMode ? tickerError : ''"
           persistent-hint
         />
 
@@ -373,22 +438,26 @@ const reset = (closeDialog = true) => {
             placeholder="0"
             :suffix="currency === 'USD' ? 'USD' : '원'"
             :disabled="loadingInitial"
+            :error-messages="avgPriceError"
           />
         </template>
         <template v-else>
           <div class="two-col">
             <v-text-field
-              v-model="initQuantity"
+              :model-value="initQuantity"
+              @update:model-value="handleQuantity"
               label="보유수량"
               type="number"
               step="0.0001"
               min="0"
+              :max="maxQuantity"
               prepend-inner-icon="mdi-counter"
               variant="outlined"
               density="comfortable"
               rounded="lg"
               placeholder="0"
               :disabled="loadingInitial"
+              :error-messages="quantityError"
             />
             <v-text-field
               :model-value="initAvgPrice"
@@ -400,6 +469,7 @@ const reset = (closeDialog = true) => {
               :prepend-inner-icon="currency === 'USD' ? 'mdi-currency-usd' : 'mdi-currency-krw'"
               placeholder="0"
               :disabled="loadingInitial"
+              :error-messages="avgPriceError"
             />
           </div>
         </template>
