@@ -42,15 +42,9 @@ const deleteAccount = async () => {
   if (!deleteEmailValid.value) return
   deleteLoading.value = true
   try {
+    // RPC 내부에서 signup_log 탈퇴일 기록 + 계정 삭제를 SECURITY DEFINER로 처리
     const { error } = await supabase.rpc('delete_user_account')
     if (error) throw error
-
-    // 탈퇴 시점 기록
-    await supabase
-      .from('signup_log')
-      .update({ deleted_at: new Date().toISOString() })
-      .eq('email', currentUserEmail.value)
-      .is('deleted_at', null)
 
     await supabase.auth.signOut()
     showMessage('계정이 삭제되었습니다.', 'success')
