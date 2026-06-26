@@ -17,6 +17,7 @@ import AssetGrowthView from '@/views/more/AssetGrowthView.vue'
 import DividendCalendarView from '@/views/more/DividendCalendarView.vue'
 import EtfAnalysisView from '@/views/more/EtfAnalysisView.vue'
 import AdminView from '@/views/admin/AdminView.vue'
+import AdminResetPasswordView from '@/views/admin/AdminResetPasswordView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -30,7 +31,13 @@ const router = createRouter({
       path: '/admin',
       name: 'admin',
       component: AdminView,
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/admin/reset-password',
+      name: 'adminResetPassword',
+      component: AdminResetPasswordView,
+      meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
       path: '/goalSettings',
@@ -108,6 +115,8 @@ const router = createRouter({
   ],
 })
 
+const ADMIN_EMAIL = 'tngus842655@gmail.com'
+
 // 세션 내 목표 설정 여부 캐시 (재조회 방지)
 let goalCheckedUserId: string | null = null
 
@@ -119,6 +128,10 @@ router.beforeEach(async (to) => {
   if (to.meta.requiresAuth && !session) {
     goalCheckedUserId = null
     return '/'
+  }
+
+  if (to.meta.requiresAdmin && session?.user.email !== ADMIN_EMAIL) {
+    return '/dashboard'
   }
 
   if (to.meta.requiresGoal && session) {

@@ -193,6 +193,21 @@ onMounted(async () => {
         </div>
       </div>
 
+      <!-- 관리 메뉴 -->
+      <div class="glass-card pa-4 mb-3">
+        <div class="section-label mb-3">관리 메뉴</div>
+        <v-btn
+          variant="tonal"
+          color="primary"
+          rounded="lg"
+          block
+          prepend-icon="mdi-lock-reset"
+          @click="router.push('/admin/reset-password')"
+        >
+          회원 비밀번호 재설정
+        </v-btn>
+      </div>
+
       <!-- 가입 이력 목록 -->
       <div class="glass-card pa-4">
         <div class="section-label mb-3">전체 가입 이력 ({{ logs.length }}건)</div>
