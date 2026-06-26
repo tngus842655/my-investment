@@ -196,6 +196,22 @@ const logout = async () => {
       </div>
     </div>
 
+    <!-- 서비스 섹션 -->
+    <div class="section-label mb-2">서비스</div>
+    <div class="d-flex flex-column ga-2 mb-5">
+      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/feedback')">
+        <div class="menu-icon">
+          <v-icon size="18" color="primary">mdi-message-text-outline</v-icon>
+        </div>
+        <div>
+          <div class="text-body-2 font-weight-medium">개선사항 보내기</div>
+          <div class="text-caption text-medium-emphasis">불편한 점·아이디어를 이메일로</div>
+        </div>
+        <v-spacer />
+        <v-icon size="16" style="color: rgba(var(--v-theme-on-surface), 0.35)">mdi-chevron-right</v-icon>
+      </div>
+    </div>
+
     <!-- 설정 섹션 -->
     <div class="section-label mb-2">설정</div>
     <div class="d-flex flex-column ga-2 mb-5">

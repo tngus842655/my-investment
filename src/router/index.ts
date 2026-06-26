@@ -16,8 +16,13 @@ import FireHistoryView from '@/views/more/FireHistoryView.vue'
 import AssetGrowthView from '@/views/more/AssetGrowthView.vue'
 import DividendCalendarView from '@/views/more/DividendCalendarView.vue'
 import EtfAnalysisView from '@/views/more/EtfAnalysisView.vue'
+import FeedbackView from '@/views/more/FeedbackView.vue'
 import AdminView from '@/views/admin/AdminView.vue'
 import AdminResetPasswordView from '@/views/admin/AdminResetPasswordView.vue'
+import AdminLoginLogView from '@/views/admin/AdminLoginLogView.vue'
+import AdminSignupLogView from '@/views/admin/AdminSignupLogView.vue'
+import AdminStatsView from '@/views/admin/AdminStatsView.vue'
+import AdminMembersView from '@/views/admin/AdminMembersView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -37,6 +42,30 @@ const router = createRouter({
       path: '/admin/reset-password',
       name: 'adminResetPassword',
       component: AdminResetPasswordView,
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/admin/login-log',
+      name: 'adminLoginLog',
+      component: AdminLoginLogView,
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/admin/signup-log',
+      name: 'adminSignupLog',
+      component: AdminSignupLogView,
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/admin/stats',
+      name: 'adminStats',
+      component: AdminStatsView,
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/admin/members',
+      name: 'adminMembers',
+      component: AdminMembersView,
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
@@ -109,6 +138,11 @@ const router = createRouter({
           path: 'etf-analysis',
           name: 'etfAnalysis',
           component: EtfAnalysisView,
+        },
+        {
+          path: 'feedback',
+          name: 'feedback',
+          component: FeedbackView,
         },
       ],
     },

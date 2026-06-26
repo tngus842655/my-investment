@@ -79,6 +79,7 @@ const signIn = async () => {
     if (error) { showMessage(getErrorMessage(error.code), 'warning'); return }
 
     const { data: { user } } = await supabase.auth.getUser()
+    if (user) { supabase.from('login_log').insert({ user_id: user.id, email: user.email }).then(() => {}) }
     if (!user) return
 
     const [goalResult, assetResult] = await Promise.all([
