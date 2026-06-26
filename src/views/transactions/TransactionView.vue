@@ -587,9 +587,9 @@ onMounted(loadTransactions)
   line-height: 1.3;
 }
 .stat-unit {
-  font-size: 12px;
-  font-weight: 400;
-  color: rgba(var(--v-theme-on-surface), 0.5);
+  font-size: 18px;
+  font-weight: 500;
+  color: rgb(var(--v-theme-on-surface));
 }
 
 .filter-wrap {
