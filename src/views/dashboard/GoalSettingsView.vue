@@ -10,7 +10,6 @@ const router = useRouter()
 
 const targetAsset = ref('')
 const monthlyInvestment = ref('')
-const targetDate = ref('')
 const annualReturn = ref<number | null>(null)
 
 const loading = ref(false)
@@ -43,8 +42,8 @@ const sliderValue = computed({
   },
 })
 
-const targetAssetText = computed(() => formatShortMoney(removeComma(targetAsset.value)))
-const monthlyInvestmentText = computed(() => formatShortMoney(removeComma(monthlyInvestment.value)))
+const targetAssetText = computed(() => formatShortMoney(removeComma(targetAsset.value)) + '원')
+const monthlyInvestmentText = computed(() => formatShortMoney(removeComma(monthlyInvestment.value)) + '원')
 
 const estimatedPreview = computed(() => {
   const T = removeComma(targetAsset.value)
@@ -93,7 +92,6 @@ const loadData = async () => {
   isEditMode.value = true
   targetAsset.value = addComma(String(data.target_asset ?? ''))
   monthlyInvestment.value = addComma(String(data.monthly_investment ?? ''))
-  targetDate.value = data.target_date ?? ''
   annualReturn.value = data.annual_return ?? null
   initializing.value = false
 }
@@ -113,14 +111,6 @@ const save = async () => {
     showMessage('월 투자금은 0보다 커야 합니다.', 'warning')
     return
   }
-  if (targetDate.value) {
-    const today = new Date().toISOString().slice(0, 10)
-    if (targetDate.value <= today) {
-      showMessage('목표일은 오늘 이후 날짜로 설정해주세요.', 'warning')
-      return
-    }
-  }
-
   loading.value = true
   try {
     const {
@@ -133,7 +123,6 @@ const save = async () => {
         user_id: user.id,
         target_asset: removeComma(targetAsset.value),
         monthly_investment: removeComma(monthlyInvestment.value),
-        target_date: targetDate.value || null,
         annual_return: annualReturn.value,
       },
       { onConflict: 'user_id' },
@@ -213,17 +202,12 @@ onMounted(loadData)
           variant="outlined"
           density="comfortable"
           hide-details
-          suffix="원"
           class="glass-field"
           maxlength="14"
         >
           <template #append-inner>
-            <span
-              v-if="targetAsset"
-              class="text-caption font-weight-bold"
-              style="color: rgb(var(--v-theme-primary)); white-space: nowrap"
-            >
-              {{ targetAssetText }}
+            <span class="text-caption font-weight-bold" style="color: rgb(var(--v-theme-primary)); white-space: nowrap">
+              {{ targetAsset ? targetAssetText : '원' }}
             </span>
           </template>
         </v-text-field>
@@ -243,24 +227,19 @@ onMounted(loadData)
           variant="outlined"
           density="comfortable"
           hide-details
-          suffix="원"
           class="glass-field"
           maxlength="13"
         >
           <template #append-inner>
-            <span
-              v-if="monthlyInvestment"
-              class="text-caption font-weight-bold"
-              style="color: rgb(var(--v-theme-primary)); white-space: nowrap"
-            >
-              {{ monthlyInvestmentText }}
+            <span class="text-caption font-weight-bold" style="color: rgb(var(--v-theme-primary)); white-space: nowrap">
+              {{ monthlyInvestment ? monthlyInvestmentText : '원' }}
             </span>
           </template>
         </v-text-field>
       </div>
 
       <!-- 연평균 수익률 -->
-      <div class="glass-card pa-4 mb-3">
+      <div class="glass-card pa-4 mb-6">
         <div class="d-flex justify-space-between align-center mb-1">
           <div class="field-label">
             <v-icon size="14" class="mr-1">mdi-trending-up</v-icon>
@@ -317,24 +296,6 @@ onMounted(loadData)
             현재 자산 미포함 · 복리 기준 단순 추정
           </div>
         </template>
-      </div>
-
-      <!-- 목표일 -->
-      <div class="glass-card pa-4 mb-6">
-        <div class="field-label mb-3">
-          <v-icon size="14" class="mr-1">mdi-calendar-outline</v-icon>
-          목표일
-          <span class="text-caption text-disabled ml-1">(선택)</span>
-        </div>
-        <v-text-field
-          v-model="targetDate"
-          type="date"
-          variant="outlined"
-          density="comfortable"
-          hide-details
-          class="glass-field"
-          :min="new Date(Date.now() + 86400000).toISOString().slice(0, 10)"
-        />
       </div>
 
       <!-- 버튼 -->

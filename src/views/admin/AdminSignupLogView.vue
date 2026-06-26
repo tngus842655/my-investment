@@ -3,8 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
-
-const ADMIN_EMAIL = 'tngus842655@gmail.com'
+import { ADMIN_EMAIL } from '@/config/admin'
 const router = useRouter()
 const loading = ref(true)
 const isAdmin = ref(false)
@@ -20,16 +19,125 @@ const logs = ref<SignupLog[]>([])
 const deleteTarget = ref<SignupLog | null>(null)
 const deleteDialog = ref(false)
 const deleteLoading = ref(false)
+const deletePassword = ref('')
+const deletePasswordVisible = ref(false)
+const deletePasswordError = ref('')
+
+// ── 회원 상세 ──────────────────────────────────────
+interface PortfolioItem {
+  ticker: string
+  quantity: number
+  avg_price: number
+  currency: string
+}
+
+interface MemberDetail {
+  email: string
+  signed_up_at: string
+  last_login_at: string | null
+  login_count: number
+  target_asset: number | null
+  monthly_investment: number | null
+  annual_return: number | null
+  current_asset: number | null
+  investment_principal: number | null
+  portfolio_count: number
+  portfolios: PortfolioItem[]
+}
+
+const detailDialog = ref(false)
+const detailLoading = ref(false)
+const detail = ref<MemberDetail | null>(null)
+const portfolioDialog = ref(false)
+
+const openDetail = async (log: SignupLog) => {
+  detailDialog.value = true
+  detailLoading.value = true
+  detail.value = null
+
+  try {
+    // login_log에서 user_id 및 접속 이력 조회
+    const { data: loginData } = await supabase
+      .from('login_log')
+      .select('user_id, login_at')
+      .eq('email', log.email)
+      .order('login_at', { ascending: false })
+
+    const userId = loginData?.[0]?.user_id ?? null
+    const lastLogin = loginData?.[0]?.login_at ?? null
+    const loginCount = loginData?.length ?? 0
+
+    let goal = null
+    let assetSummary = null
+    let portfolioCount = 0
+    let portfolioItems: PortfolioItem[] = []
+
+    if (userId) {
+      const [goalRes, assetRes, portRes] = await Promise.all([
+        supabase.from('investment_goals').select('target_asset, monthly_investment, annual_return').eq('user_id', userId).maybeSingle(),
+        supabase.from('asset_summary').select('current_asset, investment_principal').eq('user_id', userId).maybeSingle(),
+        supabase.from('portfolios').select('ticker, quantity, avg_price, currency').eq('user_id', userId).order('sort_order'),
+      ])
+      goal = goalRes.data
+      assetSummary = assetRes.data
+      portfolioItems = (portRes.data ?? []) as PortfolioItem[]
+      portfolioCount = portfolioItems.length
+    }
+
+    detail.value = {
+      email: log.email,
+      signed_up_at: log.signed_up_at,
+      last_login_at: lastLogin,
+      login_count: loginCount,
+      target_asset: goal?.target_asset ?? null,
+      monthly_investment: goal?.monthly_investment ?? null,
+      annual_return: goal?.annual_return ?? null,
+      current_asset: assetSummary?.current_asset ?? null,
+      investment_principal: assetSummary?.investment_principal ?? null,
+      portfolio_count: portfolioCount,
+      portfolios: portfolioItems,
+    }
+  } catch (e) {
+    showMessage('상세 정보 조회 중 오류가 발생했습니다.', 'error')
+    detailDialog.value = false
+  } finally {
+    detailLoading.value = false
+  }
+}
+
+const fmtWon = (v: number) => {
+  if (v >= 100_000_000) return `${(v / 100_000_000).toFixed(1)}억원`
+  if (v >= 10_000) return `${Math.round(v / 10_000).toLocaleString()}만원`
+  return `${v.toLocaleString()}원`
+}
 
 const confirmDelete = (log: SignupLog) => {
   deleteTarget.value = log
+  deletePassword.value = ''
+  deletePasswordError.value = ''
   deleteDialog.value = true
 }
 
 const executeDelete = async () => {
   if (!deleteTarget.value) return
+  deletePasswordError.value = ''
+
+  if (!deletePassword.value) {
+    deletePasswordError.value = '비밀번호를 입력해주세요.'
+    return
+  }
+
   deleteLoading.value = true
   try {
+    // 관리자 비밀번호 검증
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: ADMIN_EMAIL,
+      password: deletePassword.value,
+    })
+    if (authError) {
+      deletePasswordError.value = '비밀번호가 올바르지 않습니다.'
+      return
+    }
     const now = new Date().toISOString()
 
     const { error } = await supabase
@@ -53,6 +161,8 @@ const executeDelete = async () => {
     )
     if (!fnRes.ok) {
       const fnErr = await fnRes.json().catch(() => ({ error: fnRes.statusText }))
+      // Edge Function 실패 시 signup_log rollback
+      await supabase.from('signup_log').update({ deleted_at: null }).eq('id', deleteTarget.value.id)
       showMessage('Auth 삭제 오류: ' + fnErr.error, 'error')
       return
     }
@@ -78,6 +188,17 @@ const formatDate = (iso: string) => {
   }).formatToParts(d)
   const get = (type: string) => parts.find(p => p.type === type)?.value ?? ''
   return `${get('year')}.${pad(+get('month'))}.${pad(+get('day'))} (${get('hour')}:${get('minute')}:${pad(d.getSeconds())})`
+}
+
+const formatDateShort = (iso: string) => {
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const parts = new Intl.DateTimeFormat('ko-KR', {
+    timeZone: KST, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  }).formatToParts(d)
+  const get = (type: string) => parts.find(p => p.type === type)?.value ?? ''
+  return `${get('year')}.${pad(+get('month'))}.${pad(+get('day'))} ${get('hour')}:${get('minute')}:${get('second')}`
 }
 
 onMounted(async () => {
@@ -121,7 +242,7 @@ onMounted(async () => {
         </div>
 
         <div v-for="(log, i) in logs" :key="log.id">
-          <div class="log-row" :class="{ 'mt-2': i > 0 }">
+          <div class="log-row" :class="{ 'mt-2': i > 0 }" style="cursor:pointer" @click="openDetail(log)">
             <div class="d-flex align-center justify-space-between">
               <div class="d-flex align-center ga-2">
                 <v-icon size="15" :color="log.deleted_at ? 'error' : 'primary'">
@@ -133,7 +254,7 @@ onMounted(async () => {
                 <v-chip :color="log.deleted_at ? 'error' : 'primary'" size="x-small" variant="tonal">
                   {{ log.deleted_at ? '탈퇴' : '활성' }}
                 </v-chip>
-                <button v-if="!log.deleted_at" class="del-btn" @click="confirmDelete(log)">
+                <button v-if="!log.deleted_at" class="del-btn" @click.stop="confirmDelete(log)">
                   <v-icon size="14">mdi-account-remove-outline</v-icon>
                 </button>
               </div>
@@ -152,7 +273,21 @@ onMounted(async () => {
       <v-card-title class="text-body-1 font-weight-bold pt-4 px-4">탈퇴 처리</v-card-title>
       <v-card-text class="px-4 pb-2">
         <div class="text-body-2 text-medium-emphasis mb-1">아래 회원을 탈퇴 처리합니다.</div>
-        <div class="text-body-2 font-weight-bold">{{ deleteTarget?.email }}</div>
+        <div class="text-body-2 font-weight-bold mb-3">{{ deleteTarget?.email }}</div>
+        <v-text-field
+          v-model="deletePassword"
+          :type="deletePasswordVisible ? 'text' : 'password'"
+          label="관리자 비밀번호 확인"
+          variant="outlined"
+          density="compact"
+          rounded="lg"
+          hide-details
+          :append-inner-icon="deletePasswordVisible ? 'mdi-eye-off' : 'mdi-eye'"
+          :error="!!deletePasswordError"
+          @click:append-inner="deletePasswordVisible = !deletePasswordVisible"
+          @keyup.enter="executeDelete"
+        />
+        <div v-if="deletePasswordError" class="text-caption text-error mt-1 ml-1">{{ deletePasswordError }}</div>
         <div class="text-caption text-error mt-2">이 작업은 되돌릴 수 없습니다.</div>
       </v-card-text>
       <v-card-actions class="px-4 pb-4 ga-2">
@@ -161,6 +296,72 @@ onMounted(async () => {
       </v-card-actions>
     </v-card>
   </v-dialog>
+<!-- 보유 종목 다이얼로그 -->
+<v-dialog v-model="portfolioDialog" max-width="340">
+  <v-card rounded="xl" class="pa-2">
+    <v-card-title class="text-body-1 font-weight-bold pt-4 px-4">보유 종목</v-card-title>
+    <v-card-text class="px-4 pb-2">
+      <div v-for="(p, i) in detail?.portfolios" :key="p.ticker">
+        <div class="detail-row" :class="{ 'mt-1': i > 0 }">
+          <div>
+            <div class="text-body-2 font-weight-bold">{{ p.ticker }}</div>
+            <div class="text-caption text-medium-emphasis">평균가 {{ p.avg_price.toLocaleString() }} {{ p.currency }}</div>
+          </div>
+          <span class="text-body-2 font-weight-bold">{{ p.quantity.toLocaleString() }}주</span>
+        </div>
+        <v-divider v-if="i < (detail?.portfolios.length ?? 0) - 1" class="mt-2" opacity="0.06" />
+      </div>
+    </v-card-text>
+    <v-card-actions class="px-4 pb-4">
+      <v-btn variant="tonal" rounded="lg" block @click="portfolioDialog = false">닫기</v-btn>
+    </v-card-actions>
+  </v-card>
+</v-dialog>
+
+<!-- 회원 상세 다이얼로그 -->
+<v-dialog v-model="detailDialog" max-width="360">
+  <v-card rounded="xl" class="pa-2">
+    <v-card-title class="text-body-1 font-weight-bold pt-4 px-4">회원 상세</v-card-title>
+    <v-card-text class="px-4 pb-4">
+      <div v-if="detailLoading" class="d-flex justify-center py-6">
+        <v-progress-circular indeterminate color="primary" size="28" />
+      </div>
+      <template v-else-if="detail">
+        <!-- 기본 정보 -->
+        <div class="detail-section-label mb-2">기본 정보</div>
+        <div class="detail-row"><span class="detail-key">이메일</span><span class="detail-val">{{ detail.email }}</span></div>
+        <div class="detail-row"><span class="detail-key">가입일</span><span class="detail-val">{{ formatDateShort(detail.signed_up_at) }}</span></div>
+        <div class="detail-row"><span class="detail-key">최근 접속</span><span class="detail-val">{{ detail.last_login_at ? formatDateShort(detail.last_login_at) : '-' }}</span></div>
+        <div class="detail-row"><span class="detail-key">접속 횟수</span><span class="detail-val">{{ detail.login_count }}회</span></div>
+
+        <v-divider class="my-3" opacity="0.08" />
+
+        <!-- 투자 목표 -->
+        <div class="detail-section-label mb-2">투자 목표</div>
+        <div class="detail-row"><span class="detail-key">목표 자산</span><span class="detail-val">{{ detail.target_asset ? fmtWon(detail.target_asset) : '-' }}</span></div>
+        <div class="detail-row"><span class="detail-key">월 투자금</span><span class="detail-val">{{ detail.monthly_investment ? fmtWon(detail.monthly_investment) : '-' }}</span></div>
+        <div class="detail-row"><span class="detail-key">기대 수익률</span><span class="detail-val">{{ detail.annual_return != null ? detail.annual_return + '%' : '-' }}</span></div>
+
+        <v-divider class="my-3" opacity="0.08" />
+
+        <!-- 현재 자산 -->
+        <div class="detail-section-label mb-2">현재 자산</div>
+        <div class="detail-row"><span class="detail-key">현재 평가액</span><span class="detail-val">{{ detail.current_asset ? fmtWon(detail.current_asset) : '-' }}</span></div>
+        <div class="detail-row"><span class="detail-key">투자 원금</span><span class="detail-val">{{ detail.investment_principal ? fmtWon(detail.investment_principal) : '-' }}</span></div>
+        <div class="detail-row" :style="detail.portfolio_count > 0 ? 'cursor:pointer' : ''" @click="detail.portfolio_count > 0 && (portfolioDialog = true)">
+          <span class="detail-key">보유 종목 수</span>
+          <span class="detail-val" :style="detail.portfolio_count > 0 ? 'color:rgb(var(--v-theme-primary))' : ''">
+            {{ detail.portfolio_count }}개{{ detail.portfolio_count > 0 ? ' ›' : '' }}
+          </span>
+        </div>
+      </template>
+    </v-card-text>
+    <v-card-actions class="px-4 pb-4">
+      <v-btn variant="tonal" rounded="lg" block @click="detailDialog = false">닫기</v-btn>
+    </v-card-actions>
+  </v-card>
+</v-dialog>
+
 </template>
 
 <style scoped>
@@ -222,4 +423,31 @@ onMounted(async () => {
   transition: opacity 0.15s;
 }
 .del-btn:active { opacity: 1; }
+
+.detail-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(var(--v-theme-on-surface), 0.38);
+}
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  gap: 8px;
+}
+.detail-key {
+  font-size: 12px;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+  flex-shrink: 0;
+}
+.detail-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+  text-align: right;
+  word-break: break-all;
+}
 </style>

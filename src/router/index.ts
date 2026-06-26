@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { supabase } from '@/services/supabase'
+import { ADMIN_EMAIL } from '@/config/admin'
 
 import LoginView from '@/views/auth/LoginView.vue'
 import GoalSettingsView from '@/views/dashboard/GoalSettingsView.vue'
@@ -148,8 +149,6 @@ const router = createRouter({
     },
   ],
 })
-
-const ADMIN_EMAIL = 'tngus842655@gmail.com'
 
 // 세션 내 목표 설정 여부 캐시 (재조회 방지)
 let goalCheckedUserId: string | null = null

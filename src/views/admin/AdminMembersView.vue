@@ -2,8 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
-
-const ADMIN_EMAIL = 'tngus842655@gmail.com'
+import { ADMIN_EMAIL } from '@/config/admin'
+import { TICKER_NAMES } from '@/utils/tickerNames'
 const router = useRouter()
 const loading = ref(true)
 const isAdmin = ref(false)
@@ -23,6 +23,7 @@ const goals       = ref<GoalRow[]>([])
 const portfolios  = ref<PortfolioRow[]>([])
 const transactions = ref<TransactionRow[]>([])
 const signups     = ref<SignupRow[]>([])
+const adminUserId = ref<string>('')
 
 // ── 집계 ──────────────────────────────────────────
 const totalActive = computed(() => signups.value.filter(s => !s.deleted_at).length)
@@ -83,6 +84,7 @@ onMounted(async () => {
     return
   }
   isAdmin.value = true
+  adminUserId.value = user.id
 
   const [goalRes, portRes, txRes, signupRes] = await Promise.all([
     supabase.from('investment_goals').select('user_id, target_asset, monthly_investment, annual_return'),
@@ -91,9 +93,10 @@ onMounted(async () => {
     supabase.from('signup_log').select('deleted_at'),
   ])
 
-  goals.value       = goalRes.data ?? []
-  portfolios.value  = portRes.data ?? []
-  transactions.value = txRes.data ?? []
+  const adminId = user.id
+  goals.value       = (goalRes.data ?? []).filter(r => r.user_id !== adminId)
+  portfolios.value  = (portRes.data ?? []).filter(r => r.user_id !== adminId)
+  transactions.value = (txRes.data ?? []).filter(r => r.user_id !== adminId)
   signups.value     = signupRes.data ?? []
   loading.value = false
 })
@@ -151,13 +154,13 @@ onMounted(async () => {
       <div class="glass-card pa-4 mb-3">
         <div class="section-label mb-3">이탈 현황</div>
         <div class="extra-row">
-          <span class="extra-label">목표 설정 후 포트폴리오 미등록</span>
-          <span class="extra-value text-warning">{{ noPortfolioCount }}명</span>
+          <span class="extra-label">가입 후 목표 미설정</span>
+          <span class="extra-value text-warning">{{ totalActive - (goalStats?.count ?? 0) }}명</span>
         </div>
         <v-divider class="my-2" opacity="0.06" />
         <div class="extra-row">
-          <span class="extra-label">가입 후 목표 미설정</span>
-          <span class="extra-value text-warning">{{ totalActive - (goalStats?.count ?? 0) }}명</span>
+          <span class="extra-label">목표 설정 후 포트폴리오 미등록</span>
+          <span class="extra-value text-warning">{{ noPortfolioCount }}명</span>
         </div>
       </div>
 
@@ -190,7 +193,7 @@ onMounted(async () => {
           <div class="rank-row" :class="{ 'mt-2': i > 0 }">
             <div class="d-flex align-center ga-3">
               <span class="rank-num" :class="i < 3 ? 'rank-top' : ''">{{ i + 1 }}</span>
-              <span class="rank-ticker">{{ item.ticker }}</span>
+              <span class="rank-ticker">{{ TICKER_NAMES[item.ticker] ?? item.ticker }}</span>
             </div>
             <div class="d-flex align-center ga-2">
               <div class="rank-bar-wrap">

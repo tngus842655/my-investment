@@ -25,6 +25,14 @@ interface Transaction {
 const loading = ref(false)
 const transactions = ref<Transaction[]>([])
 const filter = ref<FilterType>('ALL')
+const dateSearch = ref('')
+
+const parsedDateFilter = computed(() => {
+  const v = dateSearch.value.replace(/\D/g, '')
+  if (v.length === 6) return v.slice(0, 4) + '-' + v.slice(4, 6)
+  if (v.length === 8) return v.slice(0, 4) + '-' + v.slice(4, 6) + '-' + v.slice(6, 8)
+  return null
+})
 
 const addDialog = ref(false)
 const editDialog = ref(false)
@@ -100,8 +108,11 @@ const openDeleteDialog = (item: Transaction) => {
 
 // ── 필터 + 그룹 ───────────────────────────────────
 const filtered = computed(() => {
-  if (filter.value === 'ALL') return transactions.value
-  return transactions.value.filter((t) => t.transaction_type === filter.value)
+  let list = transactions.value
+  if (filter.value !== 'ALL') list = list.filter((t) => t.transaction_type === filter.value)
+  const df = parsedDateFilter.value
+  if (df) list = list.filter((t) => t.transaction_date.startsWith(df))
+  return list
 })
 
 const grouped = computed(() => {
@@ -330,6 +341,22 @@ onMounted(loadTransactions)
           {{ f === 'ALL' ? '전체' : f === 'BUY' ? '매수' : '매도' }}
         </button>
       </div>
+
+      <!-- 날짜 검색 -->
+      <v-text-field
+        v-model="dateSearch"
+        placeholder="날짜 검색 (예: 202606 또는 20260626)"
+        variant="outlined"
+        density="compact"
+        rounded="lg"
+        hide-details
+        clearable
+        prepend-inner-icon="mdi-calendar-search-outline"
+        bg-color="transparent"
+        class="mb-4"
+        maxlength="8"
+        @click="closeSwipe"
+      />
 
       <!-- 빈 상태 -->
       <template v-if="filtered.length === 0">

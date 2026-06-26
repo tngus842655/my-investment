@@ -4,8 +4,7 @@ import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { useAppTheme } from '@/composables/useAppTheme'
-
-const ADMIN_EMAIL = 'tngus842655@gmail.com'
+import { ADMIN_EMAIL } from '@/config/admin'
 
 const router = useRouter()
 const { isDark, toggleTheme } = useAppTheme()
