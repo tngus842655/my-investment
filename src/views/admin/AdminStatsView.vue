@@ -2,8 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
-
-const ADMIN_EMAIL = 'tngus842655@gmail.com'
+import { ADMIN_EMAIL } from '@/config/admin'
 const router = useRouter()
 const loading = ref(true)
 const isAdmin = ref(false)
@@ -11,7 +10,7 @@ const isAdmin = ref(false)
 const KST = 'Asia/Seoul'
 
 // ── 데이터 ────────────────────────────────────────
-interface SignupRow { signed_up_at: string }
+interface SignupRow { email: string; signed_up_at: string }
 interface LoginRow  { email: string; login_at: string }
 
 const signupRows = ref<SignupRow[]>([])
@@ -117,11 +116,11 @@ onMounted(async () => {
   since.setDate(since.getDate() - 90)
 
   const [signupRes, loginRes] = await Promise.all([
-    supabase.from('signup_log').select('signed_up_at').gte('signed_up_at', since.toISOString()),
+    supabase.from('signup_log').select('email, signed_up_at').gte('signed_up_at', since.toISOString()),
     supabase.from('login_log').select('email, login_at').gte('login_at', since.toISOString()),
   ])
-  signupRows.value = signupRes.data ?? []
-  loginRows.value  = loginRes.data ?? []
+  signupRows.value = (signupRes.data ?? []).filter(r => r.email !== ADMIN_EMAIL)
+  loginRows.value  = (loginRes.data ?? []).filter(r => r.email !== ADMIN_EMAIL)
   loading.value = false
 })
 </script>

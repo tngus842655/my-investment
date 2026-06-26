@@ -3,8 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
-
-const ADMIN_EMAIL = 'tngus842655@gmail.com'
+import { ADMIN_EMAIL } from '@/config/admin'
 const router = useRouter()
 const loading = ref(true)
 const isAdmin = ref(false)

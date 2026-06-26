@@ -43,14 +43,14 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: 'email required' }), { status: 400, headers: corsHeaders })
   }
 
-  const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers()
+  const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
   if (listError) {
     return new Response(JSON.stringify({ error: listError.message }), { status: 500, headers: corsHeaders })
   }
 
   const target = users.find((u) => u.email === email)
   if (!target) {
-    return new Response(JSON.stringify({ error: 'User not found' }), { status: 404, headers: corsHeaders })
+    return new Response(JSON.stringify({ error: 'No user matching email: ' + email }), { status: 404, headers: corsHeaders })
   }
 
   const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(target.id)
