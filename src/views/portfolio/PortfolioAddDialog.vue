@@ -153,14 +153,14 @@ const addComma = (v: string) => {
 const removeComma = (v: string) => Number(v.replace(/,/g, '')) || 0
 
 const handleQuantity = (v: string) => {
-  const intPart = v.split('.')[0].replace(/[^0-9]/g, '')
+  const intPart = (v.split('.')[0] ?? '').replace(/[^0-9]/g, '')
   if (/^0\d/.test(intPart)) return
   if (intPart.length > maxQuantityDigits.value) return
   initQuantity.value = v
 }
 
 const handleAvgPrice = (v: string) => {
-  const intPart = v.replace(/[^0-9.]/g, '').split('.')[0]
+  const intPart = v.replace(/[^0-9.]/g, '').split('.')[0] ?? ''
   if (/^0\d/.test(intPart)) return
   if (intPart.length > maxPriceDigits.value) return
   initAvgPrice.value = addComma(v)
