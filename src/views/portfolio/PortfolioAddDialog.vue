@@ -4,6 +4,8 @@ import type { PortfolioAsset } from '@/types/portfolio'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
+import { TICKER_NAMES } from '@/utils/tickerNames'
+import { getStockPrice } from '@/services/market'
 
 const dialog = defineModel<boolean>()
 
@@ -211,6 +213,23 @@ const isValid = computed(
 
 const save = async () => {
   if (!isValid.value) return
+  if (!isEditMode.value && assetType.value !== '현금') {
+    const t = ticker.value.trim().toUpperCase()
+    if (assetType.value === '해외주식') {
+      saving.value = true
+      try {
+        await getStockPrice(t, '해외주식', 'USD')
+      } catch {
+        showMessage('유효하지 않은 티커입니다. 티커를 다시 확인해주세요.', 'error')
+        saving.value = false
+        return
+      }
+    } else if (!TICKER_NAMES[t]) {
+      const label = assetType.value === '국내주식' ? '종목코드' : '코인 영문코드'
+      showMessage(`등록되지 않은 ${label}입니다. 다시 확인해주세요.`, 'error')
+      return
+    }
+  }
   saving.value = true
   try {
     const {

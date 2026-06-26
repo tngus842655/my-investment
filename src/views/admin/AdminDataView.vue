@@ -23,6 +23,14 @@ const items: DataItem[] = [
     icon: 'mdi-flag',
     targetFile: 'src/utils/tickerNames.kr.ts',
   },
+  {
+    id: 'crypto',
+    title: '암호화폐 티커명 업데이트',
+    description: '업비트 KRW 마켓 전체 코인 목록을 가져와 tickerNames.crypto.ts를 갱신합니다.',
+    scriptKey: 'generate-crypto-tickers',
+    icon: 'mdi-bitcoin',
+    targetFile: 'src/utils/tickerNames.crypto.ts',
+  },
 ]
 
 const runningId = ref<string | null>(null)

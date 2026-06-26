@@ -10,6 +10,7 @@ import type { Plugin } from 'vite'
 
 const ALLOWED_SCRIPTS: Record<string, string> = {
   'generate-kr-tickers': 'scripts/generate-kr-tickers.mjs',
+  'generate-crypto-tickers': 'scripts/generate-crypto-tickers.mjs',
 }
 
 // 티커 파일에서 특정 export 블록을 파싱해 Map으로 반환
