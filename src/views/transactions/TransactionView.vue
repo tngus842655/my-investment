@@ -296,11 +296,7 @@ const totalSell = computed(() => {
   return krw + usd * (usdToKrw.value || 1)
 })
 
-// ── 포맷 유틸 ─────────────────────────────────────
-const formatMonthLabel = (key: string) => {
-  const [y, m] = key.split('-')
-  return `${y}년 ${parseInt(m!)}월`
-}
+
 
 const formatDate = (d: string) => {
   const date = new Date(d)
@@ -419,27 +415,15 @@ onUnmounted(() => {
           <div class="text-body-2 text-medium-emphasis">매수 / 매도 기록</div>
         </div>
       </div>
-      <div class="d-flex ga-2 align-center">
-        <v-btn
-          icon="mdi-refresh"
-          variant="outlined"
-          size="small"
-          rounded="circle"
-          elevation="0"
-          :loading="refreshing"
-          style="border-color: rgba(var(--v-theme-on-surface), 0.15)"
-          @click="refresh"
-        />
-        <v-btn
-          color="primary"
-          prepend-icon="mdi-plus"
-          rounded="lg"
-          elevation="0"
-          @click="addDialog = true"
-        >
-          거래 추가
-        </v-btn>
-      </div>
+      <v-btn
+        color="primary"
+        prepend-icon="mdi-plus"
+        rounded="lg"
+        elevation="0"
+        @click="addDialog = true"
+      >
+        거래 추가
+      </v-btn>
     </div>
 
     <!-- 스켈레톤 -->
@@ -464,7 +448,7 @@ onUnmounted(() => {
       <div class="stat-grid mb-4">
         <div class="stat-card">
           <div class="d-flex align-center ga-1 mb-1">
-            <v-icon size="13" color="teal">mdi-arrow-down-bold</v-icon>
+            <v-icon size="13" color="success">mdi-arrow-down-bold</v-icon>
             <span class="stat-label">총 매수</span>
           </div>
           <div class="stat-value">
@@ -682,14 +666,6 @@ onUnmounted(() => {
   object-fit: contain;
 }
 
-.glass-card {
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(0, 0, 0, 0.07);
-  border-radius: 20px;
-  transition:
-    background 0.25s ease,
-    border-color 0.25s ease;
-}
 
 .stat-grid {
   display: grid;
@@ -698,7 +674,7 @@ onUnmounted(() => {
 }
 .stat-card {
   background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(0, 0, 0, 0.07);
+  border: 1px solid var(--fp-outline);
   border-radius: 16px;
   padding: 14px 16px;
 }
@@ -747,10 +723,6 @@ onUnmounted(() => {
   color: rgb(var(--v-theme-on-surface));
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
-.v-theme--dark .filter-btn.active {
-  background: rgba(0, 212, 184, 0.1);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-}
 
 .month-label {
   font-size: 11px;
@@ -782,12 +754,12 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 .type-buy {
-  background: rgba(0, 150, 136, 0.12);
-  color: #009688;
+  background: rgba(var(--v-theme-success), 0.12);
+  color: rgb(var(--v-theme-success));
 }
 .type-sell {
-  background: rgba(211, 47, 47, 0.1);
-  color: #d32f2f;
+  background: rgba(var(--v-theme-error), 0.1);
+  color: var(--fp-error);
 }
 
 .date-label {
@@ -824,12 +796,12 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 .badge-buy {
-  background: rgba(0, 150, 136, 0.12);
-  color: #009688;
+  background: rgba(var(--v-theme-success), 0.12);
+  color: rgb(var(--v-theme-success));
 }
 .badge-sell {
-  background: rgba(211, 47, 47, 0.1);
-  color: #d32f2f;
+  background: rgba(var(--v-theme-error), 0.1);
+  color: var(--fp-error);
 }
 .tx-detail {
   font-size: 11px;
@@ -843,11 +815,11 @@ onUnmounted(() => {
   color: rgb(var(--v-theme-error));
 }
 .amount-plus {
-  color: #009688;
+  color: rgb(var(--v-theme-on-surface));
 }
 
 .text-teal {
-  color: #009688 !important;
+  color: var(--fp-primary) !important;
 }
 
 .tx-card {
@@ -856,7 +828,7 @@ onUnmounted(() => {
   padding: 10px 12px !important;
 }
 .border-buy-left {
-  border-left-color: #009688 !important;
+  border-left-color: rgb(var(--v-theme-success)) !important;
 }
 .border-sell-left {
   border-left-color: rgb(var(--v-theme-error)) !important;
@@ -893,11 +865,11 @@ onUnmounted(() => {
   filter: brightness(0.9);
 }
 .action-edit {
-  background: #0e8a82;
+  background: var(--fp-primary);
   border-radius: 20px 0 0 20px;
 }
 .action-delete {
-  background: #d32f2f;
+  background: var(--fp-error);
   border-radius: 0 20px 20px 0;
 }
 .swipe-card {
@@ -907,10 +879,6 @@ onUnmounted(() => {
   will-change: transform;
 }
 
-.glass-dialog {
-  background: rgb(var(--v-theme-surface)) !important;
-  border: 1px solid rgba(0, 0, 0, 0.07) !important;
-}
 
 .min-width-0 {
   min-width: 0;

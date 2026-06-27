@@ -1,7 +1,6 @@
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import vueDevTools from 'vite-plugin-vue-devtools'
 import { VitePWA } from 'vite-plugin-pwa'
 import { spawn } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
@@ -41,10 +40,10 @@ function writeTickers(filePath: string, exportName: string, map: Map<string, str
   writeFileSync(filePath, replaced, 'utf-8')
 }
 
-function readBody(req: any): Promise<any> {
+function readBody(req: import('http').IncomingMessage): Promise<Record<string, unknown>> {
   return new Promise((resolve) => {
     let body = ''
-    req.on('data', (chunk: any) => { body += chunk })
+    req.on('data', (chunk: Buffer) => { body += chunk })
     req.on('end', () => resolve(JSON.parse(body || '{}')))
   })
 }
@@ -60,7 +59,7 @@ function adminPlugin(): Plugin {
       server.middlewares.use('/api/admin/run-script', (req, res) => {
         if (req.method !== 'POST') { res.writeHead(405).end(); return }
         let body = ''
-        req.on('data', (chunk: any) => { body += chunk })
+        req.on('data', (chunk: Buffer) => { body += chunk })
         req.on('end', () => {
           const { script } = JSON.parse(body || '{}')
           const scriptPath = ALLOWED_SCRIPTS[script]
@@ -72,8 +71,8 @@ function adminPlugin(): Plugin {
           res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' })
           const child = spawn('node', [scriptPath], { cwd: process.cwd() })
           const send = (data: string) => res.write(`data: ${JSON.stringify(data)}\n\n`)
-          child.stdout.on('data', (d: any) => send(d.toString()))
-          child.stderr.on('data', (d: any) => send(d.toString()))
+          child.stdout.on('data', (d: Buffer) => send(d.toString()))
+          child.stderr.on('data', (d: Buffer) => send(d.toString()))
           child.on('close', (code: number) => {
             send(`\n✅ 완료 (exit ${code})`)
             res.write('event: done\ndata: {}\n\n')
@@ -126,7 +125,6 @@ function adminPlugin(): Plugin {
 export default defineConfig({
   plugins: [
     vue(),
-    vueDevTools(),
     adminPlugin(),
     VitePWA({
       registerType: 'autoUpdate',

@@ -264,7 +264,7 @@ const onChartLeave = () => { tooltip.value = null }
 <style scoped>
 .summary-card {
   background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(0, 0, 0, 0.07);
+  border: 1px solid var(--fp-outline);
 }
 .period-btn {
   flex: 1;

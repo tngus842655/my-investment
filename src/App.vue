@@ -21,45 +21,43 @@ onMounted(() => {
 </template>
 
 <style>
-* {
-  -webkit-tap-highlight-color: transparent;
-}
-
+/* ── 배경 기본 ─────────────────────────────────────────────── */
 .app-bg {
   min-height: 100vh;
   min-height: 100dvh;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
+  /* transition은 theme.css에서 선언 */
 }
 
-.app-bg.dark {
-  background: #080f1e;
-}
-
+/* ── ☀️ Light — 깔끔한 화이트-블루 ─────────────────────────── */
 .app-bg.light {
-  background: #eef4fb;
+  background: linear-gradient(160deg, #F4F8FC 0%, #ECF3FB 100%);
 }
 
-/* 전역 스크롤바 (다크) */
-.app-bg.dark ::-webkit-scrollbar {
-  width: 4px;
-}
-.app-bg.dark ::-webkit-scrollbar-track {
-  background: transparent;
-}
-.app-bg.dark ::-webkit-scrollbar-thumb {
-  background: rgba(0, 212, 184, 0.2);
-  border-radius: 99px;
+/* ── 🌙 Dark — 절제된 딥 네이비 ────────────────────────────── */
+.app-bg.dark {
+  background: linear-gradient(160deg, #0D1520 0%, #091018 100%);
 }
 
-/* Vuetify 컴포넌트 전역 오버라이드 */
-.v-skeleton-loader__bone {
-  background: rgba(255, 255, 255, 0.06) !important;
+/* ── 🌿 Nature — 연한 그린 그라데이션 ──────────────────────── */
+.app-bg.nature {
+  background: linear-gradient(160deg, #EFF7F2 0%, #E5F2EA 60%, #EAF5EE 100%);
 }
-.v-theme--dark .v-skeleton-loader__bone {
-  background: rgba(255, 255, 255, 0.06) !important;
+
+/* ── 🚀 Space — 은은한 Nebula (성운) 느낌 ─────────────────── */
+.app-bg.space {
+  background:
+    radial-gradient(ellipse at 15% 20%, rgba(0, 212, 184, 0.05) 0%, transparent 45%),
+    radial-gradient(ellipse at 85% 75%, rgba(124, 111, 205, 0.07) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 50%, rgba(0, 80, 140, 0.04) 0%, transparent 65%),
+    #080F1E;
 }
-.v-theme--light .v-skeleton-loader__bone {
-  background: rgba(0, 0, 0, 0.08) !important;
+
+/* ── 👑 Gold — 극도로 절제된 다크, 상단 아주 은은한 warm glow */
+.app-bg.gold {
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(201, 153, 58, 0.05) 0%, transparent 50%),
+    linear-gradient(170deg, #131109 0%, #0E0C07 100%);
 }
 </style>

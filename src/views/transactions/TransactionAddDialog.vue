@@ -542,32 +542,18 @@ const reset = (closeDialog = true) => {
 </template>
 
 <style scoped>
-.glass-dialog {
-  background: rgb(var(--v-theme-surface)) !important;
-  border: 1px solid rgba(0, 0, 0, 0.07) !important;
-}
-.v-theme--dark .glass-dialog {
-  background: rgba(8, 15, 30, 0.97) !important;
-  border-color: rgba(79, 200, 194, 0.2) !important;
-}
 
 .dialog-header {
   padding: 24px 24px 20px;
   transition: background 0.25s ease;
 }
 .header-buy {
-  background: linear-gradient(135deg, rgba(0, 150, 136, 0.12) 0%, rgba(0, 150, 136, 0.04) 100%);
-  border-bottom: 1px solid rgba(0, 150, 136, 0.15);
+  background: linear-gradient(135deg, rgba(var(--v-theme-primary), 0.12) 0%, rgba(var(--v-theme-primary), 0.04) 100%);
+  border-bottom: 1px solid rgba(var(--v-theme-primary), 0.15);
 }
 .header-sell {
-  background: linear-gradient(135deg, rgba(211, 47, 47, 0.1) 0%, rgba(211, 47, 47, 0.03) 100%);
-  border-bottom: 1px solid rgba(211, 47, 47, 0.15);
-}
-.v-theme--dark .header-buy {
-  background: linear-gradient(135deg, rgba(0, 150, 136, 0.2) 0%, rgba(0, 150, 136, 0.06) 100%);
-}
-.v-theme--dark .header-sell {
-  background: linear-gradient(135deg, rgba(211, 47, 47, 0.18) 0%, rgba(211, 47, 47, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(var(--v-theme-error), 0.1) 0%, rgba(var(--v-theme-error), 0.03) 100%);
+  border-bottom: 1px solid rgba(var(--v-theme-error), 0.15);
 }
 
 .header-eyebrow {
@@ -599,17 +585,16 @@ const reset = (closeDialog = true) => {
   transition: all 0.18s ease;
 }
 .toggle-active-buy {
-  background: rgba(0, 150, 136, 0.12);
-  border-color: #009688;
-  color: #009688;
+  background: rgba(var(--v-theme-primary), 0.12);
+  border-color: var(--fp-primary);
+  color: var(--fp-primary);
 }
 .toggle-active-sell {
-  background: rgba(211, 47, 47, 0.1);
-  border-color: #d32f2f;
-  color: #d32f2f;
+  background: rgba(var(--v-theme-error), 0.1);
+  border-color: var(--fp-error);
+  color: var(--fp-error);
 }
-.v-theme--dark .toggle-active-buy { background: rgba(0, 150, 136, 0.2); }
-.v-theme--dark .toggle-active-sell { background: rgba(211, 47, 47, 0.18); }
+
 
 /* 새 종목 추가 항목 강조 */
 .new-portfolio-item { color: rgb(var(--v-theme-primary)) !important; font-weight: 600; }

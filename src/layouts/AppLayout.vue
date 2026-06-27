@@ -76,11 +76,35 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   border-top: 1px solid rgba(var(--v-theme-on-surface), 0.06);
   z-index: 100;
   backdrop-filter: blur(12px);
+  transition:
+    background     300ms ease,
+    border-color   300ms ease,
+    box-shadow     300ms ease;
 }
 
+/* 🌙 Dark */
 .v-theme--dark .bottom-nav {
-  background: rgba(15, 28, 53, 0.95);
-  border-top-color: rgba(0, 212, 184, 0.1);
+  background: rgba(13, 21, 32, 0.96);
+  border-top-color: rgba(var(--v-theme-on-surface), 0.07);
+}
+
+/* 🚀 Space */
+.v-theme--space .bottom-nav {
+  background: rgba(8, 15, 30, 0.96);
+  border-top-color: rgba(0, 212, 184, 0.15);
+  box-shadow: 0 -1px 12px rgba(0, 212, 184, 0.05);
+}
+
+/* 🌿 Nature */
+.v-theme--nature .bottom-nav {
+  border-top-color: rgba(45, 158, 107, 0.15);
+}
+
+/* 👑 Gold */
+.v-theme--gold .bottom-nav {
+  background: rgba(17, 16, 9, 0.97);
+  border-top-color: rgba(201, 153, 58, 0.1);
+  box-shadow: none;
 }
 
 .bottom-nav-item {
@@ -114,11 +138,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
 }
 
 .tab-icon-active {
-  background: rgba(0, 212, 184, 0.12);
-}
-
-.v-theme--light .tab-icon-active {
-  background: rgba(12, 168, 153, 0.12);
+  background: rgba(var(--v-theme-primary), 0.12);
 }
 
 .tab-png-icon {

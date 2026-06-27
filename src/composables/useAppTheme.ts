@@ -1,27 +1,44 @@
+import { computed } from 'vue'
 import { useTheme } from 'vuetify'
-
-const THEME_KEY = 'my-investment-theme'
+import { FP_THEMES, FP_THEME_MAP, THEME_STORAGE_KEY } from '@/design'
+import type { ThemeId } from '@/design'
 
 export const useAppTheme = () => {
   const theme = useTheme()
 
-  const isDark = () => theme.global.name.value === 'dark'
+  const currentThemeId = computed(() => theme.global.name.value as ThemeId)
+
+  const currentTheme = computed(() => FP_THEME_MAP[currentThemeId.value] ?? FP_THEME_MAP.dark)
+
+  const isDark = () => currentTheme.value.dark
+
+  const setTheme = (id: ThemeId) => {
+    theme.change(id)
+    localStorage.setItem(THEME_STORAGE_KEY, id)
+  }
 
   const toggleTheme = () => {
-    const next = isDark() ? 'light' : 'dark'
-    theme.change(next)
-    localStorage.setItem(THEME_KEY, next)
+    setTheme(isDark() ? 'light' : 'dark')
   }
 
   const initTheme = () => {
-    const saved = localStorage.getItem(THEME_KEY)
-    if (saved === 'dark' || saved === 'light') {
+    const saved = localStorage.getItem(THEME_STORAGE_KEY) as ThemeId | null
+    if (saved && FP_THEME_MAP[saved]) {
       theme.change(saved)
       return
     }
-    // 저장값 없으면 다크 기본
-    theme.change('dark')
+    // 구버전 키 호환
+    const legacy = localStorage.getItem('my-investment-theme')
+    theme.change(legacy === 'light' ? 'light' : 'dark')
   }
 
-  return { isDark, toggleTheme, initTheme }
+  return {
+    currentThemeId,
+    currentTheme,
+    themes: FP_THEMES,
+    isDark,
+    setTheme,
+    toggleTheme,
+    initTheme,
+  }
 }

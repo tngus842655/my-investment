@@ -5,23 +5,23 @@ import { supabase } from '@/services/supabase'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerDisplayName } from '@/utils/tickerNames'
 import { formatShortMoney } from '@/utils/numberFormat'
+import { useDesignTokens } from '@/composables/useDesignTokens'
 
 const router = useRouter()
+const { chart } = useDesignTokens()
+
 const loading = ref(true)
 const viewMode = ref<'type' | 'ticker'>('type')
 const hoveredKey = ref<string | null>(null)
-const portfolioRows = ref<any[]>([])
-const exchangeRate = ref(1350)
-
-const PALETTE = ['#6366f1', '#0ea5e9', '#f59e0b', '#f43f5e', '#a78bfa', '#14b8a6', '#f97316', '#06b6d4', '#ec4899', '#84cc16']
-
-const TYPE_COLOR: Record<string, string> = {
-  해외주식: '#6366f1',
-  국내주식: '#0ea5e9',
-  ETF: '#a78bfa',
-  암호화폐: '#f59e0b',
-  현금: '#34d399',
+interface PortfolioRow {
+  ticker: string
+  asset_type: string
+  currency: 'KRW' | 'USD'
+  avg_price: number
+  quantity: number
 }
+const portfolioRows = ref<PortfolioRow[]>([])
+const exchangeRate = ref(1350)
 
 interface Seg {
   key: string
@@ -80,7 +80,11 @@ const segments = computed<Seg[]>(() => {
   return sorted.map(([key, val]) => {
     const pct = (val.valueKrw / total) * 100
     const sweep = (pct / 100) * 360
-    const color = viewMode.value === 'type' ? (TYPE_COLOR[key] ?? PALETTE[colorIdx % PALETTE.length]!) : PALETTE[colorIdx % PALETTE.length]!
+    const palette = chart.value.palette
+    const typeColors = chart.value.typeColors
+    const color = viewMode.value === 'type'
+      ? (typeColors[key] ?? palette[colorIdx % palette.length]!)
+      : palette[colorIdx % palette.length]!
     const gap = sorted.length > 1 ? GAP_DEG : 0
     const s: Seg = {
       key,

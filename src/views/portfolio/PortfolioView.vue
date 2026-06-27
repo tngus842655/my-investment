@@ -701,13 +701,13 @@ onUnmounted(() => {
                     <img
                       v-if="item.asset_type === '현금' && item.ticker === 'CASH_USD'"
                       src="/icons/icon-dollar.png"
-                      class="ticker-logo ticker-logo-blend"
+                      class="ticker-logo"
                       alt="달러현금"
                     />
                     <img
                       v-else-if="item.asset_type === '현금'"
                       src="/icons/icon-won.png"
-                      class="ticker-logo ticker-logo-blend"
+                      class="ticker-logo"
                       alt="원화현금"
                     />
                     <img
@@ -839,14 +839,6 @@ onUnmounted(() => {
   object-fit: contain;
 }
 
-.glass-card {
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(0, 0, 0, 0.07);
-  border-radius: 20px;
-  transition:
-    background 0.25s ease,
-    border-color 0.25s ease;
-}
 
 .ticker-logo-wrap {
   width: 28px;
@@ -864,13 +856,12 @@ onUnmounted(() => {
   height: 28px;
   object-fit: contain;
 }
-.ticker-logo-blend {
-}
+
 .logo-bg-etf {
-  background: #e8f4ff;
+  background: rgba(var(--v-theme-primary), 0.1);
 }
 .logo-bg-kr {
-  background: #fff3e0;
+  background: rgba(var(--v-theme-warning), 0.1);
 }
 .logo-text {
   font-size: 15px;
@@ -878,10 +869,10 @@ onUnmounted(() => {
   letter-spacing: -0.5px;
 }
 .logo-text-etf {
-  color: #1565c0;
+  color: var(--fp-primary);
 }
 .logo-text-kr {
-  color: #e65100;
+  color: var(--fp-warning);
 }
 
 .ticker-sub {
@@ -1000,11 +991,11 @@ onUnmounted(() => {
   filter: brightness(0.9);
 }
 .action-edit {
-  background: #0e8a82;
+  background: var(--fp-primary);
   border-radius: 20px 0 0 20px;
 }
 .action-delete {
-  background: #d32f2f;
+  background: var(--fp-error);
   border-radius: 0 20px 20px 0;
 }
 
@@ -1026,11 +1017,11 @@ onUnmounted(() => {
   border-left-color: rgb(var(--v-theme-error)) !important;
 }
 .border-cash-left {
-  border-left-color: #4caf50 !important;
+  border-left-color: var(--fp-success) !important;
 }
 
 .glass-dialog {
-  background: rgb(var(--v-theme-surface)) !important;
-  border: 1px solid rgba(0, 0, 0, 0.07) !important;
+  background: var(--fp-surface) !important;
+  border: 1px solid var(--fp-outline) !important;
 }
 </style>

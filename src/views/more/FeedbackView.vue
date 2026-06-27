@@ -52,11 +52,6 @@ const CONTACT_EMAIL = 'tngus842655@naver.com'
 }
 .back-btn:active { opacity: 0.6; }
 
-.glass-card {
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(0, 0, 0, 0.07);
-  border-radius: 20px;
-}
 
 .contact-email-btn {
   display: inline-flex;

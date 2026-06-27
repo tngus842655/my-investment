@@ -27,8 +27,6 @@ const toKstDate = (iso: string) =>
   new Date(iso).toLocaleDateString('ko-KR', { timeZone: KST, year: 'numeric', month: '2-digit', day: '2-digit' })
     .replace(/\. /g, '-').replace('.', '')
 
-const today = () => new Date().toLocaleDateString('ko-KR', { timeZone: KST, year: 'numeric', month: '2-digit', day: '2-digit' })
-  .replace(/\. /g, '-').replace('.', '')
 
 // ── 기간 내 날짜 배열 생성 ──────────────────────────
 const dateRange = computed(() => {
@@ -102,7 +100,7 @@ const signupChart = computed(() => buildBarChart(signupByDay.value))
 const loginChart  = computed(() => buildBarChart(loginByDay.value))
 
 // ── 포맷 ──────────────────────────────────────────
-const fmtDate = (d: string) => d.slice(5).replace('-', '/')
+
 
 onMounted(async () => {
   const { data: { user } } = await supabase.auth.getUser()

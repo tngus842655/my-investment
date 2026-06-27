@@ -326,14 +326,6 @@ onMounted(loadData)
 </template>
 
 <style scoped>
-.glass-card {
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(0, 0, 0, 0.07);
-  border-radius: 20px;
-  transition:
-    background 0.25s ease,
-    border-color 0.25s ease;
-}
 
 
 .field-label {

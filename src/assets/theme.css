@@ -1,6 +1,93 @@
-/* ── FIREPATH 전역 스타일 ───────────────────────── */
+/* ── FIREPATH 전역 스타일 ─────────────────────────────────────
+   색상은 모두 --fp-* CSS 변수 또는 --v-theme-* 를 통해 참조.
+   컴포넌트에서 직접 hex 색상 하드코딩 금지 — tokens.ts에서 관리.
+   ─────────────────────────────────────────────────────────── */
 
-/* 폰트 */
+/* ══════════════════════════════════════════════════════════════
+   Design Token CSS 변수
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  --fp-primary:            rgb(var(--v-theme-primary));
+  --fp-secondary:          rgb(var(--v-theme-secondary));
+  --fp-success:            rgb(var(--v-theme-success));
+  --fp-error:              rgb(var(--v-theme-error));
+  --fp-warning:            rgb(var(--v-theme-warning));
+  --fp-info:               rgb(var(--v-theme-info));
+
+  --fp-bg:                 rgb(var(--v-theme-background));
+  --fp-surface:            rgb(var(--v-theme-surface));
+  --fp-surface-variant:    rgb(var(--v-theme-surface-variant));
+
+  --fp-on-primary:         rgb(var(--v-theme-on-primary));
+  --fp-text:               rgb(var(--v-theme-on-surface));
+  --fp-text-secondary:     rgb(var(--v-theme-on-surface-variant));
+  --fp-text-hint:          rgba(var(--v-theme-on-surface), 0.4);
+
+  --fp-outline:            rgb(var(--v-theme-outline));
+  --fp-divider:            rgba(var(--v-theme-on-surface), 0.08);
+
+  --fp-radius-card:        20px;
+  --fp-radius-card-sm:     16px;
+  --fp-radius-btn:         14px;
+  --fp-radius-input:       14px;
+  --fp-radius-badge:       999px;
+  --fp-radius-dialog:      24px;
+
+  --fp-space-page:         20px;
+  --fp-space-page-top:     24px;
+  --fp-space-card:         20px;
+  --fp-space-gap:          16px;
+  --fp-space-section:      24px;
+
+  --fp-shadow-card:        0 2px 12px rgba(0,0,0,0.06);
+  --fp-shadow-card-dark:   0 4px 24px rgba(0,0,0,0.28);
+  --fp-shadow-dialog:      0 8px 40px rgba(0,0,0,0.18);
+
+  /* 테마 전환 시 사용하는 전환 시간 */
+  --fp-theme-transition:   300ms ease;
+  --fp-transition:         200ms ease;
+  --fp-transition-slow:    250ms ease;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   테마 전환 애니메이션 — 배경/카드/텍스트/테두리 300ms fade
+   ══════════════════════════════════════════════════════════════ */
+.app-bg {
+  transition:
+    background       var(--fp-theme-transition),
+    background-color var(--fp-theme-transition);
+}
+
+.fp-card,
+.fp-card-sm,
+.glass-card,
+.stat-card,
+.glass-dialog,
+.glass-btn,
+.fp-icon-btn,
+.fp-btn-primary,
+.fp-btn-secondary,
+.fp-btn-danger {
+  transition:
+    background       var(--fp-theme-transition),
+    background-color var(--fp-theme-transition),
+    border-color     var(--fp-theme-transition),
+    box-shadow       var(--fp-theme-transition) !important;
+}
+
+.fp-text,
+.fp-text-sub,
+.fp-text-muted,
+.fp-text-primary,
+.fp-text-profit,
+.fp-text-loss,
+.fp-text-warning,
+.fp-buy,
+.fp-sell {
+  transition: color var(--fp-theme-transition);
+}
+
+/* ── 폰트 ─────────────────────────────────────────────────── */
 * {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
   -webkit-tap-highlight-color: transparent;
@@ -13,113 +100,131 @@ input, textarea {
   user-select: text;
 }
 
-/* 카드 공통 */
+/* ══════════════════════════════════════════════════════════════
+   카드 기본 스타일
+   ══════════════════════════════════════════════════════════════ */
 .fp-card {
-  background: rgb(var(--v-theme-surface));
-  border-radius: 20px;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.06);
-  transition: background 0.25s ease, border-color 0.25s ease;
-}
-.v-theme--dark .fp-card {
-  border-color: rgba(0, 212, 184, 0.1);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  background: var(--fp-surface);
+  border-radius: var(--fp-radius-card);
+  border: 1px solid var(--fp-outline);
+  box-shadow: var(--fp-shadow-card);
 }
 
-/* 작은 카드 */
 .fp-card-sm {
-  background: rgb(var(--v-theme-surface));
-  border-radius: 16px;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.06);
-}
-.v-theme--dark .fp-card-sm {
-  border-color: rgba(0, 212, 184, 0.1);
+  background: var(--fp-surface);
+  border-radius: var(--fp-radius-card-sm);
+  border: 1px solid var(--fp-outline);
 }
 
-/* 필드 레이블 */
-.fp-label {
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  color: rgba(var(--v-theme-on-surface), 0.45);
-}
-
-/* 헤더 아이콘 버튼 */
-.fp-icon-btn {
-  background: rgba(var(--v-theme-on-surface), 0.05) !important;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.1) !important;
-  color: rgb(var(--v-theme-on-surface)) !important;
-}
-.v-theme--dark .fp-icon-btn {
-  border-color: rgba(0, 212, 184, 0.18) !important;
-}
-
-/* glass-card (기존 컴포넌트 호환) */
+/* 하위 호환 */
 .glass-card {
-  background: rgb(var(--v-theme-surface)) !important;
-  border-radius: 20px;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.06) !important;
-  transition: background 0.25s ease, border-color 0.25s ease;
-}
-.v-theme--dark .glass-card {
-  border-color: rgba(0, 212, 184, 0.1) !important;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  background: var(--fp-surface) !important;
+  border-radius: var(--fp-radius-card);
+  border: 1px solid var(--fp-outline) !important;
 }
 
-/* stat-card (기존 호환) */
 .stat-card {
-  background: rgb(var(--v-theme-surface)) !important;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.06) !important;
-  border-radius: 16px;
-}
-.v-theme--dark .stat-card {
-  border-color: rgba(0, 212, 184, 0.1) !important;
+  background: var(--fp-surface) !important;
+  border-radius: var(--fp-radius-card-sm);
+  border: 1px solid var(--fp-outline) !important;
 }
 
-/* glass-dialog (기존 호환) */
 .glass-dialog {
-  background: rgb(var(--v-theme-surface)) !important;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.06) !important;
-}
-.v-theme--dark .glass-dialog {
-  background: rgba(8, 15, 30, 0.96) !important;
-  border-color: rgba(0, 212, 184, 0.15) !important;
+  background: var(--fp-surface) !important;
+  border: 1px solid var(--fp-outline) !important;
 }
 
-/* glass-btn (기존 호환) */
 .glass-btn {
   background: rgba(var(--v-theme-on-surface), 0.05) !important;
-  border-color: rgba(var(--v-theme-on-surface), 0.1) !important;
-  color: rgb(var(--v-theme-on-surface)) !important;
-}
-.v-theme--dark .glass-btn {
-  border-color: rgba(0, 212, 184, 0.18) !important;
+  border-color: var(--fp-outline) !important;
+  color: var(--fp-text) !important;
 }
 
-/* Vuetify 스켈레톤 */
+/* ══════════════════════════════════════════════════════════════
+   ☀️ LIGHT — 기본 유지 (밝고 깔끔)
+   ══════════════════════════════════════════════════════════════ */
+.v-theme--light .fp-card,
+.v-theme--light .glass-card {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   🌙 DARK — 얇고 절제된 Border, 미니멀
+   ══════════════════════════════════════════════════════════════ */
+.v-theme--dark .fp-card,
+.v-theme--dark .glass-card,
+.v-theme--dark .stat-card {
+  border-color: rgba(var(--v-theme-on-surface), 0.07) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   🚀 SPACE — 네온 Border + 약한 Glow
+   ══════════════════════════════════════════════════════════════ */
+.v-theme--space .fp-card,
+.v-theme--space .glass-card,
+.v-theme--space .stat-card {
+  border-color: rgba(var(--v-theme-primary), 0.22) !important;
+  box-shadow:
+    0 0 0 1px rgba(var(--v-theme-primary), 0.08),
+    0 0 18px rgba(var(--v-theme-primary), 0.07),
+    0 4px 20px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   🌿 NATURE — Radius 크게, 부드러운 초록 Shadow
+   ══════════════════════════════════════════════════════════════ */
+.v-theme--nature .fp-card,
+.v-theme--nature .glass-card {
+  border-radius: 24px !important;
+  border-color: rgba(45, 158, 107, 0.18) !important;
+  box-shadow: 0 4px 20px rgba(45, 158, 107, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+}
+
+.v-theme--nature .stat-card,
+.v-theme--nature .fp-card-sm {
+  border-radius: 20px !important;
+  border-color: rgba(45, 158, 107, 0.15) !important;
+  box-shadow: 0 2px 12px rgba(45, 158, 107, 0.07) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   👑 GOLD — Gradient Border (Premium)
+   ══════════════════════════════════════════════════════════════ */
+.v-theme--gold .fp-card,
+.v-theme--gold .glass-card,
+.v-theme--gold .stat-card {
+  border: 1px solid transparent !important;
+  background:
+    linear-gradient(var(--fp-surface), var(--fp-surface)) padding-box,
+    linear-gradient(135deg, #2A2010 0%, #5C4418 35%, #7A5C24 50%, #5C4418 65%, #2A2010 100%) border-box !important;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   스켈레톤 / 스크롤바 / Vuetify 오버라이드
+   ══════════════════════════════════════════════════════════════ */
 .v-skeleton-loader__bone {
   background: rgba(var(--v-theme-on-surface), 0.06) !important;
   border-radius: 12px !important;
 }
 
-/* 다크 스크롤바 */
-.v-theme--dark ::-webkit-scrollbar { width: 4px; }
-.v-theme--dark ::-webkit-scrollbar-track { background: transparent; }
-.v-theme--dark ::-webkit-scrollbar-thumb {
-  background: rgba(0, 212, 184, 0.18);
+::-webkit-scrollbar        { width: 4px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  {
+  background: rgba(var(--v-theme-primary), 0.25);
   border-radius: 99px;
 }
 
-/* Vuetify outlined 텍스트필드 다크 테두리 */
-.v-theme--dark .v-field--variant-outlined .v-field__outline {
-  --v-field-border-color: rgba(0, 212, 184, 0.2);
+.v-field--variant-outlined .v-field__outline {
+  --v-field-border-color: var(--fp-outline);
 }
-.v-theme--dark .v-field--variant-outlined.v-field--focused .v-field__outline {
-  --v-field-border-color: rgba(0, 212, 184, 0.6);
+.v-field--variant-outlined.v-field--focused .v-field__outline {
+  --v-field-border-color: var(--fp-primary);
 }
 
-/* v-tooltip 가독성 개선 */
 .v-tooltip .v-overlay__content {
-  background: rgba(30, 30, 40, 0.92) !important;
+  background: rgba(20, 20, 30, 0.92) !important;
   color: #fff !important;
   font-size: 12px !important;
   line-height: 1.6 !important;
@@ -128,6 +233,91 @@ input, textarea {
   border-radius: 10px !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18) !important;
 }
-.v-theme--light .v-tooltip .v-overlay__content {
-  background: rgba(20, 20, 30, 0.88) !important;
+
+/* ══════════════════════════════════════════════════════════════
+   유틸리티 클래스
+   ══════════════════════════════════════════════════════════════ */
+
+/* 레이블 */
+.fp-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--fp-text-secondary);
 }
+
+/* 헤더 아이콘 버튼 */
+.fp-icon-btn {
+  background: rgba(var(--v-theme-on-surface), 0.05) !important;
+  border: 1px solid var(--fp-outline) !important;
+  color: var(--fp-text) !important;
+}
+
+/* 배지 */
+.fp-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--fp-radius-badge);
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.fp-badge--success { background: rgba(var(--v-theme-success), 0.12); color: var(--fp-success); }
+.fp-badge--error   { background: rgba(var(--v-theme-error),   0.12); color: var(--fp-error);   }
+.fp-badge--info    { background: rgba(var(--v-theme-primary), 0.12); color: var(--fp-primary);  }
+.fp-badge--warning { background: rgba(var(--v-theme-warning), 0.12); color: var(--fp-warning);  }
+
+/* 버튼 */
+.fp-btn-primary {
+  background: var(--fp-primary) !important;
+  color: var(--fp-on-primary) !important;
+  border-radius: var(--fp-radius-btn) !important;
+  min-height: 48px !important;
+  font-weight: 600 !important;
+}
+.fp-btn-primary:active { transform: scale(0.97); }
+
+.fp-btn-secondary {
+  background: var(--fp-surface) !important;
+  color: var(--fp-primary) !important;
+  border: 1.5px solid var(--fp-primary) !important;
+  border-radius: var(--fp-radius-btn) !important;
+  min-height: 48px !important;
+  font-weight: 600 !important;
+}
+.fp-btn-secondary:active { transform: scale(0.97); }
+
+.fp-btn-danger {
+  background: rgba(var(--v-theme-error), 0.1) !important;
+  color: var(--fp-error) !important;
+  border-radius: var(--fp-radius-btn) !important;
+  min-height: 48px !important;
+  font-weight: 600 !important;
+}
+.fp-btn-danger:active { transform: scale(0.97); }
+
+/* 텍스트 */
+.fp-text          { color: var(--fp-text) !important; }
+.fp-text-sub      { color: var(--fp-text-secondary) !important; }
+.fp-text-muted    { color: var(--fp-text-hint) !important; }
+.fp-text-primary  { color: var(--fp-primary) !important; }
+.fp-text-profit   { color: var(--fp-success) !important; }
+.fp-text-loss     { color: var(--fp-error) !important; }
+.fp-text-warning  { color: var(--fp-warning) !important; }
+.fp-buy           { color: var(--fp-primary) !important; }
+.fp-sell          { color: var(--fp-error) !important; }
+.fp-buy-bg        { background: rgba(var(--v-theme-primary), 0.1) !important; }
+.fp-sell-bg       { background: rgba(var(--v-theme-error),   0.1) !important; }
+
+/* 화면 전환 */
+.fp-fade-enter-active,
+.fp-fade-leave-active { transition: opacity var(--fp-transition); }
+.fp-fade-enter-from,
+.fp-fade-leave-to     { opacity: 0; }
+
+.fp-scale-fade-enter-active,
+.fp-scale-fade-leave-active { transition: opacity var(--fp-transition), transform var(--fp-transition); }
+.fp-scale-fade-enter-from,
+.fp-scale-fade-leave-to     { opacity: 0; transform: scale(0.96); }
