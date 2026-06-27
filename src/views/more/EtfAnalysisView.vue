@@ -6,6 +6,8 @@ import { showMessage } from '@/composables/useSnackbar'
 
 const router = useRouter()
 
+interface ChartPoint { t: number; c: number }
+
 interface EtfInfo {
   ticker: string
   name: string
@@ -23,10 +25,15 @@ interface EtfInfo {
   totalAssets: number | null
   fundFamily: string | null
   category: string | null
+  chartData?: ChartPoint[]
 }
 
 const inputA = ref('')
 const inputB = ref('')
+
+const sanitizeTicker = (v: string) => v.replace(/[^A-Za-z0-9.\-]/g, '').toUpperCase()
+const onInputA = (e: Event) => { inputA.value = sanitizeTicker((e.target as HTMLInputElement).value) }
+const onInputB = (e: Event) => { inputB.value = sanitizeTicker((e.target as HTMLInputElement).value) }
 
 watch(inputA, () => { notFoundA.value = false })
 watch(inputB, () => { notFoundB.value = false })
@@ -95,23 +102,73 @@ const fmt = {
   },
 }
 
-// higherIsBetter: MDD는 음수이므로 높을수록(0에 가까울수록) 낙폭이 적어 good → true
-const better = (a: number | null, b: number | null, higherIsBetter: boolean): 'a' | 'b' | null => {
-  if (a == null || b == null) return null
-  if (a === b) return null
-  return (higherIsBetter ? a > b : a < b) ? 'a' : 'b'
+// ── 공통 구간 재계산 ──────────────────────────────
+const calcMetrics = (points: ChartPoint[]): { cagr: number | null; mdd: number | null; volatility: number | null } => {
+  if (points.length < 2) return { cagr: null, mdd: null, volatility: null }
+  const first = points[0]!
+  const last = points[points.length - 1]!
+  const years = (last.t - first.t) / (60 * 60 * 24 * 365.25)
+  const cagr = years > 0 ? Math.pow(last.c / first.c, 1 / years) - 1 : null
+
+  let peak = first.c, mdd = 0
+  for (const { c } of points) {
+    if (c > peak) peak = c
+    const dd = (c - peak) / peak
+    if (dd < mdd) mdd = dd
+  }
+
+  const returns = points.slice(1).map((v, i) => v.c / points[i]!.c - 1)
+  const mean = returns.reduce((s, r) => s + r, 0) / returns.length
+  const variance = returns.reduce((s, r) => s + (r - mean) ** 2, 0) / returns.length
+  const volatility = Math.sqrt(variance) * Math.sqrt(12)
+
+  return { cagr, mdd, volatility }
 }
 
-const cls = (a: number | null, b: number | null, higherIsBetter: boolean, side: 'a' | 'b'): string => {
+// 두 ETF 비교 시 공통 구간(늦게 상장한 쪽 기준) 재계산 결과
+const commonPeriod = computed<{ startDate: string; a: ReturnType<typeof calcMetrics>; b: ReturnType<typeof calcMetrics> } | null>(() => {
+  const a = dataA.value
+  const b = dataB.value
+  if (!a || !b || !a.chartData || !b.chartData) return null
+
+  // 두 ETF 중 나중 상장일을 공통 시작 timestamp로
+  const startT = Math.max(a.chartData[0]!.t, b.chartData[0]!.t)
+  const sliceA = a.chartData.filter((p) => p.t >= startT)
+  const sliceB = b.chartData.filter((p) => p.t >= startT)
+  if (sliceA.length < 2 || sliceB.length < 2) return null
+
+  const startDate = new Date(startT * 1000).toISOString().slice(0, 7)
+  return { startDate, a: calcMetrics(sliceA), b: calcMetrics(sliceB) }
+})
+
+// 비교 모드에서 표시할 CAGR/MDD/변동성 (공통 구간 우선)
+const dispA = computed(() => commonPeriod.value ? { ...dataA.value, ...commonPeriod.value.a } : dataA.value)
+const dispB = computed(() => commonPeriod.value ? { ...dataB.value, ...commonPeriod.value.b } : dataB.value)
+
+// higherIsBetter: MDD는 음수이므로 높을수록(0에 가까울수록) 낙폭이 적어 good → true
+// precision: % 표시 소수점 자리수 (1 → 0.1% 단위 비교, 2 → 0.01% 단위 비교)
+const roundPct = (v: number, precision: number) => {
+  const factor = Math.pow(10, precision + 2)
+  return Math.round(v * factor) / factor
+}
+
+const better = (a: number | null, b: number | null, higherIsBetter: boolean, precision = 1): 'a' | 'b' | null => {
+  if (a == null || b == null) return null
+  const ra = roundPct(a, precision), rb = roundPct(b, precision)
+  if (ra === rb) return null
+  return (higherIsBetter ? ra > rb : ra < rb) ? 'a' : 'b'
+}
+
+const cls = (a: number | null, b: number | null, higherIsBetter: boolean, side: 'a' | 'b', precision = 1): string => {
   if (!dataB.value) return ''
-  const w = better(a, b, higherIsBetter)
+  const w = better(a, b, higherIsBetter, precision)
   if (w == null) return ''
   return w === side ? 'winner' : 'loser'
 }
 
-const isWinner = (a: number | null, b: number | null, higherIsBetter: boolean, side: 'a' | 'b'): boolean => {
+const isWinner = (a: number | null, b: number | null, higherIsBetter: boolean, side: 'a' | 'b', precision = 1): boolean => {
   if (!dataB.value) return false
-  return better(a, b, higherIsBetter) === side
+  return better(a, b, higherIsBetter, precision) === side
 }
 
 // FIRE 적합도 점수 (0~100)
@@ -158,7 +215,7 @@ const scoreResult = computed(() => {
   ;[
     better(a.cagr,         b.cagr,         true),
     better(a.mdd,          b.mdd,          true),
-    better(a.expenseRatio, b.expenseRatio, false),
+    better(a.expenseRatio, b.expenseRatio, false, 2),
     better(a.dividendYield,b.dividendYield,true),
     better(a.volatility,   b.volatility,   false),
     better(a.beta,         b.beta,         false),
@@ -213,7 +270,7 @@ const aiData = computed(() => {
 
   const cagrW = better(a.cagr, b.cagr, true)
   const mddW  = better(a.mdd,  b.mdd,  true)
-  const terW  = better(a.expenseRatio,  b.expenseRatio,  false)
+  const terW  = better(a.expenseRatio,  b.expenseRatio,  false, 2)
   const divW  = better(a.dividendYield, b.dividendYield, true)
 
   let aScore = 0, bScore = 0
@@ -266,6 +323,7 @@ const aiData = computed(() => {
           hide-details
           maxlength="6"
           style="flex:1"
+          @input="onInputA"
           @keyup.enter="fetchInfo"
         />
         <div class="text-body-2 font-weight-bold text-medium-emphasis">vs</div>
@@ -278,6 +336,7 @@ const aiData = computed(() => {
           hide-details
           maxlength="6"
           style="flex:1"
+          @input="onInputB"
           @keyup.enter="fetchInfo"
         />
       </div>
@@ -353,13 +412,10 @@ const aiData = computed(() => {
 
       <!-- 기본 정보 섹션 -->
       <v-card rounded="xl" class="mb-3 overflow-hidden">
-        <div class="px-4 pt-2 pb-1">
-          <div class="section-title">기본 정보</div>
-        </div>
-        <div v-if="dataB" class="col-header-row d-flex align-center px-4 pb-1">
-          <div class="metric-label" />
+        <div class="col-header-row d-flex align-center px-4 pt-3 pb-1">
+          <div class="metric-label section-title">기본 정보</div>
           <div class="col-header">{{ dataA!.ticker }}</div>
-          <div class="col-header">{{ dataB.ticker }}</div>
+          <div v-if="dataB" class="col-header">{{ dataB.ticker }}</div>
         </div>
 
         <div class="metric-row d-flex align-center px-4 py-2">
@@ -373,6 +429,14 @@ const aiData = computed(() => {
           <div v-if="dataB" class="metric-val text-body-2 font-weight-medium text-right">{{ fmt.date(dataB.inceptionDate) }}</div>
         </div>
       </v-card>
+
+      <!-- 공통 구간 안내 배너 -->
+      <div v-if="commonPeriod && dataB" class="common-period-banner mb-3">
+        <v-icon size="14" color="primary">mdi-calendar-sync-outline</v-icon>
+        <span>
+          상장일이 달라 <strong>{{ commonPeriod.startDate.replace('-', '년 ') }}월</strong> 이후 공통 구간 기준으로 CAGR · MDD · 변동성을 비교합니다.
+        </span>
+      </div>
 
       <!-- 수익률 섹션 -->
       <v-card rounded="xl" class="mb-3 overflow-hidden">
@@ -389,13 +453,11 @@ const aiData = computed(() => {
               </template>
             </v-tooltip>
           </div>
-          <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.cagr, dataB?.cagr ?? null, true, 'a')">
-            
-            {{ fmt.pct(dataA!.cagr) }}
+          <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dispA?.cagr ?? null, dispB?.cagr ?? null, true, 'a')">
+            {{ fmt.pct(dispA?.cagr ?? null) }}
           </div>
-          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.cagr, dataB.cagr, true, 'b')">
-            
-            {{ fmt.pct(dataB.cagr) }}
+          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dispA?.cagr ?? null, dispB?.cagr ?? null, true, 'b')">
+            {{ fmt.pct(dispB?.cagr ?? null) }}
           </div>
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
@@ -426,13 +488,11 @@ const aiData = computed(() => {
             </v-tooltip>
           </div>
           <!-- MDD는 음수값 → 0에 가까울수록(높을수록) 낙폭 적음 → higherIsBetter: true -->
-          <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.mdd, dataB?.mdd ?? null, true, 'a')">
-            
-            {{ fmt.pct(dataA!.mdd) }}
+          <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dispA?.mdd ?? null, dispB?.mdd ?? null, true, 'a')">
+            {{ fmt.pct(dispA?.mdd ?? null) }}
           </div>
-          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.mdd, dataB.mdd, true, 'b')">
-            
-            {{ fmt.pct(dataB.mdd) }}
+          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dispA?.mdd ?? null, dispB?.mdd ?? null, true, 'b')">
+            {{ fmt.pct(dispB?.mdd ?? null) }}
           </div>
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
@@ -444,13 +504,11 @@ const aiData = computed(() => {
               </template>
             </v-tooltip>
           </div>
-          <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.volatility, dataB?.volatility ?? null, false, 'a')">
-            
-            {{ fmt.pct(dataA!.volatility) }}
+          <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dispA?.volatility ?? null, dispB?.volatility ?? null, false, 'a')">
+            {{ fmt.pct(dispA?.volatility ?? null) }}
           </div>
-          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.volatility, dataB.volatility, false, 'b')">
-            
-            {{ fmt.pct(dataB.volatility) }}
+          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dispA?.volatility ?? null, dispB?.volatility ?? null, false, 'b')">
+            {{ fmt.pct(dispB?.volatility ?? null) }}
           </div>
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
@@ -506,11 +564,11 @@ const aiData = computed(() => {
               </template>
             </v-tooltip>
           </div>
-          <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.expenseRatio, dataB?.expenseRatio ?? null, false, 'a')">
+          <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.expenseRatio, dataB?.expenseRatio ?? null, false, 'a', 2)">
             
             {{ dataA!.expenseRatio != null ? fmt.pct(dataA!.expenseRatio, 2) : '-' }}
           </div>
-          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.expenseRatio, dataB.expenseRatio, false, 'b')">
+          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.expenseRatio, dataB.expenseRatio, false, 'b', 2)">
             
             {{ dataB.expenseRatio != null ? fmt.pct(dataB.expenseRatio, 2) : '-' }}
           </div>
@@ -560,6 +618,18 @@ const aiData = computed(() => {
   border-radius: 16px;
   flex: 1 1 0;
   min-width: 0;
+}
+.common-period-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(var(--v-theme-primary), 0.08);
+  border: 1px solid rgba(var(--v-theme-primary), 0.2);
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: rgba(var(--v-theme-on-surface), 0.7);
+  line-height: 1.5;
 }
 .section-title {
   font-size: 11px;
