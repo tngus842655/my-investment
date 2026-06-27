@@ -4,7 +4,27 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerDisplayName, TICKER_NAMES } from '@/utils/tickerNames'
+import { KR_STOCK_NAMES, KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 import { getStockPrice } from '@/services/market'
+
+const krStockItems = Object.entries({ ...KR_STOCK_NAMES, ...KR_ETF_NAMES }).map(([code, name]) => ({
+  title: `${name} (${code})`,
+  value: code,
+  name,
+}))
+
+const krSearchQuery = ref('')
+
+const filteredKrItems = computed(() =>
+  krSearchQuery.value.trim().length === 0 ? [] : krStockItems,
+)
+
+const krFilter = (_value: string, query: string, item?: { raw: { title: string } }) => {
+  if (!item) return false
+  const q = query.replace(/\s/g, '').toLowerCase()
+  const t = item.raw.title.replace(/\s/g, '').toLowerCase()
+  return t.includes(q)
+}
 
 type TransactionType = 'BUY' | 'SELL'
 
@@ -73,8 +93,9 @@ const newCurrencyLocked = computed(() =>
 watch(newAssetType, (type) => {
   if (type === '해외주식') newCurrency.value = 'USD'
   else if (['국내주식', '현금'].includes(type)) newCurrency.value = 'KRW'
+  newTicker.value = ''
+  krSearchQuery.value = ''
   if (type === '현금') newTicker.value = '-'
-  else if (newTicker.value === '-') newTicker.value = ''
 })
 
 const selectedPortfolio = computed(() =>
@@ -125,9 +146,9 @@ const totalLabel = computed(() => {
 const MIN_TX_DATE = '2000-01-01'
 
 const newTickerError = computed(() => {
-  if (!isNewPortfolio.value || !newTicker.value.trim() || newAssetType.value === '현금') return ''
-  if (newAssetType.value === '국내주식' && !/^\d{6}$/.test(newTicker.value.trim())) return '6자리 숫자를 입력해주세요. (예: 005930)'
-  if (newAssetType.value === '해외주식' && !/^[A-Za-z]{1,10}$/.test(newTicker.value.trim())) return '영문자만 입력해주세요. (예: AAPL)'
+  const t = newTicker.value?.trim() ?? ''
+  if (!isNewPortfolio.value || !t || newAssetType.value === '현금' || newAssetType.value === '국내주식') return ''
+  if (newAssetType.value === '해외주식' && !/^[A-Za-z]{1,10}$/.test(t)) return '영문자만 입력해주세요. (예: AAPL)'
   return ''
 })
 
@@ -162,7 +183,7 @@ const txDateError = computed(() => {
 const isNewPortfolioValid = computed(() =>
   !isNewPortfolio.value || (
     newAssetType.value &&
-    (newAssetType.value === '현금' || (newTicker.value.trim() && !newTickerError.value)) &&
+    (newAssetType.value === '현금' || ((newTicker.value?.trim() ?? '') && !newTickerError.value)) &&
     newCurrency.value
   ),
 )
@@ -361,6 +382,7 @@ const reset = (closeDialog = true) => {
   txDate.value = new Date().toISOString().slice(0, 10)
   memo.value = ''
   newTicker.value = ''
+  krSearchQuery.value = ''
   newAssetType.value = ''
   newCurrency.value = 'KRW'
   if (closeDialog) dialog.value = false
@@ -434,7 +456,29 @@ const reset = (closeDialog = true) => {
               rounded="lg"
               class="mb-2"
             />
+            <!-- 국내주식: 한글명 검색 자동완성 -->
+            <v-autocomplete
+              v-if="newAssetType === '국내주식'"
+              v-model="newTicker"
+              v-model:search="krSearchQuery"
+              :items="filteredKrItems"
+              :custom-filter="krFilter"
+              item-title="title"
+              item-value="value"
+              label="종목 검색"
+              placeholder="삼성전자, 카카오 등 종목명 입력"
+              prepend-inner-icon="mdi-magnify"
+              variant="outlined"
+              density="comfortable"
+              rounded="lg"
+              class="mb-2"
+              no-data-text="검색 결과가 없습니다"
+              clearable
+              auto-select-first
+            />
+            <!-- 해외주식 / 암호화폐: 기존 텍스트 입력 -->
             <v-text-field
+              v-else
               v-model="newTicker"
               :label="newTickerConfig.label"
               :placeholder="newTickerConfig.placeholder"
