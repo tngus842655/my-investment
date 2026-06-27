@@ -206,7 +206,7 @@ const loadTotals = async () => {
   }
 
   const { data } = await q
-  totalsData.value = (data ?? []) as TotalRow[]
+  totalsData.value = (data ?? []) as unknown as TotalRow[]
 }
 
 // ── 삭제 ─────────────────────────────────────────
