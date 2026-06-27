@@ -5,7 +5,27 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { TICKER_NAMES } from '@/utils/tickerNames'
+import { KR_STOCK_NAMES, KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 import { getStockPrice } from '@/services/market'
+
+// 국내주식 + 국내ETF 검색용: [{ title: '삼성전자 (005930)', value: '005930' }, ...]
+const krStockItems = Object.entries({ ...KR_STOCK_NAMES, ...KR_ETF_NAMES }).map(([code, name]) => ({
+  title: `${name} (${code})`,
+  value: code,
+  name,
+}))
+
+const filteredKrItems = computed(() =>
+  krSearchQuery.value.trim().length === 0 ? [] : krStockItems,
+)
+
+const krFilter = (_value: string, query: string, item?: { raw: { title: string } }) => {
+  if (!item) return false
+  const q = query.replace(/\s/g, '').toLowerCase()
+  const t = item.raw.title.replace(/\s/g, '').toLowerCase()
+  return t.includes(q)
+}
+
 
 const dialog = defineModel<boolean>()
 
@@ -20,6 +40,7 @@ const emit = defineEmits<{
 const isEditMode = computed(() => !!props.initialData)
 
 const ticker = ref('')
+const krSearchQuery = ref('')  // 국내주식 한글 검색어
 const assetType = ref('')
 const currency = ref('KRW')
 const initQuantity = ref('')
@@ -112,11 +133,12 @@ watch(assetType, (newType) => {
   if (newType === '해외주식') currency.value = 'USD'
   else if (newType === '국내주식') currency.value = 'KRW'
   else if (newType === '현금') currency.value = 'KRW'
+  ticker.value = ''
+  krSearchQuery.value = ''
   if (newType === '현금') {
     ticker.value = '-'
     initQuantity.value = '1'
   } else {
-    if (ticker.value === '-') ticker.value = ''
     if (initQuantity.value === '1') initQuantity.value = ''
   }
 })
@@ -125,6 +147,9 @@ watch(dialog, async (opened) => {
   if (!opened) return
   if (props.initialData) {
     ticker.value = props.initialData.ticker
+    krSearchQuery.value = props.initialData.asset_type === '국내주식'
+      ? (KR_STOCK_NAMES[props.initialData.ticker] ?? props.initialData.ticker)
+      : ''
     assetType.value = props.initialData.asset_type
     currency.value = props.initialData.currency
     await loadInitialTx(props.initialData.id)
@@ -175,10 +200,11 @@ const tickerMaxLength = computed(() => {
 })
 
 const tickerError = computed(() => {
-  if (!ticker.value.trim() || assetType.value === '현금') return ''
-  if (ticker.value.trim().length > tickerMaxLength.value) return `티커는 ${tickerMaxLength.value}자 이하로 입력해주세요.`
-  if (assetType.value === '국내주식' && !/^\d{6}$/.test(ticker.value.trim())) return '국내주식 종목코드는 6자리 숫자입니다. (예: 005930)'
-  if (assetType.value === '해외주식' && !/^[A-Za-z]{1,5}$/.test(ticker.value.trim())) return '해외주식 티커는 영문자 5자 이하로 입력해주세요. (예: AAPL)'
+  const t = ticker.value?.trim() ?? ''
+  if (!t || assetType.value === '현금') return ''
+  if (assetType.value === '국내주식') return '' // 자동완성으로 선택하므로 별도 검증 불필요
+  if (t.length > tickerMaxLength.value) return `티커는 ${tickerMaxLength.value}자 이하로 입력해주세요.`
+  if (assetType.value === '해외주식' && !/^[A-Za-z]{1,5}$/.test(t)) return '해외주식 티커는 영문자 5자 이하로 입력해주세요. (예: AAPL)'
   return ''
 })
 
@@ -205,7 +231,7 @@ const avgPriceError = computed(() => {
 const isValid = computed(
   () =>
     assetType.value &&
-    (assetType.value === '현금' || (ticker.value.trim() && !tickerError.value)) &&
+    (assetType.value === '현금' || ((ticker.value?.trim() ?? '') && !tickerError.value)) &&
     currency.value &&
     !quantityError.value &&
     !avgPriceError.value,
@@ -224,9 +250,8 @@ const save = async () => {
         saving.value = false
         return
       }
-    } else if (!TICKER_NAMES[t]) {
-      const label = assetType.value === '국내주식' ? '종목코드' : '코인 영문코드'
-      showMessage(`등록되지 않은 ${label}입니다. 다시 확인해주세요.`, 'error')
+    } else if (assetType.value !== '국내주식' && !TICKER_NAMES[t]) {
+      showMessage(`등록되지 않은 코인 영문코드입니다. 다시 확인해주세요.`, 'error')
       return
     }
   }
@@ -294,7 +319,7 @@ const save = async () => {
           ? currency.value === 'USD'
             ? 'CASH_USD'
             : 'CASH_KRW'
-          : ticker.value.trim().toUpperCase()
+          : (ticker.value?.trim() ?? '').toUpperCase()
       const { data: existing } = await supabase
         .from('portfolios')
         .select('id')
@@ -362,6 +387,7 @@ const save = async () => {
 
 const reset = (closeDialog = true) => {
   ticker.value = ''
+  krSearchQuery.value = ''
   assetType.value = ''
   currency.value = 'KRW'
   initQuantity.value = ''
@@ -391,8 +417,31 @@ const reset = (closeDialog = true) => {
           persistent-hint
         />
 
-        <!-- 티커 -->
+        <!-- 국내주식: 한글명 검색 자동완성 -->
+        <v-autocomplete
+          v-if="assetType === '국내주식'"
+          v-model="ticker"
+          v-model:search="krSearchQuery"
+          :items="filteredKrItems"
+          item-title="title"
+          item-value="value"
+          label="종목 검색"
+          placeholder="삼성전자, 카카오 등 종목명 입력"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          class="mt-3"
+          :disabled="isEditMode"
+          :hint="isEditMode ? '티커/코드는 수정할 수 없습니다.' : ''"
+          persistent-hint
+          :custom-filter="krFilter"
+          no-data-text="검색 결과가 없습니다"
+          clearable
+          auto-select-first
+        />
+
+        <!-- 해외주식 / 암호화폐: 기존 텍스트 필드 -->
         <v-text-field
+          v-else-if="assetType !== '국내주식'"
           v-model="ticker"
           :label="tickerConfig.label"
           :placeholder="tickerConfig.placeholder"
