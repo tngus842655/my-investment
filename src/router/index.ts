@@ -18,6 +18,7 @@ import AssetGrowthView from '@/views/more/AssetGrowthView.vue'
 import DividendCalendarView from '@/views/more/DividendCalendarView.vue'
 import EtfAnalysisView from '@/views/more/EtfAnalysisView.vue'
 import FeedbackView from '@/views/more/FeedbackView.vue'
+import ChangePasswordView from '@/views/more/ChangePasswordView.vue'
 import AdminView from '@/views/admin/AdminView.vue'
 import AdminResetPasswordView from '@/views/admin/AdminResetPasswordView.vue'
 import AdminLoginLogView from '@/views/admin/AdminLoginLogView.vue'
@@ -165,6 +166,11 @@ const router = createRouter({
           path: 'feedback',
           name: 'feedback',
           component: FeedbackView,
+        },
+        {
+          path: 'change-password',
+          name: 'changePassword',
+          component: ChangePasswordView,
         },
       ],
     },
