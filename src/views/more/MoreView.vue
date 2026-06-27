@@ -192,8 +192,8 @@ const currentThemeLabel = computed(() => {
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/feedback')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-message-text-outline</v-icon></div>
         <div>
-          <div class="text-body-2 font-weight-medium">개선사항 보내기</div>
-          <div class="text-caption text-medium-emphasis">불편한 점·아이디어를 이메일로</div>
+          <div class="text-body-2 font-weight-medium">의견 보내기</div>
+          <div class="text-caption text-medium-emphasis">불편한 점이나 개선 아이디어를 보내주세요.</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
