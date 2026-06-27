@@ -83,20 +83,11 @@ const remainingInfo = computed(() => {
   const T = targetAsset.value
   const C = currentAsset.value
   const M = monthlyInvestment.value
-  if (!T || !M || annualReturn.value === null) return null
-  const r = annualReturn.value / 100 / 12
-  if (C >= T) return null
+  const rate = annualReturn.value
+  if (!T || !M || rate === null || C >= T) return null
 
-  let months: number
-  if (r === 0) {
-    months = Math.ceil((T - C) / M)
-  } else {
-    const num = T * r + M
-    const den = C * r + M
-    if (den <= 0) return null
-    months = Math.ceil(Math.log(num / den) / Math.log(1 + r))
-  }
-  if (!isFinite(months) || months <= 0) return null
+  const months = calcMonths(T, C, M, rate)
+  if (months === null || months <= 0) return null
   const years = Math.floor(months / 12)
   const rem = months % 12
   return years > 0 ? `약 ${years}년 ${rem > 0 ? rem + '개월' : ''} 남았습니다` : `약 ${months}개월 남았습니다`
@@ -326,6 +317,7 @@ const yearlyRows = computed(() => {
   const r = (annualReturn.value ?? 0) / 100 / 12
   const goalYear = fireGoalYear.value?.year ?? currentYear + 30
 
+  const currentFireRate = T > 0 ? Math.min(Math.round((C / T) * 100), 100) : null
   const rows = []
   for (let year = currentYear; year <= goalYear; year++) {
     const status = year < currentYear ? 'past' : year === currentYear ? 'current' : 'future'
@@ -334,8 +326,7 @@ const yearlyRows = computed(() => {
     const annualRate = status === 'current' && yearEndAsset > 0
       ? Math.min(Math.round((C / yearEndAsset) * 100), 100)
       : status === 'past' ? 100 : 0
-    const fireRate = T > 0 ? Math.min(Math.round((C / T) * 100), 100) : null
-    rows.push({ year, asset: yearEndAsset, status, annualRate, fireRate })
+    rows.push({ year, asset: yearEndAsset, status, annualRate, fireRate: currentFireRate })
   }
   return rows
 })
@@ -775,8 +766,8 @@ onMounted(loadData)
   border: 1px solid rgba(var(--v-theme-primary), 0.2);
 }
 .scenario-high {
-  background: rgba(76, 175, 80, 0.07);
-  border: 1px solid rgba(76, 175, 80, 0.2);
+  background: rgba(var(--v-theme-success), 0.07);
+  border: 1px solid rgba(var(--v-theme-success), 0.2);
 }
 .scenario-emoji {
   font-size: 22px;
