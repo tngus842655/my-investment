@@ -7,6 +7,8 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { Plugin } from 'vite'
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 const ALLOWED_SCRIPTS: Record<string, string> = {
   'generate-kr-tickers': 'scripts/generate-kr-tickers.mjs',
   'generate-crypto-tickers': 'scripts/generate-crypto-tickers.mjs',
@@ -124,42 +126,38 @@ function adminPlugin(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [
-    vue(),
-    adminPlugin(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['icons/*.png'],
-      manifest: {
-        name: 'FirePath',
-        short_name: 'FirePath',
-        description: '나만의 FIRE 목표 관리 플랫폼',
-        theme_color: '#0E8A82',
-        background_color: '#F0F7F6',
-        display: 'standalone',
-        orientation: 'portrait',
-        start_url: '/dashboard',
-        icons: [
-          {
-            src: '/icons/icon-192.png',
-            sizes: '192x192',
-            type: 'image/png',
-          },
-          {
-            src: '/icons/icon-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-          },
-          {
-            src: '/icons/icon-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable',
-          },
-        ],
-      },
-    }),
-  ],
+  plugins: [vue(), adminPlugin(), VitePWA({
+    registerType: 'autoUpdate',
+    includeAssets: ['icons/*.png'],
+    manifest: {
+      name: 'FirePath',
+      short_name: 'FirePath',
+      description: '나만의 FIRE 목표 관리 플랫폼',
+      theme_color: '#0E8A82',
+      background_color: '#F0F7F6',
+      display: 'standalone',
+      orientation: 'portrait',
+      start_url: '/dashboard',
+      icons: [
+        {
+          src: '/icons/icon-192.png',
+          sizes: '192x192',
+          type: 'image/png',
+        },
+        {
+          src: '/icons/icon-512.png',
+          sizes: '512x512',
+          type: 'image/png',
+        },
+        {
+          src: '/icons/icon-512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'maskable',
+        },
+      ],
+    },
+  }), cloudflare()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
