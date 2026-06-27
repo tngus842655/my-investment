@@ -27,6 +27,7 @@ interface Transaction {
 const PAGE_SIZE = 30
 const loading = ref(false)
 const loadingMore = ref(false)
+const refreshing = ref(false)
 const hasMore = ref(true)
 const currentPage = ref(0)
 const transactions = ref<Transaction[]>([])
@@ -88,7 +89,7 @@ const swipeTouchStartY = ref(0)
 const isDraggingSwipe = ref(false)
 
 // stat용 전체 데이터 (경량)
-interface TotalRow { transaction_type: string; quantity: number; unit_price: number; portfolios: { currency: string }[] | null }
+interface TotalRow { transaction_type: string; quantity: number; unit_price: number; portfolios: { currency: string } | null }
 const totalsData = ref<TotalRow[]>([])
 
 let userId = ''
@@ -178,7 +179,11 @@ const refreshWithScroll = async () => {
   else window.scrollTo({ top: scrollY })
 }
 
-const refresh = () => { resetAndLoad(); loadTotals() }
+const refresh = async () => {
+  refreshing.value = true
+  await Promise.all([resetAndLoad(), loadTotals()])
+  refreshing.value = false
+}
 
 // stat 전용 조회 (현재 필터/날짜 조건 반영)
 const loadTotals = async () => {
@@ -267,25 +272,25 @@ const grouped = computed(() => {
 const usdToKrw = ref(0)
 
 const hasUSD = computed(() =>
-  totalsData.value.some((t) => t.portfolios?.[0]?.currency === 'USD'),
+  totalsData.value.some((t) => t.portfolios?.currency === 'USD'),
 )
 
 const totalBuy = computed(() => {
   const krw = totalsData.value
-    .filter((t) => t.transaction_type === 'BUY' && t.portfolios?.[0]?.currency === 'KRW')
+    .filter((t) => t.transaction_type === 'BUY' && t.portfolios?.currency === 'KRW')
     .reduce((s, t) => s + t.quantity * t.unit_price, 0)
   const usd = totalsData.value
-    .filter((t) => t.transaction_type === 'BUY' && t.portfolios?.[0]?.currency === 'USD')
+    .filter((t) => t.transaction_type === 'BUY' && t.portfolios?.currency === 'USD')
     .reduce((s, t) => s + t.quantity * t.unit_price, 0)
   return krw + usd * (usdToKrw.value || 1)
 })
 
 const totalSell = computed(() => {
   const krw = totalsData.value
-    .filter((t) => t.transaction_type === 'SELL' && t.portfolios?.[0]?.currency === 'KRW')
+    .filter((t) => t.transaction_type === 'SELL' && t.portfolios?.currency === 'KRW')
     .reduce((s, t) => s + t.quantity * t.unit_price, 0)
   const usd = totalsData.value
-    .filter((t) => t.transaction_type === 'SELL' && t.portfolios?.[0]?.currency === 'USD')
+    .filter((t) => t.transaction_type === 'SELL' && t.portfolios?.currency === 'USD')
     .reduce((s, t) => s + t.quantity * t.unit_price, 0)
   return krw + usd * (usdToKrw.value || 1)
 })
@@ -414,7 +419,7 @@ onUnmounted(() => {
           size="small"
           rounded="circle"
           elevation="0"
-          :loading="loading"
+          :loading="refreshing"
           style="border-color: rgba(var(--v-theme-on-surface), 0.15)"
           @click="refresh"
         />
