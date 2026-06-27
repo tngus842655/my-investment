@@ -31,7 +31,7 @@ interface EtfInfo {
 const inputA = ref('')
 const inputB = ref('')
 
-const sanitizeTicker = (v: string) => v.replace(/[^A-Za-z0-9.\-]/g, '').toUpperCase()
+const sanitizeTicker = (v: string) => v.replace(/[^A-Za-z0-9.\-]/g, '')
 const onInputA = (e: Event) => { inputA.value = sanitizeTicker((e.target as HTMLInputElement).value) }
 const onInputB = (e: Event) => { inputB.value = sanitizeTicker((e.target as HTMLInputElement).value) }
 
@@ -440,8 +440,10 @@ const aiData = computed(() => {
 
       <!-- 수익률 섹션 -->
       <v-card rounded="xl" class="mb-3 overflow-hidden">
-        <div class="px-4 pt-2 pb-1">
-          <div class="section-title">수익률</div>
+        <div class="col-header-row d-flex align-center px-4 pt-3 pb-1">
+          <div class="metric-label section-title">수익률</div>
+          <div class="col-header">{{ dataA!.ticker }}</div>
+          <div v-if="dataB" class="col-header">{{ dataB.ticker }}</div>
         </div>
 
         <div class="metric-row d-flex align-center px-4 py-2">
@@ -474,8 +476,10 @@ const aiData = computed(() => {
 
       <!-- 리스크 섹션 -->
       <v-card rounded="xl" class="mb-3 overflow-hidden">
-        <div class="px-4 pt-2 pb-1">
-          <div class="section-title">리스크</div>
+        <div class="col-header-row d-flex align-center px-4 pt-3 pb-1">
+          <div class="metric-label section-title">리스크</div>
+          <div class="col-header">{{ dataA!.ticker }}</div>
+          <div v-if="dataB" class="col-header">{{ dataB.ticker }}</div>
         </div>
 
         <div class="metric-row d-flex align-center px-4 py-2">
@@ -533,8 +537,10 @@ const aiData = computed(() => {
 
       <!-- 배당 & 비용 섹션 -->
       <v-card rounded="xl" class="mb-3 overflow-hidden">
-        <div class="px-4 pt-2 pb-1">
-          <div class="section-title">배당 & 비용</div>
+        <div class="col-header-row d-flex align-center px-4 pt-3 pb-1">
+          <div class="metric-label section-title">배당 & 비용</div>
+          <div class="col-header">{{ dataA!.ticker }}</div>
+          <div v-if="dataB" class="col-header">{{ dataB.ticker }}</div>
         </div>
 
         <div class="metric-row d-flex align-center px-4 py-2">
