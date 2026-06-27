@@ -97,7 +97,7 @@ const openDetail = async (log: SignupLog) => {
       portfolio_count: portfolioCount,
       portfolios: portfolioItems,
     }
-  } catch (e) {
+  } catch {
     showMessage('상세 정보 조회 중 오류가 발생했습니다.', 'error')
     detailDialog.value = false
   } finally {

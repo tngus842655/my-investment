@@ -217,7 +217,7 @@ onMounted(loadData)
 .prog-bar-fill {
   height: 100%;
   border-radius: 4px;
-  background: linear-gradient(90deg, rgb(var(--v-theme-primary)) 0%, #6366f1 100%);
+  background: linear-gradient(90deg, var(--fp-primary) 0%, var(--fp-secondary) 100%);
   transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
   max-width: 100%;
 }

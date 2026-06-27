@@ -512,16 +512,6 @@ const reset = (closeDialog = true) => {
 </template>
 
 <style scoped>
-.glass-dialog {
-  background: rgba(255, 255, 255, 0.88) !important;
-  border: 1px solid rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-}
-.v-theme--dark .glass-dialog {
-  background: rgba(8, 15, 30, 0.92) !important;
-  border-color: rgba(79, 200, 194, 0.2) !important;
-}
 
 .section-divider {
   display: flex;

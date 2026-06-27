@@ -186,7 +186,6 @@ const chartMilestones = computed(() => {
 })
 
 const nextMilestone = computed(() => {
-  const C = currentAsset.value
   return chartMilestones.value.find((m) => !m.isPassed) ?? null
 })
 
@@ -533,7 +532,7 @@ onMounted(loadData)
           <span class="tip-emoji">💡</span>
           <span class="tip-title">FIRE Tip</span>
         </div>
-        <div class="tip-body" v-html="fireTip.body.replace('\n', '<br>')" />
+        <div class="tip-body">{{ fireTip.body }}</div>
       </div>
 
       <!-- 연도별 자산 추이 -->
@@ -570,11 +569,6 @@ onMounted(loadData)
   object-fit: contain;
 }
 
-.glass-card {
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(0, 0, 0, 0.07);
-  border-radius: 20px;
-}
 
 .remain-badge {
   display: flex;
@@ -608,9 +602,6 @@ onMounted(loadData)
   gap: 8px;
 }
 .stat-card {
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(0, 0, 0, 0.07);
-  border-radius: 16px;
   padding: 16px;
 }
 .stat-label {
@@ -652,10 +643,7 @@ onMounted(loadData)
   font-size: 13px;
   line-height: 1.7;
   color: rgba(var(--v-theme-on-surface), 0.75);
-}
-.tip-body :deep(strong) {
-  color: rgb(var(--v-theme-on-surface));
-  font-weight: 700;
+  white-space: pre-line;
 }
 
 .next-milestone-bar {
@@ -718,7 +706,7 @@ onMounted(loadData)
 }
 .name-low  { color: rgba(var(--v-theme-on-surface), 0.5); }
 .name-mid  { color: rgb(var(--v-theme-primary)); }
-.name-high { color: #4caf50; }
+.name-high { color: var(--fp-success); }
 .scenario-rate-label {
   font-size: 13px;
   font-weight: 700;

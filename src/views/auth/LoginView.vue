@@ -4,8 +4,19 @@ import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { getErrorMessage } from '@/utils/errorMessage'
 import { showMessage } from '@/composables/useSnackbar'
+import { useDesignTokens } from '@/composables/useDesignTokens'
 
 const router = useRouter()
+const { themeId } = useDesignTokens()
+
+const LOGO_MAIN: Partial<Record<string, string>> = {
+  light:  '/icons/main/logo-main-light.png',
+  dark:   '/icons/main/logo-main-dark.png',
+  gold:   '/icons/main/logo-main-gold.png',
+  nature: '/icons/main/logo-main-nature.png',
+  space:  '/icons/main/logo-main-space.png',
+}
+const logoMain = computed(() => LOGO_MAIN[themeId.value] ?? null)
 const form = ref()
 
 const email = ref('')
@@ -99,7 +110,14 @@ const onKeydown = (e: KeyboardEvent) => { if (e.key === 'Enter' && isLogin.value
     <div class="login-inner">
       <!-- 브랜드 -->
       <div class="text-center mb-10">
+        <img
+          v-if="logoMain"
+          :src="logoMain"
+          class="brand-logo mx-auto mb-2"
+          alt="FIREPATH"
+        />
         <video
+          v-else
           src="/icons/icon-rocket.mp4"
           class="brand-logo mx-auto mb-2"
           autoplay
@@ -107,8 +125,10 @@ const onKeydown = (e: KeyboardEvent) => { if (e.key === 'Enter' && isLogin.value
           muted
           playsinline
         />
-        <div class="brand-title">FIREPATH</div>
-        <div class="brand-sub mt-2">Financial Independence, Retire Early</div>
+        <template v-if="!logoMain">
+          <div class="brand-title">FIREPATH</div>
+          <div class="brand-sub mt-2">Financial Independence, Retire Early</div>
+        </template>
       </div>
 
       <!-- 폼 카드 -->
@@ -253,8 +273,8 @@ const onKeydown = (e: KeyboardEvent) => { if (e.key === 'Enter' && isLogin.value
 }
 
 .brand-logo {
-  width: 100px;
-  height: 100px;
+  width: 180px;
+  height: 180px;
   object-fit: contain;
   display: block;
 }
@@ -290,9 +310,6 @@ const onKeydown = (e: KeyboardEvent) => { if (e.key === 'Enter' && isLogin.value
   padding: 28px 24px;
 }
 
-.v-theme--dark .login-card {
-  border-color: rgba(0, 212, 184, 0.12);
-}
 
 .forgot-link {
   font-size: 12px;

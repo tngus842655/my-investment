@@ -31,7 +31,7 @@ interface EtfInfo {
 const inputA = ref('')
 const inputB = ref('')
 
-const sanitizeTicker = (v: string) => v.replace(/[^A-Za-z0-9.\-]/g, '')
+const sanitizeTicker = (v: string) => v.replace(/[^A-Za-z0-9.-]/g, '')
 const onInputA = (e: Event) => { inputA.value = sanitizeTicker((e.target as HTMLInputElement).value) }
 const onInputB = (e: Event) => { inputB.value = sanitizeTicker((e.target as HTMLInputElement).value) }
 
@@ -46,7 +46,7 @@ const notFoundB = ref(false)
 const isEmptyResult = (info: EtfInfo) =>
   info.currentPrice == null && info.totalAssets == null && info.cagr == null && info.mdd == null
 
-const TICKER_REGEX = /^[A-Za-z0-9.\-]{1,15}$/
+const TICKER_REGEX = /^[A-Za-z0-9.-]{1,15}$/
 
 const fetchInfo = async () => {
   const tA = inputA.value.trim().toUpperCase()
@@ -166,63 +166,6 @@ const cls = (a: number | null, b: number | null, higherIsBetter: boolean, side: 
   return w === side ? 'winner' : 'loser'
 }
 
-const isWinner = (a: number | null, b: number | null, higherIsBetter: boolean, side: 'a' | 'b', precision = 1): boolean => {
-  if (!dataB.value) return false
-  return better(a, b, higherIsBetter, precision) === side
-}
-
-// FIRE 적합도 점수 (0~100)
-const calcFireScore = (info: EtfInfo): { score: number; stars: number; label: string } => {
-  let score = 0, max = 0
-
-  if (info.cagr != null) {
-    max += 35
-    score += info.cagr >= 0.15 ? 35 : info.cagr >= 0.10 ? 28 : info.cagr >= 0.07 ? 20 : info.cagr >= 0.04 ? 12 : 5
-  }
-  if (info.mdd != null) {
-    max += 25
-    score += info.mdd >= -0.20 ? 25 : info.mdd >= -0.35 ? 18 : info.mdd >= -0.50 ? 10 : 4
-  }
-  if (info.expenseRatio != null) {
-    max += 25
-    score += info.expenseRatio <= 0.001 ? 25 : info.expenseRatio <= 0.003 ? 20 : info.expenseRatio <= 0.005 ? 14 : info.expenseRatio <= 0.01 ? 8 : 3
-  }
-  if (info.volatility != null) {
-    max += 15
-    score += info.volatility <= 0.12 ? 15 : info.volatility <= 0.18 ? 11 : info.volatility <= 0.25 ? 6 : 2
-  }
-
-  const normalized = max > 0 ? Math.round((score / max) * 100) : 0
-  const stars = normalized >= 90 ? 5 : normalized >= 75 ? 4 : normalized >= 60 ? 3 : normalized >= 45 ? 2 : 1
-  const label = normalized >= 90 ? '장기 적립식 투자 강력 추천'
-    : normalized >= 75 ? '장기 적립식 투자 추천'
-    : normalized >= 60 ? '장기 투자 적합'
-    : normalized >= 45 ? '단기 투자 적합'
-    : 'FIRE 투자에 주의 필요'
-
-  return { score: normalized, stars, label }
-}
-
-const starStr = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n)
-
-// 종합 승패 집계 (6개 항목)
-const scoreResult = computed(() => {
-  const a = dataA.value
-  const b = dataB.value
-  if (!a || !b) return null
-
-  let aWins = 0, bWins = 0
-  ;[
-    better(a.cagr,         b.cagr,         true),
-    better(a.mdd,          b.mdd,          true),
-    better(a.expenseRatio, b.expenseRatio, false, 2),
-    better(a.dividendYield,b.dividendYield,true),
-    better(a.volatility,   b.volatility,   false),
-    better(a.beta,         b.beta,         false),
-  ].forEach(w => { if (w === 'a') aWins++; else if (w === 'b') bWins++ })
-
-  return { aWins, bWins }
-})
 
 const getEtfTags = (info: EtfInfo) => {
   const tags: Array<{ label: string; color: string }> = []
@@ -702,7 +645,7 @@ const aiData = computed(() => {
 .fire-stars {
   font-size: 18px;
   letter-spacing: 2px;
-  color: #f59e0b;
+  color: var(--fp-warning);
 }
 .fund-family-label {
   white-space: nowrap;

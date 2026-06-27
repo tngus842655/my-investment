@@ -6,8 +6,19 @@ import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel } from '@/utils/tickerNames'
+import { useDesignTokens } from '@/composables/useDesignTokens'
 
 const router = useRouter()
+const { themeId } = useDesignTokens()
+
+const LOGO_WIDE: Partial<Record<string, string>> = {
+  light:  '/icons/wide/logo-wide-light.png',
+  dark:   '/icons/wide/logo-wide-dark.png',
+  gold:   '/icons/wide/logo-wide-gold.png',
+  nature: '/icons/wide/logo-wide-nature.png',
+  space:  '/icons/wide/logo-wide-space.png',
+}
+const logoWide = computed(() => LOGO_WIDE[themeId.value] ?? null)
 const loading = ref(true)
 const hideAsset = ref(localStorage.getItem('firepath-hide-asset') === 'true')
 
@@ -122,15 +133,23 @@ onMounted(loadDashboard)
     <!-- 헤더 -->
     <div class="d-flex justify-space-between align-center mb-6">
       <div class="d-flex align-center ga-2">
-        <video
-          src="/icons/icon-rocket.mp4"
-          class="header-logo"
-          autoplay
-          loop
-          muted
-          playsinline
+        <img
+          v-if="logoWide"
+          :src="logoWide"
+          class="header-logo-wide"
+          alt="FIREPATH"
         />
-        <div class="text-h6 font-weight-bold">FIREPATH</div>
+        <template v-else>
+          <video
+            src="/icons/icon-rocket.mp4"
+            class="header-logo"
+            autoplay
+            loop
+            muted
+            playsinline
+          />
+          <div class="text-h6 font-weight-bold">FIREPATH</div>
+        </template>
       </div>
       <button class="icon-btn" @click="router.push('/goalSettings')">
         <img src="/icons/icon-goal.png" alt="목표수정" class="icon-btn-img" />
@@ -333,12 +352,10 @@ onMounted(loadDashboard)
   height: 36px;
   object-fit: contain;
 }
-
-.glass-card {
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(0, 0, 0, 0.07);
-  border-radius: 20px;
-  transition: background 0.25s ease, border-color 0.25s ease;
+.header-logo-wide {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
 }
 
 .glass-btn {
@@ -425,9 +442,6 @@ onMounted(loadDashboard)
   gap: 8px;
 }
 .stat-card {
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(0, 0, 0, 0.07);
-  border-radius: 16px;
   padding: 16px;
 }
 .stat-label {
