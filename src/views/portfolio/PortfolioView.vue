@@ -177,12 +177,13 @@ const loadPortfolios = async () => {
             : item.avg_price * item.quantity
         return sum + costKrw
       }, 0)
+    const roundedEval = Math.round(totalEval)
     supabase
       .from('asset_summary')
       .upsert(
         {
           user_id: user.id,
-          current_asset: Math.round(totalEval),
+          current_asset: roundedEval,
           investment_principal: Math.round(totalCost),
         },
         { onConflict: 'user_id' },
@@ -190,6 +191,7 @@ const loadPortfolios = async () => {
       .then(({ error }) => {
         if (error) console.warn('asset_summary 저장 실패:', error.message)
       })
+
   } catch (error) {
     console.error(error)
     showMessage('보유자산 조회 중 오류가 발생했습니다.', 'error')

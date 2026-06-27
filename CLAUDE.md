@@ -37,6 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - `git push -u origin claude/새브랜치명`
 2. GitHub MCP로 새 브랜치 → `main` PR 생성
 3. PR을 squash merge로 main에 머지
+4. **⚠️ 머지 완료 후 반드시 세션 시작 시의 원래 작업 브랜치로 돌아올 것** (`git checkout claude/원래브랜치명`)
 
 **⚠️ 충돌 방지 핵심 규칙:**
 - squash merge 후 같은 브랜치에서 계속 작업하면 다음 PR에서 반드시 충돌 발생
@@ -133,6 +134,39 @@ VITE_SUPABASE_ANON_KEY=
 | created_at | timestamptz   |                              |
 | updated_at | timestamptz   |                              |
 
+#### asset_history
+
+일별 자산 스냅샷. 매일 자정(KST) pg_cron으로 자동 저장 + PortfolioView 로드 시 당일 upsert. 미래예측 차트의 과거 실선에 사용.
+
+| 컬럼명       | 타입        | 설명                                         |
+| ------------ | ----------- | -------------------------------------------- |
+| id           | uuid        | PK                                           |
+| user_id      | uuid        | FK → auth.users                              |
+| recorded_at  | date        | 기록 날짜 (user_id + recorded_at unique)     |
+| current_asset| int8        | 해당 일 평가 자산 (KRW, 현금 제외)           |
+| progress_pct | float8      | FIRE 달성률 % (nullable)                     |
+| created_at   | timestamptz |                                              |
+
+**pg_cron 스케줄:** `daily-asset-snapshot` — `0 15 * * *` (UTC) = 매일 KST 00:00 실행
+
+```sql
+-- save_daily_asset_snapshot() 함수
+BEGIN
+  INSERT INTO asset_history (user_id, recorded_at, current_asset, progress_pct)
+  SELECT
+    a.user_id,
+    CURRENT_DATE,
+    a.current_asset,
+    ROUND((a.current_asset::float8 / g.target_asset * 100)::numeric, 2)
+  FROM asset_summary a
+  JOIN investment_goals g ON g.user_id = a.user_id
+  WHERE a.current_asset > 0
+  ON CONFLICT (user_id, recorded_at) DO UPDATE
+    SET current_asset = EXCLUDED.current_asset,
+        progress_pct  = EXCLUDED.progress_pct;
+END;
+```
+
 #### transactions
 
 종목별 매수/매도 거래 내역. portfolio_id → portfolios CASCADE.
@@ -149,6 +183,42 @@ VITE_SUPABASE_ANON_KEY=
 | memo             | text                  | 메모 (nullable) |
 | created_at       | timestamptz           |                 |
 | updated_at       | timestamptz           |                 |
+
+#### login_log
+
+로그인 이력 기록. RLS 적용 (관리자만 조회).
+
+| 컬럼명    | 타입        | 설명            |
+| --------- | ----------- | --------------- |
+| id        | uuid        | PK              |
+| user_id   | uuid        | FK → auth.users |
+| email     | text        | 로그인 이메일   |
+| login_at  | timestamptz | 로그인 시각     |
+
+#### signup_log
+
+회원가입 이력 기록. RLS 적용 (관리자만 조회). 재가입 시 `deleted_at` 초기화로 재활성화 처리.
+
+| 컬럼명       | 타입        | 설명                        |
+| ------------ | ----------- | --------------------------- |
+| id           | uuid        | PK                          |
+| email        | text        | 가입 이메일 (unique)        |
+| signed_up_at | timestamptz | 최초 가입 시각              |
+| deleted_at   | timestamptz | 탈퇴 시각 (nullable)        |
+
+#### feedback
+
+사용자 피드백. RLS 적용.
+
+| 컬럼명     | 타입        | 설명                          |
+| ---------- | ----------- | ----------------------------- |
+| id         | uuid        | PK                            |
+| email      | text        | 작성자 이메일                 |
+| category   | text        | 피드백 카테고리               |
+| title      | text        | 제목                          |
+| content    | text        | 내용                          |
+| status     | text        | 처리 상태 (기본값: 'NEW')     |
+| created_at | timestamptz |                               |
 
 ### 공통 패턴
 
