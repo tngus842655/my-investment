@@ -97,7 +97,8 @@ function adminPlugin(): Plugin {
         const body = await readBody(req)
 
         if (req.method === 'POST') {
-          const { ticker, name } = body
+          const ticker = typeof body.ticker === 'string' ? body.ticker : ''
+          const name = typeof body.name === 'string' ? body.name : ''
           if (!ticker || !name) { res.writeHead(400).end(JSON.stringify({ error: '티커와 이름을 입력하세요.' })); return }
           const map = parseTickers(usFilePath, 'US_STOCK_NAMES')
           map.set(ticker.toUpperCase().trim(), name.trim())
@@ -107,7 +108,7 @@ function adminPlugin(): Plugin {
         }
 
         if (req.method === 'DELETE') {
-          const { ticker } = body
+          const ticker = typeof body.ticker === 'string' ? body.ticker : ''
           if (!ticker) { res.writeHead(400).end(); return }
           const map = parseTickers(usFilePath, 'US_STOCK_NAMES')
           map.delete(ticker.toUpperCase().trim())
