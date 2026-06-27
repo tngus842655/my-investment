@@ -15,6 +15,7 @@ interface SignupLog {
 }
 
 const logs = ref<SignupLog[]>([])
+const newFeedbackCount = ref(0)
 
 const stats = computed(() => {
   const total = logs.value.length
@@ -62,8 +63,12 @@ onMounted(async () => {
     return
   }
   isAdmin.value = true
-  const { data } = await supabase.from('signup_log').select('*').order('signed_up_at', { ascending: false })
+  const [{ data }, { count }] = await Promise.all([
+    supabase.from('signup_log').select('*').order('signed_up_at', { ascending: false }),
+    supabase.from('feedback').select('id', { count: 'exact', head: true }).eq('status', 'NEW'),
+  ])
   logs.value = data ?? []
+  newFeedbackCount.value = count ?? 0
   loading.value = false
 })
 </script>
@@ -148,8 +153,12 @@ onMounted(async () => {
         <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-lock-reset" class="mb-2" @click="router.push('/admin/reset-password')">
           회원 비밀번호 재설정
         </v-btn>
-        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-database-sync-outline" @click="router.push('/admin/data')">
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-database-sync-outline" class="mb-2" @click="router.push('/admin/data')">
           데이터 관리
+        </v-btn>
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-message-text-outline" @click="router.push('/admin/feedback')">
+          사용자 의견
+          <v-badge v-if="newFeedbackCount > 0" :content="newFeedbackCount" color="error" inline class="ml-2" />
         </v-btn>
       </div>
     </template>

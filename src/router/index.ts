@@ -26,6 +26,7 @@ import AdminStatsView from '@/views/admin/AdminStatsView.vue'
 import AdminMembersView from '@/views/admin/AdminMembersView.vue'
 import AdminDataView from '@/views/admin/AdminDataView.vue'
 import AdminTickerView from '@/views/admin/AdminTickerView.vue'
+import AdminFeedbackView from '@/views/admin/AdminFeedbackView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -81,6 +82,12 @@ const router = createRouter({
       path: '/admin/tickers',
       name: 'adminTickers',
       component: AdminTickerView,
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/admin/feedback',
+      name: 'adminFeedback',
+      component: AdminFeedbackView,
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {

@@ -6,7 +6,7 @@ import { snackbar, snackbarText, snackbarColor } from '@/composables/useSnackbar
   <v-snackbar
     v-model="snackbar"
     :color="snackbarColor"
-    timeout="3000"
+    timeout="2000"
     location="top"
     rounded="lg"
     elevation="10"
