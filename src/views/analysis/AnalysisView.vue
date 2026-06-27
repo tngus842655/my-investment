@@ -20,12 +20,16 @@ const calcAsset = (C: number, M: number, r: number, n: number) => {
   return C * Math.pow(1 + r, n) + (M * (Math.pow(1 + r, n) - 1)) / r
 }
 
-interface YearPoint {
+const DAYS_PER_MONTH = 30.4375
+
+interface ProjectionPoint {
+  dayOffset: number
   year: number
+  month: number
   asset: number
 }
 
-const projection = computed<YearPoint[]>(() => {
+const projection = computed<ProjectionPoint[]>(() => {
   const C = currentAsset.value
   const M = monthlyInvestment.value
   const T = targetAsset.value
@@ -33,31 +37,30 @@ const projection = computed<YearPoint[]>(() => {
 
   const r = (annualReturn.value ?? 0) / 100 / 12
   const now = new Date()
-  const startYear = now.getFullYear()
 
   // 목표 달성까지 최대 몇 개월인지 계산
-  let maxMonths = 360 // 최대 30년
+  let maxMonths = 360
   if (T > 0 && M > 0) {
     if (r === 0) {
-      maxMonths = Math.min(Math.ceil((T - C) / M) + 12, 360)
+      maxMonths = Math.min(Math.ceil((T - C) / M) + 1, 360)
     } else {
       const num = T * r + M
       const den = C * r + M
       if (den > 0 && num / den > 1) {
-        maxMonths = Math.min(Math.ceil(Math.log(num / den) / Math.log(1 + r)) + 12, 360)
+        maxMonths = Math.min(Math.ceil(Math.log(num / den) / Math.log(1 + r)) + 1, 360)
       }
     }
   }
 
-  const points: YearPoint[] = []
-  // 현재 시점 포함, 1년 단위 샘플
-  const endYear = startYear + Math.ceil(maxMonths / 12)
-  for (let y = startYear; y <= endYear; y++) {
-    const n = (y - startYear) * 12
-    const asset = calcAsset(C, M, r, n)
-    points.push({ year: y, asset: Math.round(asset) })
-    // 목표 달성 후 1개 포인트만 더 찍고 중단
-    if (T > 0 && asset >= T && y > startYear) break
+  const maxDays = maxMonths * DAYS_PER_MONTH
+  const points: ProjectionPoint[] = []
+  for (let day = 0; day <= maxDays; day++) {
+    const monthN = day / DAYS_PER_MONTH
+    const asset = calcAsset(C, M, r, monthN)
+    const d = new Date(now)
+    d.setDate(d.getDate() + day)
+    points.push({ dayOffset: day, year: d.getFullYear(), month: d.getMonth() + 1, asset: Math.round(asset) })
+    if (T > 0 && asset >= T && day > 0) break
   }
   return points
 })
@@ -65,8 +68,7 @@ const projection = computed<YearPoint[]>(() => {
 const totalInvested = computed(() => {
   const last = projection.value[projection.value.length - 1]
   if (!last) return 0
-  const years = last.year - (projection.value[0]?.year ?? last.year)
-  return monthlyInvestment.value * years * 12
+  return Math.round(monthlyInvestment.value * (last.dayOffset / DAYS_PER_MONTH))
 })
 
 const totalReturn = computed(() => {
@@ -108,41 +110,72 @@ const PW = VW - PAD.left - PAD.right
 const PH = VH - PAD.top - PAD.bottom
 
 const chartPoints = computed(() => {
-  const pts = projection.value
-  if (pts.length < 2) return null
+  const futurePts = projection.value
+  if (futurePts.length < 1) return null
 
-  const minY = 0
-  const maxY = pts[pts.length - 1]!.asset * 1.05
-  const minX = pts[0]!.year
-  const maxX = pts[pts.length - 1]!.year
+  // 과거 히스토리: 일 단위 원시 데이터 사용
+  const nowDate = new Date()
+  const todayStr = nowDate.toISOString().slice(0, 10)
+  const histPts = assetHistory.value
+    .filter((h) => h.recorded_at < todayStr)
+    .map((h) => {
+      const d = new Date(h.recorded_at)
+      const diffDays = Math.round((d.getTime() - nowDate.getTime()) / 86400000)
+      return { dayOffset: diffDays, year: d.getFullYear(), month: d.getMonth() + 1, asset: h.current_asset, isPast: true }
+    })
 
-  const toX = (year: number) => PAD.left + ((year - minX) / Math.max(maxX - minX, 1)) * PW
-  const toY = (asset: number) => PAD.top + PH - ((asset - minY) / Math.max(maxY - minY, 1)) * PH
+  const futureMapped = futurePts.map((p) => ({ ...p, isPast: false }))
+  const allPts = [...histPts, ...futureMapped]
+  if (allPts.length < 2) return null
 
-  const pointArr = pts.map((p) => ({ x: toX(p.year), y: toY(p.asset), ...p }))
+  const minY = Math.max(Math.min(...allPts.map((p) => p.asset)) * 0.85, 1)
+  const maxY = allPts[allPts.length - 1]!.asset * 1.05
+  const minX = allPts[0]!.dayOffset
+  const maxX = allPts[allPts.length - 1]!.dayOffset
 
-  // smooth bezier path
-  const d = pointArr.reduce((acc, pt, i) => {
-    if (i === 0) return `M ${pt.x},${pt.y}`
-    const prev = pointArr[i - 1]!
-    const cpx = (prev.x + pt.x) / 2
-    return acc + ` C ${cpx},${prev.y} ${cpx},${pt.y} ${pt.x},${pt.y}`
-  }, '')
+  const toX = (day: number) => PAD.left + ((day - minX) / Math.max(maxX - minX, 1)) * PW
+  // 로그 스케일 Y축: 과거(소액)와 미래(대액) 성장을 비례적으로 표현
+  const logMin = Math.log(minY)
+  const logMax = Math.log(maxY)
+  const toY = (asset: number) => PAD.top + PH - ((Math.log(Math.max(asset, 1)) - logMin) / Math.max(logMax - logMin, 1)) * PH
 
-  // fill path (close to bottom)
+  const pointArr = allPts.map((p) => ({ x: toX(p.dayOffset), y: toY(p.asset), ...p }))
+
+  // 과거선 (실선)
+  const histArr = pointArr.filter((p) => p.isPast)
+  const futureArr = pointArr.filter((p) => !p.isPast)
+
+  const buildPath = (pts: typeof pointArr) =>
+    pts.reduce((acc, pt, i) => {
+      if (i === 0) return `M ${pt.x},${pt.y}`
+      const prev = pts[i - 1]!
+      const cpx = (prev.x + pt.x) / 2
+      return acc + ` C ${cpx},${prev.y} ${cpx},${pt.y} ${pt.x},${pt.y}`
+    }, '')
+
+  // 히스토리와 예측선을 이어서 전체 fill 경로 생성
+  const fullPath = buildPath(pointArr)
+  const histPath = histArr.length >= 2 ? buildPath(histArr) : null
+  // 마지막 과거 포인트를 예측 점선 시작점으로 포함해 끊김 방지
+  const lastHistPt = histArr.length > 0 ? histArr[histArr.length - 1]! : null
+  const futurePath = futureArr.length >= 1 ? buildPath(lastHistPt ? [lastHistPt, ...futureArr] : futureArr) : null
+
   const last = pointArr[pointArr.length - 1]!
   const first = pointArr[0]!
-  const fillD = d + ` L ${last.x},${PAD.top + PH} L ${first.x},${PAD.top + PH} Z`
+  const fillD = fullPath + ` L ${last.x},${PAD.top + PH} L ${first.x},${PAD.top + PH} Z`
 
-  // X축 레이블: 최대 5개
-  const step = Math.max(1, Math.ceil(pts.length / 5))
-  const xLabels = pts.filter((_, i) => i % step === 0 || i === pts.length - 1).map((p) => ({ x: toX(p.year), label: String(p.year) }))
+  // X축 레이블: 연도 경계(1월 1일)마다, 최대 5개
+  const yearBoundaries = allPts.filter((p, i) => i === 0 || (p.month === 1 && p.year !== allPts[i - 1]!.year))
+  const step = Math.max(1, Math.ceil(yearBoundaries.length / 5))
+  const xLabels = yearBoundaries
+    .filter((_, i) => i % step === 0)
+    .map((p) => ({ x: toX(p.dayOffset), label: String(p.year) }))
 
-  // 현재 자산 포인트 & 목표 자산 포인트
-  const startPt = pointArr[0]!
+  // 현재 포인트 & 목표 달성 포인트
+  const startPt = pointArr.find((p) => !p.isPast) ?? pointArr[0]!
   const goalPt = targetAsset.value > 0 ? (pointArr.find((p) => p.asset >= targetAsset.value) ?? last) : null
 
-  return { d, fillD, pointArr, xLabels, startPt, goalPt, toX, toY }
+  return { fullPath, histPath, futurePath, fillD, pointArr, xLabels, startPt, goalPt, toX, toY }
 })
 
 // ── 마일스톤 ─────────────────────────────────────
@@ -156,7 +189,12 @@ const chartMilestones = computed(() => {
   const C = currentAsset.value
   if (!T || !chartPoints.value) return []
 
-  const step = 100_000_000 // 1억 단위 고정
+  // 목표 금액에 따라 step 동적 설정, 최대 4개 마일스톤
+  const step =
+    T <= 500_000_000 ? 100_000_000       // 5억 이하: 1억 단위
+    : T <= 2_000_000_000 ? 500_000_000   // 20억 이하: 5억 단위
+    : T <= 10_000_000_000 ? 1_000_000_000 // 100억 이하: 10억 단위
+    : 5_000_000_000                       // 그 이상: 50억 단위
 
   const result: { value: number; label: string; isPassed: boolean; y: number }[] = []
   let v = step
@@ -168,6 +206,11 @@ const chartMilestones = computed(() => {
       y: chartPoints.value!.toY(v),
     })
     v += step
+  }
+  // 최대 4개만 표시 (너무 많으면 간격 조정)
+  if (result.length > 4) {
+    const keep = Math.ceil(result.length / 4)
+    return result.filter((_, i) => (i + 1) % keep === 0 || i === result.length - 1)
   }
   return result
 })
@@ -273,44 +316,59 @@ const fireTip = computed(() => {
 
 // ── 연도별 추이 테이블 ─────────────────────────────
 const currentYear = new Date().getFullYear()
+const currentMonth = new Date().getMonth() + 1 // 1~12
 const showAllYears = ref(false)
 
-// status: 'past' | 'current' | 'future'
 const yearlyRows = computed(() => {
   const T = targetAsset.value
   const C = currentAsset.value
-  const pts = projection.value
-  return pts.map((p, i) => {
-    const status = p.year < currentYear ? 'past' : p.year === currentYear ? 'current' : 'future'
-    // 올해 목표 달성률: 현재 자산 / 올해 말(=내년 시작) 예상 자산
-    // projection[0].asset === currentAsset(n=0)이므로 다음 포인트를 분모로 사용
-    const yearEndAsset = pts[i + 1]?.asset ?? p.asset
-    const annualRate = status === 'current' && yearEndAsset > 0 ? Math.min(Math.round((C / yearEndAsset) * 100), 100) : status === 'past' ? 100 : 0
+  const M = monthlyInvestment.value
+  const r = (annualReturn.value ?? 0) / 100 / 12
+  const goalYear = fireGoalYear.value?.year ?? currentYear + 30
+
+  const rows = []
+  for (let year = currentYear; year <= goalYear; year++) {
+    const status = year < currentYear ? 'past' : year === currentYear ? 'current' : 'future'
+    const monthsToYearEnd = (year - currentYear) * 12 + (12 - currentMonth)
+    const yearEndAsset = monthsToYearEnd > 0 ? Math.round(calcAsset(C, M, r, monthsToYearEnd)) : C
+    const annualRate = status === 'current' && yearEndAsset > 0
+      ? Math.min(Math.round((C / yearEndAsset) * 100), 100)
+      : status === 'past' ? 100 : 0
     const fireRate = T > 0 ? Math.min(Math.round((C / T) * 100), 100) : null
-    return { year: p.year, asset: p.asset, status, annualRate, fireRate }
-  })
+    rows.push({ year, asset: yearEndAsset, status, annualRate, fireRate })
+  }
+  return rows
 })
 
-// 목표 달성 연도 + 남은 기간 텍스트 (calcMonths 헬퍼 재사용)
+// 목표 달성 연월 + 근접 자산 (월 단위 탐색)
 const fireGoalYear = computed(() => {
   const T = targetAsset.value
   const C = currentAsset.value
   const M = monthlyInvestment.value
   const rate = annualReturn.value
-  if (!T) return null
-  const reached = yearlyRows.value.find((r) => r.asset >= T)
-  if (!reached) return null
+  if (!T || !M || rate === null) return null
+
+  const r = rate / 100 / 12
+  const totalMonths = calcMonths(T, C, M, rate)
+  if (totalMonths === null) return null
+
+  // 목표 달성 달의 자산 계산
+  const reachedAsset = Math.round(calcAsset(C, M, r, totalMonths))
+
+  // 달성 연월 계산
+  const now = new Date()
+  const reachedDate = new Date(now.getFullYear(), now.getMonth() + totalMonths)
+  const reachedYear = reachedDate.getFullYear()
+  const reachedMonth = reachedDate.getMonth() + 1
 
   let remainText: string | null = null
-  if (M && rate !== null && C < T) {
-    const months = calcMonths(T, C, M, rate)
-    if (months !== null && months > 0) {
-      const y = Math.floor(months / 12)
-      const mo = months % 12
-      remainText = y > 0 ? `목표까지 약 ${y}년${mo > 0 ? ' ' + mo + '개월' : ''}` : `목표까지 약 ${months}개월`
-    }
+  if (C < T && totalMonths > 0) {
+    const y = Math.floor(totalMonths / 12)
+    const mo = totalMonths % 12
+    remainText = y > 0 ? `목표까지 약 ${y}년${mo > 0 ? ' ' + mo + '개월' : ''}` : `목표까지 약 ${totalMonths}개월`
   }
-  return { year: reached.year, asset: reached.asset, remainText }
+
+  return { year: reachedYear, month: reachedMonth, asset: reachedAsset, remainText }
 })
 
 // 표시할 행 목록 (fireGoalYear 제외)
@@ -330,6 +388,12 @@ const summaryRows = computed(() => {
 
 const visibleRows = computed(() => (showAllYears.value ? displayRows.value : summaryRows.value))
 
+interface HistoryPoint {
+  recorded_at: string
+  current_asset: number
+}
+const assetHistory = ref<HistoryPoint[]>([])
+
 const loadData = async () => {
   loading.value = true
   try {
@@ -337,13 +401,18 @@ const loadData = async () => {
       data: { user },
     } = await supabase.auth.getUser()
     if (!user) return
-    const [goalResult, summaryResult] = await Promise.all([supabase.from('investment_goals').select('*').eq('user_id', user.id).maybeSingle(), supabase.from('asset_summary').select('current_asset').eq('user_id', user.id).maybeSingle()])
+    const [goalResult, summaryResult, historyResult] = await Promise.all([
+      supabase.from('investment_goals').select('*').eq('user_id', user.id).maybeSingle(),
+      supabase.from('asset_summary').select('current_asset').eq('user_id', user.id).maybeSingle(),
+      supabase.from('asset_history').select('recorded_at, current_asset').eq('user_id', user.id).order('recorded_at', { ascending: true }),
+    ])
     if (goalResult.data) {
       targetAsset.value = goalResult.data.target_asset ?? 0
       monthlyInvestment.value = goalResult.data.monthly_investment ?? 0
       annualReturn.value = goalResult.data.annual_return ?? null
     }
     currentAsset.value = summaryResult.data?.current_asset ?? 0
+    assetHistory.value = historyResult.data ?? []
   } catch (e) {
     console.error(e)
     showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
@@ -426,8 +495,11 @@ onMounted(loadData)
             <!-- fill -->
             <path :d="chartPoints.fillD" fill="url(#chartFill)" />
 
-            <!-- 선 -->
-            <path :d="chartPoints.d" fill="none" stroke="rgb(var(--v-theme-primary))" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            <!-- 과거 실선 -->
+            <path v-if="chartPoints.histPath" :d="chartPoints.histPath" fill="none" stroke="rgb(var(--v-theme-primary))" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+
+            <!-- 예측 점선 -->
+            <path v-if="chartPoints.futurePath" :d="chartPoints.futurePath" fill="none" stroke="rgb(var(--v-theme-primary))" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5,4" opacity="0.7" />
 
             <!-- 현재 자산 시작점 -->
             <circle :cx="chartPoints.startPt.x" :cy="chartPoints.startPt.y" r="5" fill="rgb(var(--v-theme-surface))" stroke="rgb(var(--v-theme-primary))" stroke-width="2.5" />
@@ -561,7 +633,7 @@ onMounted(loadData)
           <div class="fire-goal-asset-label">예상 자산</div>
           <div class="fire-goal-asset">{{ formatShortMoney(fireGoalYear.asset) }}원</div>
           <div class="fire-goal-meta">
-            <span class="fire-goal-year">{{ fireGoalYear.year }}년 예상</span>
+            <span class="fire-goal-year">{{ fireGoalYear.year }}년 {{ fireGoalYear.month }}월 예상</span>
             <span v-if="fireGoalYear.remainText" class="fire-goal-remain"> · {{ fireGoalYear.remainText }}</span>
           </div>
           <div class="fire-goal-bar-bg">
