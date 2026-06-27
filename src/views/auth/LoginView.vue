@@ -116,15 +116,6 @@ const onKeydown = (e: KeyboardEvent) => { if (e.key === 'Enter' && isLogin.value
           class="brand-logo mx-auto mb-2"
           alt="FIREPATH"
         />
-        <video
-          v-else
-          src="/icons/icon-rocket.mp4"
-          class="brand-logo mx-auto mb-2"
-          autoplay
-          loop
-          muted
-          playsinline
-        />
         <template v-if="!logoMain">
           <div class="brand-title">FIREPATH</div>
           <div class="brand-sub mt-2">Financial Independence, Retire Early</div>

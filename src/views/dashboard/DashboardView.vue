@@ -140,14 +140,6 @@ onMounted(loadDashboard)
           alt="FIREPATH"
         />
         <template v-else>
-          <video
-            src="/icons/icon-rocket.mp4"
-            class="header-logo"
-            autoplay
-            loop
-            muted
-            playsinline
-          />
           <div class="text-h6 font-weight-bold">FIREPATH</div>
         </template>
       </div>
