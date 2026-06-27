@@ -87,6 +87,7 @@ const ACTION_WIDTH = 128
 const swipeTouchStartX = ref(0)
 const swipeTouchStartY = ref(0)
 const isDraggingSwipe = ref(false)
+const isVerticalScroll = ref(false)
 
 // stat용 전체 데이터 (경량)
 interface TotalRow { transaction_type: string; quantity: number; unit_price: number; portfolios: { currency: string } | null }
@@ -356,13 +357,19 @@ const onSwipeTouchStart = (e: TouchEvent) => {
   swipeTouchStartX.value = e.touches[0]?.clientX ?? 0
   swipeTouchStartY.value = e.touches[0]?.clientY ?? 0
   isDraggingSwipe.value = true
+  isVerticalScroll.value = false
+}
+const onSwipeTouchMove = (e: TouchEvent) => {
+  if (!isDraggingSwipe.value || isVerticalScroll.value) return
+  const dx = Math.abs(swipeTouchStartX.value - (e.touches[0]?.clientX ?? 0))
+  const dy = Math.abs(swipeTouchStartY.value - (e.touches[0]?.clientY ?? 0))
+  if (dy > dx && dy > 5) isVerticalScroll.value = true
 }
 const onSwipeTouchEnd = (e: TouchEvent, id: string) => {
   if (!isDraggingSwipe.value) return
   isDraggingSwipe.value = false
+  if (isVerticalScroll.value) return
   const dx = swipeTouchStartX.value - (e.changedTouches[0]?.clientX ?? 0)
-  const dy = Math.abs(swipeTouchStartY.value - (e.changedTouches[0]?.clientY ?? 0))
-  if (dy > 10 && dy > Math.abs(dx)) return
   if (dx > SWIPE_THRESHOLD) swipedId.value = id
   else if (dx < -SWIPE_THRESHOLD / 2 && swipedId.value === id) swipedId.value = null
 }
@@ -567,6 +574,7 @@ onUnmounted(() => {
               class="swipe-card"
               :style="swipedId === item.id ? `transform: translateX(-${ACTION_WIDTH}px)` : ''"
               @touchstart.passive="onSwipeTouchStart"
+              @touchmove.passive="onSwipeTouchMove"
               @touchend.passive="(e) => onSwipeTouchEnd(e, item.id)"
               @mousedown="onSwipeMouseDown"
               @mouseup="(e) => onSwipeMouseUp(e, item.id)"
