@@ -89,7 +89,13 @@ const effectiveCurrency = computed(() => {
 const portfolioItems = computed(() => [
   ...portfolios.value.map((p) => {
     const name = getTickerDisplayName(p.ticker)
-    const label = name !== p.ticker ? name : p.ticker
+    const hasKoreanName = name !== p.ticker
+    const isOverseas = p.asset_type === '해외주식'
+    const label = hasKoreanName
+      ? isOverseas
+        ? `${name} (${p.ticker})`
+        : name
+      : p.ticker
     const assetLabel = p.asset_type.replace('주식', '')
     return { title: `${label} · ${assetLabel}`, value: p.id }
   }),

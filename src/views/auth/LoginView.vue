@@ -165,6 +165,7 @@ const onKeydown = (e: KeyboardEvent) => { if (e.key === 'Enter' && isLogin.value
               class="mb-4"
               hide-details="auto"
               autocomplete="email"
+              maxlength="254"
               bg-color="transparent"
             />
             <div class="fp-label mb-2">비밀번호</div>
@@ -180,6 +181,7 @@ const onKeydown = (e: KeyboardEvent) => { if (e.key === 'Enter' && isLogin.value
               :class="isSignup ? 'mb-4' : ''"
               hide-details="auto"
               autocomplete="current-password"
+              maxlength="72"
               bg-color="transparent"
             />
 
@@ -196,6 +198,7 @@ const onKeydown = (e: KeyboardEvent) => { if (e.key === 'Enter' && isLogin.value
                 variant="outlined"
                 density="comfortable"
                 hide-details="auto"
+                maxlength="72"
                 bg-color="transparent"
               />
             </template>

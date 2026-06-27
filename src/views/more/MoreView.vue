@@ -214,6 +214,18 @@ const currentThemeLabel = computed(() => {
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
+
+      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/change-password')">
+        <div class="menu-icon">
+          <v-icon size="18" color="primary">mdi-lock-reset</v-icon>
+        </div>
+        <div>
+          <div class="text-body-2 font-weight-medium">비밀번호 변경</div>
+          <div class="text-caption text-medium-emphasis">계정 비밀번호를 변경합니다</div>
+        </div>
+        <v-spacer />
+        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
+      </div>
     </div>
 
     <!-- 관리자 섹션 -->

@@ -17,10 +17,13 @@ const annualReturn = ref<number | null>(null)
 // C: 현재 자산, M: 월 투자금, r: 월 수익률, n: 개월 수
 const calcAsset = (C: number, M: number, r: number, n: number) => {
   if (r === 0) return C + M * n
-  return C * Math.pow(1 + r, n) + M * (Math.pow(1 + r, n) - 1) / r
+  return C * Math.pow(1 + r, n) + (M * (Math.pow(1 + r, n) - 1)) / r
 }
 
-interface YearPoint { year: number; asset: number }
+interface YearPoint {
+  year: number
+  asset: number
+}
 
 const projection = computed<YearPoint[]>(() => {
   const C = currentAsset.value
@@ -94,9 +97,7 @@ const remainingInfo = computed(() => {
   if (!isFinite(months) || months <= 0) return null
   const years = Math.floor(months / 12)
   const rem = months % 12
-  return years > 0
-    ? `약 ${years}년 ${rem > 0 ? rem + '개월' : ''} 남았습니다`
-    : `약 ${months}개월 남았습니다`
+  return years > 0 ? `약 ${years}년 ${rem > 0 ? rem + '개월' : ''} 남았습니다` : `약 ${months}개월 남았습니다`
 })
 
 // ── SVG 차트 ─────────────────────────────────────
@@ -115,10 +116,8 @@ const chartPoints = computed(() => {
   const minX = pts[0]!.year
   const maxX = pts[pts.length - 1]!.year
 
-  const toX = (year: number) =>
-    PAD.left + ((year - minX) / Math.max(maxX - minX, 1)) * PW
-  const toY = (asset: number) =>
-    PAD.top + PH - ((asset - minY) / Math.max(maxY - minY, 1)) * PH
+  const toX = (year: number) => PAD.left + ((year - minX) / Math.max(maxX - minX, 1)) * PW
+  const toY = (asset: number) => PAD.top + PH - ((asset - minY) / Math.max(maxY - minY, 1)) * PH
 
   const pointArr = pts.map((p) => ({ x: toX(p.year), y: toY(p.asset), ...p }))
 
@@ -137,24 +136,18 @@ const chartPoints = computed(() => {
 
   // X축 레이블: 최대 5개
   const step = Math.max(1, Math.ceil(pts.length / 5))
-  const xLabels = pts
-    .filter((_, i) => i % step === 0 || i === pts.length - 1)
-    .map((p) => ({ x: toX(p.year), label: String(p.year) }))
+  const xLabels = pts.filter((_, i) => i % step === 0 || i === pts.length - 1).map((p) => ({ x: toX(p.year), label: String(p.year) }))
 
   // 현재 자산 포인트 & 목표 자산 포인트
   const startPt = pointArr[0]!
-  const goalPt = targetAsset.value > 0
-    ? pointArr.find((p) => p.asset >= targetAsset.value) ?? last
-    : null
+  const goalPt = targetAsset.value > 0 ? (pointArr.find((p) => p.asset >= targetAsset.value) ?? last) : null
 
   return { d, fillD, pointArr, xLabels, startPt, goalPt, toX, toY }
 })
 
 // ── 마일스톤 ─────────────────────────────────────
 const formatMilestoneLabel = (v: number) => {
-  if (v >= 100_000_000) return (v / 100_000_000) % 1 === 0
-    ? `${v / 100_000_000}억`
-    : `${(v / 100_000_000).toFixed(1)}억`
+  if (v >= 100_000_000) return (v / 100_000_000) % 1 === 0 ? `${v / 100_000_000}억` : `${(v / 100_000_000).toFixed(1)}억`
   return `${Math.round(v / 10_000)}만`
 }
 
@@ -163,13 +156,7 @@ const chartMilestones = computed(() => {
   const C = currentAsset.value
   if (!T || !chartPoints.value) return []
 
-  // 목표에 맞는 눈금 단위 결정
-  let step: number
-  if (T <= 50_000_000) step = 10_000_000
-  else if (T <= 200_000_000) step = 50_000_000
-  else if (T <= 500_000_000) step = 100_000_000
-  else if (T <= 2_000_000_000) step = 500_000_000
-  else step = 1_000_000_000
+  const step = 100_000_000 // 1억 단위 고정
 
   const result: { value: number; label: string; isPassed: boolean; y: number }[] = []
   let v = step
@@ -189,12 +176,14 @@ const nextMilestone = computed(() => {
   return chartMilestones.value.find((m) => !m.isPassed) ?? null
 })
 
-const hasData = computed(() =>
-  annualReturn.value !== null && monthlyInvestment.value > 0 && currentAsset.value >= 0,
-)
+const hasData = computed(() => annualReturn.value !== null && monthlyInvestment.value > 0 && currentAsset.value >= 0)
 
 // ── 시나리오 비교 ─────────────────────────────────
-interface Scenario { rate: number; label: string; months: number | null }
+interface Scenario {
+  rate: number
+  label: string
+  months: number | null
+}
 
 const scenarios = computed<Scenario[]>(() => {
   const T = targetAsset.value
@@ -283,24 +272,72 @@ const fireTip = computed(() => {
 })
 
 // ── 연도별 추이 테이블 ─────────────────────────────
+const currentYear = new Date().getFullYear()
+const showAllYears = ref(false)
+
+// status: 'past' | 'current' | 'future'
 const yearlyRows = computed(() => {
   const T = targetAsset.value
-  return projection.value.map((p) => ({
-    year: p.year,
-    asset: p.asset,
-    rate: T > 0 ? Math.min(Math.round((p.asset / T) * 100), 100) : null,
-  }))
+  const C = currentAsset.value
+  const pts = projection.value
+  return pts.map((p, i) => {
+    const status = p.year < currentYear ? 'past' : p.year === currentYear ? 'current' : 'future'
+    // 올해 목표 달성률: 현재 자산 / 올해 말(=내년 시작) 예상 자산
+    // projection[0].asset === currentAsset(n=0)이므로 다음 포인트를 분모로 사용
+    const yearEndAsset = pts[i + 1]?.asset ?? p.asset
+    const annualRate = status === 'current' && yearEndAsset > 0 ? Math.min(Math.round((C / yearEndAsset) * 100), 100) : status === 'past' ? 100 : 0
+    const fireRate = T > 0 ? Math.min(Math.round((C / T) * 100), 100) : null
+    return { year: p.year, asset: p.asset, status, annualRate, fireRate }
+  })
 })
+
+// 목표 달성 연도 + 남은 기간 텍스트 (calcMonths 헬퍼 재사용)
+const fireGoalYear = computed(() => {
+  const T = targetAsset.value
+  const C = currentAsset.value
+  const M = monthlyInvestment.value
+  const rate = annualReturn.value
+  if (!T) return null
+  const reached = yearlyRows.value.find((r) => r.asset >= T)
+  if (!reached) return null
+
+  let remainText: string | null = null
+  if (M && rate !== null && C < T) {
+    const months = calcMonths(T, C, M, rate)
+    if (months !== null && months > 0) {
+      const y = Math.floor(months / 12)
+      const mo = months % 12
+      remainText = y > 0 ? `목표까지 약 ${y}년${mo > 0 ? ' ' + mo + '개월' : ''}` : `목표까지 약 ${months}개월`
+    }
+  }
+  return { year: reached.year, asset: reached.asset, remainText }
+})
+
+// 표시할 행 목록 (fireGoalYear 제외)
+const displayRows = computed(() => (fireGoalYear.value ? yearlyRows.value.filter((r) => r.year < fireGoalYear.value!.year) : yearlyRows.value))
+
+// 더보기 전 요약: 과거 최대 2개 + 현재 + 미래 최대 2개
+const summaryRows = computed(() => {
+  const rows = displayRows.value
+  if (rows.length <= 5) return rows
+  const currentIdx = rows.findIndex((r) => r.year === currentYear)
+  if (currentIdx === -1) return rows.slice(0, 5)
+  const past = rows.slice(0, currentIdx).slice(-2)
+  const current = rows[currentIdx]!
+  const future = rows.slice(currentIdx + 1, currentIdx + 3)
+  return [...past, current, ...future]
+})
+
+const visibleRows = computed(() => (showAllYears.value ? displayRows.value : summaryRows.value))
 
 const loadData = async () => {
   loading.value = true
   try {
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) return
-    const [goalResult, summaryResult] = await Promise.all([
-      supabase.from('investment_goals').select('*').eq('user_id', user.id).maybeSingle(),
-      supabase.from('asset_summary').select('current_asset').eq('user_id', user.id).maybeSingle(),
-    ])
+    const [goalResult, summaryResult] = await Promise.all([supabase.from('investment_goals').select('*').eq('user_id', user.id).maybeSingle(), supabase.from('asset_summary').select('current_asset').eq('user_id', user.id).maybeSingle()])
     if (goalResult.data) {
       targetAsset.value = goalResult.data.target_asset ?? 0
       monthlyInvestment.value = goalResult.data.monthly_investment ?? 0
@@ -340,12 +377,8 @@ onMounted(loadData)
       <div class="glass-card py-12 text-center">
         <v-icon size="48" color="primary" style="opacity: 0.35" class="mb-4">mdi-chart-timeline-variant</v-icon>
         <div class="text-h6 font-weight-medium text-medium-emphasis">설정이 필요합니다</div>
-        <div class="text-body-2 text-disabled mt-1 mb-6">
-          목표 설정에서 월 투자금과 연평균 수익률을 입력해주세요
-        </div>
-        <v-btn color="primary" variant="tonal" rounded="lg" @click="router.push('/goalSettings')">
-          목표 설정하기
-        </v-btn>
+        <div class="text-body-2 text-disabled mt-1 mb-6">목표 설정에서 월 투자금과 연평균 수익률을 입력해주세요</div>
+        <v-btn color="primary" variant="tonal" rounded="lg" @click="router.push('/goalSettings')"> 목표 설정하기 </v-btn>
       </div>
     </template>
 
@@ -365,19 +398,12 @@ onMounted(loadData)
           </div>
           <div class="text-right" v-if="targetAsset > 0">
             <div class="chart-asset-label">목표 자산</div>
-            <div class="chart-asset-value" style="color: rgb(var(--v-theme-primary))">
-              {{ formatShortMoney(targetAsset) }}원
-            </div>
+            <div class="chart-asset-value" style="color: rgb(var(--v-theme-primary))">{{ formatShortMoney(targetAsset) }}원</div>
           </div>
         </div>
 
         <template v-if="chartPoints">
-          <svg
-            :viewBox="`0 0 ${VW} ${VH}`"
-            width="100%"
-            :height="VH"
-            style="overflow: visible"
-          >
+          <svg :viewBox="`0 0 ${VW} ${VH}`" width="100%" :height="VH" style="overflow: visible">
             <defs>
               <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stop-color="rgb(var(--v-theme-primary))" stop-opacity="0.25" />
@@ -387,102 +413,44 @@ onMounted(loadData)
 
             <!-- 마일스톤 수평선 + 라벨 -->
             <g v-for="m in chartMilestones" :key="m.value">
-              <line
-                :x1="PAD.left"
-                :y1="m.y"
-                :x2="VW - PAD.right + 2"
-                :y2="m.y"
-                :stroke="m.isPassed ? 'rgba(var(--v-theme-primary), 0.25)' : 'rgba(var(--v-theme-on-surface), 0.1)'"
-                stroke-width="1"
-                stroke-dasharray="3 3"
-              />
-              <text
-                :x="VW - PAD.right + 6"
-                :y="m.y + 4"
-                font-size="9"
-                font-weight="600"
-                :fill="m.isPassed ? 'rgba(var(--v-theme-primary), 0.7)' : 'rgba(var(--v-theme-on-surface), 0.35)'"
-              >{{ m.isPassed ? '✓' : '💰' }} {{ m.label }}</text>
+              <line :x1="PAD.left" :y1="m.y" :x2="VW - PAD.right + 2" :y2="m.y" :stroke="m.isPassed ? 'rgba(var(--v-theme-primary), 0.25)' : 'rgba(var(--v-theme-on-surface), 0.1)'" stroke-width="1" stroke-dasharray="3 3" />
+              <text :x="VW - PAD.right + 6" :y="m.y + 4" font-size="9" font-weight="600" :fill="m.isPassed ? 'rgba(var(--v-theme-primary), 0.7)' : 'rgba(var(--v-theme-on-surface), 0.35)'">{{ m.isPassed ? '✓' : '💰' }} {{ m.label }}</text>
             </g>
 
             <!-- 목표선 -->
             <g v-if="targetAsset > 0 && chartPoints.goalPt">
-              <line
-                :x1="PAD.left"
-                :y1="chartPoints.goalPt.y"
-                :x2="VW - PAD.right + 2"
-                :y2="chartPoints.goalPt.y"
-                stroke="rgb(var(--v-theme-primary))"
-                stroke-width="1"
-                stroke-dasharray="4 3"
-                opacity="0.5"
-              />
-              <text
-                :x="VW - PAD.right + 6"
-                :y="chartPoints.goalPt.y + 4"
-                font-size="9"
-                font-weight="700"
-                fill="rgb(var(--v-theme-primary))"
-              >🏁 {{ formatMilestoneLabel(targetAsset) }}</text>
+              <line :x1="PAD.left" :y1="chartPoints.goalPt.y" :x2="VW - PAD.right + 2" :y2="chartPoints.goalPt.y" stroke="rgb(var(--v-theme-primary))" stroke-width="1" stroke-dasharray="4 3" opacity="0.5" />
+              <text :x="VW - PAD.right + 6" :y="chartPoints.goalPt.y + 4" font-size="9" font-weight="700" fill="rgb(var(--v-theme-primary))">🏁 {{ formatMilestoneLabel(targetAsset) }}</text>
             </g>
 
             <!-- fill -->
             <path :d="chartPoints.fillD" fill="url(#chartFill)" />
 
             <!-- 선 -->
-            <path
-              :d="chartPoints.d"
-              fill="none"
-              stroke="rgb(var(--v-theme-primary))"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
+            <path :d="chartPoints.d" fill="none" stroke="rgb(var(--v-theme-primary))" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
 
             <!-- 현재 자산 시작점 -->
-            <circle
-              :cx="chartPoints.startPt.x"
-              :cy="chartPoints.startPt.y"
-              r="5"
-              fill="rgb(var(--v-theme-surface))"
-              stroke="rgb(var(--v-theme-primary))"
-              stroke-width="2.5"
-            />
-            <text
-              :x="chartPoints.startPt.x + 8"
-              :y="chartPoints.startPt.y + 4"
-              font-size="8"
-              font-weight="600"
-              fill="rgba(var(--v-theme-on-surface), 0.55)"
-            >● 현재</text>
+            <circle :cx="chartPoints.startPt.x" :cy="chartPoints.startPt.y" r="5" fill="rgb(var(--v-theme-surface))" stroke="rgb(var(--v-theme-primary))" stroke-width="2.5" />
+            <text :x="chartPoints.startPt.x + 8" :y="chartPoints.startPt.y + 4" font-size="8" font-weight="600" fill="rgba(var(--v-theme-on-surface), 0.55)">● 현재</text>
 
             <!-- 목표 달성 포인트 -->
             <g v-if="chartPoints.goalPt && targetAsset > 0">
-              <circle
-                :cx="chartPoints.goalPt.x"
-                :cy="chartPoints.goalPt.y"
-                r="5"
-                fill="rgb(var(--v-theme-primary))"
-              />
+              <circle :cx="chartPoints.goalPt.x" :cy="chartPoints.goalPt.y" r="5" fill="rgb(var(--v-theme-primary))" />
             </g>
 
             <!-- X축 레이블 -->
             <g v-for="lbl in chartPoints.xLabels" :key="lbl.label">
-              <text
-                :x="lbl.x"
-                :y="VH - 4"
-                text-anchor="middle"
-                font-size="9"
-                :fill="`rgba(var(--v-theme-on-surface), 0.4)`"
-              >{{ lbl.label }}</text>
+              <text :x="lbl.x" :y="VH - 4" text-anchor="middle" font-size="9" :fill="`rgba(var(--v-theme-on-surface), 0.4)`">{{ lbl.label }}</text>
             </g>
           </svg>
 
           <!-- 다음 마일스톤 -->
           <div v-if="nextMilestone" class="next-milestone-bar mt-3">
             <v-icon size="14" color="primary">mdi-flag-outline</v-icon>
-            <span>다음 목표 <strong>{{ nextMilestone.label }}</strong>까지
-              <strong>{{ formatShortMoney(nextMilestone.value - currentAsset) }}원</strong> 남았습니다</span>
+            <span
+              >다음 목표 <strong>{{ nextMilestone.label }}</strong
+              >까지 <strong>{{ formatShortMoney(nextMilestone.value - currentAsset) }}원</strong> 남았습니다</span
+            >
           </div>
         </template>
       </div>
@@ -495,9 +463,7 @@ onMounted(loadData)
         </div>
         <div class="stat-card text-center">
           <div class="stat-label">총 수익 (예상)</div>
-          <div class="stat-value" style="color: rgb(var(--v-theme-primary))">
-            {{ formatShortMoney(Math.max(totalReturn, 0)) }}원
-          </div>
+          <div class="stat-value" style="color: rgb(var(--v-theme-primary))">{{ formatShortMoney(Math.max(totalReturn, 0)) }}원</div>
         </div>
         <div class="stat-card text-center" style="grid-column: 1 / -1">
           <div class="stat-label">최종 자산 (예상)</div>
@@ -509,12 +475,7 @@ onMounted(loadData)
       <div v-if="scenarios.length" class="glass-card pa-4 mb-3">
         <div class="section-title mb-3">수익률 시나리오 비교</div>
         <div class="scenario-grid">
-          <div
-            v-for="(s, i) in scenarios"
-            :key="s.rate"
-            class="scenario-col"
-            :class="i === 0 ? 'scenario-low' : i === 2 ? 'scenario-high' : 'scenario-mid'"
-          >
+          <div v-for="(s, i) in scenarios" :key="s.rate" class="scenario-col" :class="i === 0 ? 'scenario-low' : i === 2 ? 'scenario-high' : 'scenario-mid'">
             <div class="scenario-emoji">{{ i === 0 ? '🐢' : i === 2 ? '🚀' : '📍' }}</div>
             <div class="scenario-name" :class="i === 0 ? 'name-low' : i === 2 ? 'name-high' : 'name-mid'">
               {{ i === 0 ? '보수적' : i === 2 ? '낙관적' : '현재 계획' }}
@@ -532,29 +493,79 @@ onMounted(loadData)
           <span class="tip-emoji">💡</span>
           <span class="tip-title">FIRE Tip</span>
         </div>
-        <div class="tip-body">{{ fireTip.body }}</div>
+        <div class="tip-body" v-html="fireTip.body"></div>
       </div>
 
-      <!-- 연도별 자산 추이 -->
+      <!-- 연도별 예상자산 추이 -->
       <div class="glass-card pa-4">
-        <div class="section-title mb-3">연도별 자산 추이</div>
+        <div class="section-title mb-3">연도별 예상자산 추이</div>
         <div class="yearly-table">
-          <div class="yearly-header">
-            <span>연도</span>
-            <span>예상 자산</span>
-            <span v-if="targetAsset > 0">달성률</span>
+          <div v-for="row in visibleRows" :key="row.year" class="yearly-row" :class="`yearly-row--${row.status}`">
+            <!-- 연도 + 아이콘 -->
+            <div class="yearly-year-wrap">
+              <span v-if="row.status === 'past'" class="yearly-status-icon yearly-done">✓</span>
+              <span v-else-if="row.status === 'current'" class="yearly-status-icon yearly-active">▼</span>
+              <span v-else class="yearly-status-icon yearly-pending">○</span>
+              <span class="yearly-year">{{ row.year }}</span>
+            </div>
+
+            <!-- 게이지 영역 -->
+            <div class="yearly-gauge-wrap">
+              <!-- 현재 연도: 올해 달성률 + FIRE 진행률 -->
+              <template v-if="row.status === 'current'">
+                <div class="yearly-bar-row">
+                  <div class="yearly-bar-bg yearly-bar-bg--active">
+                    <div class="yearly-bar-fill" :style="{ width: row.annualRate + '%' }"></div>
+                  </div>
+                  <span class="yearly-rate yearly-rate--active">{{ row.annualRate }}%</span>
+                </div>
+                <div class="yearly-sublabels">
+                  <span class="yearly-sublabel">올해 목표 {{ row.annualRate }}%</span>
+                  <span v-if="row.fireRate !== null" class="yearly-fire-rate"> 전체 FIRE {{ row.fireRate }}% </span>
+                </div>
+              </template>
+
+              <!-- 과거: 100% 완료 -->
+              <template v-else-if="row.status === 'past'">
+                <div class="yearly-bar-row">
+                  <div class="yearly-bar-bg yearly-bar-bg--done">
+                    <div class="yearly-bar-fill yearly-bar-fill--done" style="width: 100%"></div>
+                  </div>
+                  <span class="yearly-rate yearly-rate--done">완료</span>
+                </div>
+                <div class="yearly-asset yearly-asset--past">{{ formatShortMoney(row.asset) }}원</div>
+              </template>
+
+              <!-- 미래: 빈 바 -->
+              <template v-else>
+                <div class="yearly-bar-row">
+                  <div class="yearly-bar-bg yearly-bar-bg--future">
+                    <div class="yearly-bar-fill" style="width: 0%"></div>
+                  </div>
+                  <span class="yearly-rate yearly-rate--future">-</span>
+                </div>
+                <div class="yearly-asset yearly-asset--future">{{ formatShortMoney(row.asset) }}원 예정</div>
+              </template>
+            </div>
           </div>
-          <div
-            v-for="row in yearlyRows"
-            :key="row.year"
-            class="yearly-row"
-            :class="{ 'yearly-goal': row.rate !== null && row.rate >= 100 }"
-          >
-            <span class="yearly-year">{{ row.year }}</span>
-            <span class="yearly-asset">{{ formatShortMoney(row.asset) }}원</span>
-            <span v-if="targetAsset > 0" class="yearly-rate" :class="row.rate !== null && row.rate >= 100 ? 'text-primary' : ''">
-              {{ row.rate !== null ? row.rate + '%' : '-' }}
-            </span>
+        </div>
+
+        <!-- 더보기 / 접기 -->
+        <div v-if="displayRows.length > summaryRows.length || showAllYears" class="yearly-toggle" @click="showAllYears = !showAllYears">
+          {{ showAllYears ? '접기 ▲' : `전체 보기 (${displayRows.length}개) ▼` }}
+        </div>
+
+        <!-- FIRE 달성 카드 -->
+        <div v-if="fireGoalYear" class="fire-goal-card mt-3">
+          <div class="fire-goal-title">🏆 FIRE 목표 달성</div>
+          <div class="fire-goal-asset-label">예상 자산</div>
+          <div class="fire-goal-asset">{{ formatShortMoney(fireGoalYear.asset) }}원</div>
+          <div class="fire-goal-meta">
+            <span class="fire-goal-year">{{ fireGoalYear.year }}년 예상</span>
+            <span v-if="fireGoalYear.remainText" class="fire-goal-remain"> · {{ fireGoalYear.remainText }}</span>
+          </div>
+          <div class="fire-goal-bar-bg">
+            <div class="fire-goal-bar-fill"></div>
           </div>
         </div>
       </div>
@@ -568,7 +579,6 @@ onMounted(loadData)
   height: 28px;
   object-fit: contain;
 }
-
 
 .remain-badge {
   display: flex;
@@ -632,7 +642,9 @@ onMounted(loadData)
   gap: 6px;
   margin-bottom: 8px;
 }
-.tip-emoji { font-size: 16px; }
+.tip-emoji {
+  font-size: 16px;
+}
 .tip-title {
   font-size: 12px;
   font-weight: 700;
@@ -704,9 +716,15 @@ onMounted(loadData)
   font-weight: 700;
   letter-spacing: 0.01em;
 }
-.name-low  { color: rgba(var(--v-theme-on-surface), 0.5); }
-.name-mid  { color: rgb(var(--v-theme-primary)); }
-.name-high { color: var(--fp-success); }
+.name-low {
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+.name-mid {
+  color: rgb(var(--v-theme-primary));
+}
+.name-high {
+  color: var(--fp-success);
+}
 .scenario-rate-label {
   font-size: 13px;
   font-weight: 700;
@@ -730,42 +748,213 @@ onMounted(loadData)
 .yearly-table {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-}
-.yearly-header {
-  display: grid;
-  grid-template-columns: 56px 1fr 56px;
-  padding: 0 4px 6px;
-  font-size: 10px;
-  font-weight: 600;
-  color: rgba(var(--v-theme-on-surface), 0.35);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  gap: 4px;
 }
 .yearly-row {
   display: grid;
-  grid-template-columns: 56px 1fr 56px;
+  grid-template-columns: 68px 1fr;
+  gap: 8px;
   padding: 8px 4px;
-  border-radius: 8px;
-  align-items: center;
+  border-radius: 10px;
   transition: background 0.15s;
 }
-.yearly-row:active { background: rgba(var(--v-theme-on-surface), 0.04); }
-.yearly-goal { background: rgba(var(--v-theme-primary), 0.06); }
+.yearly-row--current {
+  background: rgba(var(--v-theme-primary), 0.05);
+  border: 1px solid rgba(var(--v-theme-primary), 0.12);
+  padding: 10px 8px;
+}
+.yearly-row--past {
+  opacity: 0.75;
+}
+.yearly-row--future {
+  opacity: 0.65;
+}
+
+.yearly-year-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-top: 1px;
+}
+.yearly-status-icon {
+  font-size: 11px;
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.yearly-done {
+  color: rgba(var(--v-theme-on-surface), 0.35);
+}
+.yearly-active {
+  color: rgb(var(--v-theme-primary));
+  font-size: 9px;
+}
+.yearly-pending {
+  color: rgba(var(--v-theme-on-surface), 0.25);
+  font-size: 13px;
+}
+
 .yearly-year {
   font-size: 13px;
   font-weight: 600;
-  color: rgba(var(--v-theme-on-surface), 0.6);
+  color: rgba(var(--v-theme-on-surface), 0.55);
 }
-.yearly-asset {
-  font-size: 13px;
-  font-weight: 600;
+.yearly-row--current .yearly-year {
   color: rgb(var(--v-theme-on-surface));
+  font-weight: 700;
 }
+
+.yearly-gauge-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.yearly-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.yearly-bar-bg {
+  flex: 1;
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(var(--v-theme-on-surface), 0.08);
+  overflow: hidden;
+}
+.yearly-bar-bg--active {
+  height: 8px;
+  background: rgba(var(--v-theme-primary), 0.12);
+}
+.yearly-bar-bg--done {
+  background: rgba(var(--v-theme-on-surface), 0.08);
+}
+.yearly-bar-bg--future {
+  background: rgba(var(--v-theme-on-surface), 0.05);
+}
+
+.yearly-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: rgba(var(--v-theme-primary), 0.5);
+  transition: width 0.5s ease;
+}
+.yearly-bar-fill--done {
+  background: rgba(var(--v-theme-on-surface), 0.2);
+}
+
 .yearly-rate {
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  min-width: 32px;
+  text-align: right;
+}
+.yearly-rate--active {
+  color: rgb(var(--v-theme-primary));
+  font-size: 13px;
+}
+.yearly-rate--done {
+  color: rgba(var(--v-theme-on-surface), 0.3);
+  font-size: 10px;
+}
+.yearly-rate--future {
+  color: rgba(var(--v-theme-on-surface), 0.2);
+}
+
+.yearly-sublabels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2px;
+}
+.yearly-sublabel {
+  font-size: 10px;
+  color: rgba(var(--v-theme-on-surface), 0.4);
+}
+.yearly-fire-rate {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-primary), 0.7);
+}
+
+.yearly-asset {
+  font-size: 11px;
+  color: rgba(var(--v-theme-on-surface), 0.35);
+}
+.yearly-asset--past {
+  color: rgba(var(--v-theme-on-surface), 0.3);
+}
+.yearly-asset--future {
+  color: rgba(var(--v-theme-on-surface), 0.2);
+  font-style: italic;
+}
+
+.yearly-toggle {
+  margin-top: 12px;
+  text-align: center;
   font-size: 12px;
   font-weight: 600;
-  color: rgba(var(--v-theme-on-surface), 0.45);
-  text-align: right;
+  color: rgba(var(--v-theme-on-surface), 0.4);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.yearly-toggle:active {
+  background: rgba(var(--v-theme-on-surface), 0.05);
+}
+
+/* FIRE 달성 카드 */
+.fire-goal-card {
+  border-radius: 16px;
+  padding: 16px 18px 0;
+  background: linear-gradient(135deg, rgba(var(--v-theme-primary), 0.15) 0%, rgba(var(--v-theme-primary), 0.06) 100%);
+  border: 1.5px solid rgba(var(--v-theme-primary), 0.3);
+  overflow: hidden;
+}
+.fire-goal-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgb(var(--v-theme-primary));
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+.fire-goal-asset-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.55);
+  margin-bottom: 2px;
+}
+.fire-goal-asset {
+  font-size: 28px;
+  font-weight: 800;
+  color: rgb(var(--v-theme-primary));
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  margin-top: -4px;
+  margin-bottom: 8px;
+}
+.fire-goal-meta {
+  margin-bottom: 14px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.fire-goal-year {
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+.fire-goal-remain {
+  color: rgba(var(--v-theme-on-surface), 0.3);
+}
+.fire-goal-bar-bg {
+  height: 2px;
+  background: rgba(var(--v-theme-primary), 0.1);
+  margin: 0 -18px;
+}
+.fire-goal-bar-fill {
+  height: 100%;
+  width: 100%;
+  background: rgb(var(--v-theme-primary));
+  opacity: 0.3;
 }
 </style>

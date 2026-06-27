@@ -28,7 +28,7 @@ const saving = ref(false)
 const loadingInitial = ref(false)
 const existingInitialTxId = ref<string | null>(null)
 
-const assetTypes = ['국내주식', '해외주식', '암호화폐', '현금']
+const assetTypes = ['국내주식', '해외주식', '암호화폐']
 
 const tickerConfig = computed(() => {
   switch (assetType.value) {

@@ -164,18 +164,19 @@ const loadPortfolios = async () => {
       }
     })
 
-    // 평가금액 합산 후 asset_summary에 저장 (대시보드와 동기화)
-    const totalEval = portfolios.value.reduce(
-      (sum, item) => sum + (item.evaluationAmountKrw ?? 0),
-      0,
-    )
-    const totalCost = portfolios.value.reduce((sum, item) => {
-      const costKrw =
-        item.currency === 'USD'
-          ? item.avg_price * item.quantity * rate
-          : item.avg_price * item.quantity
-      return sum + costKrw
-    }, 0)
+    // 평가금액 합산 후 asset_summary에 저장 (현금 제외 — FIRE 예측은 투자자산 기준)
+    const totalEval = portfolios.value
+      .filter((item) => item.asset_type !== '현금')
+      .reduce((sum, item) => sum + (item.evaluationAmountKrw ?? 0), 0)
+    const totalCost = portfolios.value
+      .filter((item) => item.asset_type !== '현금')
+      .reduce((sum, item) => {
+        const costKrw =
+          item.currency === 'USD'
+            ? item.avg_price * item.quantity * rate
+            : item.avg_price * item.quantity
+        return sum + costKrw
+      }, 0)
     supabase
       .from('asset_summary')
       .upsert(
