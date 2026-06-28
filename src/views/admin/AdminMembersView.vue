@@ -169,22 +169,16 @@ onMounted(async () => {
         </div>
         <div class="stat-card">
           <div class="stat-label">거래 내역 있음</div>
-          <div class="stat-value" style="color: rgb(var(--v-theme-primary))">
-            {{ txUserCount }}<span class="stat-unit">명</span>
-          </div>
+          <div class="stat-value">{{ txUserCount }}<span class="stat-unit">명</span></div>
         </div>
         <div class="stat-card">
           <div class="stat-label">인기 테마</div>
-          <div class="stat-value-sm" style="color: rgb(var(--v-theme-primary))">
-            {{ topTheme?.label ?? '-' }}
-          </div>
+          <div class="stat-value-sm">{{ topTheme?.label ?? '-' }}</div>
           <div class="stat-sub">{{ topTheme ? topTheme.count + '명 사용' : '' }}</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">인기 정렬</div>
-          <div class="stat-value-sm" style="color: rgb(var(--v-theme-primary))">
-            {{ topSort?.label ?? '-' }}
-          </div>
+          <div class="stat-value-sm">{{ topSort?.label ?? '-' }}</div>
           <div class="stat-sub">{{ topSort ? topSort.count + '명 사용' : '' }}</div>
         </div>
       </div>
