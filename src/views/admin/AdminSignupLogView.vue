@@ -209,7 +209,7 @@ const formatDateShort = (iso: string) => {
     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
   }).formatToParts(d)
   const get = (type: string) => parts.find(p => p.type === type)?.value ?? ''
-  return `${get('year')}.${pad(+get('month'))}.${pad(+get('day'))} ${get('hour')}:${get('minute')}:${get('second')}`
+  return `${get('year')}.${pad(+get('month'))}.${pad(+get('day'))} (${get('hour')}:${get('minute')}:${get('second')})`
 }
 
 onMounted(async () => {
