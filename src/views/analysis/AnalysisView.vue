@@ -385,9 +385,6 @@ onMounted(loadData)
           <div class="pt-pct-row">
             <span class="pt-pct-value">{{ progressPct }}%</span>
             <span class="pt-pct-label">달성</span>
-            <span v-if="fireGoalYear" class="pt-goal-date">
-              🏁 {{ fireGoalYear.year }}년 {{ fireGoalYear.month }}월 목표
-            </span>
           </div>
 
           <!-- 프로그레스 바 + 마일스톤 -->
@@ -411,6 +408,7 @@ onMounted(loadData)
               >
                 <template v-if="m.isGoal">
                   <v-icon size="18" color="primary" class="pt-goal-flag">mdi-flag-checkered</v-icon>
+                  <div class="pt-milestone-label label-goal">{{ m.year }}</div>
                 </template>
                 <template v-else>
                   <div class="pt-milestone-tick" :class="m.isPast ? 'tick-done' : 'tick-future'" />
