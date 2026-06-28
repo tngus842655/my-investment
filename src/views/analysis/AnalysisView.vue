@@ -169,6 +169,20 @@ const formatScenarioDate = (months: number | null) => {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')} (${y > 0 ? y + '년 ' : ''}${m > 0 ? m + '개월' : ''})`
 }
 
+const formatScenarioDiff = (months: number | null, baseMonths: number | null, isOptimistic: boolean) => {
+  if (months === null || baseMonths === null) return '-'
+  if (months === 0) return '달성!'
+  const d = new Date()
+  d.setMonth(d.getMonth() + months)
+  const dateStr = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}`
+  const diff = Math.abs(baseMonths - months)
+  if (isOptimistic) {
+    return `${diff}개월 단축(${dateStr})`
+  } else {
+    return `${diff}개월 증가(${dateStr})`
+  }
+}
+
 // ── FIRE Tip ─────────────────────────────────────
 const calcMonths = (T: number, C: number, M: number, annualRate: number): number | null => {
   if (C >= T) return 0
@@ -456,7 +470,10 @@ onMounted(loadData)
             </div>
             <div class="scenario-rate-label">연 {{ s.rate }}%</div>
             <div class="scenario-divider" />
-            <div class="scenario-date">{{ formatScenarioDate(s.months) }}</div>
+            <div class="scenario-date">
+              <template v-if="i === 1">{{ formatScenarioDate(s.months) }}</template>
+              <template v-else>{{ formatScenarioDiff(s.months, scenarios[1].months, i === 2) }}</template>
+            </div>
           </div>
         </div>
       </div>
