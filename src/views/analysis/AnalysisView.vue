@@ -93,147 +93,6 @@ const remainingInfo = computed(() => {
   return years > 0 ? `약 ${years}년 ${rem > 0 ? rem + '개월' : ''} 남았습니다` : `약 ${months}개월 남았습니다`
 })
 
-// ── SVG 차트 ─────────────────────────────────────
-const VW = 300
-const VH = 180
-const PAD = { top: 16, right: 60, bottom: 32, left: 8 }
-const PW = VW - PAD.left - PAD.right
-const PH = VH - PAD.top - PAD.bottom
-
-const chartPoints = computed(() => {
-  const futurePts = projection.value
-  if (futurePts.length < 1) return null
-
-  // 과거 히스토리: 일 단위 원시 데이터 사용
-  const nowDate = new Date()
-  const todayStr = nowDate.toISOString().slice(0, 10)
-  const histPts = assetHistory.value
-    .filter((h) => h.recorded_at < todayStr)
-    .map((h) => {
-      const d = new Date(h.recorded_at)
-      const diffDays = Math.round((d.getTime() - nowDate.getTime()) / 86400000)
-      return { dayOffset: diffDays, year: d.getFullYear(), month: d.getMonth() + 1, asset: h.current_asset, isPast: true }
-    })
-
-  // C=0이면 asset=0인 day=0 시작점 제외 (차트 바닥 모서리에 박히는 현상 방지)
-  const futureMapped = futurePts
-    .filter((p) => p.asset > 0)
-    .map((p) => ({ ...p, isPast: false }))
-  const allPts = [...histPts, ...futureMapped]
-  if (allPts.length < 2) return null
-
-  const minY = Math.max(Math.min(...allPts.map((p) => p.asset)) * 0.85, 1)
-  const maxY = allPts[allPts.length - 1]!.asset * 1.05
-  const minX = allPts[0]!.dayOffset
-  const dataMaxX = allPts[allPts.length - 1]!.dayOffset
-  // x축은 최소 24개월 확보 — 단기 달성 시 곡선이 수직으로 치솟는 왜곡 방지
-  const maxX = Math.max(dataMaxX, minX + 24 * DAYS_PER_MONTH)
-
-  const toX = (day: number) => PAD.left + ((day - minX) / Math.max(maxX - minX, 1)) * PW
-  // C=0이고 월 투자금이 있을 때 로그 스케일 사용 — 단, 달성 기간이 6개월 미만이면 선형 사용
-  // (단기 구간에 로그 스케일 적용 시 곡선이 수직선처럼 왜곡됨)
-  const totalMonths = (dataMaxX - minX) / DAYS_PER_MONTH
-  const useLogScale =
-    currentAsset.value === 0
-      ? monthlyInvestment.value > 0 && totalMonths >= 6
-      : currentAsset.value >= (targetAsset.value || maxY) * 0.02
-  const logMin = Math.log(minY)
-  const logMax = Math.log(maxY)
-  const toY = (asset: number) => {
-    if (useLogScale) {
-      return PAD.top + PH - ((Math.log(Math.max(asset, 1)) - logMin) / Math.max(logMax - logMin, 1)) * PH
-    }
-    return PAD.top + PH - (Math.max(asset, 0) / Math.max(maxY, 1)) * PH
-  }
-
-  const pointArr = allPts.map((p) => ({ x: toX(p.dayOffset), y: toY(p.asset), ...p }))
-
-  // 과거선 (실선)
-  const histArr = pointArr.filter((p) => p.isPast)
-  const futureArr = pointArr.filter((p) => !p.isPast)
-
-  const buildPath = (pts: typeof pointArr) =>
-    pts.reduce((acc, pt, i) => {
-      if (i === 0) return `M ${pt.x},${pt.y}`
-      const prev = pts[i - 1]!
-      const cpx = (prev.x + pt.x) / 2
-      return acc + ` C ${cpx},${prev.y} ${cpx},${pt.y} ${pt.x},${pt.y}`
-    }, '')
-
-  // 히스토리와 예측선을 이어서 전체 fill 경로 생성
-  const fullPath = buildPath(pointArr)
-  const histPath = histArr.length >= 2 ? buildPath(histArr) : null
-  // 마지막 과거 포인트를 예측 점선 시작점으로 포함해 끊김 방지
-  const lastHistPt = histArr.length > 0 ? histArr[histArr.length - 1]! : null
-  const futurePath = futureArr.length >= 1 ? buildPath(lastHistPt ? [lastHistPt, ...futureArr] : futureArr) : null
-
-  const last = pointArr[pointArr.length - 1]!
-  const first = pointArr[0]!
-  const fillD = fullPath + ` L ${last.x},${PAD.top + PH} L ${first.x},${PAD.top + PH} Z`
-
-  // X축 레이블: 연도 경계(1월 1일)마다, 최대 5개 — x축 패딩 범위까지 커버
-  const padEndDate = new Date(nowDate)
-  padEndDate.setDate(padEndDate.getDate() + (maxX - minX))
-  const extraYears: typeof allPts = []
-  for (let y = allPts[allPts.length - 1]!.year + 1; y <= padEndDate.getFullYear(); y++) {
-    const d = new Date(y, 0, 1)
-    const dayOffset = Math.round((d.getTime() - nowDate.getTime()) / 86400000)
-    extraYears.push({ dayOffset, year: y, month: 1, asset: allPts[allPts.length - 1]!.asset, isPast: false })
-  }
-  const allPtsForLabels = [...allPts, ...extraYears]
-  const yearBoundaries = allPtsForLabels.filter((p, i) => i === 0 || (p.month === 1 && p.year !== allPtsForLabels[i - 1]!.year))
-  const step = Math.max(1, Math.ceil(yearBoundaries.length / 5))
-  const xLabels = yearBoundaries
-    .filter((_, i) => i % step === 0)
-    .map((p) => ({ x: toX(p.dayOffset), label: String(p.year) }))
-
-  // 현재 포인트 & 목표 달성 포인트
-  const startPt = pointArr.find((p) => !p.isPast) ?? pointArr[0]!
-  const goalPt = targetAsset.value > 0 ? (pointArr.find((p) => p.asset >= targetAsset.value) ?? last) : null
-
-  return { fullPath, histPath, futurePath, fillD, pointArr, xLabels, startPt, goalPt, toX, toY }
-})
-
-// ── 마일스톤 ─────────────────────────────────────
-const formatMilestoneLabel = (v: number) => {
-  if (v >= 100_000_000) return (v / 100_000_000) % 1 === 0 ? `${v / 100_000_000}억` : `${(v / 100_000_000).toFixed(1)}억`
-  return `${Math.round(v / 10_000)}만`
-}
-
-const chartMilestones = computed(() => {
-  const T = targetAsset.value
-  const C = currentAsset.value
-  if (!T || !chartPoints.value) return []
-
-  // 목표 금액에 따라 step 동적 설정, 최대 4개 마일스톤
-  const step =
-    T <= 500_000_000 ? 100_000_000       // 5억 이하: 1억 단위
-    : T <= 2_000_000_000 ? 500_000_000   // 20억 이하: 5억 단위
-    : T <= 10_000_000_000 ? 1_000_000_000 // 100억 이하: 10억 단위
-    : 5_000_000_000                       // 그 이상: 50억 단위
-
-  const result: { value: number; label: string; isPassed: boolean; y: number }[] = []
-  let v = step
-  while (v < T) {
-    result.push({
-      value: v,
-      label: formatMilestoneLabel(v),
-      isPassed: C >= v,
-      y: chartPoints.value!.toY(v),
-    })
-    v += step
-  }
-  // 최대 4개만 표시 (너무 많으면 간격 조정)
-  if (result.length > 4) {
-    const keep = Math.ceil(result.length / 4)
-    return result.filter((_, i) => (i + 1) % keep === 0 || i === result.length - 1)
-  }
-  return result
-})
-
-const nextMilestone = computed(() => {
-  return chartMilestones.value.find((m) => !m.isPassed) ?? null
-})
 
 const hasData = computed(() => annualReturn.value !== null && monthlyInvestment.value > 0 && currentAsset.value >= 0)
 
@@ -404,12 +263,6 @@ const summaryRows = computed(() => {
 
 const visibleRows = computed(() => (showAllYears.value ? displayRows.value : summaryRows.value))
 
-interface HistoryPoint {
-  recorded_at: string
-  current_asset: number
-}
-const assetHistory = ref<HistoryPoint[]>([])
-
 const loadData = async () => {
   loading.value = true
   try {
@@ -417,10 +270,9 @@ const loadData = async () => {
       data: { user },
     } = await supabase.auth.getUser()
     if (!user) return
-    const [goalResult, summaryResult, historyResult] = await Promise.all([
+    const [goalResult, summaryResult] = await Promise.all([
       supabase.from('investment_goals').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('asset_summary').select('current_asset').eq('user_id', user.id).maybeSingle(),
-      supabase.from('asset_history').select('recorded_at, current_asset').eq('user_id', user.id).order('recorded_at', { ascending: true }),
     ])
     if (goalResult.data) {
       targetAsset.value = goalResult.data.target_asset ?? 0
@@ -428,7 +280,6 @@ const loadData = async () => {
       annualReturn.value = goalResult.data.annual_return ?? null
     }
     currentAsset.value = summaryResult.data?.current_asset ?? 0
-    assetHistory.value = historyResult.data ?? []
   } catch (e) {
     console.error(e)
     showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
@@ -495,60 +346,7 @@ onMounted(loadData)
           <span>포트폴리오에 종목을 추가하면 현재 자산이 반영됩니다</span>
         </div>
 
-        <template v-if="chartPoints">
-          <svg :viewBox="`0 0 ${VW} ${VH}`" width="100%" :height="VH" style="overflow: visible">
-            <defs>
-              <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="rgb(var(--v-theme-primary))" stop-opacity="0.25" />
-                <stop offset="100%" stop-color="rgb(var(--v-theme-primary))" stop-opacity="0" />
-              </linearGradient>
-            </defs>
-
-            <!-- 마일스톤 수평선 + 라벨 -->
-            <g v-for="m in chartMilestones" :key="m.value">
-              <line :x1="PAD.left" :y1="m.y" :x2="VW - PAD.right + 2" :y2="m.y" :stroke="m.isPassed ? 'rgba(var(--v-theme-primary), 0.25)' : 'rgba(var(--v-theme-on-surface), 0.1)'" stroke-width="1" stroke-dasharray="3 3" />
-              <text :x="VW - PAD.right + 6" :y="m.y + 4" font-size="9" font-weight="600" :fill="m.isPassed ? 'rgba(var(--v-theme-primary), 0.7)' : 'rgba(var(--v-theme-on-surface), 0.35)'">{{ m.isPassed ? '✓' : '💰' }} {{ m.label }}</text>
-            </g>
-
-            <!-- 목표선 -->
-            <g v-if="targetAsset > 0 && chartPoints.goalPt">
-              <line :x1="PAD.left" :y1="chartPoints.goalPt.y" :x2="VW - PAD.right + 2" :y2="chartPoints.goalPt.y" stroke="rgb(var(--v-theme-primary))" stroke-width="1" stroke-dasharray="4 3" opacity="0.5" />
-              <text :x="VW - PAD.right + 6" :y="chartPoints.goalPt.y + 4" font-size="9" font-weight="700" fill="rgb(var(--v-theme-primary))">🏁 {{ formatMilestoneLabel(targetAsset) }}</text>
-            </g>
-
-            <!-- fill -->
-            <path :d="chartPoints.fillD" fill="url(#chartFill)" />
-
-            <!-- 과거 실선 -->
-            <path v-if="chartPoints.histPath" :d="chartPoints.histPath" fill="none" stroke="rgb(var(--v-theme-primary))" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-
-            <!-- 예측 점선 -->
-            <path v-if="chartPoints.futurePath" :d="chartPoints.futurePath" fill="none" stroke="rgb(var(--v-theme-primary))" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5,4" opacity="0.7" />
-
-            <!-- 현재 자산 시작점 -->
-            <circle :cx="chartPoints.startPt.x" :cy="chartPoints.startPt.y" r="5" fill="rgb(var(--v-theme-surface))" stroke="rgb(var(--v-theme-primary))" stroke-width="2.5" />
-            <text :x="chartPoints.startPt.x + 8" :y="chartPoints.startPt.y + 4" font-size="8" font-weight="600" fill="rgba(var(--v-theme-on-surface), 0.55)">● 현재</text>
-
-            <!-- 목표 달성 포인트 -->
-            <g v-if="chartPoints.goalPt && targetAsset > 0">
-              <circle :cx="chartPoints.goalPt.x" :cy="chartPoints.goalPt.y" r="5" fill="rgb(var(--v-theme-primary))" />
-            </g>
-
-            <!-- X축 레이블 -->
-            <g v-for="lbl in chartPoints.xLabels" :key="lbl.label">
-              <text :x="lbl.x" :y="VH - 4" text-anchor="middle" font-size="9" :fill="`rgba(var(--v-theme-on-surface), 0.4)`">{{ lbl.label }}</text>
-            </g>
-          </svg>
-
-          <!-- 다음 마일스톤 -->
-          <div v-if="nextMilestone" class="next-milestone-bar mt-3">
-            <v-icon size="14" color="primary">mdi-flag-outline</v-icon>
-            <span
-              >다음 목표 <strong>{{ nextMilestone.label }}</strong
-              >까지 <strong>{{ formatShortMoney(nextMilestone.value - currentAsset) }}원</strong> 남았습니다</span
-            >
-          </div>
-        </template>
+        <!-- Progress Timeline 영역 (추후 구현) -->
       </div>
 
       <!-- 예상 요약 스탯 -->
@@ -764,20 +562,6 @@ onMounted(loadData)
   line-height: 1.7;
   color: rgba(var(--v-theme-on-surface), 0.75);
   white-space: pre-line;
-}
-
-.next-milestone-bar {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  color: rgba(var(--v-theme-on-surface), 0.55);
-  background: rgba(var(--v-theme-primary), 0.06);
-  border-radius: 10px;
-  padding: 8px 12px;
-}
-.next-milestone-bar strong {
-  color: rgb(var(--v-theme-on-surface));
 }
 
 .section-title {
