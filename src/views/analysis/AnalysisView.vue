@@ -190,9 +190,9 @@ const fireTip = computed(() => {
   const baseMo = calcMonths(T, C, M, rate)
   if (baseMo === null || baseMo === 0) return null
 
-  // 팁 1: 월 투자금 50만원 증가
-  const INVEST_BUMP = 500_000
-  const investMo = calcMonths(T, C, M + INVEST_BUMP, rate)
+  // 팁 1: 월 투자금 10% 증가 (만원 단위 반올림)
+  const INVEST_BUMP = Math.round(M * 0.1 / 10000) * 10000
+  const investMo = INVEST_BUMP > 0 ? calcMonths(T, C, M + INVEST_BUMP, rate) : null
   const investDiff = investMo !== null ? baseMo - investMo : null
 
   // 팁 2: 수익률 1% 증가
@@ -200,12 +200,12 @@ const fireTip = computed(() => {
   const rateDiff = rateMo !== null ? baseMo - rateMo : null
 
   // 더 임팩트 큰 팁 선택
-  if (investDiff !== null && (rateDiff === null || investDiff >= rateDiff)) {
+  if (investDiff !== null && investDiff > 0 && (rateDiff === null || investDiff >= rateDiff)) {
     const y = Math.floor(investDiff / 12)
     const mo = investDiff % 12
     const diffStr = y > 0 ? `${y}년 ${mo > 0 ? mo + '개월' : ''}` : `${investDiff}개월`
     return {
-      body: `월 투자금을 <strong>50만원</strong> 늘리면\n목표 달성이 약 <strong>${diffStr}</strong> 빨라집니다.`,
+      body: `월 투자금을 <strong>${formatShortMoney(INVEST_BUMP)}원</strong> 늘리면\n목표 달성이 약 <strong>${diffStr}</strong> 빨라집니다.`,
     }
   }
   if (rateDiff !== null && rateDiff > 0) {
