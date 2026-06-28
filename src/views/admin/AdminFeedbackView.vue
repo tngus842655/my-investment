@@ -25,6 +25,7 @@ const categoryFilter = ref<string | null>(null)
 const expandedId = ref<string | null>(null)
 const deleteDialog = ref(false)
 const deleteTarget = ref<Feedback | null>(null)
+const deleteLoading = ref(false)
 
 const categories = ['버그신고', '기능제안', '기타의견']
 
@@ -95,13 +96,18 @@ const confirmDelete = (f: Feedback) => {
 }
 
 const deleteFeedback = async () => {
-  if (!deleteTarget.value) return
-  const { error } = await supabase.from('feedback').delete().eq('id', deleteTarget.value.id)
-  if (error) { showMessage('삭제 실패', 'error'); return }
-  feedbacks.value = feedbacks.value.filter(f => f.id !== deleteTarget.value!.id)
-  if (expandedId.value === deleteTarget.value.id) expandedId.value = null
-  deleteDialog.value = false
-  showMessage('삭제되었습니다.', 'success')
+  if (!deleteTarget.value || deleteLoading.value) return
+  deleteLoading.value = true
+  try {
+    const { error } = await supabase.from('feedback').delete().eq('id', deleteTarget.value.id)
+    if (error) { showMessage('삭제 실패', 'error'); return }
+    feedbacks.value = feedbacks.value.filter(f => f.id !== deleteTarget.value!.id)
+    if (expandedId.value === deleteTarget.value.id) expandedId.value = null
+    deleteDialog.value = false
+    showMessage('삭제되었습니다.', 'success')
+  } finally {
+    deleteLoading.value = false
+  }
 }
 </script>
 
@@ -207,8 +213,8 @@ const deleteFeedback = async () => {
       </v-card-text>
       <v-divider />
       <v-card-actions>
-        <v-btn variant="text" block @click="deleteDialog = false">취소</v-btn>
-        <v-btn color="error" block @click="deleteFeedback">삭제</v-btn>
+        <v-btn variant="text" block :disabled="deleteLoading" @click="deleteDialog = false">취소</v-btn>
+        <v-btn color="error" block :loading="deleteLoading" @click="deleteFeedback">삭제</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

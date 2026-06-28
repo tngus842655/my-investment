@@ -183,6 +183,7 @@ const executeDelete = async () => {
       const cur = logs.value[idx]!
       logs.value[idx] = { id: cur.id, email: cur.email, signed_up_at: cur.signed_up_at, deleted_at: now }
     }
+    showMessage('탈퇴 처리가 완료되었습니다.', 'success')
     deleteDialog.value = false
   } finally {
     deleteLoading.value = false
