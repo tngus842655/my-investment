@@ -121,7 +121,10 @@ const timelineMilestones = computed(() => {
     milestones.push({ year: y, pct, isGoal: false, isPast: new Date().getFullYear() > y })
   }
 
-  milestones.push({ year: goal.year, pct: 100, isGoal: true, isPast: false })
+  // 깃발은 목표 연도 1월 기준 위치에 고정 → 연도 간격 균일하게 유지
+  const goalJanMonths = (endYear - startYear) * 12 - (currentMonth - 1)
+  const goalPct = totalMonths > 0 ? Math.min(Math.round((goalJanMonths / totalMonths) * 100), 99) : 99
+  milestones.push({ year: goal.year, pct: goalPct, isGoal: true, isPast: false })
 
   return milestones
 })
