@@ -111,7 +111,7 @@ onMounted(async () => {
     <template v-else-if="isAdmin">
       <!-- 오늘 현황 -->
       <div class="glass-card pa-4 mb-3">
-        <div class="section-label mb-3 text-center">오늘 현황 ({{ todayLabel }})</div>
+        <div class="today-label mb-3 text-center">오늘 현황 ({{ todayLabel }})</div>
         <div class="stat-grid">
           <div class="stat-card">
             <div class="stat-label">신규 가입</div>
@@ -257,6 +257,11 @@ onMounted(async () => {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: rgba(var(--v-theme-on-surface), 0.4);
+}
+.today-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(var(--v-theme-on-surface), 0.6);
 }
 
 .extra-row {
