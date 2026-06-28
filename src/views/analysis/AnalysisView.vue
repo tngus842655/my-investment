@@ -426,11 +426,6 @@ onMounted(loadData)
             </div>
           </div>
 
-          <!-- 끝 레이블 -->
-          <div class="pt-edge-labels">
-            <span />
-            <span v-if="fireGoalYear" class="pt-edge-end">{{ formatShortMoney(targetAsset) }}원</span>
-          </div>
         </div>
       </div>
 
