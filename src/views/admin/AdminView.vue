@@ -47,6 +47,10 @@ const stats = computed(() => {
 })
 
 const KST = 'Asia/Seoul'
+
+const todayLabel = new Date().toLocaleDateString('ko-KR', { timeZone: KST, year: 'numeric', month: '2-digit', day: '2-digit' })
+  .replace(/\. /g, '.').replace(/\.$/, '')
+
 const formatDateShort = (iso: string) => {
   const d = new Date(iso)
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -107,7 +111,7 @@ onMounted(async () => {
     <template v-else-if="isAdmin">
       <!-- 오늘 현황 -->
       <div class="glass-card pa-4 mb-3">
-        <div class="section-label mb-3">오늘 현황</div>
+        <div class="section-label mb-3 text-center">오늘 현황 ({{ todayLabel }})</div>
         <div class="stat-grid">
           <div class="stat-card">
             <div class="stat-label">신규 가입</div>
