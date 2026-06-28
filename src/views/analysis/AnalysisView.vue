@@ -111,23 +111,16 @@ const timelineMilestones = computed(() => {
 
   const startYear = currentYear
   const endYear = goal.year
-  const totalYears = endYear - startYear
-  const totalMonths = totalYears * 12 + (goal.month - 1)
-
-  // 기간에 따라 마일스톤 간격 동적 설정 (최대 4개 중간 틱)
-  const yearStep = totalYears <= 4 ? 1 : totalYears <= 8 ? 2 : totalYears <= 15 ? 3 : 5
+  const totalMonths = (endYear - startYear) * 12 + (goal.month - 1)
 
   const milestones: { year: number; pct: number; isGoal: boolean; isPast: boolean }[] = []
 
-  for (let y = startYear + yearStep; y < endYear; y += yearStep) {
+  for (let y = startYear + 1; y < endYear; y++) {
     const monthsFromNow = (y - startYear) * 12 - (currentMonth - 1)
     const pct = totalMonths > 0 ? Math.round((monthsFromNow / totalMonths) * 100) : 0
-    // "지금" 마커(progressPct)와 8% 이내로 가까우면 생략
-    if (Math.abs(pct - progressPct.value) < 8) continue
     milestones.push({ year: y, pct, isGoal: false, isPast: new Date().getFullYear() > y })
   }
 
-  // 목표 달성 마일스톤
   milestones.push({ year: goal.year, pct: 100, isGoal: true, isPast: false })
 
   return milestones
@@ -399,7 +392,6 @@ onMounted(loadData)
               <!-- 현재 위치 마커 -->
               <div class="pt-now-marker" :style="{ left: progressPct + '%' }">
                 <div class="pt-now-dot" />
-                <div class="pt-now-label">지금</div>
               </div>
             </div>
 
@@ -425,9 +417,9 @@ onMounted(loadData)
             </div>
           </div>
 
-          <!-- 시작/끝 레이블 -->
+          <!-- 끝 레이블 -->
           <div class="pt-edge-labels">
-            <span class="pt-edge-start">{{ currentYear }}년 시작</span>
+            <span />
             <span v-if="fireGoalYear" class="pt-edge-end">{{ formatShortMoney(targetAsset) }}원</span>
           </div>
         </div>
