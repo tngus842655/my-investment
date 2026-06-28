@@ -2,6 +2,7 @@ import { computed } from 'vue'
 import { useTheme } from 'vuetify'
 import { FP_THEMES, FP_THEME_MAP, THEME_STORAGE_KEY } from '@/design'
 import type { ThemeId } from '@/design'
+import { supabase } from '@/services/supabase'
 
 export const useAppTheme = () => {
   const theme = useTheme()
@@ -15,6 +16,13 @@ export const useAppTheme = () => {
   const setTheme = (id: ThemeId) => {
     theme.change(id)
     localStorage.setItem(THEME_STORAGE_KEY, id)
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      supabase.from('investment_goals')
+        .update({ theme: id })
+        .eq('user_id', user.id)
+        .then()
+    })
   }
 
   const toggleTheme = () => {

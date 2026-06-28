@@ -125,10 +125,16 @@ const chartPoints = computed(() => {
   const maxX = allPts[allPts.length - 1]!.dayOffset
 
   const toX = (day: number) => PAD.left + ((day - minX) / Math.max(maxX - minX, 1)) * PW
-  // 로그 스케일 Y축: 과거(소액)와 미래(대액) 성장을 비례적으로 표현
+  // 현재자산이 목표의 2% 미만이면 선형 스케일 사용 (로그 스케일 왜곡 방지)
+  const useLogScale = currentAsset.value > 0 && currentAsset.value >= (targetAsset.value || maxY) * 0.02
   const logMin = Math.log(minY)
   const logMax = Math.log(maxY)
-  const toY = (asset: number) => PAD.top + PH - ((Math.log(Math.max(asset, 1)) - logMin) / Math.max(logMax - logMin, 1)) * PH
+  const toY = (asset: number) => {
+    if (useLogScale) {
+      return PAD.top + PH - ((Math.log(Math.max(asset, 1)) - logMin) / Math.max(logMax - logMin, 1)) * PH
+    }
+    return PAD.top + PH - (Math.max(asset, 0) / Math.max(maxY, 1)) * PH
+  }
 
   const pointArr = allPts.map((p) => ({ x: toX(p.dayOffset), y: toY(p.asset), ...p }))
 
@@ -454,12 +460,20 @@ onMounted(loadData)
         <div class="d-flex justify-space-between align-center mb-1">
           <div>
             <div class="chart-asset-label">현재 자산</div>
-            <div class="chart-asset-value">{{ formatShortMoney(currentAsset) }}원</div>
+            <div class="chart-asset-value" :style="currentAsset === 0 ? 'color: rgba(var(--v-theme-on-surface), 0.35)' : ''">
+              {{ currentAsset === 0 ? '미등록' : formatShortMoney(currentAsset) + '원' }}
+            </div>
           </div>
           <div class="text-right" v-if="targetAsset > 0">
             <div class="chart-asset-label">목표 자산</div>
             <div class="chart-asset-value" style="color: rgb(var(--v-theme-primary))">{{ formatShortMoney(targetAsset) }}원</div>
           </div>
+        </div>
+
+        <!-- 현재 자산 미등록 안내 -->
+        <div v-if="currentAsset === 0" class="no-asset-notice mb-2">
+          <v-icon size="13" color="warning">mdi-information-outline</v-icon>
+          <span>포트폴리오에 종목을 추가하면 현재 자산이 반영됩니다</span>
         </div>
 
         <template v-if="chartPoints">
@@ -667,6 +681,18 @@ onMounted(loadData)
   font-size: 14px;
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
+}
+
+.no-asset-notice {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+  background: rgba(var(--v-theme-warning), 0.08);
+  border: 1px solid rgba(var(--v-theme-warning), 0.2);
+  border-radius: 8px;
+  padding: 6px 10px;
 }
 
 .stat-grid {

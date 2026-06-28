@@ -34,8 +34,8 @@ interface PortfolioItem {
 interface MemberDetail {
   email: string
   signed_up_at: string
-  last_login_at: string | null
-  login_count: number
+  last_accessed_at: string | null
+  session_count: number
   target_asset: number | null
   monthly_investment: number | null
   annual_return: number | null
@@ -56,39 +56,50 @@ const openDetail = async (log: SignupLog) => {
   detail.value = null
 
   try {
-    // login_log에서 user_id 및 접속 이력 조회
+    // login_log에서 user_id 조회
     const { data: loginData } = await supabase
       .from('login_log')
-      .select('user_id, login_at')
+      .select('user_id')
       .eq('email', log.email)
-      .order('login_at', { ascending: false })
+      .limit(1)
 
     const userId = loginData?.[0]?.user_id ?? null
-    const lastLogin = loginData?.[0]?.login_at ?? null
-    const loginCount = loginData?.length ?? 0
 
     let goal = null
     let assetSummary = null
     let portfolioCount = 0
     let portfolioItems: PortfolioItem[] = []
+    let lastAccessedAt: string | null = null
+    let sessionCount = 0
 
     if (userId) {
-      const [goalRes, assetRes, portRes] = await Promise.all([
+      const [goalRes, assetRes, portRes, accessRes] = await Promise.all([
         supabase.from('investment_goals').select('target_asset, monthly_investment, annual_return').eq('user_id', userId).maybeSingle(),
         supabase.from('asset_summary').select('current_asset, investment_principal').eq('user_id', userId).maybeSingle(),
         supabase.from('portfolios').select('ticker, quantity, avg_price, currency').eq('user_id', userId).order('sort_order'),
+        supabase.from('access_log').select('accessed_at').eq('user_id', userId).order('accessed_at', { ascending: true }),
       ])
       goal = goalRes.data
       assetSummary = assetRes.data
       portfolioItems = (portRes.data ?? []) as PortfolioItem[]
       portfolioCount = portfolioItems.length
+
+      // 세션 카운트: 연속 기록 간격 1시간 초과 시 새 세션
+      const accessTimes = (accessRes.data ?? []).map(r => new Date(r.accessed_at).getTime())
+      if (accessTimes.length > 0) {
+        lastAccessedAt = accessRes.data![accessRes.data!.length - 1]!.accessed_at
+        sessionCount = 1
+        for (let i = 1; i < accessTimes.length; i++) {
+          if (accessTimes[i]! - accessTimes[i - 1]! > 60 * 60 * 1000) sessionCount++
+        }
+      }
     }
 
     detail.value = {
       email: log.email,
       signed_up_at: log.signed_up_at,
-      last_login_at: lastLogin,
-      login_count: loginCount,
+      last_accessed_at: lastAccessedAt,
+      session_count: sessionCount,
       target_asset: goal?.target_asset ?? null,
       monthly_investment: goal?.monthly_investment ?? null,
       annual_return: goal?.annual_return ?? null,
@@ -172,6 +183,7 @@ const executeDelete = async () => {
       const cur = logs.value[idx]!
       logs.value[idx] = { id: cur.id, email: cur.email, signed_up_at: cur.signed_up_at, deleted_at: now }
     }
+    showMessage('탈퇴 처리가 완료되었습니다.', 'success')
     deleteDialog.value = false
   } finally {
     deleteLoading.value = false
@@ -198,7 +210,7 @@ const formatDateShort = (iso: string) => {
     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
   }).formatToParts(d)
   const get = (type: string) => parts.find(p => p.type === type)?.value ?? ''
-  return `${get('year')}.${pad(+get('month'))}.${pad(+get('day'))} ${get('hour')}:${get('minute')}:${get('second')}`
+  return `${get('year')}.${pad(+get('month'))}.${pad(+get('day'))} (${get('hour')}:${get('minute')}:${get('second')})`
 }
 
 onMounted(async () => {
@@ -331,8 +343,8 @@ onMounted(async () => {
         <div class="detail-section-label mb-2">기본 정보</div>
         <div class="detail-row"><span class="detail-key">이메일</span><span class="detail-val">{{ detail.email }}</span></div>
         <div class="detail-row"><span class="detail-key">가입일</span><span class="detail-val">{{ formatDateShort(detail.signed_up_at) }}</span></div>
-        <div class="detail-row"><span class="detail-key">최근 접속</span><span class="detail-val">{{ detail.last_login_at ? formatDateShort(detail.last_login_at) : '-' }}</span></div>
-        <div class="detail-row"><span class="detail-key">접속 횟수</span><span class="detail-val">{{ detail.login_count }}회</span></div>
+        <div class="detail-row"><span class="detail-key">최근 접속</span><span class="detail-val">{{ detail.last_accessed_at ? formatDateShort(detail.last_accessed_at) : '-' }}</span></div>
+        <div class="detail-row"><span class="detail-key">접속 횟수</span><span class="detail-val">{{ detail.session_count > 0 ? detail.session_count + '회' : '-' }}</span></div>
 
         <v-divider class="my-3" opacity="0.08" />
 

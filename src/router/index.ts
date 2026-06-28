@@ -21,13 +21,13 @@ import FeedbackView from '@/views/more/FeedbackView.vue'
 import ChangePasswordView from '@/views/more/ChangePasswordView.vue'
 import AdminView from '@/views/admin/AdminView.vue'
 import AdminResetPasswordView from '@/views/admin/AdminResetPasswordView.vue'
-import AdminLoginLogView from '@/views/admin/AdminLoginLogView.vue'
 import AdminSignupLogView from '@/views/admin/AdminSignupLogView.vue'
 import AdminStatsView from '@/views/admin/AdminStatsView.vue'
 import AdminMembersView from '@/views/admin/AdminMembersView.vue'
 import AdminDataView from '@/views/admin/AdminDataView.vue'
 import AdminTickerView from '@/views/admin/AdminTickerView.vue'
 import AdminFeedbackView from '@/views/admin/AdminFeedbackView.vue'
+import AdminAccessHistoryView from '@/views/admin/AdminAccessHistoryView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -50,9 +50,9 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
-      path: '/admin/login-log',
-      name: 'adminLoginLog',
-      component: AdminLoginLogView,
+      path: '/admin/access-history',
+      name: 'adminAccessHistory',
+      component: AdminAccessHistoryView,
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
@@ -180,6 +180,18 @@ const router = createRouter({
 // 세션 내 목표 설정 여부 캐시 (재조회 방지)
 let goalCheckedUserId: string | null = null
 
+// 페이지별 마지막 접속 기록 캐시 (1시간 내 중복 방지)
+const lastAccessedAt: Record<string, number> = {}
+const ACCESS_LOG_INTERVAL_MS = 60 * 60 * 1000 // 1시간
+
+const logAccess = (userId: string, email: string, page: string) => {
+  const now = Date.now()
+  const key = `${userId}:${page}`
+  if (lastAccessedAt[key] && now - lastAccessedAt[key] < ACCESS_LOG_INTERVAL_MS) return
+  lastAccessedAt[key] = now
+  supabase.from('access_log').insert({ user_id: userId, email, page }).then()
+}
+
 router.beforeEach(async (to) => {
   const {
     data: { session },
@@ -207,6 +219,11 @@ router.beforeEach(async (to) => {
       }
       goalCheckedUserId = session.user.id
     }
+  }
+
+  // 인증된 일반 유저 페이지 접속 로그 (관리자 및 로그인 페이지 제외)
+  if (session && session.user.email !== ADMIN_EMAIL && to.meta.requiresAuth) {
+    logAccess(session.user.id, session.user.email ?? '', to.path)
   }
 
   return true

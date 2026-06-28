@@ -14,6 +14,8 @@ interface GoalRow {
   target_asset: number
   monthly_investment: number
   annual_return: number | null
+  theme: string | null
+  portfolio_sort: string | null
 }
 interface PortfolioRow { user_id: string; ticker: string }
 interface TransactionRow { user_id: string }
@@ -54,6 +56,29 @@ const noPortfolioCount = computed(() => {
   return goals.value.filter(g => !pUsers.has(g.user_id)).length
 })
 
+const THEME_LABEL: Record<string, string> = { dark: '다크', light: '라이트', system: '시스템' }
+const SORT_LABEL: Record<string, string> = { custom: '직접정렬', eval: '평가금액', profit: '손익', rate: '수익률', name: '이름순' }
+
+const topTheme = computed(() => {
+  const map = new Map<string, number>()
+  for (const g of goals.value) {
+    const t = g.theme ?? 'system'
+    map.set(t, (map.get(t) ?? 0) + 1)
+  }
+  const top = [...map.entries()].sort((a, b) => b[1] - a[1])[0]
+  return top ? { label: THEME_LABEL[top[0]] ?? top[0], count: top[1] } : null
+})
+
+const topSort = computed(() => {
+  const map = new Map<string, number>()
+  for (const g of goals.value) {
+    const s = g.portfolio_sort ?? 'custom'
+    map.set(s, (map.get(s) ?? 0) + 1)
+  }
+  const top = [...map.entries()].sort((a, b) => b[1] - a[1])[0]
+  return top ? { label: SORT_LABEL[top[0]] ?? top[0], count: top[1] } : null
+})
+
 // 인기 종목 TOP 10
 const topTickers = computed(() => {
   const map = new Map<string, number>()
@@ -87,7 +112,7 @@ onMounted(async () => {
   adminUserId.value = user.id
 
   const [goalRes, portRes, txRes, signupRes] = await Promise.all([
-    supabase.from('investment_goals').select('user_id, target_asset, monthly_investment, annual_return'),
+    supabase.from('investment_goals').select('user_id, target_asset, monthly_investment, annual_return, theme, portfolio_sort'),
     supabase.from('portfolios').select('user_id, ticker'),
     supabase.from('transactions').select('user_id'),
     supabase.from('signup_log').select('deleted_at'),
@@ -144,9 +169,17 @@ onMounted(async () => {
         </div>
         <div class="stat-card">
           <div class="stat-label">거래 내역 있음</div>
-          <div class="stat-value" style="color: rgb(var(--v-theme-primary))">
-            {{ txUserCount }}<span class="stat-unit">명</span>
-          </div>
+          <div class="stat-value">{{ txUserCount }}<span class="stat-unit">명</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">인기 테마</div>
+          <div class="stat-value-sm">{{ topTheme?.label ?? '-' }}</div>
+          <div class="stat-sub">{{ topTheme ? topTheme.count + '명 사용' : '' }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">인기 정렬</div>
+          <div class="stat-value-sm">{{ topSort?.label ?? '-' }}</div>
+          <div class="stat-sub">{{ topSort ? topSort.count + '명 사용' : '' }}</div>
         </div>
       </div>
 
@@ -239,7 +272,7 @@ onMounted(async () => {
 
 .stat-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
 }
 .stat-card {
@@ -257,6 +290,12 @@ onMounted(async () => {
   font-size: 26px; font-weight: 700;
   color: rgb(var(--v-theme-on-surface));
   line-height: 1.1;
+}
+.stat-value-sm {
+  font-size: 18px; font-weight: 700;
+  color: rgb(var(--v-theme-on-surface));
+  line-height: 1.2;
+  margin-top: 2px;
 }
 .stat-unit {
   font-size: 13px; font-weight: 500; margin-left: 2px;

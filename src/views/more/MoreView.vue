@@ -11,9 +11,14 @@ const { currentThemeId, themes, setTheme } = useAppTheme()
 const confirmDialog = ref(false)
 const themeSheet = ref(false)
 const isAdmin = ref(false)
+const newFeedbackCount = ref(0)
 
-supabase.auth.getUser().then(({ data: { user } }) => {
-  isAdmin.value = user?.email === ADMIN_EMAIL
+supabase.auth.getUser().then(async ({ data: { user } }) => {
+  if (user?.email === ADMIN_EMAIL) {
+    isAdmin.value = true
+    const { count } = await supabase.from('feedback').select('id', { count: 'exact', head: true }).eq('status', 'NEW')
+    newFeedbackCount.value = count ?? 0
+  }
 })
 
 // 회원탈퇴 상태
@@ -239,6 +244,7 @@ const currentThemeLabel = computed(() => {
             <div class="text-caption text-medium-emphasis">회원 가입 이력 조회</div>
           </div>
           <v-spacer />
+          <v-badge v-if="newFeedbackCount > 0" :content="newFeedbackCount" color="error" inline class="mr-1" />
           <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
         </div>
       </div>

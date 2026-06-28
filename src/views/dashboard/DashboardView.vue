@@ -25,6 +25,13 @@ const hideAsset = ref(localStorage.getItem('firepath-hide-asset') === 'true')
 const toggleHideAsset = () => {
   hideAsset.value = !hideAsset.value
   localStorage.setItem('firepath-hide-asset', String(hideAsset.value))
+  supabase.auth.getUser().then(({ data: { user } }) => {
+    if (!user) return
+    supabase.from('investment_goals')
+      .update({ hide_asset: hideAsset.value })
+      .eq('user_id', user.id)
+      .then()
+  })
 }
 
 const targetAsset = ref(0)
