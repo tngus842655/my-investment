@@ -418,7 +418,6 @@ onMounted(loadData)
                   <div class="pt-milestone-label label-goal">{{ m.year }}.{{ m.month }}</div>
                 </template>
                 <template v-else>
-                  <div class="pt-inner-tick" :class="m.isPast ? 'inner-tick--done' : 'inner-tick--future'" />
                   <div class="pt-milestone-label" :class="m.isPast ? 'label-done' : 'label-future'">
                     {{ m.year }}
                   </div>
@@ -694,8 +693,10 @@ onMounted(loadData)
   margin-top: 4px;
 }
 .pt-milestone--goal {
-  transform: translateX(-100%);
+  top: 50%;
+  transform: translate(-100%, -50%);
   align-items: flex-end;
+  margin-top: 0;
 }
 .pt-inner-tick {
   width: 1.5px;
