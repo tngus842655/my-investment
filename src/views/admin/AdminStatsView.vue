@@ -10,11 +10,11 @@ const isAdmin = ref(false)
 const KST = 'Asia/Seoul'
 
 // ── 데이터 ────────────────────────────────────────
-interface SignupRow { email: string; signed_up_at: string }
-interface LoginRow  { email: string; login_at: string }
+interface SignupRow  { email: string; signed_up_at: string }
+interface AccessRow { email: string; accessed_at: string }
 
 const signupRows = ref<SignupRow[]>([])
-const loginRows  = ref<LoginRow[]>([])
+const accessRows = ref<AccessRow[]>([])
 
 const periodOptions = ['7일', '30일', '90일'] as const
 type Period = typeof periodOptions[number]
@@ -51,22 +51,32 @@ const signupByDay = computed(() => {
   return dateRange.value.map(d => ({ date: d, count: map.get(d) ?? 0 }))
 })
 
-// ── 접속 추이 ─────────────────────────────────────
-const loginByDay = computed(() => {
+// ── 일별 접속 추이 (날짜+이메일 unique → DAU) ────────
+const accessByDay = computed(() => {
+  const uniqueSet = new Set<string>()
   const map = new Map<string, number>()
-  for (const r of loginRows.value) {
-    const d = toKstDate(r.login_at)
+  for (const r of accessRows.value) {
+    const d = toKstDate(r.accessed_at)
+    const key = `${d}:${r.email}`
+    if (uniqueSet.has(key)) continue
+    uniqueSet.add(key)
     map.set(d, (map.get(d) ?? 0) + 1)
   }
   return dateRange.value.map(d => ({ date: d, count: map.get(d) ?? 0 }))
 })
 
-// ── 재접속 TOP 10 ─────────────────────────────────
-const loginRanking = computed(() => {
-  const map = new Map<string, number>()
-  for (const r of loginRows.value) map.set(r.email, (map.get(r.email) ?? 0) + 1)
-  return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10)
-    .map(([email, count]) => ({ email, count }))
+// ── 접속 TOP 10 (유저별 접속 날짜 unique 수) ─────────
+const accessRanking = computed(() => {
+  const map = new Map<string, Set<string>>()
+  for (const r of accessRows.value) {
+    const d = toKstDate(r.accessed_at)
+    if (!map.has(r.email)) map.set(r.email, new Set())
+    map.get(r.email)!.add(d)
+  }
+  return [...map.entries()]
+    .map(([email, days]) => ({ email, count: days.size }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10)
 })
 
 // ── SVG 바 차트 공통 ──────────────────────────────
@@ -97,7 +107,7 @@ const buildBarChart = (data: { date: string; count: number }[]) => {
 }
 
 const signupChart = computed(() => buildBarChart(signupByDay.value))
-const loginChart  = computed(() => buildBarChart(loginByDay.value))
+const accessChart = computed(() => buildBarChart(accessByDay.value))
 
 // ── 포맷 ──────────────────────────────────────────
 
@@ -113,12 +123,12 @@ onMounted(async () => {
   const since = new Date()
   since.setDate(since.getDate() - 90)
 
-  const [signupRes, loginRes] = await Promise.all([
+  const [signupRes, accessRes] = await Promise.all([
     supabase.from('signup_log').select('email, signed_up_at').gte('signed_up_at', since.toISOString()),
-    supabase.from('login_log').select('email, login_at').gte('login_at', since.toISOString()),
+    supabase.from('access_log').select('email, accessed_at').gte('accessed_at', since.toISOString()),
   ])
   signupRows.value = (signupRes.data ?? []).filter(r => r.email !== ADMIN_EMAIL)
-  loginRows.value  = (loginRes.data ?? []).filter(r => r.email !== ADMIN_EMAIL)
+  accessRows.value = (accessRes.data ?? []).filter(r => r.email !== ADMIN_EMAIL)
   loading.value = false
 })
 </script>
@@ -198,47 +208,47 @@ onMounted(async () => {
       <div class="glass-card pa-4 mb-3">
         <div class="section-label mb-1">일별 접속 추이</div>
         <div class="text-caption text-medium-emphasis mb-3">
-          기간 내 총 {{ loginByDay.reduce((s, d) => s + d.count, 0) }}회 접속
+          기간 내 총 {{ accessByDay.reduce((s, d) => s + d.count, 0) }}명 접속 (일별 유저 합산)
         </div>
         <div class="chart-wrap">
           <svg :viewBox="`0 0 ${VW} ${VH}`" class="chart-svg">
-            <template v-for="tick in loginChart.yTicks" :key="tick">
+            <template v-for="tick in accessChart.yTicks" :key="tick">
               <line
-                :x1="PAD.left" :y1="VH - PAD.bottom - loginChart.toH(tick)"
-                :x2="VW - PAD.right" :y2="VH - PAD.bottom - loginChart.toH(tick)"
+                :x1="PAD.left" :y1="VH - PAD.bottom - accessChart.toH(tick)"
+                :x2="VW - PAD.right" :y2="VH - PAD.bottom - accessChart.toH(tick)"
                 stroke="rgba(128,128,128,0.15)" stroke-width="1"
               />
               <text
-                :x="PAD.left - 4" :y="VH - PAD.bottom - loginChart.toH(tick) + 4"
+                :x="PAD.left - 4" :y="VH - PAD.bottom - accessChart.toH(tick) + 4"
                 text-anchor="end" class="chart-tick"
               >{{ tick }}</text>
             </template>
             <rect
-              v-for="(d, i) in loginChart.data" :key="d.date"
-              :x="loginChart.toX(i) - loginChart.barW / 2"
-              :y="VH - PAD.bottom - loginChart.toH(d.count)"
-              :width="loginChart.barW"
-              :height="loginChart.toH(d.count)"
+              v-for="(d, i) in accessChart.data" :key="d.date"
+              :x="accessChart.toX(i) - accessChart.barW / 2"
+              :y="VH - PAD.bottom - accessChart.toH(d.count)"
+              :width="accessChart.barW"
+              :height="accessChart.toH(d.count)"
               rx="2"
               :fill="d.count > 0 ? '#6366f1' : 'rgba(128,128,128,0.15)'"
               :opacity="d.count > 0 ? 0.85 : 1"
             />
             <text
-              v-for="lbl in loginChart.xLabels" :key="lbl.i"
-              :x="loginChart.toX(lbl.i)" :y="VH - PAD.bottom + 14"
+              v-for="lbl in accessChart.xLabels" :key="lbl.i"
+              :x="accessChart.toX(lbl.i)" :y="VH - PAD.bottom + 14"
               text-anchor="middle" class="chart-tick"
             >{{ lbl.label }}</text>
           </svg>
         </div>
       </div>
 
-      <!-- 재접속 TOP 10 -->
+      <!-- 접속 TOP 10 -->
       <div class="glass-card pa-4">
-        <div class="section-label mb-3">접속 횟수 TOP 10 (기간 내)</div>
-        <div v-if="loginRanking.length === 0" class="text-center py-6 text-medium-emphasis text-body-2">
+        <div class="section-label mb-3">접속 TOP 10 (기간 내 접속 일수)</div>
+        <div v-if="accessRanking.length === 0" class="text-center py-6 text-medium-emphasis text-body-2">
           데이터가 없습니다
         </div>
-        <div v-for="(item, i) in loginRanking" :key="item.email">
+        <div v-for="(item, i) in accessRanking" :key="item.email">
           <div class="rank-row" :class="{ 'mt-2': i > 0 }">
             <div class="d-flex align-center ga-3">
               <span class="rank-num" :class="i < 3 ? 'rank-top' : ''">{{ i + 1 }}</span>
@@ -248,13 +258,13 @@ onMounted(async () => {
               <div class="rank-bar-wrap">
                 <div
                   class="rank-bar"
-                  :style="`width: ${(item.count / loginRanking[0]!.count) * 100}%`"
+                  :style="`width: ${(item.count / accessRanking[0]!.count) * 100}%`"
                 />
               </div>
-              <span class="rank-count">{{ item.count }}회</span>
+              <span class="rank-count">{{ item.count }}일</span>
             </div>
           </div>
-          <v-divider v-if="i < loginRanking.length - 1" class="mt-2" opacity="0.06" />
+          <v-divider v-if="i < accessRanking.length - 1" class="mt-2" opacity="0.06" />
         </div>
       </div>
     </template>
