@@ -125,12 +125,14 @@ const chartPoints = computed(() => {
   const minY = Math.max(Math.min(...allPts.map((p) => p.asset)) * 0.85, 1)
   const maxY = allPts[allPts.length - 1]!.asset * 1.05
   const minX = allPts[0]!.dayOffset
-  const maxX = allPts[allPts.length - 1]!.dayOffset
+  const dataMaxX = allPts[allPts.length - 1]!.dayOffset
+  // x축은 최소 24개월 확보 — 단기 달성 시 곡선이 수직으로 치솟는 왜곡 방지
+  const maxX = Math.max(dataMaxX, minX + 24 * DAYS_PER_MONTH)
 
   const toX = (day: number) => PAD.left + ((day - minX) / Math.max(maxX - minX, 1)) * PW
   // C=0이고 월 투자금이 있을 때 로그 스케일 사용 — 단, 달성 기간이 6개월 미만이면 선형 사용
   // (단기 구간에 로그 스케일 적용 시 곡선이 수직선처럼 왜곡됨)
-  const totalMonths = (maxX - minX) / DAYS_PER_MONTH
+  const totalMonths = (dataMaxX - minX) / DAYS_PER_MONTH
   const useLogScale =
     currentAsset.value === 0
       ? monthlyInvestment.value > 0 && totalMonths >= 6
@@ -169,8 +171,17 @@ const chartPoints = computed(() => {
   const first = pointArr[0]!
   const fillD = fullPath + ` L ${last.x},${PAD.top + PH} L ${first.x},${PAD.top + PH} Z`
 
-  // X축 레이블: 연도 경계(1월 1일)마다, 최대 5개
-  const yearBoundaries = allPts.filter((p, i) => i === 0 || (p.month === 1 && p.year !== allPts[i - 1]!.year))
+  // X축 레이블: 연도 경계(1월 1일)마다, 최대 5개 — x축 패딩 범위까지 커버
+  const padEndDate = new Date(nowDate)
+  padEndDate.setDate(padEndDate.getDate() + (maxX - minX))
+  const extraYears: typeof allPts = []
+  for (let y = allPts[allPts.length - 1]!.year + 1; y <= padEndDate.getFullYear(); y++) {
+    const d = new Date(y, 0, 1)
+    const dayOffset = Math.round((d.getTime() - nowDate.getTime()) / 86400000)
+    extraYears.push({ dayOffset, year: y, month: 1, asset: allPts[allPts.length - 1]!.asset, isPast: false })
+  }
+  const allPtsForLabels = [...allPts, ...extraYears]
+  const yearBoundaries = allPtsForLabels.filter((p, i) => i === 0 || (p.month === 1 && p.year !== allPtsForLabels[i - 1]!.year))
   const step = Math.max(1, Math.ceil(yearBoundaries.length / 5))
   const xLabels = yearBoundaries
     .filter((_, i) => i % step === 0)
