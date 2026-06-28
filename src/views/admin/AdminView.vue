@@ -142,7 +142,10 @@ onMounted(async () => {
           가입 이력 조회
         </v-btn>
         <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-login" class="mb-2" @click="router.push('/admin/login-log')">
-          접속 이력 조회
+          로그인 이력 조회
+        </v-btn>
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-file-eye-outline" class="mb-2" @click="router.push('/admin/access-log')">
+          페이지 접속 이력 조회
         </v-btn>
         <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-account-group-outline" class="mb-2" @click="router.push('/admin/members')">
           회원 현황
