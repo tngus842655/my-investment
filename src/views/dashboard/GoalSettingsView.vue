@@ -45,6 +45,17 @@ const sliderValue = computed({
 const targetAssetText = computed(() => formatShortMoney(removeComma(targetAsset.value)) + '원')
 const monthlyInvestmentText = computed(() => formatShortMoney(removeComma(monthlyInvestment.value)) + '원')
 
+// 월 투자금이 입력된 경우 목표 자산 최소값 (월 투자금 × 12 = 1년치)
+const minTargetByMonthly = computed(() => {
+  const m = removeComma(monthlyInvestment.value)
+  return m > 0 ? m * 12 : 0
+})
+
+const targetBelowMinimum = computed(() => {
+  const t = removeComma(targetAsset.value)
+  return minTargetByMonthly.value > 0 && t > 0 && t < minTargetByMonthly.value
+})
+
 const estimatedPreview = computed(() => {
   const T = removeComma(targetAsset.value)
   const M = removeComma(monthlyInvestment.value)
@@ -109,6 +120,10 @@ const save = async () => {
   const monthlyNum = removeComma(monthlyInvestment.value)
   if (monthlyInvestment.value && monthlyNum <= 0) {
     showMessage('월 투자금은 0보다 커야 합니다.', 'warning')
+    return
+  }
+  if (monthlyNum > 0 && targetNum < monthlyNum * 12) {
+    showMessage(`목표 자산은 월 투자금의 12배(${formatShortMoney(monthlyNum * 12)}원) 이상이어야 합니다.`, 'warning')
     return
   }
   loading.value = true
@@ -202,7 +217,7 @@ onMounted(loadData)
           variant="outlined"
           density="comfortable"
           hide-details
-          class="glass-field"
+          :class="['glass-field', targetBelowMinimum ? 'field-error' : '']"
           maxlength="14"
         >
           <template #append-inner>
@@ -211,6 +226,14 @@ onMounted(loadData)
             </span>
           </template>
         </v-text-field>
+        <div v-if="targetBelowMinimum" class="field-hint-error mt-2">
+          <v-icon size="12">mdi-alert-circle-outline</v-icon>
+          월 투자금 기준 최소 <strong>{{ formatShortMoney(minTargetByMonthly) }}원</strong> 이상 입력해주세요
+        </div>
+        <div v-else-if="minTargetByMonthly > 0 && !removeComma(targetAsset)" class="field-hint mt-2">
+          <v-icon size="12">mdi-information-outline</v-icon>
+          월 투자금 기준 최소 <strong>{{ formatShortMoney(minTargetByMonthly) }}원</strong> 이상 권장
+        </div>
       </div>
 
       <!-- 월 투자금 -->
@@ -332,5 +355,21 @@ onMounted(loadData)
   font-size: 12px;
   font-weight: 500;
   color: rgba(var(--v-theme-on-surface), 0.6);
+}
+
+.field-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+}
+
+.field-hint-error {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: rgb(var(--v-theme-error));
 }
 </style>
