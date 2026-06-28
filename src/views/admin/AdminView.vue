@@ -16,6 +16,8 @@ interface SignupLog {
 
 const logs = ref<SignupLog[]>([])
 const newFeedbackCount = ref(0)
+const todaySignupCount = ref(0)
+const todayAccessCount = ref(0)
 
 const stats = computed(() => {
   const total = logs.value.length
@@ -63,12 +65,23 @@ onMounted(async () => {
     return
   }
   isAdmin.value = true
-  const [{ data }, { count }] = await Promise.all([
+
+  // 오늘 KST 00:00 기준
+  const todayStart = new Date().toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' })
+    .replace(/\. /g, '-').replace('.', '')
+  const todayFrom = `${todayStart}T00:00:00+09:00`
+
+  const [{ data }, { count }, { count: signupToday }, accessTodayRes] = await Promise.all([
     supabase.from('signup_log').select('*').order('signed_up_at', { ascending: false }),
     supabase.from('feedback').select('id', { count: 'exact', head: true }).eq('status', 'NEW'),
+    supabase.from('signup_log').select('id', { count: 'exact', head: true }).gte('signed_up_at', todayFrom),
+    supabase.from('access_log').select('email').gte('accessed_at', todayFrom),
   ])
   logs.value = data ?? []
   newFeedbackCount.value = count ?? 0
+  todaySignupCount.value = signupToday ?? 0
+  // 오늘 접속 unique 유저 수
+  todayAccessCount.value = new Set((accessTodayRes.data ?? []).map(r => r.email)).size
   loading.value = false
 })
 </script>
@@ -92,6 +105,25 @@ onMounted(async () => {
     </template>
 
     <template v-else-if="isAdmin">
+      <!-- 오늘 현황 -->
+      <div class="glass-card pa-4 mb-3">
+        <div class="section-label mb-3">오늘 현황</div>
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">신규 가입</div>
+            <div class="stat-value" :style="todaySignupCount > 0 ? 'color: rgb(var(--v-theme-primary))' : ''">
+              {{ todaySignupCount }}<span class="stat-unit">명</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">접속 유저</div>
+            <div class="stat-value" :style="todayAccessCount > 0 ? 'color: rgb(var(--v-theme-primary))' : ''">
+              {{ todayAccessCount }}<span class="stat-unit">명</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 핵심 지표 4개 -->
       <div class="stat-grid mb-3">
         <div class="stat-card">
