@@ -51,8 +51,8 @@ const search = async () => {
       query = query.ilike('email', `%${emailSearch.value.trim()}%`)
     }
 
-    if (pageSearch.value.trim()) {
-      query = query.ilike('page', `%${pageSearch.value.trim()}%`)
+    if (pageSearch.value) {
+      query = query.eq('page', pageSearch.value)
     }
 
     const datePrefix = parseDateInput(dateSearch.value)
@@ -99,6 +99,8 @@ const PAGE_LABELS: Record<string, string> = {
   '/goalSettings': '목표 설정',
 }
 
+const PAGE_SELECT_OPTIONS = Object.entries(PAGE_LABELS).map(([value, label]) => ({ value, label: `${label} (${value})` }))
+
 const pageLabel = (page: string) => PAGE_LABELS[page] ?? page
 
 onMounted(async () => {
@@ -141,9 +143,12 @@ onMounted(async () => {
           bg-color="transparent"
           @keyup.enter="search"
         />
-        <v-text-field
+        <v-select
           v-model="pageSearch"
-          placeholder="페이지 검색 (예: dashboard)"
+          :items="PAGE_SELECT_OPTIONS"
+          item-title="label"
+          item-value="value"
+          placeholder="페이지 선택"
           variant="outlined"
           density="compact"
           rounded="lg"
@@ -152,7 +157,6 @@ onMounted(async () => {
           prepend-inner-icon="mdi-file-outline"
           class="mb-3"
           bg-color="transparent"
-          @keyup.enter="search"
         />
         <v-text-field
           v-model="dateSearch"
