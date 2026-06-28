@@ -373,9 +373,10 @@ onMounted(loadData)
         </div>
 
         <!-- 현재 자산 미등록 안내 -->
-        <div v-if="currentAsset === 0" class="no-asset-notice mb-3">
+        <div v-if="currentAsset === 0" class="no-asset-notice mb-3" @click="router.push('/portfolio')" style="cursor: pointer">
           <v-icon size="13" color="warning">mdi-information-outline</v-icon>
           <span>포트폴리오에 종목을 추가하면 현재 자산이 반영됩니다</span>
+          <v-icon size="14" color="warning" style="margin-left: auto; opacity: 0.7">mdi-chevron-right</v-icon>
         </div>
 
         <!-- Progress Timeline -->
