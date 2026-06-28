@@ -217,7 +217,7 @@ const fireTip = computed(() => {
     const mo = investDiff % 12
     const diffStr = y > 0 ? `${y}년 ${mo > 0 ? mo + '개월' : ''}` : `${investDiff}개월`
     return {
-      body: `월 투자금을 <strong>${formatShortMoney(INVEST_BUMP)}원</strong> 늘리면\n목표 달성이 약 <strong>${diffStr}</strong> 빨라집니다.`,
+      body: `월 투자금을 <strong>${formatShortMoney(INVEST_BUMP)}원</strong> 늘리면 목표 달성이 약 <strong>${diffStr}</strong> 빨라집니다.`,
     }
   }
   if (rateDiff !== null && rateDiff > 0) {
@@ -225,7 +225,7 @@ const fireTip = computed(() => {
     const mo = rateDiff % 12
     const diffStr = y > 0 ? `${y}년 ${mo > 0 ? mo + '개월' : ''}` : `${rateDiff}개월`
     return {
-      body: `연평균 수익률이 <strong>1%</strong> 높아지면\n목표 달성이 약 <strong>${diffStr}</strong> 앞당겨집니다.`,
+      body: `연평균 수익률이 <strong>1%</strong> 높아지면 목표 달성이 약 <strong>${diffStr}</strong> 앞당겨집니다.`,
     }
   }
   return null
@@ -478,11 +478,9 @@ onMounted(loadData)
 
       <!-- FIRE Tip -->
       <div v-if="fireTip" class="tip-card mb-3">
-        <div class="tip-header">
-          <span class="tip-emoji">💡</span>
-          <span class="tip-title">FIRE Tip</span>
-        </div>
-        <div class="tip-body" v-html="fireTip.body"></div>
+        <span class="tip-emoji">💡</span>
+        <span class="tip-title">FIRE Tip</span>
+        <span class="tip-body ml-1" v-html="fireTip.body"></span>
       </div>
 
       <!-- 연도별 예상자산 추이 -->
@@ -775,12 +773,10 @@ onMounted(loadData)
   padding: 14px 16px;
   background: linear-gradient(135deg, rgba(var(--v-theme-primary), 0.08) 0%, rgba(var(--v-theme-primary), 0.04) 100%);
   border: 1px solid rgba(var(--v-theme-primary), 0.18);
-}
-.tip-header {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 8px;
+  flex-wrap: wrap;
 }
 .tip-emoji {
   font-size: 16px;
@@ -793,9 +789,8 @@ onMounted(loadData)
 }
 .tip-body {
   font-size: 13px;
-  line-height: 1.7;
+  line-height: 1.5;
   color: rgba(var(--v-theme-on-surface), 0.75);
-  white-space: pre-line;
 }
 
 .section-title {
