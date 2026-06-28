@@ -470,7 +470,7 @@ onMounted(loadData)
             <div class="scenario-divider" />
             <div class="scenario-date">
               <template v-if="i === 1">{{ formatScenarioDate(s.months) }}</template>
-              <template v-else>{{ formatScenarioDiff(s.months, scenarios[1].months, i === 2) }}</template>
+              <template v-else>{{ formatScenarioDiff(s.months, scenarios[1]?.months ?? null, i === 2) }}</template>
             </div>
           </div>
         </div>
