@@ -220,6 +220,18 @@ const currentThemeLabel = computed(() => {
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
+      <div class="menu-card glass-card pa-4 d-flex align-center ga-3 menu-disabled">
+        <div class="menu-icon">
+          <v-icon size="18" color="primary">mdi-cellphone-cog</v-icon>
+        </div>
+        <div>
+          <div class="text-body-2 font-weight-medium">화면 설정</div>
+          <div class="text-caption text-medium-emphasis">폰트 크기 등 화면 표시 설정</div>
+        </div>
+        <v-spacer />
+        <v-chip size="x-small" color="primary" variant="tonal">준비중</v-chip>
+      </div>
+
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/change-password')">
         <div class="menu-icon">
           <v-icon size="18" color="primary">mdi-lock-reset</v-icon>
