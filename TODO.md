@@ -2,6 +2,11 @@
 
 ## 🔴 해야 할 것
 
+### 폰트 크기 전역 조절 기능
+- CSS 변수 `--font-scale` 도입 + `html { font-size: calc(16px * var(--font-scale)) }` 설정
+- 전체 `px` 단위 → `rem` 변환 (파일 27개, 수백 곳)
+- 설정 UI: 슬라이더 or 버튼으로 스케일 조절, investment_goals 테이블에 저장
+
 ### ETF 백테스트
 - 새 Supabase Edge Function: `etf-backtest` (Yahoo Finance 일별 종가 데이터)
 - 시작일 / 월 투자금 입력 → 누적 수익 시뮬레이션

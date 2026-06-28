@@ -191,20 +191,6 @@ const currentThemeLabel = computed(() => {
       </div>
     </div>
 
-    <!-- 서비스 섹션 -->
-    <div class="section-label mb-2">서비스</div>
-    <div class="d-flex flex-column ga-2 mb-5">
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/feedback')">
-        <div class="menu-icon"><v-icon size="18" color="primary">mdi-message-text-outline</v-icon></div>
-        <div>
-          <div class="text-body-2 font-weight-medium">의견 보내기</div>
-          <div class="text-caption text-medium-emphasis">불편한 점이나 개선 아이디어를 보내주세요.</div>
-        </div>
-        <v-spacer />
-        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
-      </div>
-    </div>
-
     <!-- 설정 섹션 -->
     <div class="section-label mb-2">설정</div>
     <div class="d-flex flex-column ga-2 mb-5">
@@ -220,6 +206,18 @@ const currentThemeLabel = computed(() => {
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
+      <div class="menu-card glass-card pa-4 d-flex align-center ga-3 menu-disabled">
+        <div class="menu-icon">
+          <v-icon size="18" color="primary">mdi-cellphone-cog</v-icon>
+        </div>
+        <div>
+          <div class="text-body-2 font-weight-medium">화면 설정</div>
+          <div class="text-caption text-medium-emphasis">폰트 크기 등 화면 표시 설정</div>
+        </div>
+        <v-spacer />
+        <v-chip size="x-small" color="primary" variant="tonal">준비중</v-chip>
+      </div>
+
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/change-password')">
         <div class="menu-icon">
           <v-icon size="18" color="primary">mdi-lock-reset</v-icon>
@@ -227,6 +225,20 @@ const currentThemeLabel = computed(() => {
         <div>
           <div class="text-body-2 font-weight-medium">비밀번호 변경</div>
           <div class="text-caption text-medium-emphasis">계정 비밀번호를 변경합니다</div>
+        </div>
+        <v-spacer />
+        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
+      </div>
+    </div>
+
+    <!-- 서비스 섹션 -->
+    <div class="section-label mb-2">서비스</div>
+    <div class="d-flex flex-column ga-2 mb-5">
+      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/feedback')">
+        <div class="menu-icon"><v-icon size="18" color="primary">mdi-message-text-outline</v-icon></div>
+        <div>
+          <div class="text-body-2 font-weight-medium">의견 보내기</div>
+          <div class="text-caption text-medium-emphasis">불편한 점이나 개선 아이디어를 보내주세요.</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>

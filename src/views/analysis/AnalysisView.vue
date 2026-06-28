@@ -164,9 +164,21 @@ const formatScenarioDate = (months: number | null) => {
   if (months === 0) return '달성!'
   const d = new Date()
   d.setMonth(d.getMonth() + months)
-  const y = Math.floor(months / 12)
-  const m = months % 12
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')} (${y > 0 ? y + '년 ' : ''}${m > 0 ? m + '개월' : ''})`
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월`
+}
+
+const formatScenarioDiff = (months: number | null, baseMonths: number | null, isOptimistic: boolean) => {
+  if (months === null || baseMonths === null) return '-'
+  if (months === 0) return '달성!'
+  const d = new Date()
+  d.setMonth(d.getMonth() + months)
+  const dateStr = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}`
+  const diff = Math.abs(baseMonths - months)
+  if (isOptimistic) {
+    return `${diff}개월 단축(${dateStr})`
+  } else {
+    return `${diff}개월 증가(${dateStr})`
+  }
 }
 
 // ── FIRE Tip ─────────────────────────────────────
@@ -190,9 +202,9 @@ const fireTip = computed(() => {
   const baseMo = calcMonths(T, C, M, rate)
   if (baseMo === null || baseMo === 0) return null
 
-  // 팁 1: 월 투자금 50만원 증가
-  const INVEST_BUMP = 500_000
-  const investMo = calcMonths(T, C, M + INVEST_BUMP, rate)
+  // 팁 1: 월 투자금 10% 증가 (만원 단위 반올림)
+  const INVEST_BUMP = Math.round(M * 0.1 / 10000) * 10000
+  const investMo = INVEST_BUMP > 0 ? calcMonths(T, C, M + INVEST_BUMP, rate) : null
   const investDiff = investMo !== null ? baseMo - investMo : null
 
   // 팁 2: 수익률 1% 증가
@@ -200,12 +212,12 @@ const fireTip = computed(() => {
   const rateDiff = rateMo !== null ? baseMo - rateMo : null
 
   // 더 임팩트 큰 팁 선택
-  if (investDiff !== null && (rateDiff === null || investDiff >= rateDiff)) {
+  if (investDiff !== null && investDiff > 0 && (rateDiff === null || investDiff >= rateDiff)) {
     const y = Math.floor(investDiff / 12)
     const mo = investDiff % 12
     const diffStr = y > 0 ? `${y}년 ${mo > 0 ? mo + '개월' : ''}` : `${investDiff}개월`
     return {
-      body: `월 투자금을 <strong>50만원</strong> 늘리면\n목표 달성이 약 <strong>${diffStr}</strong> 빨라집니다.`,
+      body: `월 투자금을 <strong>${formatShortMoney(INVEST_BUMP)}원</strong> 늘리면 목표 달성이 약 <strong>${diffStr}</strong> 빨라집니다.`,
     }
   }
   if (rateDiff !== null && rateDiff > 0) {
@@ -213,7 +225,7 @@ const fireTip = computed(() => {
     const mo = rateDiff % 12
     const diffStr = y > 0 ? `${y}년 ${mo > 0 ? mo + '개월' : ''}` : `${rateDiff}개월`
     return {
-      body: `연평균 수익률이 <strong>1%</strong> 높아지면\n목표 달성이 약 <strong>${diffStr}</strong> 앞당겨집니다.`,
+      body: `연평균 수익률이 <strong>1%</strong> 높아지면 목표 달성이 약 <strong>${diffStr}</strong> 앞당겨집니다.`,
     }
   }
   return null
@@ -456,18 +468,19 @@ onMounted(loadData)
             </div>
             <div class="scenario-rate-label">연 {{ s.rate }}%</div>
             <div class="scenario-divider" />
-            <div class="scenario-date">{{ formatScenarioDate(s.months) }}</div>
+            <div class="scenario-date">
+              <template v-if="i === 1">{{ formatScenarioDate(s.months) }}</template>
+              <template v-else>{{ formatScenarioDiff(s.months, scenarios[1].months, i === 2) }}</template>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- FIRE Tip -->
       <div v-if="fireTip" class="tip-card mb-3">
-        <div class="tip-header">
-          <span class="tip-emoji">💡</span>
-          <span class="tip-title">FIRE Tip</span>
-        </div>
-        <div class="tip-body" v-html="fireTip.body"></div>
+        <span class="tip-emoji">💡</span>
+        <span class="tip-title">FIRE Tip</span>
+        <span class="tip-body ml-1" v-html="fireTip.body"></span>
       </div>
 
       <!-- 연도별 예상자산 추이 -->
@@ -760,12 +773,10 @@ onMounted(loadData)
   padding: 14px 16px;
   background: linear-gradient(135deg, rgba(var(--v-theme-primary), 0.08) 0%, rgba(var(--v-theme-primary), 0.04) 100%);
   border: 1px solid rgba(var(--v-theme-primary), 0.18);
-}
-.tip-header {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 8px;
+  flex-wrap: wrap;
 }
 .tip-emoji {
   font-size: 16px;
@@ -778,9 +789,8 @@ onMounted(loadData)
 }
 .tip-body {
   font-size: 13px;
-  line-height: 1.7;
+  line-height: 1.5;
   color: rgba(var(--v-theme-on-surface), 0.75);
-  white-space: pre-line;
 }
 
 .section-title {
