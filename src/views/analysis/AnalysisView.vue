@@ -642,11 +642,10 @@ onMounted(loadData)
 .pt-now-marker {
   position: absolute;
   top: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
   pointer-events: none;
 }
 .pt-now-dot {
@@ -656,13 +655,14 @@ onMounted(loadData)
   background: rgb(var(--v-theme-surface));
   border: 2.5px solid rgb(var(--v-theme-primary));
   box-shadow: 0 0 0 3px rgba(var(--v-theme-primary), 0.15);
+  transform: translateY(-50%);
 }
 .pt-now-label {
   font-size: 9px;
   font-weight: 700;
   color: rgb(var(--v-theme-primary));
   white-space: nowrap;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 /* 연도 마일스톤 */
