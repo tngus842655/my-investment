@@ -21,14 +21,13 @@ import FeedbackView from '@/views/more/FeedbackView.vue'
 import ChangePasswordView from '@/views/more/ChangePasswordView.vue'
 import AdminView from '@/views/admin/AdminView.vue'
 import AdminResetPasswordView from '@/views/admin/AdminResetPasswordView.vue'
-import AdminLoginLogView from '@/views/admin/AdminLoginLogView.vue'
 import AdminSignupLogView from '@/views/admin/AdminSignupLogView.vue'
 import AdminStatsView from '@/views/admin/AdminStatsView.vue'
 import AdminMembersView from '@/views/admin/AdminMembersView.vue'
 import AdminDataView from '@/views/admin/AdminDataView.vue'
 import AdminTickerView from '@/views/admin/AdminTickerView.vue'
 import AdminFeedbackView from '@/views/admin/AdminFeedbackView.vue'
-import AdminAccessLogView from '@/views/admin/AdminAccessLogView.vue'
+import AdminAccessHistoryView from '@/views/admin/AdminAccessHistoryView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -51,9 +50,9 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
-      path: '/admin/login-log',
-      name: 'adminLoginLog',
-      component: AdminLoginLogView,
+      path: '/admin/access-history',
+      name: 'adminAccessHistory',
+      component: AdminAccessHistoryView,
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
@@ -90,12 +89,6 @@ const router = createRouter({
       path: '/admin/feedback',
       name: 'adminFeedback',
       component: AdminFeedbackView,
-      meta: { requiresAuth: true, requiresAdmin: true },
-    },
-    {
-      path: '/admin/access-log',
-      name: 'adminAccessLog',
-      component: AdminAccessLogView,
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
