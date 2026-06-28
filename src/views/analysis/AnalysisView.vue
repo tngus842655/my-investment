@@ -409,10 +409,16 @@ onMounted(loadData)
                 class="pt-milestone"
                 :style="{ left: m.pct + '%' }"
               >
-                <div class="pt-milestone-tick" :class="m.isGoal ? 'tick-goal' : m.isPast ? 'tick-done' : 'tick-future'" />
-                <div class="pt-milestone-label" :class="m.isGoal ? 'label-goal' : m.isPast ? 'label-done' : 'label-future'">
-                  {{ m.isGoal ? '🏁' : m.isPast ? '✓' : '' }} {{ m.year }}
-                </div>
+                <template v-if="m.isGoal">
+                  <v-icon size="18" color="primary" class="pt-goal-flag">mdi-flag-checkered</v-icon>
+                  <div class="pt-milestone-label label-goal">{{ m.year }}</div>
+                </template>
+                <template v-else>
+                  <div class="pt-milestone-tick" :class="m.isPast ? 'tick-done' : 'tick-future'" />
+                  <div class="pt-milestone-label" :class="m.isPast ? 'label-done' : 'label-future'">
+                    {{ m.isPast ? '✓' : '' }} {{ m.year }}
+                  </div>
+                </template>
               </div>
             </div>
           </div>
@@ -690,7 +696,10 @@ onMounted(loadData)
 }
 .tick-done  { background: rgba(var(--v-theme-primary), 0.4); }
 .tick-future { background: rgba(var(--v-theme-on-surface), 0.15); }
-.tick-goal  { background: rgb(var(--v-theme-primary)); width: 3px; height: 20px; }
+
+.pt-goal-flag {
+  filter: drop-shadow(0 0 4px rgba(var(--v-theme-primary), 0.4));
+}
 
 .pt-milestone-label {
   font-size: 9px;
