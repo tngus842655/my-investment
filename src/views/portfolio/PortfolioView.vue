@@ -74,11 +74,16 @@ const loadPortfolios = async () => {
     } = await supabase.auth.getUser()
     if (!user) return
 
-    const { data, error } = await supabase
-      .from('portfolios')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('sort_order', { ascending: true })
+    const [{ data, error }, goalResult] = await Promise.all([
+      supabase.from('portfolios').select('*').eq('user_id', user.id).order('sort_order', { ascending: true }),
+      supabase.from('investment_goals').select('portfolio_sort').eq('user_id', user.id).maybeSingle(),
+    ])
+
+    if (goalResult.data?.portfolio_sort) {
+      const dbSort = goalResult.data.portfolio_sort as SortKey
+      sortKey.value = dbSort
+      localStorage.setItem(SORT_STORAGE_KEY, dbSort)
+    }
 
     if (error) {
       showMessage(error.message, 'error')
@@ -457,6 +462,13 @@ const SORT_OPTIONS: { key: SortKey; label: string; emoji: string }[] = [
 const setSort = (key: SortKey) => {
   sortKey.value = key
   localStorage.setItem(SORT_STORAGE_KEY, key)
+  supabase.auth.getUser().then(({ data: { user } }) => {
+    if (!user) return
+    supabase.from('investment_goals')
+      .update({ portfolio_sort: key })
+      .eq('user_id', user.id)
+      .then()
+  })
   closeSwipe()
 }
 

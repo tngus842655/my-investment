@@ -25,6 +25,13 @@ const hideAsset = ref(localStorage.getItem('firepath-hide-asset') === 'true')
 const toggleHideAsset = () => {
   hideAsset.value = !hideAsset.value
   localStorage.setItem('firepath-hide-asset', String(hideAsset.value))
+  supabase.auth.getUser().then(({ data: { user } }) => {
+    if (!user) return
+    supabase.from('investment_goals')
+      .update({ hide_asset: hideAsset.value })
+      .eq('user_id', user.id)
+      .then()
+  })
 }
 
 const targetAsset = ref(0)
@@ -109,6 +116,10 @@ const loadDashboard = async () => {
       targetAsset.value = goalResult.data.target_asset ?? 0
       monthlyInvestment.value = goalResult.data.monthly_investment ?? 0
       annualReturn.value = goalResult.data.annual_return ?? null
+      if (goalResult.data.hide_asset != null) {
+        hideAsset.value = goalResult.data.hide_asset
+        localStorage.setItem('firepath-hide-asset', String(goalResult.data.hide_asset))
+      }
     }
     currentAsset.value = summaryResult.data?.current_asset ?? 0
 

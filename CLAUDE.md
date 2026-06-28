@@ -101,6 +101,9 @@ VITE_SUPABASE_ANON_KEY=
 | monthly_investment | int8        | 월 투자금액 (KRW)            |
 | annual_return      | float8      | 연 기대 수익률 (%, nullable) |
 | target_date        | date        | 목표 달성 날짜 (nullable)    |
+| theme              | text        | 앱 테마 (light/dark/system 등, 기본값 system) |
+| portfolio_sort     | text        | 포트폴리오 정렬 기준 (custom/eval/profit/rate/name, 기본값 custom) |
+| hide_asset         | boolean     | 자산 숨김 여부 (기본값 false) |
 | created_at         | timestamptz |                              |
 | updated_at         | timestamptz |                              |
 
