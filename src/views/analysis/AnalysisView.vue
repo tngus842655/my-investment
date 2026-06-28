@@ -164,9 +164,7 @@ const formatScenarioDate = (months: number | null) => {
   if (months === 0) return '달성!'
   const d = new Date()
   d.setMonth(d.getMonth() + months)
-  const y = Math.floor(months / 12)
-  const m = months % 12
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')} (${y > 0 ? y + '년 ' : ''}${m > 0 ? m + '개월' : ''})`
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월`
 }
 
 const formatScenarioDiff = (months: number | null, baseMonths: number | null, isOptimistic: boolean) => {
