@@ -401,6 +401,7 @@ onMounted(loadData)
                 v-for="m in timelineMilestones"
                 :key="m.year"
                 class="pt-milestone"
+                :class="{ 'pt-milestone--goal': m.isGoal }"
                 :style="{ left: m.pct + '%' }"
               >
                 <template v-if="m.isGoal">
@@ -681,6 +682,10 @@ onMounted(loadData)
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+.pt-milestone--goal {
+  transform: translate(-100%, -50%);
+  align-items: flex-end;
 }
 .pt-milestone-tick {
   width: 2px;
