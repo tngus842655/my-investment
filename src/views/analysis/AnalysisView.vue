@@ -128,10 +128,12 @@ const chartPoints = computed(() => {
   const maxX = allPts[allPts.length - 1]!.dayOffset
 
   const toX = (day: number) => PAD.left + ((day - minX) / Math.max(maxX - minX, 1)) * PW
-  // C=0이고 월 투자금이 있으면 로그 스케일 사용 (곡선이 자연스럽게 분포됨)
+  // C=0이고 월 투자금이 있을 때 로그 스케일 사용 — 단, 달성 기간이 6개월 미만이면 선형 사용
+  // (단기 구간에 로그 스케일 적용 시 곡선이 수직선처럼 왜곡됨)
+  const totalMonths = (maxX - minX) / DAYS_PER_MONTH
   const useLogScale =
     currentAsset.value === 0
-      ? monthlyInvestment.value > 0
+      ? monthlyInvestment.value > 0 && totalMonths >= 6
       : currentAsset.value >= (targetAsset.value || maxY) * 0.02
   const logMin = Math.log(minY)
   const logMax = Math.log(maxY)
