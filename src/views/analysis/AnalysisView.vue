@@ -393,9 +393,18 @@ onMounted(loadData)
               <div class="pt-now-marker" :style="{ left: progressPct + '%' }">
                 <div class="pt-now-dot" />
               </div>
+              <!-- bar 안쪽 수직선 (goal 제외) -->
+              <div
+                v-for="m in timelineMilestones.filter(m => !m.isGoal)"
+                :key="'bar-' + m.year"
+                class="pt-inner-tick"
+                :class="m.isPast ? 'inner-tick--done' : 'inner-tick--future'"
+                style="position: absolute; top: 50%; transform: translateY(-50%)"
+                :style="{ left: m.pct + '%', top: '50%', transform: 'translateY(-50%)', position: 'absolute' }"
+              />
             </div>
 
-            <!-- 연도 마일스톤 틱 -->
+            <!-- 연도 마일스톤: 라벨 + 깃발 -->
             <div class="pt-milestones">
               <div
                 v-for="m in timelineMilestones"
@@ -409,9 +418,9 @@ onMounted(loadData)
                   <div class="pt-milestone-label label-goal">{{ m.year }}.{{ m.month }}</div>
                 </template>
                 <template v-else>
-                  <div class="pt-milestone-tick" :class="m.isPast ? 'tick-done' : 'tick-future'" />
+                  <div class="pt-inner-tick" :class="m.isPast ? 'inner-tick--done' : 'inner-tick--future'" />
                   <div class="pt-milestone-label" :class="m.isPast ? 'label-done' : 'label-future'">
-                    {{ m.isPast ? '✓' : '' }} {{ m.year }}
+                    {{ m.year }}
                   </div>
                 </template>
               </div>
@@ -677,24 +686,24 @@ onMounted(loadData)
 }
 .pt-milestone {
   position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  top: 100%;
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin-top: 4px;
 }
 .pt-milestone--goal {
-  transform: translate(-100%, -50%);
+  transform: translateX(-100%);
   align-items: flex-end;
 }
-.pt-milestone-tick {
-  width: 2px;
-  height: 18px;
+.pt-inner-tick {
+  width: 1.5px;
+  height: 10px;
   border-radius: 1px;
-  margin-top: 2px;
 }
-.tick-done  { background: rgba(var(--v-theme-primary), 0.4); }
-.tick-future { background: rgba(var(--v-theme-on-surface), 0.15); }
+.inner-tick--done   { background: rgba(var(--v-theme-surface), 0.5); }
+.inner-tick--future { background: rgba(var(--v-theme-on-surface), 0.15); }
 
 .pt-goal-flag {
   filter: drop-shadow(0 0 4px rgba(var(--v-theme-primary), 0.4));
