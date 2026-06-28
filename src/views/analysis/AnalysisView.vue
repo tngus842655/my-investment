@@ -533,7 +533,7 @@ onMounted(loadData)
         <div v-if="fireGoalYear" class="fire-goal-card mt-3">
           <div class="fire-goal-title">🏆 FIRE 목표 달성</div>
           <div class="fire-goal-asset-label">예상 자산</div>
-          <div class="fire-goal-asset">{{ formatShortMoney(fireGoalYear.asset) }}원</div>
+          <div class="fire-goal-asset">{{ formatShortMoney(finalAsset) }}원</div>
           <div class="fire-goal-meta">
             <span class="fire-goal-year">{{ fireGoalYear.year }}년 {{ fireGoalYear.month }}월 예상</span>
             <span v-if="fireGoalYear.remainText" class="fire-goal-remain"> · {{ fireGoalYear.remainText }}</span>
