@@ -174,6 +174,10 @@ onMounted(async () => {
       <!-- 관리 메뉴 -->
       <div class="glass-card pa-4">
         <div class="section-label mb-3">관리 메뉴</div>
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-message-text-outline" class="mb-2" @click="router.push('/admin/feedback')">
+          사용자 의견
+          <v-badge v-if="newFeedbackCount > 0" :content="newFeedbackCount" color="error" inline class="ml-2" />
+        </v-btn>
         <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-account-plus-outline" class="mb-2" @click="router.push('/admin/signup-log')">
           가입 이력 조회
         </v-btn>
@@ -189,12 +193,8 @@ onMounted(async () => {
         <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-lock-reset" class="mb-2" @click="router.push('/admin/reset-password')">
           회원 비밀번호 재설정
         </v-btn>
-        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-database-sync-outline" class="mb-2" @click="router.push('/admin/data')">
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-database-sync-outline" @click="router.push('/admin/data')">
           데이터 관리
-        </v-btn>
-        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-message-text-outline" @click="router.push('/admin/feedback')">
-          사용자 의견
-          <v-badge v-if="newFeedbackCount > 0" :content="newFeedbackCount" color="error" inline class="ml-2" />
         </v-btn>
       </div>
     </template>
