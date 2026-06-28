@@ -115,7 +115,7 @@ const timelineMilestones = computed(() => {
 
   const milestones: { year: number; month?: number; pct: number; isGoal: boolean; isPast: boolean }[] = []
 
-  for (let y = startYear + 1; y < endYear; y++) {
+  for (let y = startYear + 1; y <= endYear; y++) {
     const monthsFromNow = (y - startYear) * 12 - (currentMonth - 1)
     const pct = totalMonths > 0 ? Math.round((monthsFromNow / totalMonths) * 100) : 0
     milestones.push({ year: y, pct, isGoal: false, isPast: new Date().getFullYear() > y })
