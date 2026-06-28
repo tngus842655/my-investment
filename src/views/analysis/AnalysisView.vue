@@ -411,7 +411,6 @@ onMounted(loadData)
               >
                 <template v-if="m.isGoal">
                   <v-icon size="18" color="primary" class="pt-goal-flag">mdi-flag-checkered</v-icon>
-                  <div class="pt-milestone-label label-goal">{{ m.year }}</div>
                 </template>
                 <template v-else>
                   <div class="pt-milestone-tick" :class="m.isPast ? 'tick-done' : 'tick-future'" />
