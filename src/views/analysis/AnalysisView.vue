@@ -96,6 +96,38 @@ const remainingInfo = computed(() => {
 
 const hasData = computed(() => annualReturn.value !== null && monthlyInvestment.value > 0 && currentAsset.value >= 0)
 
+// ── Progress Timeline ─────────────────────────────
+const progressPct = computed(() => {
+  const T = targetAsset.value
+  const C = currentAsset.value
+  if (!T) return 0
+  return Math.min(Math.round((C / T) * 100), 100)
+})
+
+// 타임라인 마일스톤: 시작연도 ~ 목표연도 사이 연도들
+const timelineMilestones = computed(() => {
+  const goal = fireGoalYear.value
+  if (!goal) return []
+
+  const startYear = currentYear
+  const endYear = goal.year
+  const totalMonths = (endYear - startYear) * 12 + (goal.month - 1)
+
+  const milestones: { year: number; month?: number; pct: number; isGoal: boolean; isPast: boolean }[] = []
+
+  // 중간 연도들 (시작~목표 사이)
+  for (let y = startYear + 1; y < endYear; y++) {
+    const monthsFromNow = (y - startYear) * 12 - (currentMonth - 1)
+    const pct = totalMonths > 0 ? Math.round((monthsFromNow / totalMonths) * 100) : 0
+    milestones.push({ year: y, pct, isGoal: false, isPast: new Date().getFullYear() > y })
+  }
+
+  // 목표 달성 마일스톤
+  milestones.push({ year: goal.year, month: goal.month, pct: 100, isGoal: true, isPast: false })
+
+  return milestones
+})
+
 // ── 시나리오 비교 ─────────────────────────────────
 interface Scenario {
   rate: number
@@ -341,12 +373,55 @@ onMounted(loadData)
         </div>
 
         <!-- 현재 자산 미등록 안내 -->
-        <div v-if="currentAsset === 0" class="no-asset-notice mb-2">
+        <div v-if="currentAsset === 0" class="no-asset-notice mb-3">
           <v-icon size="13" color="warning">mdi-information-outline</v-icon>
           <span>포트폴리오에 종목을 추가하면 현재 자산이 반영됩니다</span>
         </div>
 
-        <!-- Progress Timeline 영역 (추후 구현) -->
+        <!-- Progress Timeline -->
+        <div class="pt-timeline">
+          <!-- 달성률 텍스트 -->
+          <div class="pt-pct-row">
+            <span class="pt-pct-value">{{ progressPct }}%</span>
+            <span class="pt-pct-label">달성</span>
+            <span v-if="fireGoalYear" class="pt-goal-date">
+              🏁 {{ fireGoalYear.year }}년 {{ fireGoalYear.month }}월 목표
+            </span>
+          </div>
+
+          <!-- 프로그레스 바 + 마일스톤 -->
+          <div class="pt-bar-wrap">
+            <div class="pt-bar-bg">
+              <div class="pt-bar-fill" :style="{ width: progressPct + '%' }" />
+              <!-- 현재 위치 마커 -->
+              <div class="pt-now-marker" :style="{ left: progressPct + '%' }">
+                <div class="pt-now-dot" />
+                <div class="pt-now-label">지금</div>
+              </div>
+            </div>
+
+            <!-- 연도 마일스톤 틱 -->
+            <div class="pt-milestones">
+              <div
+                v-for="m in timelineMilestones"
+                :key="m.year"
+                class="pt-milestone"
+                :style="{ left: m.pct + '%' }"
+              >
+                <div class="pt-milestone-tick" :class="m.isGoal ? 'tick-goal' : m.isPast ? 'tick-done' : 'tick-future'" />
+                <div class="pt-milestone-label" :class="m.isGoal ? 'label-goal' : m.isPast ? 'label-done' : 'label-future'">
+                  {{ m.isGoal ? '🏁' : m.isPast ? '✓' : '' }} {{ m.year }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 시작/끝 레이블 -->
+          <div class="pt-edge-labels">
+            <span class="pt-edge-start">{{ currentYear }}년 시작</span>
+            <span v-if="fireGoalYear" class="pt-edge-end">{{ formatShortMoney(targetAsset) }}원</span>
+          </div>
+        </div>
       </div>
 
       <!-- 예상 요약 스탯 -->
@@ -510,6 +585,136 @@ onMounted(loadData)
   border: 1px solid rgba(var(--v-theme-warning), 0.2);
   border-radius: 8px;
   padding: 6px 10px;
+}
+
+/* ── Progress Timeline ── */
+.pt-timeline {
+  padding-top: 4px;
+}
+
+.pt-pct-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.pt-pct-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: rgb(var(--v-theme-primary));
+  line-height: 1;
+  letter-spacing: -0.5px;
+}
+.pt-pct-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+.pt-goal-date {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.4);
+}
+
+.pt-bar-wrap {
+  position: relative;
+  margin-bottom: 28px;
+}
+
+.pt-bar-bg {
+  position: relative;
+  height: 10px;
+  border-radius: 99px;
+  background: rgba(var(--v-theme-on-surface), 0.08);
+  overflow: visible;
+}
+.pt-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, rgba(var(--v-theme-primary), 0.5) 0%, rgb(var(--v-theme-primary)) 100%);
+  transition: width 0.6s ease;
+  min-width: 0%;
+}
+
+/* 현재 위치 마커 */
+.pt-now-marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+.pt-now-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgb(var(--v-theme-surface));
+  border: 2.5px solid rgb(var(--v-theme-primary));
+  box-shadow: 0 0 0 3px rgba(var(--v-theme-primary), 0.15);
+}
+.pt-now-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: rgb(var(--v-theme-primary));
+  white-space: nowrap;
+  margin-top: 8px;
+}
+
+/* 연도 마일스톤 */
+.pt-milestones {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  pointer-events: none;
+}
+.pt-milestone {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.pt-milestone-tick {
+  width: 2px;
+  height: 18px;
+  border-radius: 1px;
+  margin-top: 2px;
+}
+.tick-done  { background: rgba(var(--v-theme-primary), 0.4); }
+.tick-future { background: rgba(var(--v-theme-on-surface), 0.15); }
+.tick-goal  { background: rgb(var(--v-theme-primary)); width: 3px; height: 20px; }
+
+.pt-milestone-label {
+  font-size: 9px;
+  font-weight: 600;
+  white-space: nowrap;
+  margin-top: 4px;
+}
+.label-done   { color: rgba(var(--v-theme-primary), 0.6); }
+.label-future { color: rgba(var(--v-theme-on-surface), 0.3); }
+.label-goal   { color: rgb(var(--v-theme-primary)); font-size: 10px; }
+
+.pt-edge-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+.pt-edge-start {
+  font-size: 10px;
+  color: rgba(var(--v-theme-on-surface), 0.3);
+}
+.pt-edge-end {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgb(var(--v-theme-primary));
 }
 
 .stat-grid {
