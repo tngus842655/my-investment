@@ -113,7 +113,7 @@ const timelineMilestones = computed(() => {
   const endYear = goal.year
   const totalMonths = (endYear - startYear) * 12 + (goal.month - 1)
 
-  const milestones: { year: number; pct: number; isGoal: boolean; isPast: boolean }[] = []
+  const milestones: { year: number; month?: number; pct: number; isGoal: boolean; isPast: boolean }[] = []
 
   for (let y = startYear + 1; y < endYear; y++) {
     const monthsFromNow = (y - startYear) * 12 - (currentMonth - 1)
@@ -121,7 +121,7 @@ const timelineMilestones = computed(() => {
     milestones.push({ year: y, pct, isGoal: false, isPast: new Date().getFullYear() > y })
   }
 
-  milestones.push({ year: goal.year, pct: 100, isGoal: true, isPast: false })
+  milestones.push({ year: goal.year, month: goal.month, pct: 100, isGoal: true, isPast: false })
 
   return milestones
 })
@@ -405,7 +405,7 @@ onMounted(loadData)
               >
                 <template v-if="m.isGoal">
                   <v-icon size="18" color="primary" class="pt-goal-flag">mdi-flag-checkered</v-icon>
-                  <div class="pt-milestone-label label-goal">{{ m.year }}</div>
+                  <div class="pt-milestone-label label-goal">{{ m.year }}.{{ m.month }}</div>
                 </template>
                 <template v-else>
                   <div class="pt-milestone-tick" :class="m.isPast ? 'tick-done' : 'tick-future'" />
