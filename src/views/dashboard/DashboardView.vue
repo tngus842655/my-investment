@@ -116,10 +116,6 @@ const loadDashboard = async () => {
       targetAsset.value = goalResult.data.target_asset ?? 0
       monthlyInvestment.value = goalResult.data.monthly_investment ?? 0
       annualReturn.value = goalResult.data.annual_return ?? null
-      if (goalResult.data.hide_asset != null) {
-        hideAsset.value = goalResult.data.hide_asset
-        localStorage.setItem('firepath-hide-asset', String(goalResult.data.hide_asset))
-      }
     }
     currentAsset.value = summaryResult.data?.current_asset ?? 0
 

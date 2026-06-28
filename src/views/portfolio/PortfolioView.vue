@@ -74,16 +74,11 @@ const loadPortfolios = async () => {
     } = await supabase.auth.getUser()
     if (!user) return
 
-    const [{ data, error }, goalResult] = await Promise.all([
-      supabase.from('portfolios').select('*').eq('user_id', user.id).order('sort_order', { ascending: true }),
-      supabase.from('investment_goals').select('portfolio_sort').eq('user_id', user.id).maybeSingle(),
-    ])
-
-    if (goalResult.data?.portfolio_sort) {
-      const dbSort = goalResult.data.portfolio_sort as SortKey
-      sortKey.value = dbSort
-      localStorage.setItem(SORT_STORAGE_KEY, dbSort)
-    }
+    const { data, error } = await supabase
+      .from('portfolios')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('sort_order', { ascending: true })
 
     if (error) {
       showMessage(error.message, 'error')
