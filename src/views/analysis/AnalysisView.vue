@@ -115,7 +115,10 @@ const chartPoints = computed(() => {
       return { dayOffset: diffDays, year: d.getFullYear(), month: d.getMonth() + 1, asset: h.current_asset, isPast: true }
     })
 
-  const futureMapped = futurePts.map((p) => ({ ...p, isPast: false }))
+  // C=0이면 asset=0인 day=0 시작점 제외 (차트 바닥 모서리에 박히는 현상 방지)
+  const futureMapped = futurePts
+    .filter((p) => p.asset > 0)
+    .map((p) => ({ ...p, isPast: false }))
   const allPts = [...histPts, ...futureMapped]
   if (allPts.length < 2) return null
 
@@ -125,8 +128,11 @@ const chartPoints = computed(() => {
   const maxX = allPts[allPts.length - 1]!.dayOffset
 
   const toX = (day: number) => PAD.left + ((day - minX) / Math.max(maxX - minX, 1)) * PW
-  // 현재자산이 목표의 2% 미만이면 선형 스케일 사용 (로그 스케일 왜곡 방지)
-  const useLogScale = currentAsset.value > 0 && currentAsset.value >= (targetAsset.value || maxY) * 0.02
+  // C=0이고 월 투자금이 있으면 로그 스케일 사용 (곡선이 자연스럽게 분포됨)
+  const useLogScale =
+    currentAsset.value === 0
+      ? monthlyInvestment.value > 0
+      : currentAsset.value >= (targetAsset.value || maxY) * 0.02
   const logMin = Math.log(minY)
   const logMax = Math.log(maxY)
   const toY = (asset: number) => {
