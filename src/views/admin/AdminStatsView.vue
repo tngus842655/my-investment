@@ -109,8 +109,32 @@ const buildBarChart = (data: { date: string; count: number }[]) => {
 const signupChart = computed(() => buildBarChart(signupByDay.value))
 const accessChart = computed(() => buildBarChart(accessByDay.value))
 
-// ── 포맷 ──────────────────────────────────────────
+// ── 날짜 클릭 팝업 ────────────────────────────────
+const clickedDate = ref<string | null>(null)
+const clickedType = ref<'signup' | 'access' | null>(null)
 
+const clickedEmails = computed(() => {
+  if (!clickedDate.value) return []
+  if (clickedType.value === 'signup') {
+    return signupRows.value
+      .filter(r => toKstDate(r.signed_up_at) === clickedDate.value)
+      .map(r => r.email)
+  }
+  const seen = new Set<string>()
+  return accessRows.value
+    .filter(r => {
+      if (toKstDate(r.accessed_at) !== clickedDate.value) return false
+      if (seen.has(r.email)) return false
+      seen.add(r.email)
+      return true
+    })
+    .map(r => r.email)
+})
+
+const openDatePopup = (date: string, type: 'signup' | 'access') => {
+  clickedDate.value = date
+  clickedType.value = type
+}
 
 onMounted(async () => {
   const { data: { user } } = await supabase.auth.getUser()
@@ -193,6 +217,8 @@ onMounted(async () => {
               rx="2"
               :fill="d.count > 0 ? 'rgb(var(--v-theme-primary))' : 'rgba(128,128,128,0.15)'"
               :opacity="d.count > 0 ? 0.85 : 1"
+              :style="d.count > 0 ? 'cursor:pointer' : ''"
+              @click="d.count > 0 && openDatePopup(d.date, 'signup')"
             />
             <!-- x축 라벨 -->
             <text
@@ -232,6 +258,8 @@ onMounted(async () => {
               rx="2"
               :fill="d.count > 0 ? '#6366f1' : 'rgba(128,128,128,0.15)'"
               :opacity="d.count > 0 ? 0.85 : 1"
+              :style="d.count > 0 ? 'cursor:pointer' : ''"
+              @click="d.count > 0 && openDatePopup(d.date, 'access')"
             />
             <text
               v-for="lbl in accessChart.xLabels" :key="lbl.i"
@@ -269,6 +297,30 @@ onMounted(async () => {
       </div>
     </template>
   </v-container>
+
+  <!-- 날짜 클릭 팝업 -->
+  <v-dialog :model-value="!!clickedDate" max-width="320" @update:model-value="clickedDate = null">
+    <v-card rounded="xl" class="pa-2">
+      <v-card-title class="text-body-1 font-weight-bold pt-4 px-4">
+        {{ clickedDate }} · {{ clickedType === 'signup' ? '가입' : '접속' }}
+      </v-card-title>
+      <v-card-text class="px-4 pb-2">
+        <div v-if="clickedEmails.length === 0" class="text-body-2 text-medium-emphasis py-2">
+          해당 날짜에 데이터가 없습니다
+        </div>
+        <div v-for="(email, i) in clickedEmails" :key="email">
+          <div class="d-flex align-center ga-2 py-1">
+            <v-icon size="13" color="primary">mdi-account-outline</v-icon>
+            <span style="font-size:13px; font-weight:600">{{ email }}</span>
+          </div>
+          <v-divider v-if="i < clickedEmails.length - 1" opacity="0.06" />
+        </div>
+      </v-card-text>
+      <v-card-actions class="px-4 pb-4">
+        <v-btn variant="tonal" rounded="lg" block @click="clickedDate = null">닫기</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <style scoped>
