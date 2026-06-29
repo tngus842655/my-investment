@@ -13,6 +13,7 @@ const currentAsset = ref(0)
 const monthlyInvestment = ref(0)
 const annualReturn = ref<number | null>(null)
 
+
 // ── 복리 계산 ─────────────────────────────────────
 // C: 현재 자산, M: 월 투자금, r: 월 수익률, n: 개월 수
 const calcAsset = (C: number, M: number, r: number, n: number) => {
@@ -38,23 +39,26 @@ const projection = computed<ProjectionPoint[]>(() => {
   const r = (annualReturn.value ?? 0) / 100 / 12
   const now = new Date()
 
-  // 목표 달성까지 최대 몇 개월인지 계산
-  let maxMonths = 360
+  // 목표 달성까지 개월 수 계산 (상한 없음)
+  let maxMonths = 600
   if (T > 0 && M > 0) {
     if (r === 0) {
-      maxMonths = Math.min(Math.ceil((T - C) / M) + 1, 360)
+      maxMonths = Math.ceil((T - C) / M) + 1
     } else {
       const num = T * r + M
       const den = C * r + M
       if (den > 0 && num / den > 1) {
-        maxMonths = Math.min(Math.ceil(Math.log(num / den) / Math.log(1 + r)) + 1, 360)
+        maxMonths = Math.ceil(Math.log(num / den) / Math.log(1 + r)) + 1
       }
     }
   }
 
+  // 기간에 따라 샘플링 간격 조정 (포인트 수 균일화)
+  const stepDays = maxMonths > 240 ? DAYS_PER_MONTH : maxMonths > 60 ? 7 : 1
+
   const maxDays = maxMonths * DAYS_PER_MONTH
   const points: ProjectionPoint[] = []
-  for (let day = 0; day <= maxDays; day++) {
+  for (let day = 0; day <= maxDays; day += stepDays) {
     const monthN = day / DAYS_PER_MONTH
     const asset = calcAsset(C, M, r, monthN)
     const d = new Date(now)
@@ -67,17 +71,15 @@ const projection = computed<ProjectionPoint[]>(() => {
 
 const totalInvested = computed(() => {
   const last = projection.value[projection.value.length - 1]
-  if (!last) return 0
-  return Math.round(monthlyInvestment.value * (last.dayOffset / DAYS_PER_MONTH))
+  const months = fireGoalYear.value?.totalMonths ?? (last ? last.dayOffset / DAYS_PER_MONTH : 0)
+  return Math.round(monthlyInvestment.value * months)
 })
 
 const totalReturn = computed(() => {
-  const last = projection.value[projection.value.length - 1]
-  if (!last) return 0
-  return last.asset - currentAsset.value - totalInvested.value
+  return finalAsset.value - currentAsset.value - totalInvested.value
 })
 
-const finalAsset = computed(() => projection.value[projection.value.length - 1]?.asset ?? 0)
+const finalAsset = computed(() => fireGoalYear.value?.asset ?? projection.value[projection.value.length - 1]?.asset ?? 0)
 
 const remainingInfo = computed(() => {
   const T = targetAsset.value
@@ -104,7 +106,7 @@ const progressPct = computed(() => {
   return Math.min(Math.round((C / T) * 100), 100)
 })
 
-// 타임라인 마일스톤: 시작연도 ~ 목표연도 사이 연도들
+// 타임라인 마일스톤: 과거 역산 + 현재 + 미래 예측
 const timelineMilestones = computed(() => {
   const goal = fireGoalYear.value
   const T = targetAsset.value
@@ -117,13 +119,39 @@ const timelineMilestones = computed(() => {
   const milestones: { year: number; month?: number; pct: number; isGoal: boolean; isPast: boolean }[] = []
 
   const totalYears = goal.year - currentYear
-  const step = totalYears <= 5 ? 1 : totalYears <= 10 ? 2 : 3
+  const step = totalYears <= 5 ? 1 : totalYears <= 15 ? 3 : totalYears <= 30 ? 5 : totalYears <= 60 ? 10 : 20
+  const MIN_GAP = 8
+
+  const nowPct = Math.min(progressPct.value, 100 - MIN_GAP)
+
+  // 과거 연도 역산 (현재 자산 기준으로 n개월 전 자산 추정)
+  const pastMilestones: typeof milestones = []
+  let firstPct = nowPct
+  for (let y = currentYear - step; y >= currentYear - 100; y -= step) {
+    const monthsAgo = (currentYear - y) * 12 + (currentMonth - 1)
+    const pastAsset = r === 0
+      ? C - M * monthsAgo
+      : (C - (M * (Math.pow(1 + r, monthsAgo) - 1)) / r) / Math.pow(1 + r, monthsAgo)
+    if (pastAsset <= 0) break
+    const pct = Math.max(Math.round((pastAsset / T) * 100), 0)
+    if (firstPct - pct >= MIN_GAP) {
+      pastMilestones.unshift({ year: y, pct, isGoal: false, isPast: true })
+    }
+    firstPct = pct
+    if (pct < MIN_GAP) break
+  }
+
+  milestones.push(...pastMilestones)
+  milestones.push({ year: currentYear, month: currentMonth, pct: nowPct, isGoal: false, isPast: false })
+  let lastPct = nowPct
 
   for (let y = currentYear + step; y < goal.year; y += step) {
     const monthsToYearEnd = (y - currentYear) * 12 - (currentMonth - 1)
     const yearEndAsset = Math.round(calcAsset(C, M, r, monthsToYearEnd))
     const pct = Math.min(Math.round((yearEndAsset / T) * 100), 100)
-    milestones.push({ year: y, pct, isGoal: false, isPast: new Date().getFullYear() > y })
+    if (pct - lastPct < MIN_GAP) continue
+    milestones.push({ year: y, pct, isGoal: false, isPast: false })
+    lastPct = pct
   }
 
   milestones.push({ year: goal.year, month: goal.month, pct: 100, isGoal: true, isPast: false })
@@ -290,7 +318,7 @@ const fireGoalYear = computed(() => {
     remainText = y > 0 ? `목표까지 약 ${y}년${mo > 0 ? ' ' + mo + '개월' : ''}` : `목표까지 약 ${totalMonths}개월`
   }
 
-  return { year: reachedYear, month: reachedMonth, asset: reachedAsset, remainText }
+  return { year: reachedYear, month: reachedMonth, asset: reachedAsset, remainText, totalMonths }
 })
 
 // 표시할 행 목록 (fireGoalYear 제외)
@@ -435,8 +463,8 @@ onMounted(loadData)
                   <div class="pt-milestone-label label-goal">{{ m.year }}.{{ m.month }}</div>
                 </template>
                 <template v-else>
-                  <div class="pt-milestone-label" :class="m.isPast ? 'label-done' : 'label-future'">
-                    {{ m.year }}
+                  <div class="pt-milestone-label" :class="m.isPast ? 'label-past' : m.year === currentYear ? 'label-now' : 'label-future'">
+                    {{ m.month ? `${m.year}.${m.month}` : m.year }}
                   </div>
                 </template>
               </div>
@@ -674,9 +702,9 @@ onMounted(loadData)
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: rgb(var(--v-theme-surface));
-  border: 2.5px solid rgb(var(--v-theme-primary));
-  box-shadow: 0 0 0 3px rgba(var(--v-theme-primary), 0.15);
+  background: rgb(var(--v-theme-primary));
+  border: 2.5px solid rgb(var(--v-theme-surface));
+  box-shadow: 0 0 0 3px rgba(var(--v-theme-primary), 0.25);
   transform: translateY(-50%);
 }
 .pt-now-label {
@@ -729,6 +757,8 @@ onMounted(loadData)
   white-space: nowrap;
   margin-top: 4px;
 }
+.label-past   { color: rgba(var(--v-theme-on-surface), 0.25); }
+.label-now    { color: rgb(var(--v-theme-primary)); font-weight: 700; }
 .label-done   { color: rgba(var(--v-theme-primary), 0.6); }
 .label-future { color: rgba(var(--v-theme-on-surface), 0.3); }
 .label-goal   { color: rgb(var(--v-theme-primary)); font-size: 10px; }

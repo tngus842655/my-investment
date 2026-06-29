@@ -78,8 +78,9 @@ const estimatedPreview = computed(() => {
   date.setMonth(date.getMonth() + months)
   const dateStr = date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })
   const durationStr = years > 0 ? `${years}년 ${remainMonths > 0 ? remainMonths + '개월' : ''}` : `${months}개월`
+  const tooLong = years >= 50
 
-  return { dateStr, durationStr }
+  return { dateStr, durationStr, tooLong }
 })
 
 const loadData = async () => {
@@ -254,16 +255,24 @@ onMounted(loadData)
         <template v-if="estimatedPreview">
           <v-divider class="my-3" />
           <div class="d-flex align-center ga-2">
-            <v-icon size="15" color="amber-darken-2">mdi-rocket-launch-outline</v-icon>
+            <v-icon size="15" :color="estimatedPreview.tooLong ? 'warning' : 'amber-darken-2'">
+              {{ estimatedPreview.tooLong ? 'mdi-alert-outline' : 'mdi-rocket-launch-outline' }}
+            </v-icon>
             <div class="text-caption text-medium-emphasis">
               목표 달성까지 약
-              <strong style="color: rgb(var(--v-theme-primary))">{{ estimatedPreview.durationStr }}</strong>
+              <strong :style="{ color: estimatedPreview.tooLong ? 'rgb(var(--v-theme-warning))' : 'rgb(var(--v-theme-primary))' }">{{ estimatedPreview.durationStr }}</strong>
               →
-              <strong style="color: rgb(var(--v-theme-primary))">{{ estimatedPreview.dateStr }}</strong>
+              <strong :style="{ color: estimatedPreview.tooLong ? 'rgb(var(--v-theme-warning))' : 'rgb(var(--v-theme-primary))' }">{{ estimatedPreview.dateStr }}</strong>
               예상
             </div>
           </div>
-          <div class="text-caption text-disabled mt-1 ml-5">현재 자산 미포함 · 복리 기준 단순 추정</div>
+          <div v-if="estimatedPreview.tooLong" class="d-flex align-center ga-1 mt-2 ml-5">
+            <v-icon size="12" color="warning">mdi-information-outline</v-icon>
+            <span class="text-caption" style="color: rgb(var(--v-theme-warning))">
+              목표 달성까지 50년 이상 — 월 투자금을 늘리거나 목표 자산을 줄이는 것을 권장합니다
+            </span>
+          </div>
+          <div v-else class="text-caption text-disabled mt-1 ml-5">현재 자산 미포함 · 복리 기준 단순 추정</div>
         </template>
       </div>
 
