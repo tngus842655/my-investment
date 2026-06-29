@@ -69,21 +69,57 @@ const tooltips = {
   totalReturn: '투자 원금 대비 현재 평가금액의 총 수익률입니다.',
 }
 
-const ymOptions = computed(() => {
-  const opts: { title: string; value: string }[] = []
-  const end = new Date(); end.setMonth(end.getMonth() - 1)
-  const cur = new Date(1993, 0, 1)
-  while (cur <= end) {
-    const ym = cur.toISOString().slice(0, 7)
-    opts.push({ title: ym, value: ym })
-    cur.setMonth(cur.getMonth() + 1)
-  }
-  return opts.reverse()
+// ── 시작일 선택 ───────────────────────────────────────
+type QuickPeriod = '1y' | '3y' | '5y' | '10y' | 'all'
+const activePeriod = ref<QuickPeriod | null>('10y')
+
+const quickPeriods: { label: string; value: QuickPeriod }[] = [
+  { label: '1년', value: '1y' },
+  { label: '3년', value: '3y' },
+  { label: '5년', value: '5y' },
+  { label: '10년', value: '10y' },
+  { label: '전체', value: 'all' },
+]
+
+
+const startYear = ref(new Date().getFullYear() - 10)
+const startMonth = ref(new Date().getMonth() + 1)
+
+const yearOptions = computed(() => {
+  const end = new Date().getFullYear()
+  const opts = []
+  for (let y = end; y >= 1993; y--) opts.push({ title: `${y}년`, value: y })
+  return opts
 })
 
+const monthOptions = Array.from({ length: 12 }, (_, i) => ({ title: `${i + 1}월`, value: i + 1 }))
+
+const applyQuickPeriod = (p: QuickPeriod) => {
+  activePeriod.value = p
+  const d = new Date()
+  if (p === 'all') {
+    startYear.value = 1993
+    startMonth.value = 1
+  } else {
+    const years = p === '1y' ? 1 : p === '3y' ? 3 : p === '5y' ? 5 : 10
+    d.setFullYear(d.getFullYear() - years)
+    startYear.value = d.getFullYear()
+    startMonth.value = d.getMonth() + 1
+  }
+  syncStartYm()
+}
+
+const syncStartYm = () => {
+  startYm.value = `${startYear.value}-${String(startMonth.value).padStart(2, '0')}`
+}
+
+const onManualChange = () => {
+  activePeriod.value = null
+  syncStartYm()
+}
+
 onMounted(() => {
-  const d = new Date(); d.setFullYear(d.getFullYear() - 10)
-  startYm.value = d.toISOString().slice(0, 7)
+  applyQuickPeriod('10y')
   loadRecent()
 })
 
@@ -405,16 +441,48 @@ const yearlyRows = computed(() => {
           </template>
         </v-text-field>
 
-        <v-select
-          v-model="startYm"
-          :items="ymOptions"
-          label="시작 연월"
-          variant="outlined"
-          density="compact"
-          rounded="lg"
-          hide-details
-          :disabled="loading"
-        />
+        <!-- 빠른 선택 -->
+        <div>
+          <div class="quick-label">시작일 빠른 선택</div>
+          <div class="d-flex ga-2 mt-1 flex-wrap">
+            <button
+              v-for="opt in quickPeriods"
+              :key="opt.value"
+              class="quick-btn"
+              :class="{ 'quick-btn--active': activePeriod === opt.value }"
+              :disabled="loading"
+              @click="applyQuickPeriod(opt.value)"
+            >{{ opt.label }}</button>
+          </div>
+        </div>
+
+        <!-- 직접 선택 -->
+        <div class="d-flex ga-2">
+          <v-select
+            v-model="startYear"
+            :items="yearOptions"
+            label="시작 연도"
+            variant="outlined"
+            density="compact"
+            rounded="lg"
+            hide-details
+            :disabled="loading"
+            style="flex: 1.4"
+            @update:model-value="onManualChange"
+          />
+          <v-select
+            v-model="startMonth"
+            :items="monthOptions"
+            label="시작 월"
+            variant="outlined"
+            density="compact"
+            rounded="lg"
+            hide-details
+            :disabled="loading"
+            style="flex: 1"
+            @update:model-value="onManualChange"
+          />
+        </div>
 
         <v-btn color="primary" rounded="lg" :disabled="!canRun || loading" :loading="loading" @click="run">
           백테스트 실행
@@ -684,6 +752,35 @@ const yearlyRows = computed(() => {
 .glass-card {
   background: var(--fp-surface);
   border: 1px solid var(--fp-outline);
+}
+
+/* ── 빠른 선택 ──────────────────────────────────── */
+.quick-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(var(--v-theme-on-surface), 0.4);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.quick-btn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--fp-outline);
+  background: transparent;
+  color: rgba(var(--v-theme-on-surface), 0.65);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.quick-btn:disabled { opacity: 0.4; cursor: default; }
+
+.quick-btn--active {
+  background: rgb(var(--v-theme-primary));
+  border-color: rgb(var(--v-theme-primary));
+  color: #fff;
 }
 
 /* ── 최근 조회 ──────────────────────────────────── */
