@@ -124,16 +124,21 @@ const timelineMilestones = computed(() => {
   const step = totalYears <= 5 ? 1 : totalYears <= 15 ? 3 : totalYears <= 30 ? 5 : totalYears <= 60 ? 10 : 20
 
   const MIN_GAP = 8 // 레이블 간 최소 간격 (%)
-  const nowPct = Math.min(progressPct.value, 100 - MIN_GAP)
-  milestones.push({ year: currentYear, pct: nowPct, isGoal: false, isPast: false })
-  let lastPct = nowPct
 
-  for (let y = currentYear + step; y < goal.year; y += step) {
+  // 과거 데이터가 있으면 가장 오래된 연도부터, 없으면 현재 연도부터 시작
+  const historyYears = Object.keys(assetHistoryByYear.value).map(Number).sort()
+  const loopStart = historyYears.length > 0 ? historyYears[0] : currentYear
+
+  let lastPct = 0
+
+  for (let y = loopStart; y < goal.year; y += step) {
     let pct: number
-    const actualAsset = assetHistoryByYear.value[y]
-    if (actualAsset !== undefined) {
-      // 과거 연도: 실제 기록된 자산 사용
-      pct = Math.min(Math.round((actualAsset / T) * 100), 100)
+    if (y === currentYear) {
+      // 현재 연도: 실제 달성률
+      pct = Math.min(progressPct.value, 100 - MIN_GAP)
+    } else if (assetHistoryByYear.value[y] !== undefined) {
+      // 과거 연도: 실제 기록된 자산
+      pct = Math.min(Math.round((assetHistoryByYear.value[y] / T) * 100), 100)
     } else {
       // 미래 연도: 현재 자산 기준 예측값
       const monthsToYearEnd = (y - currentYear) * 12 - (currentMonth - 1)
@@ -141,7 +146,7 @@ const timelineMilestones = computed(() => {
       pct = Math.min(Math.round((yearEndAsset / T) * 100), 100)
     }
     if (pct - lastPct < MIN_GAP) continue
-    milestones.push({ year: y, pct, isGoal: false, isPast: new Date().getFullYear() > y })
+    milestones.push({ year: y, pct, isGoal: false, isPast: y < currentYear })
     lastPct = pct
   }
 
