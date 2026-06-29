@@ -321,3 +321,24 @@ input, textarea {
 .fp-scale-fade-leave-active { transition: opacity var(--fp-transition), transform var(--fp-transition); }
 .fp-scale-fade-enter-from,
 .fp-scale-fade-leave-to     { opacity: 0; transform: scale(0.96); }
+
+/* ══════════════════════════════════════════════════════════════
+   좁은 화면 (폴드 접힘 등 360px 이하) — 패딩·폰트 축소, 열 유지
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 360px) {
+  /* 카드 패딩 축소 */
+  .stat-card {
+    padding: 10px 8px !important;
+  }
+  .scenario-col {
+    padding: 10px 4px 8px !important;
+  }
+  .two-col .v-field {
+    font-size: 13px !important;
+  }
+
+  /* 3열 시나리오는 좁아서 1열로 */
+  .scenario-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

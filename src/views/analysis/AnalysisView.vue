@@ -107,17 +107,22 @@ const progressPct = computed(() => {
 // 타임라인 마일스톤: 시작연도 ~ 목표연도 사이 연도들
 const timelineMilestones = computed(() => {
   const goal = fireGoalYear.value
-  if (!goal) return []
+  const T = targetAsset.value
+  if (!goal || !T) return []
 
-  const startYear = currentYear
-  const endYear = goal.year
-  const totalMonths = (endYear - startYear) * 12 + (goal.month - 1)
+  const C = currentAsset.value
+  const M = monthlyInvestment.value
+  const r = (annualReturn.value ?? 0) / 100 / 12
 
   const milestones: { year: number; month?: number; pct: number; isGoal: boolean; isPast: boolean }[] = []
 
-  for (let y = startYear + 1; y <= endYear; y++) {
-    const monthsFromNow = (y - startYear) * 12 - (currentMonth - 1)
-    const pct = totalMonths > 0 ? Math.round((monthsFromNow / totalMonths) * 100) : 0
+  const totalYears = goal.year - currentYear
+  const step = totalYears <= 5 ? 1 : totalYears <= 10 ? 2 : 3
+
+  for (let y = currentYear + step; y < goal.year; y += step) {
+    const monthsToYearEnd = (y - currentYear) * 12 - (currentMonth - 1)
+    const yearEndAsset = Math.round(calcAsset(C, M, r, monthsToYearEnd))
+    const pct = Math.min(Math.round((yearEndAsset / T) * 100), 100)
     milestones.push({ year: y, pct, isGoal: false, isPast: new Date().getFullYear() > y })
   }
 

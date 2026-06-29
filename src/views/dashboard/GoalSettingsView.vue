@@ -23,8 +23,8 @@ const addComma = (value: string) => {
 
 const removeComma = (value: string) => Number(value.replace(/,/g, '')) || 0
 
-const MAX_ASSET = 100_000_000_000  // 1000억
-const MAX_MONTHLY = 100_000_000    // 1억
+const MAX_ASSET = 100_000_000_000 // 1000억
+const MAX_MONTHLY = 100_000_000 // 1억
 
 const handleTargetAsset = (value: string) => {
   const num = Math.min(Number(value.replace(/,/g, '')) || 0, MAX_ASSET)
@@ -77,8 +77,7 @@ const estimatedPreview = computed(() => {
   const date = new Date()
   date.setMonth(date.getMonth() + months)
   const dateStr = date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })
-  const durationStr =
-    years > 0 ? `${years}년 ${remainMonths > 0 ? remainMonths + '개월' : ''}` : `${months}개월`
+  const durationStr = years > 0 ? `${years}년 ${remainMonths > 0 ? remainMonths + '개월' : ''}` : `${months}개월`
 
   return { dateStr, durationStr }
 })
@@ -89,13 +88,10 @@ const loadData = async () => {
   } = await supabase.auth.getUser()
   if (!user) return
 
-  const { data } = await supabase
-    .from('investment_goals')
-    .select('*')
-    .eq('user_id', user.id)
-    .maybeSingle()
+  const { data } = await supabase.from('investment_goals').select('*').eq('user_id', user.id).maybeSingle()
 
   if (!data) {
+    annualReturn.value = 7
     initializing.value = false
     return
   }
@@ -103,7 +99,7 @@ const loadData = async () => {
   isEditMode.value = true
   targetAsset.value = addComma(String(data.target_asset ?? ''))
   monthlyInvestment.value = addComma(String(data.monthly_investment ?? ''))
-  annualReturn.value = data.annual_return ?? null
+  annualReturn.value = Math.max(data.annual_return ?? 7, 3)
   initializing.value = false
 }
 
@@ -124,6 +120,10 @@ const save = async () => {
   }
   if (monthlyNum > 0 && targetNum < monthlyNum * 12) {
     showMessage(`목표 자산은 월 투자금의 12배(${formatShortMoney(monthlyNum * 12)}원) 이상이어야 합니다.`, 'warning')
+    return
+  }
+  if (annualReturn.value !== null && annualReturn.value < 3) {
+    showMessage('예상 연평균 수익률은 최소 3% 이상이어야 합니다.', 'warning')
     return
   }
   loading.value = true
@@ -149,10 +149,7 @@ const save = async () => {
     }
 
     invalidateGoalCache()
-    showMessage(
-      isEditMode.value ? '목표 정보가 수정되었습니다.' : '투자 설정이 완료되었습니다.',
-      'success',
-    )
+    showMessage(isEditMode.value ? '목표 정보가 수정되었습니다.' : '투자 설정이 완료되었습니다.', 'success')
     router.push('/dashboard')
   } catch (error) {
     console.error(error)
@@ -181,25 +178,13 @@ onMounted(loadData)
     <div v-else style="width: 100%; max-width: 480px">
       <!-- 헤더 -->
       <div class="d-flex align-center mb-6">
-        <v-btn
-          v-if="isEditMode"
-          icon="mdi-arrow-left"
-          variant="text"
-          size="small"
-          class="mr-2"
-          style="color: rgb(var(--v-theme-on-surface))"
-          @click="cancel"
-        />
+        <v-btn v-if="isEditMode" icon="mdi-arrow-left" variant="text" size="small" class="mr-2" style="color: rgb(var(--v-theme-on-surface))" @click="cancel" />
         <div>
           <div class="text-h5 font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">
             {{ isEditMode ? '목표 수정' : '투자 시작하기' }}
           </div>
           <div class="text-body-2 text-medium-emphasis mt-1">
-            {{
-              isEditMode
-                ? 'FIRE 목표와 투자 계획을 수정합니다'
-                : '목표 자산과 투자 계획을 설정해주세요'
-            }}
+            {{ isEditMode ? 'FIRE 목표와 투자 계획을 수정합니다' : '목표 자산과 투자 계획을 설정해주세요' }}
           </div>
         </div>
       </div>
@@ -210,16 +195,7 @@ onMounted(loadData)
           <v-icon size="14" class="mr-1">mdi-target</v-icon>
           목표 자산 <span class="text-error">*</span>
         </div>
-        <v-text-field
-          :model-value="targetAsset"
-          @update:model-value="handleTargetAsset"
-          placeholder="1,000,000,000"
-          variant="outlined"
-          density="comfortable"
-          hide-details
-          :class="['glass-field', targetBelowMinimum ? 'field-error' : '']"
-          maxlength="14"
-        >
+        <v-text-field :model-value="targetAsset" @update:model-value="handleTargetAsset" placeholder="1,000,000,000" variant="outlined" density="comfortable" hide-details :class="['glass-field', targetBelowMinimum ? 'field-error' : '']" maxlength="14">
           <template #append-inner>
             <span class="text-caption font-weight-bold" style="color: rgb(var(--v-theme-primary)); white-space: nowrap">
               {{ targetAsset ? targetAssetText : '원' }}
@@ -243,16 +219,7 @@ onMounted(loadData)
           월 투자금
           <span class="text-caption text-disabled ml-1">(선택)</span>
         </div>
-        <v-text-field
-          :model-value="monthlyInvestment"
-          @update:model-value="handleMonthlyInvestment"
-          placeholder="3,000,000"
-          variant="outlined"
-          density="comfortable"
-          hide-details
-          class="glass-field"
-          maxlength="13"
-        >
+        <v-text-field :model-value="monthlyInvestment" @update:model-value="handleMonthlyInvestment" placeholder="3,000,000" variant="outlined" density="comfortable" hide-details class="glass-field" maxlength="13">
           <template #append-inner>
             <span class="text-caption font-weight-bold" style="color: rgb(var(--v-theme-primary)); white-space: nowrap">
               {{ monthlyInvestment ? monthlyInvestmentText : '원' }}
@@ -268,34 +235,19 @@ onMounted(loadData)
             <v-icon size="14" class="mr-1">mdi-trending-up</v-icon>
             예상 연평균 수익률
           </div>
-          <v-chip
-            size="x-small"
-            :color="annualReturn !== null ? 'primary' : 'default'"
-            variant="tonal"
-          >
+          <v-chip size="x-small" :color="annualReturn !== null ? 'primary' : 'default'" variant="tonal">
             {{ annualReturn !== null ? annualReturn + '%' : '미설정' }}
           </v-chip>
         </div>
 
-        <div class="text-caption text-disabled mb-3">
-          S&P500 역사적 평균 약 7% · 슬라이더를 움직이면 설정됩니다
-        </div>
+        <div class="text-caption text-disabled mb-3">슬라이더를 움직이면 설정됩니다</div>
 
-        <v-slider
-          v-model="sliderValue"
-          :min="0"
-          :max="30"
-          :step="0.5"
-          color="primary"
-          track-color="grey-lighten-3"
-          thumb-label
-          hide-details
-        >
+        <v-slider v-model="sliderValue" :min="3" :max="30" :step="0.5" color="primary" track-color="grey-lighten-3" thumb-label hide-details>
           <template #thumb-label="{ modelValue }">{{ modelValue }}%</template>
         </v-slider>
 
         <div class="d-flex justify-space-between mt-1">
-          <span class="text-caption text-disabled">0%</span>
+          <span class="text-caption text-disabled">3%</span>
           <span class="text-caption text-disabled">30%</span>
         </div>
 
@@ -305,43 +257,22 @@ onMounted(loadData)
             <v-icon size="15" color="amber-darken-2">mdi-rocket-launch-outline</v-icon>
             <div class="text-caption text-medium-emphasis">
               목표 달성까지 약
-              <strong style="color: rgb(var(--v-theme-primary))">{{
-                estimatedPreview.durationStr
-              }}</strong>
+              <strong style="color: rgb(var(--v-theme-primary))">{{ estimatedPreview.durationStr }}</strong>
               →
-              <strong style="color: rgb(var(--v-theme-primary))">{{
-                estimatedPreview.dateStr
-              }}</strong>
+              <strong style="color: rgb(var(--v-theme-primary))">{{ estimatedPreview.dateStr }}</strong>
               예상
             </div>
           </div>
-          <div class="text-caption text-disabled mt-1 ml-5">
-            현재 자산 미포함 · 복리 기준 단순 추정
-          </div>
+          <div class="text-caption text-disabled mt-1 ml-5">현재 자산 미포함 · 복리 기준 단순 추정</div>
         </template>
       </div>
 
       <!-- 버튼 -->
-      <v-btn
-        color="primary"
-        size="large"
-        rounded="lg"
-        block
-        elevation="0"
-        :loading="loading"
-        class="mb-3"
-        @click="save"
-      >
+      <v-btn color="primary" size="large" rounded="lg" block elevation="0" :loading="loading" class="mb-3" @click="save">
         {{ isEditMode ? '수정하기' : '시작하기' }}
       </v-btn>
 
-      <v-btn
-        variant="tonal"
-        block
-        rounded="lg"
-        style="background: rgba(0, 0, 0, 0.1); color: rgba(var(--v-theme-on-surface), 0.75)"
-        @click="cancel"
-      >
+      <v-btn variant="tonal" block rounded="lg" style="background: rgba(0, 0, 0, 0.1); color: rgba(var(--v-theme-on-surface), 0.75)" @click="cancel">
         {{ isEditMode ? '취소' : '로그아웃' }}
       </v-btn>
     </div>
@@ -349,8 +280,6 @@ onMounted(loadData)
 </template>
 
 <style scoped>
-
-
 .field-label {
   font-size: 12px;
   font-weight: 500;
