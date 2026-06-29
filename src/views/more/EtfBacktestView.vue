@@ -88,7 +88,7 @@ const startMonth = ref(new Date().getMonth() + 1)
 const yearOptions = computed(() => {
   const end = new Date().getFullYear()
   const opts = []
-  for (let y = end; y >= 1993; y--) opts.push({ title: `${y}년`, value: y })
+  for (let y = end; y >= 1990; y--) opts.push({ title: `${y}년`, value: y })
   return opts
 })
 
@@ -98,7 +98,7 @@ const applyQuickPeriod = (p: QuickPeriod) => {
   activePeriod.value = p
   const d = new Date()
   if (p === 'all') {
-    startYear.value = 1993
+    startYear.value = 1990
     startMonth.value = 1
   } else {
     const years = p === '1y' ? 1 : p === '3y' ? 3 : p === '5y' ? 5 : 10
