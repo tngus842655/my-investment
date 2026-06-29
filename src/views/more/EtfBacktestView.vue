@@ -83,8 +83,8 @@ const run = async () => {
     result.value = data as BacktestResult
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : ''
-    if (msg.includes('No data') || msg.includes('not found') || msg.includes('No valid')) {
-      showMessage('해당 티커의 데이터를 찾을 수 없습니다.', 'warning')
+    if (msg.includes('ticker_not_found') || msg.includes('No data') || msg.includes('No valid')) {
+      showMessage('존재하지 않는 티커입니다. 티커를 확인해주세요.', 'warning')
     } else {
       showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
     }

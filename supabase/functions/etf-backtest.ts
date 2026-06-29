@@ -38,8 +38,8 @@ Deno.serve(async (req) => {
     })
 
     if (!res.ok) {
-      return new Response(JSON.stringify({ error: `Yahoo Finance error: ${res.status}` }), {
-        status: 502,
+      return new Response(JSON.stringify({ error: `ticker_not_found` }), {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     const result = json?.chart?.result?.[0]
     if (!result) {
       return new Response(JSON.stringify({ error: 'No data found for ticker' }), {
-        status: 404,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -67,8 +67,8 @@ Deno.serve(async (req) => {
       .filter((p) => p.price != null && p.price > 0)
 
     if (prices.length === 0) {
-      return new Response(JSON.stringify({ error: 'No valid price data' }), {
-        status: 404,
+      return new Response(JSON.stringify({ error: 'ticker_not_found' }), {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
