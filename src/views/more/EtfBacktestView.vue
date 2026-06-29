@@ -139,9 +139,25 @@ onUnmounted(() => {
 
 const sanitizeTicker = (v: string) => v.replace(/[^A-Za-z0-9.-]/g, '').toUpperCase()
 
+const isUsdMode = computed(() => result.value?.currency !== 'KRW')
+
+const MAX_USD = 100_000  // $100,000
+const MAX_KRW = 100_000_000  // 1억원
+
+const monthlyAmountError = computed(() => {
+  const v = monthlyAmount.value
+  if (v === null || v === undefined || String(v) === '') return ''
+  if (!Number.isFinite(v) || v <= 0) return '0보다 큰 금액을 입력해주세요.'
+  if (!Number.isInteger(v)) return '소수점 없이 정수로 입력해주세요.'
+  if (isUsdMode.value && v > MAX_USD) return `최대 $${MAX_USD.toLocaleString()}까지 입력 가능합니다.`
+  if (!isUsdMode.value && v > MAX_KRW) return `최대 ${(MAX_KRW / 10000).toLocaleString()}만원까지 입력 가능합니다.`
+  return ''
+})
+
 const canRun = computed(() =>
   tickerInput.value.trim().length > 0 &&
   (monthlyAmount.value ?? 0) > 0 &&
+  !monthlyAmountError.value &&
   startYm.value.length > 0
 )
 
@@ -455,10 +471,10 @@ const yearlyRows = computed(() => {
             variant="outlined"
             density="compact"
             rounded="lg"
-            hide-details
             type="number"
             min="1"
             :disabled="loading"
+            :error-messages="monthlyAmountError"
             @keyup.enter="run"
           >
             <template #append-inner>
@@ -467,7 +483,7 @@ const yearlyRows = computed(() => {
               </span>
             </template>
           </v-text-field>
-          <div v-if="result?.currency !== 'KRW' && monthlyAmount && monthlyAmount > 0" class="monthly-krw-hint">
+          <div v-if="!monthlyAmountError && result?.currency !== 'KRW' && monthlyAmount && monthlyAmount > 0" class="monthly-krw-hint">
             ≈ ₩{{ Math.round((monthlyAmount ?? 0) * exchangeRate).toLocaleString() }}원/월
           </div>
         </div>
