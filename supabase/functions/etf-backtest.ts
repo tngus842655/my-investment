@@ -96,10 +96,11 @@ Deno.serve(async (req) => {
     // MDD 계산 (평가금액 기준)
     let peak = 0
     let mdd = 0
+    let mddYm = ''
     for (const m of monthly) {
       if (m.evalAmount > peak) peak = m.evalAmount
       const dd = peak > 0 ? (m.evalAmount - peak) / peak : 0
-      if (dd < mdd) mdd = dd
+      if (dd < mdd) { mdd = dd; mddYm = m.ym }
     }
 
     return new Response(
@@ -115,6 +116,7 @@ Deno.serve(async (req) => {
           totalReturn,
           cagr,
           mdd,
+          mddYm,
           months,
           startYm: first.ym,
           endYm: last.ym,

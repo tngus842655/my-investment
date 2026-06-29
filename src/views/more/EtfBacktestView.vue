@@ -26,6 +26,7 @@ interface BacktestResult {
     totalReturn: number
     cagr: number
     mdd: number
+    mddYm: string
     months: number
     startYm: string
     endYm: string
@@ -110,6 +111,38 @@ const fmtYm = (ym: string) => {
 
 const profitColor = (v: number) => (v >= 0 ? 'success' : 'error')
 
+// ── 투자기간 텍스트 ───────────────────────────────────
+const periodText = computed(() => {
+  const s = result.value?.summary
+  if (!s) return ''
+  const y = Math.floor(s.months / 12)
+  const m = s.months % 12
+  if (y === 0) return `${m}개월`
+  if (m === 0) return `${y}년`
+  return `${y}년 ${m}개월`
+})
+
+// ── 자연어 요약 ───────────────────────────────────────
+const summaryText = computed(() => {
+  const r = result.value
+  if (!r) return null
+  const s = r.summary
+  const currency = r.currency
+  return {
+    intro: `${fmtYm(s.startYm)}부터 매월 ${fmtMoney(monthlyAmount.value ?? 0, currency)}씩 ${r.ticker}에 투자했다면`,
+    invested: `총 ${fmtMoney(s.totalInvested, currency)}를 투자하여`,
+    eval: `현재 ${fmtMoney(s.evalAmount, currency)}가 되었으며`,
+    returns: `총 수익률은 ${fmtPct(s.totalReturn)}, 연평균 수익률은 ${fmtPct(s.cagr)}입니다.`,
+  }
+})
+
+// ── MDD 시점 텍스트 ──────────────────────────────────
+const mddText = computed(() => {
+  const mddYm = result.value?.summary.mddYm
+  if (!mddYm) return null
+  return fmtYm(mddYm)
+})
+
 // ── SVG 차트 ─────────────────────────────────────────
 const VW = 320
 const VH = 200
@@ -122,26 +155,22 @@ const chartSvg = computed(() => {
   if (pts.length < 2) return null
 
   const maxY = Math.max(...pts.map((p) => p.evalAmount)) * 1.08
-  const minY = 0
 
   const toX = (i: number) => PAD.left + (i / (pts.length - 1)) * PW
-  const toY = (v: number) => PAD.top + PH - ((v - minY) / (maxY - minY)) * PH
+  const toY = (v: number) => PAD.top + PH - (v / maxY) * PH
 
   const evalPath = pts.reduce((acc, p, i) => {
-    const x = toX(i)
-    const y = toY(p.evalAmount)
+    const x = toX(i); const y = toY(p.evalAmount)
     return i === 0 ? `M ${x},${y}` : acc + ` L ${x},${y}`
   }, '')
 
   const investPath = pts.reduce((acc, p, i) => {
-    const x = toX(i)
-    const y = toY(p.totalInvested)
+    const x = toX(i); const y = toY(p.totalInvested)
     return i === 0 ? `M ${x},${y}` : acc + ` L ${x},${y}`
   }, '')
 
   const evalFill = evalPath + ` L ${toX(pts.length - 1)},${PAD.top + PH} L ${toX(0)},${PAD.top + PH} Z`
 
-  // X축 레이블: 연도가 바뀌는 지점, 최대 6개
   const yearTicks: { x: number; label: string }[] = []
   let lastYear = ''
   pts.forEach((p, i) => {
@@ -151,13 +180,7 @@ const chartSvg = computed(() => {
   const step = Math.max(1, Math.ceil(yearTicks.length / 6))
   const xLabels = yearTicks.filter((_, i) => i % step === 0)
 
-  // Y축 레이블: 3단계
-  const yTicks = [0, 0.5, 1].map((r) => ({
-    y: toY(maxY * r),
-    label: fmtMoney(maxY * r, result.value!.currency),
-  }))
-
-  return { evalPath, evalFill, investPath, xLabels, yTicks, lastX: toX(pts.length - 1) }
+  return { evalPath, evalFill, investPath, xLabels }
 })
 
 // ── 연도별 테이블 ─────────────────────────────────────
@@ -198,7 +221,6 @@ const yearlyRows = computed(() => {
           @input="(e: Event) => { tickerInput = sanitizeTicker((e.target as HTMLInputElement).value) }"
           @keyup.enter="run"
         />
-
         <v-text-field
           v-model.number="monthlyAmount"
           label="월 투자금"
@@ -217,7 +239,6 @@ const yearlyRows = computed(() => {
             </span>
           </template>
         </v-text-field>
-
         <v-select
           v-model="startYm"
           :items="ymOptions"
@@ -228,18 +249,10 @@ const yearlyRows = computed(() => {
           hide-details
           :disabled="loading"
         />
-
-        <v-btn
-          color="primary"
-          rounded="lg"
-          :disabled="!canRun || loading"
-          :loading="loading"
-          @click="run"
-        >
+        <v-btn color="primary" rounded="lg" :disabled="!canRun || loading" :loading="loading" @click="run">
           백테스트 실행
         </v-btn>
       </div>
-
       <div class="text-caption text-medium-emphasis mt-3">
         * adjclose(배당·분할 조정 종가) 기준 · 배당 재투자 포함 근사치 · 세금/수수료 미포함
       </div>
@@ -247,32 +260,43 @@ const yearlyRows = computed(() => {
 
     <!-- 결과 -->
     <template v-if="result">
-      <div class="text-body-2 font-weight-bold mb-3 px-1">
-        {{ result.name }} ({{ result.ticker }}) &nbsp;·&nbsp; {{ fmtYm(result.summary.startYm) }} ~ {{ fmtYm(result.summary.endYm) }}
+      <!-- 기간 헤더 -->
+      <div class="d-flex align-center justify-space-between mb-3 px-1">
+        <div class="text-body-2 font-weight-bold">
+          {{ result.name }} ({{ result.ticker }})
+        </div>
+        <div class="period-badge">
+          {{ fmtYm(result.summary.startYm) }} ~ {{ fmtYm(result.summary.endYm) }}
+          <span class="period-duration">{{ periodText }}</span>
+        </div>
       </div>
 
-      <!-- 요약 카드 2x3 -->
-      <div class="summary-grid mb-4">
+      <!-- 핵심 지표: 평가금액 + 수익률 강조 -->
+      <div class="highlight-row mb-3">
+        <div class="highlight-card glass-card rounded-xl pa-4">
+          <div class="stat-label">최종 평가금액</div>
+          <div class="highlight-value text-success">
+            {{ fmtMoney(result.summary.evalAmount, result.currency) }}
+          </div>
+        </div>
+        <div class="highlight-card glass-card rounded-xl pa-4">
+          <div class="stat-label">총 수익률</div>
+          <div class="highlight-value" :class="`text-${profitColor(result.summary.totalReturn)}`">
+            {{ fmtPct(result.summary.totalReturn) }}
+          </div>
+        </div>
+      </div>
+
+      <!-- 보조 지표 2x2 -->
+      <div class="summary-grid mb-3">
         <div class="glass-card pa-3 rounded-xl text-center">
           <div class="stat-label">총 투자원금</div>
           <div class="stat-value">{{ fmtMoney(result.summary.totalInvested, result.currency) }}</div>
         </div>
         <div class="glass-card pa-3 rounded-xl text-center">
-          <div class="stat-label">최종 평가금액</div>
-          <div class="stat-value" :class="`text-${profitColor(result.summary.profit)}`">
-            {{ fmtMoney(result.summary.evalAmount, result.currency) }}
-          </div>
-        </div>
-        <div class="glass-card pa-3 rounded-xl text-center">
           <div class="stat-label">수익금</div>
           <div class="stat-value" :class="`text-${profitColor(result.summary.profit)}`">
             {{ fmtMoney(result.summary.profit, result.currency) }}
-          </div>
-        </div>
-        <div class="glass-card pa-3 rounded-xl text-center">
-          <div class="stat-label">총 수익률</div>
-          <div class="stat-value" :class="`text-${profitColor(result.summary.totalReturn)}`">
-            {{ fmtPct(result.summary.totalReturn) }}
           </div>
         </div>
         <div class="glass-card pa-3 rounded-xl text-center">
@@ -284,8 +308,24 @@ const yearlyRows = computed(() => {
         <div class="glass-card pa-3 rounded-xl text-center">
           <div class="stat-label">최대 낙폭 (MDD)</div>
           <div class="stat-value text-error">{{ fmtPct(result.summary.mdd) }}</div>
+          <div v-if="mddText" class="mdd-date">{{ mddText }}</div>
         </div>
       </div>
+
+      <!-- 자연어 요약 -->
+      <v-card v-if="summaryText" class="glass-card pa-4 mb-4" rounded="xl">
+        <div class="d-flex align-start ga-3">
+          <v-icon size="18" color="primary" class="mt-1 flex-shrink-0">mdi-text-box-outline</v-icon>
+          <div class="summary-text">
+            <div class="summary-intro">{{ summaryText.intro }}</div>
+            <div class="summary-body">
+              {{ summaryText.invested }}<br>
+              {{ summaryText.eval }}<br>
+              <span class="summary-returns">{{ summaryText.returns }}</span>
+            </div>
+          </div>
+        </div>
+      </v-card>
 
       <!-- SVG 차트 -->
       <v-card class="glass-card pa-4 mb-4" rounded="xl">
@@ -298,42 +338,13 @@ const yearlyRows = computed(() => {
                 <stop offset="100%" stop-color="rgb(var(--v-theme-primary))" stop-opacity="0" />
               </linearGradient>
             </defs>
-
-            <!-- 평가금액 채우기 -->
             <path :d="chartSvg.evalFill" fill="url(#btEvalFill)" />
-
-            <!-- 투자원금 점선 -->
-            <path
-              :d="chartSvg.investPath"
-              fill="none"
-              stroke="rgba(var(--v-theme-on-surface), 0.28)"
-              stroke-width="1.5"
-              stroke-dasharray="5 3"
-            />
-
-            <!-- 평가금액 실선 -->
-            <path
-              :d="chartSvg.evalPath"
-              fill="none"
-              stroke="rgb(var(--v-theme-primary))"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-
-            <!-- X축 레이블 -->
+            <path :d="chartSvg.investPath" fill="none" stroke="rgba(var(--v-theme-on-surface), 0.28)" stroke-width="1.5" stroke-dasharray="5 3" />
+            <path :d="chartSvg.evalPath" fill="none" stroke="rgb(var(--v-theme-primary))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
             <g v-for="tick in chartSvg.xLabels" :key="tick.label">
-              <text
-                :x="tick.x"
-                :y="VH - 4"
-                text-anchor="middle"
-                font-size="9"
-                fill="rgba(var(--v-theme-on-surface), 0.4)"
-              >{{ tick.label }}</text>
+              <text :x="tick.x" :y="VH - 4" text-anchor="middle" font-size="9" fill="rgba(var(--v-theme-on-surface), 0.4)">{{ tick.label }}</text>
             </g>
           </svg>
-
-          <!-- 범례 -->
           <div class="d-flex ga-4 mt-1 justify-center">
             <div class="d-flex align-center ga-1">
               <div class="legend-line legend-solid" />
@@ -379,6 +390,41 @@ const yearlyRows = computed(() => {
   border: 1px solid var(--fp-outline);
 }
 
+/* ── 기간 헤더 ─────────────────────────────────── */
+.period-badge {
+  font-size: 11px;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+  text-align: right;
+  line-height: 1.5;
+}
+
+.period-duration {
+  display: block;
+  font-weight: 700;
+  font-size: 12px;
+  color: rgb(var(--v-theme-primary));
+}
+
+/* ── 핵심 지표 강조 ─────────────────────────────── */
+.highlight-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.highlight-card {
+  text-align: center;
+}
+
+.highlight-value {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  margin-top: 4px;
+}
+
+/* ── 보조 지표 ──────────────────────────────────── */
 .summary-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -396,6 +442,35 @@ const yearlyRows = computed(() => {
   font-weight: 700;
 }
 
+.mdd-date {
+  font-size: 10px;
+  color: rgba(var(--v-theme-error), 0.7);
+  margin-top: 2px;
+}
+
+/* ── 자연어 요약 ────────────────────────────────── */
+.summary-text {
+  flex: 1;
+}
+
+.summary-intro {
+  font-size: 12px;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+  margin-bottom: 6px;
+}
+
+.summary-body {
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--fp-text);
+}
+
+.summary-returns {
+  font-weight: 700;
+  color: rgb(var(--v-theme-primary));
+}
+
+/* ── 차트 범례 ──────────────────────────────────── */
 .legend-line {
   width: 20px;
   height: 2px;
@@ -416,9 +491,8 @@ const yearlyRows = computed(() => {
   );
 }
 
-.yearly-table {
-  font-size: 12px;
-}
+/* ── 연도별 테이블 ──────────────────────────────── */
+.yearly-table { font-size: 12px; }
 
 .yearly-header {
   display: grid;
@@ -441,7 +515,5 @@ const yearlyRows = computed(() => {
   align-items: center;
 }
 
-.yearly-row:last-child {
-  border-bottom: none;
-}
+.yearly-row:last-child { border-bottom: none; }
 </style>
