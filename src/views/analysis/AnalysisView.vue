@@ -105,33 +105,23 @@ const progressPct = computed(() => {
   return Math.min(Math.round((C / T) * 100), 100)
 })
 
-// 타임라인 마일스톤: 시작연도 ~ 목표연도 사이 연도들
+// 타임라인 마일스톤: 시작연도 ~ 목표연도 사이 연도들 (시간 기준 균등 배치)
 const timelineMilestones = computed(() => {
   const goal = fireGoalYear.value
-  const T = targetAsset.value
-  if (!goal || !T) return []
+  if (!goal) return []
 
-  const C = currentAsset.value
-  const M = monthlyInvestment.value
-  const r = (annualReturn.value ?? 0) / 100 / 12
+  const startYear = currentYear
+  const endYear = goal.year
+  const totalMonths = (endYear - startYear) * 12 + (goal.month - 1)
+  const totalYears = endYear - startYear
+  const step = totalYears <= 5 ? 1 : totalYears <= 15 ? 3 : totalYears <= 30 ? 5 : totalYears <= 60 ? 10 : 20
 
   const milestones: { year: number; month?: number; pct: number; isGoal: boolean; isPast: boolean }[] = []
 
-  const totalYears = goal.year - currentYear
-  const step = totalYears <= 5 ? 1 : totalYears <= 15 ? 3 : totalYears <= 30 ? 5 : totalYears <= 60 ? 10 : 20
-
-  const MIN_GAP = 8 // 레이블 간 최소 간격 (%)
-  // 현재 연도는 타임라인 시작점(0%)에 고정 — 마커(현재 자산)와 분리
-  milestones.push({ year: currentYear, pct: 0, isGoal: false, isPast: false })
-  let lastPct = MIN_GAP // 다음 레이블은 최소 MIN_GAP 이후부터
-
-  for (let y = currentYear + step; y < goal.year; y += step) {
-    const monthsToYearEnd = (y - currentYear) * 12 - (currentMonth - 1)
-    const yearEndAsset = Math.round(calcAsset(C, M, r, monthsToYearEnd))
-    const pct = Math.min(Math.round((yearEndAsset / T) * 100), 100)
-    if (pct - lastPct < MIN_GAP) continue
+  for (let y = startYear + step; y < endYear; y += step) {
+    const monthsFromNow = (y - startYear) * 12 - (currentMonth - 1)
+    const pct = totalMonths > 0 ? Math.round((monthsFromNow / totalMonths) * 100) : 0
     milestones.push({ year: y, pct, isGoal: false, isPast: new Date().getFullYear() > y })
-    lastPct = pct
   }
 
   milestones.push({ year: goal.year, month: goal.month, pct: 100, isGoal: true, isPast: false })
