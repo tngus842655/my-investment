@@ -253,26 +253,10 @@ const PAD = { top: 12, right: 16, bottom: 28, left: 12 }
 const PW = VW - PAD.left - PAD.right
 const PH = VH - PAD.top - PAD.bottom
 
-type PeriodFilter = '5y' | '10y' | 'all'
-const periodFilter = ref<PeriodFilter>('all')
-const periodOptions: { label: string; value: PeriodFilter }[] = [
-  { label: '최근 5년', value: '5y' },
-  { label: '최근 10년', value: '10y' },
-  { label: '전체', value: 'all' },
-]
+watch(() => result.value, () => { showRecentOnly.value = true })
 
-watch(() => result.value, () => { periodFilter.value = 'all'; showRecentOnly.value = true })
-
-const filterPts = (pts: MonthlyPoint[]) => {
-  if (periodFilter.value === 'all') return pts
-  const years = periodFilter.value === '5y' ? 5 : 10
-  const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - years)
-  const cutYm = cutoff.toISOString().slice(0, 7)
-  return pts.filter((p) => p.ym >= cutYm)
-}
-
-const filteredPts = computed(() => filterPts(result.value?.monthly ?? []))
-const filteredCmpPts = computed(() => filterPts(compareResult.value?.monthly ?? []))
+const filteredPts = computed(() => result.value?.monthly ?? [])
+const filteredCmpPts = computed(() => compareResult.value?.monthly ?? [])
 
 // ── 차트 모드 ─────────────────────────────────────────
 type ChartMode = 'amount' | 'rate'
@@ -649,15 +633,6 @@ const yearlyRows = computed(() => {
       <v-card class="glass-card pa-4 mb-4" rounded="xl">
         <div class="d-flex align-center justify-space-between mb-2">
           <div class="text-body-2 font-weight-bold">누적 자산 추이</div>
-          <div class="period-btns">
-            <button
-              v-for="opt in periodOptions"
-              :key="opt.value"
-              class="period-btn"
-              :class="{ 'period-btn--active': periodFilter === opt.value }"
-              @click="periodFilter = opt.value"
-            >{{ opt.label }}</button>
-          </div>
         </div>
         <div class="d-flex ga-1 mb-3">
           <button class="mode-btn" :class="{ 'mode-btn--active': chartMode === 'amount' }" @click="chartMode = 'amount'">금액</button>
@@ -1039,26 +1014,6 @@ const yearlyRows = computed(() => {
 .ct-label { font-size: 11px; color: rgba(var(--v-theme-on-surface), 0.5); }
 .ct-val { font-size: 11px; font-weight: 600; color: var(--fp-text); }
 
-/* ── 기간 필터 ──────────────────────────────────── */
-.period-btns { display: flex; gap: 4px; }
-
-.period-btn {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 99px;
-  border: 1px solid var(--fp-outline);
-  background: transparent;
-  color: rgba(var(--v-theme-on-surface), 0.5);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.period-btn--active {
-  background: rgb(var(--v-theme-primary));
-  border-color: rgb(var(--v-theme-primary));
-  color: #fff;
-}
 
 /* ── 연도별 테이블 ──────────────────────────────── */
 .toggle-btn {
