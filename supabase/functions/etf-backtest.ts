@@ -93,12 +93,13 @@ Deno.serve(async (req) => {
     const years = months / 12
     const cagr = years > 0 ? Math.pow(last.evalAmount / last.totalInvested, 1 / years) - 1 : 0
 
-    // MDD 계산 (평가금액 기준)
+    // MDD + 최고 평가금액 계산
     let peak = 0
+    let peakYm = ''
     let mdd = 0
     let mddYm = ''
     for (const m of monthly) {
-      if (m.evalAmount > peak) peak = m.evalAmount
+      if (m.evalAmount > peak) { peak = m.evalAmount; peakYm = m.ym }
       const dd = peak > 0 ? (m.evalAmount - peak) / peak : 0
       if (dd < mdd) { mdd = dd; mddYm = m.ym }
     }
@@ -117,6 +118,8 @@ Deno.serve(async (req) => {
           cagr,
           mdd,
           mddYm,
+          peakEval: peak,
+          peakYm,
           months,
           startYm: first.ym,
           endYm: last.ym,

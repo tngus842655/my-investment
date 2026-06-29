@@ -27,6 +27,8 @@ interface BacktestResult {
     cagr: number
     mdd: number
     mddYm: string
+    peakEval: number
+    peakYm: string
     months: number
     startYm: string
     endYm: string
@@ -38,6 +40,26 @@ const monthlyAmount = ref<number | null>(100)
 const startYm = ref('')
 const loading = ref(false)
 const result = ref<BacktestResult | null>(null)
+
+// ── 최근 사용 ETF (localStorage) ─────────────────────
+const RECENT_KEY = 'etf-backtest-recent'
+const MAX_RECENT = 5
+
+const recentTickers = ref<string[]>([])
+
+const loadRecent = () => {
+  try {
+    recentTickers.value = JSON.parse(localStorage.getItem(RECENT_KEY) ?? '[]')
+  } catch {
+    recentTickers.value = []
+  }
+}
+
+const saveRecent = (ticker: string) => {
+  const list = [ticker, ...recentTickers.value.filter((t) => t !== ticker)].slice(0, MAX_RECENT)
+  recentTickers.value = list
+  localStorage.setItem(RECENT_KEY, JSON.stringify(list))
+}
 
 const tooltips = {
   dca: '매월 일정 금액을 꾸준히 투자하는 전략. 가격이 쌀 때 더 많이, 비쌀 때 더 적게 매수하여 평균 단가를 낮추는 효과가 있습니다.',
@@ -63,6 +85,7 @@ onMounted(() => {
   const d = new Date()
   d.setFullYear(d.getFullYear() - 10)
   startYm.value = d.toISOString().slice(0, 7)
+  loadRecent()
 })
 
 const sanitizeTicker = (v: string) => v.replace(/[^A-Za-z0-9.-]/g, '').toUpperCase()
@@ -88,6 +111,7 @@ const run = async () => {
     if (error) throw error
     if (data?.error) throw new Error(data.error)
     result.value = data as BacktestResult
+    saveRecent(ticker)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : ''
     if (msg.includes('ticker_not_found') || msg.includes('No data') || msg.includes('No valid')) {
@@ -250,13 +274,17 @@ const onTouchMove = (e: TouchEvent) => {
 const onMouseMove = (e: MouseEvent) => { showTooltip(e.clientX) }
 
 // ── 연도별 테이블 ─────────────────────────────────────
+const showRecentOnly = ref(false)
+
 const yearlyRows = computed(() => {
   if (!result.value) return []
   const map = new Map<string, MonthlyPoint>()
   for (const m of result.value.monthly) {
     map.set(m.ym.slice(0, 4), m)
   }
-  return [...map.values()]
+  const all = [...map.values()]
+  if (showRecentOnly.value) return all.slice(-5)
+  return all
 })
 </script>
 
@@ -284,6 +312,17 @@ const yearlyRows = computed(() => {
     <!-- 입력 카드 -->
     <v-card class="glass-card pa-4 mb-4" rounded="xl">
       <div class="d-flex flex-column ga-3">
+        <!-- 최근 사용 ETF -->
+        <div v-if="recentTickers.length > 0" class="d-flex flex-wrap ga-2">
+          <button
+            v-for="t in recentTickers"
+            :key="t"
+            class="recent-chip"
+            :class="{ 'recent-chip--active': tickerInput === t }"
+            @click="tickerInput = t"
+          >{{ t }}</button>
+        </div>
+
         <v-text-field
           v-model="tickerInput"
           label="해외 ETF/주식 티커 (예: SPY, QQQ, VTI)"
@@ -407,6 +446,20 @@ const yearlyRows = computed(() => {
         </div>
       </div>
 
+      <!-- 추가 통계 -->
+      <div class="summary-grid mb-3">
+        <div class="glass-card pa-3 rounded-xl text-center">
+          <div class="stat-label">총 투자 기간</div>
+          <div class="stat-value">{{ periodText }}</div>
+          <div class="stat-sub">{{ result.summary.months }}개월</div>
+        </div>
+        <div class="glass-card pa-3 rounded-xl text-center">
+          <div class="stat-label">최고 평가금액</div>
+          <div class="stat-value text-success">{{ fmtMoney(result.summary.peakEval, result.currency) }}</div>
+          <div class="stat-sub">{{ fmtYm(result.summary.peakYm) }}</div>
+        </div>
+      </div>
+
       <!-- 자연어 요약 -->
       <v-card v-if="summaryText" class="glass-card pa-4 mb-4" rounded="xl">
         <div class="d-flex align-start ga-3">
@@ -525,7 +578,12 @@ const yearlyRows = computed(() => {
 
       <!-- 연도별 테이블 -->
       <v-card class="glass-card pa-4" rounded="xl">
-        <div class="text-body-2 font-weight-bold mb-3">연도별 스냅샷 (연말 기준)</div>
+        <div class="d-flex align-center justify-space-between mb-3">
+          <div class="text-body-2 font-weight-bold">연도별 스냅샷 (연말 기준)</div>
+          <button class="toggle-btn" @click="showRecentOnly = !showRecentOnly">
+            {{ showRecentOnly ? '전체 보기' : '최근 5년' }}
+          </button>
+        </div>
         <div class="yearly-table">
           <div class="yearly-header">
             <span>연도</span>
@@ -681,6 +739,44 @@ const yearlyRows = computed(() => {
 }
 
 .yearly-row:last-child { border-bottom: none; }
+
+/* ── 최근 사용 ETF 칩 ───────────────────────────── */
+.recent-chip {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--fp-outline);
+  background: transparent;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.recent-chip--active {
+  background: rgb(var(--v-theme-primary));
+  border-color: rgb(var(--v-theme-primary));
+  color: #fff;
+}
+
+/* ── 추가 통계 서브 텍스트 ──────────────────────── */
+.stat-sub {
+  font-size: 10px;
+  color: rgba(var(--v-theme-on-surface), 0.4);
+  margin-top: 2px;
+}
+
+/* ── 테이블 토글 버튼 ───────────────────────────── */
+.toggle-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--fp-outline);
+  background: transparent;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+  cursor: pointer;
+}
 
 /* ── 기간 필터 버튼 ─────────────────────────────── */
 .period-btns {
