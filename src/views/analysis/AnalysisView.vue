@@ -125,7 +125,7 @@ const timelineMilestones = computed(() => {
 
   // 과거 데이터가 있으면 가장 오래된 연도부터, 없으면 현재 연도부터 시작
   const nowPct = Math.min(progressPct.value, 100 - MIN_GAP)
-  milestones.push({ year: currentYear, pct: nowPct, isGoal: false, isPast: false })
+  milestones.push({ year: currentYear, month: currentMonth, pct: nowPct, isGoal: false, isPast: false })
   let lastPct = nowPct
 
   for (let y = currentYear + step; y < goal.year; y += step) {
@@ -447,7 +447,7 @@ onMounted(loadData)
                 </template>
                 <template v-else>
                   <div class="pt-milestone-label" :class="m.isPast ? 'label-done' : 'label-future'">
-                    {{ m.year }}
+                    {{ m.month ? `${m.year}.${m.month}` : m.year }}
                   </div>
                 </template>
               </div>
