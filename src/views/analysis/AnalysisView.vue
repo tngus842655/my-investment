@@ -38,23 +38,26 @@ const projection = computed<ProjectionPoint[]>(() => {
   const r = (annualReturn.value ?? 0) / 100 / 12
   const now = new Date()
 
-  // 목표 달성까지 최대 몇 개월인지 계산
-  let maxMonths = 360
+  // 목표 달성까지 개월 수 계산 (상한 없음)
+  let maxMonths = 600
   if (T > 0 && M > 0) {
     if (r === 0) {
-      maxMonths = Math.min(Math.ceil((T - C) / M) + 1, 360)
+      maxMonths = Math.ceil((T - C) / M) + 1
     } else {
       const num = T * r + M
       const den = C * r + M
       if (den > 0 && num / den > 1) {
-        maxMonths = Math.min(Math.ceil(Math.log(num / den) / Math.log(1 + r)) + 1, 360)
+        maxMonths = Math.ceil(Math.log(num / den) / Math.log(1 + r)) + 1
       }
     }
   }
 
+  // 기간에 따라 샘플링 간격 조정 (포인트 수 균일화)
+  const stepDays = maxMonths > 240 ? DAYS_PER_MONTH : maxMonths > 60 ? 7 : 1
+
   const maxDays = maxMonths * DAYS_PER_MONTH
   const points: ProjectionPoint[] = []
-  for (let day = 0; day <= maxDays; day++) {
+  for (let day = 0; day <= maxDays; day += stepDays) {
     const monthN = day / DAYS_PER_MONTH
     const asset = calcAsset(C, M, r, monthN)
     const d = new Date(now)
