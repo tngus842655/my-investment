@@ -321,3 +321,18 @@ input, textarea {
 .fp-scale-fade-leave-active { transition: opacity var(--fp-transition), transform var(--fp-transition); }
 .fp-scale-fade-enter-from,
 .fp-scale-fade-leave-to     { opacity: 0; transform: scale(0.96); }
+
+/* ══════════════════════════════════════════════════════════════
+   좁은 화면 (폴드 접힘 등 360px 이하) — 2열/3열 그리드 → 1열
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 360px) {
+  .stat-grid,
+  .scenario-grid,
+  .two-col {
+    grid-template-columns: 1fr !important;
+  }
+
+  .stat-card[style*="grid-column"] {
+    grid-column: 1 !important;
+  }
+}
