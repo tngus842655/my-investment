@@ -704,9 +704,9 @@ onMounted(loadData)
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: rgb(var(--v-theme-surface));
-  border: 2.5px solid rgb(var(--v-theme-primary));
-  box-shadow: 0 0 0 3px rgba(var(--v-theme-primary), 0.15);
+  background: rgb(var(--v-theme-primary));
+  border: 2.5px solid rgb(var(--v-theme-surface));
+  box-shadow: 0 0 0 3px rgba(var(--v-theme-primary), 0.25);
   transform: translateY(-50%);
 }
 .pt-now-label {
