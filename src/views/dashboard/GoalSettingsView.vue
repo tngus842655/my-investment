@@ -36,7 +36,7 @@ const handleMonthlyInvestment = (value: string) => {
 }
 
 const sliderValue = computed({
-  get: () => Math.max(annualReturn.value ?? 7, 3),
+  get: () => annualReturn.value ?? 7,
   set: (v: number) => {
     annualReturn.value = v
   },
@@ -96,6 +96,7 @@ const loadData = async () => {
     .maybeSingle()
 
   if (!data) {
+    annualReturn.value = 7
     initializing.value = false
     return
   }
@@ -103,7 +104,7 @@ const loadData = async () => {
   isEditMode.value = true
   targetAsset.value = addComma(String(data.target_asset ?? ''))
   monthlyInvestment.value = addComma(String(data.monthly_investment ?? ''))
-  annualReturn.value = data.annual_return ?? null
+  annualReturn.value = Math.max(data.annual_return ?? 7, 3)
   initializing.value = false
 }
 
