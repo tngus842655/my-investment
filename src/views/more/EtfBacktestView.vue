@@ -292,7 +292,12 @@ const PAD = { top: 12, right: 16, bottom: 28, left: 12 }
 const PW = VW - PAD.left - PAD.right
 const PH = VH - PAD.top - PAD.bottom
 
-watch(() => result.value, () => { showRecentOnly.value = true })
+const inputCollapsed = ref(false)
+
+watch(() => result.value, () => {
+  showRecentOnly.value = true
+  if (result.value) inputCollapsed.value = true
+})
 
 const filteredPts = computed(() => result.value?.monthly ?? [])
 const filteredCmpPts = computed(() => compareResult.value?.monthly ?? [])
@@ -421,7 +426,21 @@ const yearlyRows = computed(() => {
     </div>
 
     <!-- 입력 카드 -->
-    <v-card class="glass-card pa-4 mb-4" rounded="xl">
+    <v-card class="glass-card mb-4" rounded="xl">
+      <!-- 접기/펼치기 헤더 (결과 있을 때만) -->
+      <div
+        v-if="result"
+        class="collapse-header"
+        @click="inputCollapsed = !inputCollapsed"
+      >
+        <div class="text-body-2 font-weight-bold">조회 조건</div>
+        <div class="d-flex align-center ga-2 text-caption text-medium-emphasis">
+          <span>{{ tickerInput }}{{ compareInput ? ` vs ${compareInput}` : '' }} · {{ startYm.slice(0, 4) }}년~</span>
+          <v-icon size="18">{{ inputCollapsed ? 'mdi-chevron-down' : 'mdi-chevron-up' }}</v-icon>
+        </div>
+      </div>
+
+      <div v-show="!inputCollapsed" class="pa-4">
       <div class="d-flex flex-column ga-3">
         <!-- 최근 조회 -->
         <template v-if="recentTickers.length > 0">
@@ -460,6 +479,7 @@ const yearlyRows = computed(() => {
           density="compact"
           rounded="lg"
           hide-details
+          clearable
           :disabled="loading"
           @focus="recentTarget = 'compare'"
           @input="(e: Event) => { compareInput = sanitizeTicker((e.target as HTMLInputElement).value) }"
@@ -537,6 +557,7 @@ const yearlyRows = computed(() => {
       <div class="text-caption text-medium-emphasis mt-3">
         * 해외 ETF/주식 전용 · 배당 재투자 포함 근사치 · 세금/수수료 미포함
       </div>
+      </div><!-- /v-show -->
     </v-card>
 
     <!-- 결과 -->
@@ -754,10 +775,12 @@ const yearlyRows = computed(() => {
               <div class="ct-date">{{ fmtYm(tooltip.pt.ym) }}</div>
               <template v-if="chartMode === 'amount'">
                 <div class="ct-row"><span class="ct-label">투자원금</span><span class="ct-val">{{ fmtMoney(tooltip.pt.totalInvested, result!.currency) }}</span></div>
+                <div v-if="fmtMoneyKrw(tooltip.pt.totalInvested, result!.currency)" class="ct-krw">{{ fmtMoneyKrw(tooltip.pt.totalInvested, result!.currency) }}</div>
                 <div class="ct-row">
                   <span class="ct-label">평가금액</span>
                   <span class="ct-val" :class="`text-${profitColor(tooltip.pt.evalAmount - tooltip.pt.totalInvested)}`">{{ fmtMoney(tooltip.pt.evalAmount, result!.currency) }}</span>
                 </div>
+                <div v-if="fmtMoneyKrw(tooltip.pt.evalAmount, result!.currency)" class="ct-krw" :class="`text-${profitColor(tooltip.pt.evalAmount - tooltip.pt.totalInvested)}`">{{ fmtMoneyKrw(tooltip.pt.evalAmount, result!.currency) }}</div>
                 <div class="ct-row">
                   <span class="ct-label">수익률</span>
                   <span class="ct-val" :class="`text-${profitColor(tooltip.pt.evalAmount - tooltip.pt.totalInvested)}`">{{ fmtPct((tooltip.pt.evalAmount - tooltip.pt.totalInvested) / tooltip.pt.totalInvested) }}</span>
@@ -772,6 +795,7 @@ const yearlyRows = computed(() => {
                   <span class="ct-label">평가금액</span>
                   <span class="ct-val">{{ fmtMoney(tooltip.pt.evalAmount, result!.currency) }}</span>
                 </div>
+                <div v-if="fmtMoneyKrw(tooltip.pt.evalAmount, result!.currency)" class="ct-krw">{{ fmtMoneyKrw(tooltip.pt.evalAmount, result!.currency) }}</div>
               </template>
             </div>
           </div>
@@ -823,6 +847,11 @@ const yearlyRows = computed(() => {
 </template>
 
 <style scoped>
+/* number input 스피너 숨김 */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type='number'] { -moz-appearance: textfield; }
+
 .glass-card {
   background: var(--fp-surface);
   border: 1px solid var(--fp-outline);
@@ -1150,5 +1179,28 @@ const yearlyRows = computed(() => {
   color: rgba(var(--v-theme-on-surface), 0.35);
   cursor: pointer;
   flex-shrink: 0;
+}
+
+/* ── 입력 카드 접기 헤더 ──────────────────────────── */
+.collapse-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  color: rgba(var(--v-theme-on-surface), 0.7);
+  border-radius: 8px;
+}
+.collapse-header:hover {
+  background: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+/* ── 차트 툴팁 원화 환산 ─────────────────────────── */
+.ct-krw {
+  font-size: 11px;
+  opacity: 0.65;
+  margin-top: 1px;
 }
 </style>
