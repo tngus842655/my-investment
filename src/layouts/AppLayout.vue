@@ -14,7 +14,7 @@ watch(() => route.path, async () => {
 })
 
 const tabs = [
-  { label: '홈', desc: '대시보드', icon: 'mdi-home-outline', activeIcon: 'mdi-home', route: '/dashboard', img: null },
+  { label: '홈', desc: '대시보드', icon: null, activeIcon: null, route: '/dashboard', img: '/icons/icon-home.png' },
   { label: '자산', desc: '보유 자산 한눈에', icon: null, activeIcon: null, route: '/portfolio', img: '/icons/icon-asset.png' },
   { label: '기록', desc: '매매 내역 관리', icon: null, activeIcon: null, route: '/transactions', img: '/icons/icon-record.png' },
   { label: '예측', desc: '목표 달성 시점', icon: null, activeIcon: null, route: '/analysis', img: '/icons/icon-predict.png' },
