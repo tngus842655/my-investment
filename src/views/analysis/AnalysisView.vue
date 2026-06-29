@@ -13,8 +13,6 @@ const currentAsset = ref(0)
 const monthlyInvestment = ref(0)
 const annualReturn = ref<number | null>(null)
 
-// 연도별 실제 자산 기록 (asset_history에서 로드)
-const assetHistoryByYear = ref<Record<number, number>>({})
 
 // ── 복리 계산 ─────────────────────────────────────
 // C: 현재 자산, M: 월 투자금, r: 월 수익률, n: 개월 수
@@ -126,27 +124,16 @@ const timelineMilestones = computed(() => {
   const MIN_GAP = 8 // 레이블 간 최소 간격 (%)
 
   // 과거 데이터가 있으면 가장 오래된 연도부터, 없으면 현재 연도부터 시작
-  const historyYears = Object.keys(assetHistoryByYear.value).map(Number).sort()
-  const loopStart = historyYears.length > 0 ? historyYears[0] : currentYear
+  const nowPct = Math.min(progressPct.value, 100 - MIN_GAP)
+  milestones.push({ year: currentYear, pct: nowPct, isGoal: false, isPast: false })
+  let lastPct = nowPct
 
-  let lastPct = 0
-
-  for (let y = loopStart; y < goal.year; y += step) {
-    let pct: number
-    if (y === currentYear) {
-      // 현재 연도: 실제 달성률
-      pct = Math.min(progressPct.value, 100 - MIN_GAP)
-    } else if (assetHistoryByYear.value[y] !== undefined) {
-      // 과거 연도: 실제 기록된 자산
-      pct = Math.min(Math.round((assetHistoryByYear.value[y] / T) * 100), 100)
-    } else {
-      // 미래 연도: 현재 자산 기준 예측값
-      const monthsToYearEnd = (y - currentYear) * 12 - (currentMonth - 1)
-      const yearEndAsset = Math.round(calcAsset(C, M, r, monthsToYearEnd))
-      pct = Math.min(Math.round((yearEndAsset / T) * 100), 100)
-    }
+  for (let y = currentYear + step; y < goal.year; y += step) {
+    const monthsToYearEnd = (y - currentYear) * 12 - (currentMonth - 1)
+    const yearEndAsset = Math.round(calcAsset(C, M, r, monthsToYearEnd))
+    const pct = Math.min(Math.round((yearEndAsset / T) * 100), 100)
     if (pct - lastPct < MIN_GAP) continue
-    milestones.push({ year: y, pct, isGoal: false, isPast: y < currentYear })
+    milestones.push({ year: y, pct, isGoal: false, isPast: false })
     lastPct = pct
   }
 
@@ -341,10 +328,9 @@ const loadData = async () => {
       data: { user },
     } = await supabase.auth.getUser()
     if (!user) return
-    const [goalResult, summaryResult, historyResult] = await Promise.all([
+    const [goalResult, summaryResult] = await Promise.all([
       supabase.from('investment_goals').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('asset_summary').select('current_asset').eq('user_id', user.id).maybeSingle(),
-      supabase.from('asset_history').select('recorded_at, current_asset').order('recorded_at', { ascending: true }),
     ])
     if (goalResult.data) {
       targetAsset.value = goalResult.data.target_asset ?? 0
@@ -352,16 +338,6 @@ const loadData = async () => {
       annualReturn.value = goalResult.data.annual_return ?? null
     }
     currentAsset.value = summaryResult.data?.current_asset ?? 0
-
-    // 연도별 마지막 기록값 추출 (12월 말 기준)
-    if (historyResult.data) {
-      const byYear: Record<number, number> = {}
-      for (const row of historyResult.data) {
-        const year = new Date(row.recorded_at).getFullYear()
-        byYear[year] = row.current_asset // 오름차순이므로 마지막이 연말에 가장 가까운 값
-      }
-      assetHistoryByYear.value = byYear
-    }
   } catch (e) {
     console.error(e)
     showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
