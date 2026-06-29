@@ -116,7 +116,10 @@ const timelineMilestones = computed(() => {
 
   const milestones: { year: number; month?: number; pct: number; isGoal: boolean; isPast: boolean }[] = []
 
-  for (let y = currentYear + 1; y <= goal.year; y++) {
+  const totalYears = goal.year - currentYear
+  const step = totalYears <= 5 ? 1 : totalYears <= 10 ? 2 : 3
+
+  for (let y = currentYear + step; y < goal.year; y += step) {
     const monthsToYearEnd = (y - currentYear) * 12 - (currentMonth - 1)
     const yearEndAsset = Math.round(calcAsset(C, M, r, monthsToYearEnd))
     const pct = Math.min(Math.round((yearEndAsset / T) * 100), 100)
