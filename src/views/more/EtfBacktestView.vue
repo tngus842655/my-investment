@@ -190,7 +190,7 @@ const periodOptions: { label: string; value: PeriodFilter }[] = [
   { label: '전체', value: 'all' },
 ]
 
-watch(() => result.value, () => { periodFilter.value = 'all' })
+watch(() => result.value, () => { periodFilter.value = 'all'; showRecentOnly.value = true })
 
 const filteredPts = computed(() => {
   const all = result.value?.monthly ?? []
@@ -274,7 +274,7 @@ const onTouchMove = (e: TouchEvent) => {
 const onMouseMove = (e: MouseEvent) => { showTooltip(e.clientX) }
 
 // ── 연도별 테이블 ─────────────────────────────────────
-const showRecentOnly = ref(false)
+const showRecentOnly = ref(true)
 
 const yearlyRows = computed(() => {
   if (!result.value) return []
