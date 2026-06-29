@@ -563,6 +563,7 @@ const yearlyRows = computed(() => {
         <div class="glass-card pa-3 rounded-xl text-center">
           <div class="stat-label">투자기간</div>
           <div class="stat-value">{{ periodText }}</div>
+          <div class="stat-sub">{{ result.summary.months }}개월</div>
         </div>
         <div class="glass-card pa-3 rounded-xl text-center">
           <div class="stat-label d-flex align-center justify-center ga-1">
@@ -578,18 +579,11 @@ const yearlyRows = computed(() => {
         </div>
       </div>
 
-      <!-- ⑤ 최고 평가금액 + 총 투자개월 -->
-      <div class="summary-grid mb-4">
-        <div class="glass-card pa-3 rounded-xl text-center">
-          <div class="stat-label">최고 평가금액</div>
-          <div class="stat-value text-success">{{ fmtMoney(result.summary.peakEval, result.currency) }}</div>
-          <div class="stat-sub">{{ fmtYm(result.summary.peakYm) }}</div>
-        </div>
-        <div class="glass-card pa-3 rounded-xl text-center">
-          <div class="stat-label">총 투자개월</div>
-          <div class="stat-value">{{ result.summary.months }}개월</div>
-          <div class="stat-sub">약 {{ periodText }}</div>
-        </div>
+      <!-- ⑤ 최고 평가금액 -->
+      <div class="glass-card pa-3 rounded-xl text-center mb-4">
+        <div class="stat-label">최고 평가금액</div>
+        <div class="stat-value text-success">{{ fmtMoney(result.summary.peakEval, result.currency) }}</div>
+        <div class="stat-sub">{{ fmtYm(result.summary.peakYm) }}</div>
       </div>
 
       <!-- ETF 비교 테이블 -->
