@@ -274,36 +274,52 @@ const filterPts = (pts: MonthlyPoint[]) => {
 const filteredPts = computed(() => filterPts(result.value?.monthly ?? []))
 const filteredCmpPts = computed(() => filterPts(compareResult.value?.monthly ?? []))
 
+// ── 차트 모드 ─────────────────────────────────────────
+type ChartMode = 'amount' | 'rate'
+const chartMode = ref<ChartMode>('amount')
+
+const returnRate = (p: MonthlyPoint) => (p.evalAmount - p.totalInvested) / p.totalInvested
+
 const buildChart = (pts: MonthlyPoint[], cmpPts: MonthlyPoint[]) => {
   if (pts.length < 2) return null
 
-  // 두 시리즈의 최대값 기준 Y축
-  const allEvals = [
-    ...pts.map((p) => p.evalAmount),
-    ...pts.map((p) => p.totalInvested),
-    ...cmpPts.map((p) => p.evalAmount),
+  const isRate = chartMode.value === 'rate'
+
+  const toVal = (p: MonthlyPoint) => isRate ? returnRate(p) : p.evalAmount
+  const toInvest = (p: MonthlyPoint) => isRate ? 0 : p.totalInvested
+
+  const allVals = [
+    ...pts.map(toVal),
+    ...pts.map(toInvest),
+    ...cmpPts.map(toVal),
   ]
-  const maxY = Math.max(...allEvals) * 1.08
+  const minY = Math.min(...allVals, isRate ? -0.05 : 0)
+  const maxY = Math.max(...allVals) * 1.08
+  const rangeY = maxY - minY
 
   const toX = (i: number, total: number) => PAD.left + (i / (total - 1)) * PW
-  const toY = (v: number) => PAD.top + PH - (v / maxY) * PH
+  const toY = (v: number) => PAD.top + PH - ((v - minY) / rangeY) * PH
 
   const buildPaths = (data: MonthlyPoint[]) => {
     if (data.length < 2) return { evalPath: '', evalFill: '', investPath: '' }
     const evalPath = data.reduce((acc, p, i) => {
-      const x = toX(i, data.length), y = toY(p.evalAmount)
+      const x = toX(i, data.length), y = toY(toVal(p))
       return i === 0 ? `M ${x},${y}` : acc + ` L ${x},${y}`
     }, '')
     const investPath = data.reduce((acc, p, i) => {
-      const x = toX(i, data.length), y = toY(p.totalInvested)
+      const x = toX(i, data.length), y = toY(toInvest(p))
       return i === 0 ? `M ${x},${y}` : acc + ` L ${x},${y}`
     }, '')
-    const evalFill = evalPath + ` L ${toX(data.length - 1, data.length)},${PAD.top + PH} L ${toX(0, data.length)},${PAD.top + PH} Z`
+    const baseY = toY(isRate ? 0 : minY)
+    const evalFill = evalPath + ` L ${toX(data.length - 1, data.length)},${baseY} L ${toX(0, data.length)},${baseY} Z`
     return { evalPath, evalFill, investPath }
   }
 
   const main = buildPaths(pts)
   const cmp = buildPaths(cmpPts)
+
+  // 수익률 모드 0% 기준선
+  const zeroY = isRate ? toY(0) : null
 
   const yearTicks: { x: number; label: string }[] = []
   let lastYear = ''
@@ -314,7 +330,7 @@ const buildChart = (pts: MonthlyPoint[], cmpPts: MonthlyPoint[]) => {
   const step = Math.max(1, Math.ceil(yearTicks.length / 6))
   const xLabels = yearTicks.filter((_, i) => i % step === 0)
 
-  return { ...main, cmp, xLabels, toX: (i: number) => toX(i, pts.length), toY }
+  return { ...main, cmp, xLabels, zeroY, toX: (i: number) => toX(i, pts.length), toY, isRate }
 }
 
 const chartSvg = computed(() => buildChart(filteredPts.value, filteredCmpPts.value))
@@ -340,7 +356,8 @@ const showTooltip = (clientX: number) => {
   const idx = getIndexFromClientX(clientX, pts.length)
   const pt = pts[idx]!
   const x = chart.toX(idx)
-  tooltip.value = { visible: true, x, dotY: chart.toY(pt.evalAmount), pt, alignRight: x > VW / 2 }
+  const dotVal = chart.isRate ? (pt.evalAmount - pt.totalInvested) / pt.totalInvested : pt.evalAmount
+  tooltip.value = { visible: true, x, dotY: chart.toY(dotVal), pt, alignRight: x > VW / 2 }
 }
 
 const hideTooltip = () => { tooltip.value = null }
@@ -630,7 +647,7 @@ const yearlyRows = computed(() => {
 
       <!-- SVG 차트 -->
       <v-card class="glass-card pa-4 mb-4" rounded="xl">
-        <div class="d-flex align-center justify-space-between mb-3">
+        <div class="d-flex align-center justify-space-between mb-2">
           <div class="text-body-2 font-weight-bold">누적 자산 추이</div>
           <div class="period-btns">
             <button
@@ -641,6 +658,10 @@ const yearlyRows = computed(() => {
               @click="periodFilter = opt.value"
             >{{ opt.label }}</button>
           </div>
+        </div>
+        <div class="d-flex ga-1 mb-3">
+          <button class="mode-btn" :class="{ 'mode-btn--active': chartMode === 'amount' }" @click="chartMode = 'amount'">금액</button>
+          <button class="mode-btn" :class="{ 'mode-btn--active': chartMode === 'rate' }" @click="chartMode = 'rate'">수익률</button>
         </div>
         <template v-if="chartSvg">
           <div class="chart-wrap">
@@ -662,8 +683,11 @@ const yearlyRows = computed(() => {
                 </linearGradient>
               </defs>
 
-              <!-- 투자원금 점선 -->
-              <path :d="chartSvg.investPath" fill="none" stroke="rgba(var(--v-theme-on-surface), 0.25)" stroke-width="1.5" stroke-dasharray="5 3" />
+              <!-- 0% 기준선 (수익률 모드) -->
+              <line v-if="chartSvg.zeroY !== null" :x1="PAD.left" :y1="chartSvg.zeroY" :x2="PAD.left + PW" :y2="chartSvg.zeroY" stroke="rgba(var(--v-theme-on-surface), 0.2)" stroke-width="1" stroke-dasharray="4 3" />
+
+              <!-- 투자원금 점선 (금액 모드만) -->
+              <path v-if="!chartSvg.isRate" :d="chartSvg.investPath" fill="none" stroke="rgba(var(--v-theme-on-surface), 0.25)" stroke-width="1.5" stroke-dasharray="5 3" />
 
               <!-- 비교 ETF 라인 -->
               <path v-if="compareResult && chartSvg.cmp.evalPath" :d="chartSvg.cmp.evalPath" fill="none" stroke="rgb(var(--v-theme-warning))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85" />
@@ -694,15 +718,27 @@ const yearlyRows = computed(() => {
               }"
             >
               <div class="ct-date">{{ fmtYm(tooltip.pt.ym) }}</div>
-              <div class="ct-row"><span class="ct-label">투자원금</span><span class="ct-val">{{ fmtMoney(tooltip.pt.totalInvested, result!.currency) }}</span></div>
-              <div class="ct-row">
-                <span class="ct-label">평가금액</span>
-                <span class="ct-val" :class="`text-${profitColor(tooltip.pt.evalAmount - tooltip.pt.totalInvested)}`">{{ fmtMoney(tooltip.pt.evalAmount, result!.currency) }}</span>
-              </div>
-              <div class="ct-row">
-                <span class="ct-label">수익률</span>
-                <span class="ct-val" :class="`text-${profitColor(tooltip.pt.evalAmount - tooltip.pt.totalInvested)}`">{{ fmtPct((tooltip.pt.evalAmount - tooltip.pt.totalInvested) / tooltip.pt.totalInvested) }}</span>
-              </div>
+              <template v-if="chartMode === 'amount'">
+                <div class="ct-row"><span class="ct-label">투자원금</span><span class="ct-val">{{ fmtMoney(tooltip.pt.totalInvested, result!.currency) }}</span></div>
+                <div class="ct-row">
+                  <span class="ct-label">평가금액</span>
+                  <span class="ct-val" :class="`text-${profitColor(tooltip.pt.evalAmount - tooltip.pt.totalInvested)}`">{{ fmtMoney(tooltip.pt.evalAmount, result!.currency) }}</span>
+                </div>
+                <div class="ct-row">
+                  <span class="ct-label">수익률</span>
+                  <span class="ct-val" :class="`text-${profitColor(tooltip.pt.evalAmount - tooltip.pt.totalInvested)}`">{{ fmtPct((tooltip.pt.evalAmount - tooltip.pt.totalInvested) / tooltip.pt.totalInvested) }}</span>
+                </div>
+              </template>
+              <template v-else>
+                <div class="ct-row">
+                  <span class="ct-label">수익률</span>
+                  <span class="ct-val" :class="`text-${profitColor(tooltip.pt.evalAmount - tooltip.pt.totalInvested)}`">{{ fmtPct((tooltip.pt.evalAmount - tooltip.pt.totalInvested) / tooltip.pt.totalInvested) }}</span>
+                </div>
+                <div class="ct-row">
+                  <span class="ct-label">평가금액</span>
+                  <span class="ct-val">{{ fmtMoney(tooltip.pt.evalAmount, result!.currency) }}</span>
+                </div>
+              </template>
             </div>
           </div>
 
@@ -716,9 +752,13 @@ const yearlyRows = computed(() => {
               <div class="legend-line legend-cmp" />
               <span class="text-caption text-medium-emphasis">{{ compareResult.ticker }} 평가금액</span>
             </div>
-            <div class="d-flex align-center ga-1">
+            <div v-if="chartMode === 'amount'" class="d-flex align-center ga-1">
               <div class="legend-line legend-dash" />
               <span class="text-caption text-medium-emphasis">투자원금</span>
+            </div>
+            <div v-if="chartMode === 'rate'" class="d-flex align-center ga-1">
+              <div class="legend-line legend-dash" />
+              <span class="text-caption text-medium-emphasis">0% 기준선</span>
             </div>
           </div>
         </template>
@@ -934,6 +974,25 @@ const yearlyRows = computed(() => {
 
 .summary-returns {
   font-weight: 700;
+  color: rgb(var(--v-theme-primary));
+}
+
+/* ── 차트 모드 토글 ─────────────────────────────── */
+.mode-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--fp-outline);
+  background: transparent;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mode-btn--active {
+  background: rgba(var(--v-theme-primary), 0.12);
+  border-color: rgb(var(--v-theme-primary));
   color: rgb(var(--v-theme-primary));
 }
 
