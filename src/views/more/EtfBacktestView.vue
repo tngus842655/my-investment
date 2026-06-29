@@ -44,6 +44,7 @@ const tickerInput = ref('')
 const compareInput = ref('')
 const monthlyAmount = ref<number | null>(100)
 const startYm = ref('')
+const queriedStartYm = ref('')  // 실행 시점의 입력 시작일
 const loading = ref(false)
 const result = ref<BacktestResult | null>(null)
 const compareResult = ref<BacktestResult | null>(null)
@@ -180,6 +181,7 @@ const run = async () => {
   loading.value = true
   result.value = null
   compareResult.value = null
+  queriedStartYm.value = startYm.value
 
   try {
     const tasks = [fetchBacktest(ticker)]
@@ -539,6 +541,15 @@ const yearlyRows = computed(() => {
 
     <!-- 결과 -->
     <template v-if="result">
+      <!-- 상장일 안내 배너 -->
+      <div v-if="result.summary.startYm > queriedStartYm" class="inception-banner mb-3">
+        <v-icon size="14" color="warning">mdi-information-outline</v-icon>
+        <span>
+          입력하신 시작일({{ fmtYm(queriedStartYm) }})보다 상장일이 늦어
+          <strong>{{ fmtYm(result.summary.startYm) }}</strong>부터 계산되었습니다.
+        </span>
+      </div>
+
       <!-- 기간 헤더 -->
       <div class="d-flex align-center justify-space-between mb-3 px-1">
         <div class="text-body-2 font-weight-bold">
@@ -888,6 +899,19 @@ const yearlyRows = computed(() => {
 .highlight-card-full {
   text-align: center;
   margin-bottom: 8px;
+}
+
+.inception-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  background: rgba(var(--v-theme-warning), 0.08);
+  border: 1px solid rgba(var(--v-theme-warning), 0.25);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: rgba(var(--v-theme-on-surface), 0.75);
+  line-height: 1.5;
 }
 
 .krw-hint {
