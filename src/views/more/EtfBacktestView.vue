@@ -512,6 +512,9 @@ const yearlyRows = computed(() => {
         <div class="highlight-value text-success">
           {{ fmtMoney(result.summary.evalAmount, result.currency) }}
         </div>
+        <div class="peak-hint">
+          최고 {{ fmtMoney(result.summary.peakEval, result.currency) }} · {{ fmtYm(result.summary.peakYm) }}
+        </div>
       </div>
 
       <!-- ② 총 수익금 + 총 수익률 -->
@@ -577,13 +580,6 @@ const yearlyRows = computed(() => {
           <div class="stat-value text-error">{{ fmtPct(result.summary.mdd) }}</div>
           <div v-if="mddText" class="mdd-date">{{ mddText }}</div>
         </div>
-      </div>
-
-      <!-- ⑤ 최고 평가금액 -->
-      <div class="glass-card pa-3 rounded-xl text-center mb-4">
-        <div class="stat-label">최고 평가금액</div>
-        <div class="stat-value text-success">{{ fmtMoney(result.summary.peakEval, result.currency) }}</div>
-        <div class="stat-sub">{{ fmtYm(result.summary.peakYm) }}</div>
       </div>
 
       <!-- ETF 비교 테이블 -->
@@ -825,6 +821,12 @@ const yearlyRows = computed(() => {
 .highlight-card-full {
   text-align: center;
   margin-bottom: 8px;
+}
+
+.peak-hint {
+  font-size: 11px;
+  color: rgba(var(--v-theme-on-surface), 0.4);
+  margin-top: 6px;
 }
 
 .highlight-value {
