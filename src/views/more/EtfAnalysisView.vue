@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
+import { TICKER_NAMES, getTickerDisplayName } from '@/utils/tickerNames'
 
 const router = useRouter()
 
@@ -31,9 +32,25 @@ interface EtfInfo {
 const inputA = ref('')
 const inputB = ref('')
 
-const sanitizeTicker = (v: string) => v.replace(/[^A-Za-z0-9.-]/g, '')
+const sanitizeTicker = (v: string) => v.replace(/[^A-Za-z0-9가-힣ㄱ-ㅎ.-]/g, '')
 const onInputA = (e: Event) => { inputA.value = sanitizeTicker((e.target as HTMLInputElement).value) }
 const onInputB = (e: Event) => { inputB.value = sanitizeTicker((e.target as HTMLInputElement).value) }
+
+// 한글 이름 → 티커 코드 역방향 조회
+const resolveToTicker = (input: string): string => {
+  const trimmed = input.trim()
+  if (!trimmed) return ''
+  if (!/[ㄱ-ㅎ가-힣]/.test(trimmed)) return trimmed.toUpperCase()
+  // 한글 입력인 경우 TICKER_NAMES 역방향 검색
+  for (const [ticker, name] of Object.entries(TICKER_NAMES)) {
+    if (name === trimmed) return ticker
+  }
+  // 부분 일치 (첫 번째 결과)
+  for (const [ticker, name] of Object.entries(TICKER_NAMES)) {
+    if (name.includes(trimmed)) return ticker
+  }
+  return trimmed
+}
 
 watch(inputA, () => { notFoundA.value = false })
 watch(inputB, () => { notFoundB.value = false })
@@ -46,14 +63,16 @@ const notFoundB = ref(false)
 const isEmptyResult = (info: EtfInfo) =>
   info.currentPrice == null && info.totalAssets == null && info.cagr == null && info.mdd == null
 
-const TICKER_REGEX = /^[A-Za-z0-9.-]{1,15}$/
+const TICKER_REGEX = /^[A-Za-z0-9가-힣ㄱ-ㅎ.-]{1,20}$/
 
 const fetchInfo = async () => {
-  const tA = inputA.value.trim().toUpperCase()
-  const tB = inputB.value.trim().toUpperCase()
-  if (!tA) { showMessage('티커를 입력해주세요.', 'warning'); return }
-  if (!TICKER_REGEX.test(tA)) { showMessage('올바른 티커 형식이 아닙니다. (예: SPY, QQQ)', 'warning'); return }
-  if (tB && !TICKER_REGEX.test(tB)) { showMessage('비교 티커 형식이 올바르지 않습니다. (예: QQQ)', 'warning'); return }
+  const rawA = inputA.value.trim()
+  const rawB = inputB.value.trim()
+  if (!rawA) { showMessage('티커를 입력해주세요.', 'warning'); return }
+  if (!TICKER_REGEX.test(rawA)) { showMessage('올바른 티커 형식이 아닙니다. (예: SPY, QQQ, 069500)', 'warning'); return }
+  if (rawB && !TICKER_REGEX.test(rawB)) { showMessage('비교 티커 형식이 올바르지 않습니다.', 'warning'); return }
+  const tA = resolveToTicker(rawA)
+  const tB = rawB ? resolveToTicker(rawB) : ''
   if (tB && tA === tB) { showMessage('두 티커가 동일합니다. 서로 다른 티커를 입력해주세요.', 'warning'); return }
 
   const tickers = [tA, tB].filter(Boolean)
@@ -343,6 +362,9 @@ const aiData = computed(() => {
             <div class="d-flex align-center ga-2 mt-1">
               <div class="text-body-2 font-weight-bold">{{ info.ticker }}</div>
               <div class="text-body-2 font-weight-bold text-primary">{{ fmt.price(info.currentPrice, info.currency) }}</div>
+            </div>
+            <div class="text-caption text-medium-emphasis mt-0" style="line-height:1.3">
+              {{ getTickerDisplayName(info.ticker) !== info.ticker ? getTickerDisplayName(info.ticker) : (info.name ?? '') }}
             </div>
             <v-tooltip v-if="info.fundFamily" :text="info.fundFamily" location="bottom" open-on-click open-on-hover>
               <template #activator="{ props }">

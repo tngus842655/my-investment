@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
+import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 
 const router = useRouter()
 
@@ -35,6 +36,9 @@ interface BacktestResult {
   }
 }
 
+// ── 환율 ─────────────────────────────────────────────
+const exchangeRate = ref(1350)
+
 // ── 입력 ─────────────────────────────────────────────
 const tickerInput = ref('')
 const compareInput = ref('')
@@ -43,6 +47,10 @@ const startYm = ref('')
 const loading = ref(false)
 const result = ref<BacktestResult | null>(null)
 const compareResult = ref<BacktestResult | null>(null)
+
+// DCA 툴팁 제어 (스크롤 시 닫기)
+const dcaOpen = ref(false)
+const closeDca = () => { dcaOpen.value = false }
 
 // ── 최근 사용 ETF ─────────────────────────────────────
 const RECENT_KEY = 'etf-backtest-recent'
@@ -118,9 +126,15 @@ const onManualChange = () => {
   syncStartYm()
 }
 
-onMounted(() => {
+onMounted(async () => {
   applyQuickPeriod('10y')
   loadRecent()
+  window.addEventListener('scroll', closeDca, { passive: true })
+  exchangeRate.value = await getCachedExchangeRate()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', closeDca)
 })
 
 const sanitizeTicker = (v: string) => v.replace(/[^A-Za-z0-9.-]/g, '').toUpperCase()
@@ -175,6 +189,13 @@ const run = async () => {
 const fmtMoney = (v: number, currency: string) => {
   if (currency === 'KRW') return `₩${Math.round(v).toLocaleString()}`
   return `$${v.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+}
+const fmtMoneyKrw = (v: number, currency: string): string | null => {
+  if (currency !== 'USD') return null
+  const krw = Math.round(v * exchangeRate.value)
+  if (krw >= 1e8) return `≈ ₩${(krw / 1e8).toFixed(1)}억`
+  if (krw >= 1e4) return `≈ ₩${Math.round(krw / 1e4).toLocaleString()}만`
+  return `≈ ₩${krw.toLocaleString()}`
 }
 const fmtPct = (v: number, digits = 1) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(digits)}%`
 const fmtYm = (ym: string) => { const [y, m] = ym.split('-'); return `${y}년 ${Number(m)}월` }
@@ -371,9 +392,9 @@ const yearlyRows = computed(() => {
         <div class="text-h6 font-weight-bold">ETF 백테스트</div>
         <div class="d-flex align-center ga-1 text-caption text-medium-emphasis">
           과거
-          <v-tooltip :text="tooltips.dca" location="bottom" open-on-click max-width="260">
+          <v-tooltip :model-value="dcaOpen" :text="tooltips.dca" location="bottom" max-width="260">
             <template #activator="{ props }">
-              <span v-bind="props" class="tooltip-term">DCA</span>
+              <span v-bind="props" class="tooltip-term" @click.stop="dcaOpen = !dcaOpen">DCA</span>
             </template>
           </v-tooltip>
           투자 수익률 시뮬레이션
@@ -517,6 +538,9 @@ const yearlyRows = computed(() => {
         <div class="highlight-value text-success">
           {{ fmtMoney(result.summary.evalAmount, result.currency) }}
         </div>
+        <div v-if="fmtMoneyKrw(result.summary.evalAmount, result.currency)" class="krw-hint">
+          {{ fmtMoneyKrw(result.summary.evalAmount, result.currency) }}
+        </div>
         <div class="peak-hint">
           최고 {{ fmtMoney(result.summary.peakEval, result.currency) }} · {{ fmtYm(result.summary.peakYm) }}
         </div>
@@ -528,6 +552,9 @@ const yearlyRows = computed(() => {
           <div class="stat-label">총 수익금</div>
           <div class="stat-value" :class="`text-${profitColor(result.summary.profit)}`">
             {{ fmtMoney(result.summary.profit, result.currency) }}
+          </div>
+          <div v-if="fmtMoneyKrw(result.summary.profit, result.currency)" class="stat-krw">
+            {{ fmtMoneyKrw(result.summary.profit, result.currency) }}
           </div>
         </div>
         <div class="glass-card pa-3 rounded-xl text-center">
@@ -563,6 +590,9 @@ const yearlyRows = computed(() => {
         <div class="glass-card pa-3 rounded-xl text-center">
           <div class="stat-label">투자원금</div>
           <div class="stat-value">{{ fmtMoney(result.summary.totalInvested, result.currency) }}</div>
+          <div v-if="fmtMoneyKrw(result.summary.totalInvested, result.currency)" class="stat-krw">
+            {{ fmtMoneyKrw(result.summary.totalInvested, result.currency) }}
+          </div>
         </div>
       </div>
 
@@ -840,6 +870,18 @@ const yearlyRows = computed(() => {
 .highlight-card-full {
   text-align: center;
   margin-bottom: 8px;
+}
+
+.krw-hint {
+  font-size: 12px;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+  margin-top: 2px;
+}
+
+.stat-krw {
+  font-size: 10px;
+  color: rgba(var(--v-theme-on-surface), 0.4);
+  margin-top: 2px;
 }
 
 .peak-hint {

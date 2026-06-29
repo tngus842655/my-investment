@@ -30,6 +30,8 @@ export const spaceTheme: FpTheme = {
     typeColors: {
       해외주식: '#7C6FCD',
       국내주식: '#4FC3F7',
+      해외ETF:  '#FF8A65',
+      국내ETF:  '#B39DDB',
       ETF:     '#00D4B8',
       암호화폐: '#FFB347',
       현금:    '#00E5A0',
