@@ -352,7 +352,7 @@ onMounted(loadDashboard)
   object-fit: contain;
 }
 .header-logo-wide {
-  height: 32px;
+  height: 40px;
   width: auto;
   object-fit: contain;
 }
