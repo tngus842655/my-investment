@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
@@ -157,12 +157,30 @@ const PAD = { top: 12, right: 16, bottom: 28, left: 12 }
 const PW = VW - PAD.left - PAD.right
 const PH = VH - PAD.top - PAD.bottom
 
-const chartSvg = computed(() => {
-  const pts = result.value?.monthly ?? []
+// 기간 필터
+type PeriodFilter = '5y' | '10y' | 'all'
+const periodFilter = ref<PeriodFilter>('all')
+const periodOptions: { label: string; value: PeriodFilter }[] = [
+  { label: '최근 5년', value: '5y' },
+  { label: '최근 10년', value: '10y' },
+  { label: '전체', value: 'all' },
+]
+
+watch(() => result.value, () => { periodFilter.value = 'all' })
+
+const filteredPts = computed(() => {
+  const all = result.value?.monthly ?? []
+  if (periodFilter.value === 'all') return all
+  const years = periodFilter.value === '5y' ? 5 : 10
+  const cutoff = new Date()
+  cutoff.setFullYear(cutoff.getFullYear() - years)
+  const cutYm = cutoff.toISOString().slice(0, 7)
+  return all.filter((p) => p.ym >= cutYm)
+})
+
+const buildChart = (pts: MonthlyPoint[]) => {
   if (pts.length < 2) return null
-
   const maxY = Math.max(...pts.map((p) => p.evalAmount)) * 1.08
-
   const toX = (i: number) => PAD.left + (i / (pts.length - 1)) * PW
   const toY = (v: number) => PAD.top + PH - (v / maxY) * PH
 
@@ -170,12 +188,10 @@ const chartSvg = computed(() => {
     const x = toX(i); const y = toY(p.evalAmount)
     return i === 0 ? `M ${x},${y}` : acc + ` L ${x},${y}`
   }, '')
-
   const investPath = pts.reduce((acc, p, i) => {
     const x = toX(i); const y = toY(p.totalInvested)
     return i === 0 ? `M ${x},${y}` : acc + ` L ${x},${y}`
   }, '')
-
   const evalFill = evalPath + ` L ${toX(pts.length - 1)},${PAD.top + PH} L ${toX(0)},${PAD.top + PH} Z`
 
   const yearTicks: { x: number; label: string }[] = []
@@ -187,8 +203,51 @@ const chartSvg = computed(() => {
   const step = Math.max(1, Math.ceil(yearTicks.length / 6))
   const xLabels = yearTicks.filter((_, i) => i % step === 0)
 
-  return { evalPath, evalFill, investPath, xLabels }
-})
+  return { evalPath, evalFill, investPath, xLabels, toX, toY, maxY }
+}
+
+const chartSvg = computed(() => buildChart(filteredPts.value))
+
+// ── 터치 인터랙션 ─────────────────────────────────────
+const svgEl = ref<SVGSVGElement | null>(null)
+interface TooltipState {
+  visible: boolean
+  x: number      // SVG viewBox 좌표
+  dotY: number   // 평가금액 dot Y
+  pt: MonthlyPoint
+  alignRight: boolean
+}
+const tooltip = ref<TooltipState | null>(null)
+
+const getIndexFromClientX = (clientX: number): number => {
+  const el = svgEl.value
+  if (!el) return 0
+  const rect = el.getBoundingClientRect()
+  const ratio = (clientX - rect.left) / rect.width
+  const svgX = ratio * VW
+  const pts = filteredPts.value
+  const idx = Math.round((svgX - PAD.left) / PW * (pts.length - 1))
+  return Math.max(0, Math.min(pts.length - 1, idx))
+}
+
+const showTooltip = (clientX: number) => {
+  const chart = chartSvg.value
+  const pts = filteredPts.value
+  if (!chart || pts.length < 2) return
+  const idx = getIndexFromClientX(clientX)
+  const pt = pts[idx]!
+  const x = chart.toX(idx)
+  const dotY = chart.toY(pt.evalAmount)
+  tooltip.value = { visible: true, x, dotY, pt, alignRight: x > VW / 2 }
+}
+
+const hideTooltip = () => { tooltip.value = null }
+
+const onTouchMove = (e: TouchEvent) => {
+  e.preventDefault()
+  showTooltip(e.touches[0]!.clientX)
+}
+const onMouseMove = (e: MouseEvent) => { showTooltip(e.clientX) }
 
 // ── 연도별 테이블 ─────────────────────────────────────
 const yearlyRows = computed(() => {
@@ -365,23 +424,93 @@ const yearlyRows = computed(() => {
 
       <!-- SVG 차트 -->
       <v-card class="glass-card pa-4 mb-4" rounded="xl">
-        <div class="text-body-2 font-weight-bold mb-3">누적 자산 추이</div>
+        <div class="d-flex align-center justify-space-between mb-3">
+          <div class="text-body-2 font-weight-bold">누적 자산 추이</div>
+          <div class="period-btns">
+            <button
+              v-for="opt in periodOptions"
+              :key="opt.value"
+              class="period-btn"
+              :class="{ 'period-btn--active': periodFilter === opt.value }"
+              @click="periodFilter = opt.value"
+            >{{ opt.label }}</button>
+          </div>
+        </div>
         <template v-if="chartSvg">
-          <svg :viewBox="`0 0 ${VW} ${VH}`" width="100%" :height="VH" style="overflow: visible">
-            <defs>
-              <linearGradient id="btEvalFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="rgb(var(--v-theme-primary))" stop-opacity="0.25" />
-                <stop offset="100%" stop-color="rgb(var(--v-theme-primary))" stop-opacity="0" />
-              </linearGradient>
-            </defs>
-            <path :d="chartSvg.evalFill" fill="url(#btEvalFill)" />
-            <path :d="chartSvg.investPath" fill="none" stroke="rgba(var(--v-theme-on-surface), 0.28)" stroke-width="1.5" stroke-dasharray="5 3" />
-            <path :d="chartSvg.evalPath" fill="none" stroke="rgb(var(--v-theme-primary))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-            <g v-for="tick in chartSvg.xLabels" :key="tick.label">
-              <text :x="tick.x" :y="VH - 4" text-anchor="middle" font-size="9" fill="rgba(var(--v-theme-on-surface), 0.4)">{{ tick.label }}</text>
-            </g>
-          </svg>
-          <div class="d-flex ga-4 mt-1 justify-center">
+          <div class="chart-wrap" style="position: relative">
+            <svg
+              ref="svgEl"
+              :viewBox="`0 0 ${VW} ${VH}`"
+              width="100%"
+              :height="VH"
+              style="overflow: visible; display: block; touch-action: none"
+              @mousemove="onMouseMove"
+              @mouseleave="hideTooltip"
+              @touchmove.prevent="onTouchMove"
+              @touchend="hideTooltip"
+            >
+              <defs>
+                <linearGradient id="btEvalFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="rgb(var(--v-theme-primary))" stop-opacity="0.25" />
+                  <stop offset="100%" stop-color="rgb(var(--v-theme-primary))" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+              <path :d="chartSvg.evalFill" fill="url(#btEvalFill)" />
+              <path :d="chartSvg.investPath" fill="none" stroke="rgba(var(--v-theme-on-surface), 0.28)" stroke-width="1.5" stroke-dasharray="5 3" />
+              <path :d="chartSvg.evalPath" fill="none" stroke="rgb(var(--v-theme-primary))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              <g v-for="tick in chartSvg.xLabels" :key="tick.label">
+                <text :x="tick.x" :y="VH - 4" text-anchor="middle" font-size="9" fill="rgba(var(--v-theme-on-surface), 0.4)">{{ tick.label }}</text>
+              </g>
+
+              <!-- 터치 가이드라인 + dot -->
+              <template v-if="tooltip">
+                <line
+                  :x1="tooltip.x" :y1="PAD.top"
+                  :x2="tooltip.x" :y2="PAD.top + PH"
+                  stroke="rgba(var(--v-theme-on-surface), 0.2)"
+                  stroke-width="1"
+                  stroke-dasharray="3 2"
+                />
+                <circle
+                  :cx="tooltip.x" :cy="tooltip.dotY"
+                  r="4"
+                  fill="rgb(var(--v-theme-primary))"
+                  stroke="var(--fp-surface)"
+                  stroke-width="2"
+                />
+              </template>
+            </svg>
+
+            <!-- 툴팁 박스 -->
+            <div
+              v-if="tooltip"
+              class="chart-tooltip"
+              :style="{
+                left: tooltip.alignRight ? 'auto' : `${tooltip.x / VW * 100}%`,
+                right: tooltip.alignRight ? `${(1 - tooltip.x / VW) * 100}%` : 'auto',
+              }"
+            >
+              <div class="ct-date">{{ fmtYm(tooltip.pt.ym) }}</div>
+              <div class="ct-row">
+                <span class="ct-label">투자원금</span>
+                <span class="ct-val">{{ fmtMoney(tooltip.pt.totalInvested, result!.currency) }}</span>
+              </div>
+              <div class="ct-row">
+                <span class="ct-label">평가금액</span>
+                <span class="ct-val" :class="`text-${profitColor(tooltip.pt.evalAmount - tooltip.pt.totalInvested)}`">
+                  {{ fmtMoney(tooltip.pt.evalAmount, result!.currency) }}
+                </span>
+              </div>
+              <div class="ct-row">
+                <span class="ct-label">수익률</span>
+                <span class="ct-val" :class="`text-${profitColor(tooltip.pt.evalAmount - tooltip.pt.totalInvested)}`">
+                  {{ fmtPct((tooltip.pt.evalAmount - tooltip.pt.totalInvested) / tooltip.pt.totalInvested) }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex ga-4 mt-2 justify-center">
             <div class="d-flex align-center ga-1">
               <div class="legend-line legend-solid" />
               <span class="text-caption text-medium-emphasis">평가금액</span>
@@ -552,6 +681,70 @@ const yearlyRows = computed(() => {
 }
 
 .yearly-row:last-child { border-bottom: none; }
+
+/* ── 기간 필터 버튼 ─────────────────────────────── */
+.period-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.period-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--fp-outline);
+  background: transparent;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.period-btn--active {
+  background: rgb(var(--v-theme-primary));
+  border-color: rgb(var(--v-theme-primary));
+  color: #fff;
+}
+
+/* ── 차트 툴팁 ──────────────────────────────────── */
+.chart-wrap { position: relative; }
+
+.chart-tooltip {
+  position: absolute;
+  top: 8px;
+  background: var(--fp-surface);
+  border: 1px solid var(--fp-outline);
+  border-radius: 10px;
+  padding: 8px 10px;
+  pointer-events: none;
+  min-width: 148px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+.ct-date {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--fp-text);
+  margin-bottom: 5px;
+}
+
+.ct-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.ct-label {
+  font-size: 11px;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.ct-val {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fp-text);
+}
 
 .tooltip-term {
   color: rgb(var(--v-theme-primary));
