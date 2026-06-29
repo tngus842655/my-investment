@@ -67,17 +67,15 @@ const projection = computed<ProjectionPoint[]>(() => {
 
 const totalInvested = computed(() => {
   const last = projection.value[projection.value.length - 1]
-  if (!last) return 0
-  return Math.round(monthlyInvestment.value * (last.dayOffset / DAYS_PER_MONTH))
+  const months = fireGoalYear.value?.totalMonths ?? (last ? last.dayOffset / DAYS_PER_MONTH : 0)
+  return Math.round(monthlyInvestment.value * months)
 })
 
 const totalReturn = computed(() => {
-  const last = projection.value[projection.value.length - 1]
-  if (!last) return 0
-  return last.asset - currentAsset.value - totalInvested.value
+  return finalAsset.value - currentAsset.value - totalInvested.value
 })
 
-const finalAsset = computed(() => projection.value[projection.value.length - 1]?.asset ?? 0)
+const finalAsset = computed(() => fireGoalYear.value?.asset ?? projection.value[projection.value.length - 1]?.asset ?? 0)
 
 const remainingInfo = computed(() => {
   const T = targetAsset.value
@@ -290,7 +288,7 @@ const fireGoalYear = computed(() => {
     remainText = y > 0 ? `목표까지 약 ${y}년${mo > 0 ? ' ' + mo + '개월' : ''}` : `목표까지 약 ${totalMonths}개월`
   }
 
-  return { year: reachedYear, month: reachedMonth, asset: reachedAsset, remainText }
+  return { year: reachedYear, month: reachedMonth, asset: reachedAsset, remainText, totalMonths }
 })
 
 // 표시할 행 목록 (fireGoalYear 제외)
