@@ -254,7 +254,7 @@ const yearlyRows = computed(() => {
         </v-btn>
       </div>
       <div class="text-caption text-medium-emphasis mt-3">
-        * 해외 ETF/주식 전용 · adjclose(배당·분할 조정 종가) 기준 · 배당 재투자 포함 근사치 · 세금/수수료 미포함
+        * 해외 ETF/주식 전용 · 배당 재투자 포함 근사치 · 세금/수수료 미포함
       </div>
     </v-card>
 
