@@ -228,14 +228,13 @@ const avgPriceError = computed(() => {
   return ''
 })
 
-const isValid = computed(
-  () =>
-    assetType.value &&
-    (assetType.value === '현금' || ((ticker.value?.trim() ?? '') && !tickerError.value)) &&
-    currency.value &&
-    !quantityError.value &&
-    !avgPriceError.value,
-)
+const isValid = computed(() => {
+  if (!assetType.value || !currency.value) return false
+  if (assetType.value !== '현금' && (!(ticker.value?.trim() ?? '') || tickerError.value)) return false
+  if (quantityError.value || avgPriceError.value) return false
+  if (assetType.value === '현금') return !!initAvgPrice.value && removeComma(initAvgPrice.value) > 0
+  return !!initQuantity.value && Number(initQuantity.value) > 0 && !!initAvgPrice.value && removeComma(initAvgPrice.value) > 0
+})
 
 const save = async () => {
   if (!isValid.value) return
