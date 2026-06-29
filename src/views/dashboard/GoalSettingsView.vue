@@ -36,7 +36,7 @@ const handleMonthlyInvestment = (value: string) => {
 }
 
 const sliderValue = computed({
-  get: () => annualReturn.value ?? 7,
+  get: () => Math.max(annualReturn.value ?? 7, 3),
   set: (v: number) => {
     annualReturn.value = v
   },
@@ -124,6 +124,10 @@ const save = async () => {
   }
   if (monthlyNum > 0 && targetNum < monthlyNum * 12) {
     showMessage(`목표 자산은 월 투자금의 12배(${formatShortMoney(monthlyNum * 12)}원) 이상이어야 합니다.`, 'warning')
+    return
+  }
+  if (annualReturn.value !== null && annualReturn.value < 3) {
+    showMessage('예상 연평균 수익률은 최소 3% 이상이어야 합니다.', 'warning')
     return
   }
   loading.value = true
@@ -283,7 +287,7 @@ onMounted(loadData)
 
         <v-slider
           v-model="sliderValue"
-          :min="0"
+          :min="3"
           :max="30"
           :step="0.5"
           color="primary"
@@ -295,7 +299,7 @@ onMounted(loadData)
         </v-slider>
 
         <div class="d-flex justify-space-between mt-1">
-          <span class="text-caption text-disabled">0%</span>
+          <span class="text-caption text-disabled">3%</span>
           <span class="text-caption text-disabled">30%</span>
         </div>
 
