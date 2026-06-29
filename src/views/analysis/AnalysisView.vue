@@ -121,9 +121,9 @@ const timelineMilestones = computed(() => {
   const step = totalYears <= 5 ? 1 : totalYears <= 15 ? 3 : totalYears <= 30 ? 5 : totalYears <= 60 ? 10 : 20
 
   const MIN_GAP = 8 // 레이블 간 최소 간격 (%)
-  const nowPct = Math.min(progressPct.value, 100 - MIN_GAP)
-  milestones.push({ year: currentYear, pct: nowPct, isGoal: false, isPast: false })
-  let lastPct = nowPct
+  // 현재 연도는 타임라인 시작점(0%)에 고정 — 마커(현재 자산)와 분리
+  milestones.push({ year: currentYear, pct: 0, isGoal: false, isPast: false })
+  let lastPct = MIN_GAP // 다음 레이블은 최소 MIN_GAP 이후부터
 
   for (let y = currentYear + step; y < goal.year; y += step) {
     const monthsToYearEnd = (y - currentYear) * 12 - (currentMonth - 1)
