@@ -117,11 +117,16 @@ const timelineMilestones = computed(() => {
   const totalYears = goal.year - currentYear
   const step = totalYears <= 5 ? 1 : totalYears <= 15 ? 3 : totalYears <= 30 ? 5 : totalYears <= 60 ? 10 : 20
 
+  const MIN_GAP = 8 // 레이블 간 최소 간격 (%)
+  let lastPct = 0
+
   for (let y = currentYear + step; y < goal.year; y += step) {
     const monthsToYearEnd = (y - currentYear) * 12 - (currentMonth - 1)
     const yearEndAsset = Math.round(calcAsset(C, M, r, monthsToYearEnd))
     const pct = Math.min(Math.round((yearEndAsset / T) * 100), 100)
+    if (pct - lastPct < MIN_GAP) continue
     milestones.push({ year: y, pct, isGoal: false, isPast: new Date().getFullYear() > y })
+    lastPct = pct
   }
 
   milestones.push({ year: goal.year, month: goal.month, pct: 100, isGoal: true, isPast: false })
