@@ -38,6 +38,7 @@ const monthlyAmount = ref<number | null>(100)
 const startYm = ref('')
 const loading = ref(false)
 const result = ref<BacktestResult | null>(null)
+const helpSheet = ref(false)
 
 const ymOptions = computed(() => {
   const opts: { title: string; value: string }[] = []
@@ -201,10 +202,13 @@ const yearlyRows = computed(() => {
       <v-btn icon variant="text" size="small" @click="router.back()">
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
-      <div>
+      <div class="flex-grow-1">
         <div class="text-h6 font-weight-bold">ETF 백테스트</div>
         <div class="text-caption text-medium-emphasis">과거 DCA 투자 수익률 시뮬레이션</div>
       </div>
+      <v-btn icon variant="text" size="small" @click="helpSheet = true">
+        <v-icon size="20" color="primary">mdi-help-circle-outline</v-icon>
+      </v-btn>
     </div>
 
     <!-- 입력 카드 -->
@@ -382,6 +386,41 @@ const yearlyRows = computed(() => {
       </v-card>
     </template>
   </v-container>
+  <!-- 용어 설명 바텀시트 -->
+  <v-bottom-sheet v-model="helpSheet" max-width="480">
+    <v-card class="glass-dialog" rounded="t-xl">
+      <div class="sheet-handle" />
+      <div class="px-5 pb-2 pt-1">
+        <div class="sheet-title">용어 설명</div>
+      </div>
+      <div class="d-flex flex-column ga-1 px-5 pb-6">
+        <div class="help-item">
+          <div class="help-term">ETF <span class="help-term-en">(Exchange Traded Fund)</span></div>
+          <div class="help-desc">주식처럼 거래소에서 사고팔 수 있는 펀드. SPY(S&amp;P500), QQQ(나스닥100), VTI(미국 전체) 등이 대표적입니다.</div>
+        </div>
+        <v-divider class="my-3" />
+        <div class="help-item">
+          <div class="help-term">DCA <span class="help-term-en">(Dollar Cost Averaging, 분할 매수)</span></div>
+          <div class="help-desc">매월 일정 금액을 꾸준히 투자하는 전략. 가격이 쌀 때 더 많은 수량을, 비쌀 때 더 적은 수량을 매수하게 되어 평균 매수 단가를 낮추는 효과가 있습니다.</div>
+        </div>
+        <v-divider class="my-3" />
+        <div class="help-item">
+          <div class="help-term">백테스트 <span class="help-term-en">(Backtest)</span></div>
+          <div class="help-desc">과거 데이터를 기반으로 투자 전략의 수익률을 시뮬레이션하는 것. 과거 성과가 미래를 보장하지는 않습니다.</div>
+        </div>
+        <v-divider class="my-3" />
+        <div class="help-item">
+          <div class="help-term">CAGR <span class="help-term-en">(Compound Annual Growth Rate, 연평균 복리 수익률)</span></div>
+          <div class="help-desc">투자 기간 전체의 수익률을 연 단위로 환산한 값. 예를 들어 CAGR 10%는 매년 평균 10%씩 복리로 성장했다는 의미입니다.</div>
+        </div>
+        <v-divider class="my-3" />
+        <div class="help-item">
+          <div class="help-term">MDD <span class="help-term-en">(Maximum DrawDown, 최대 낙폭)</span></div>
+          <div class="help-desc">투자 기간 중 고점 대비 최대로 하락한 비율. MDD -40%라면 고점에서 40%까지 떨어진 적이 있다는 뜻으로, 투자 리스크를 가늠하는 지표입니다.</div>
+        </div>
+      </div>
+    </v-card>
+  </v-bottom-sheet>
 </template>
 
 <style scoped>
@@ -516,4 +555,46 @@ const yearlyRows = computed(() => {
 }
 
 .yearly-row:last-child { border-bottom: none; }
+
+/* ── 용어 설명 바텀시트 ─────────────────────────── */
+.glass-dialog {
+  background: var(--fp-surface) !important;
+  border: 1px solid var(--fp-outline) !important;
+}
+
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 99px;
+  background: rgba(var(--v-theme-on-surface), 0.15);
+  margin: 12px auto 16px;
+}
+
+.sheet-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--fp-text);
+  margin-bottom: 4px;
+}
+
+.help-item {}
+
+.help-term {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fp-text);
+  margin-bottom: 4px;
+}
+
+.help-term-en {
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.help-desc {
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(var(--v-theme-on-surface), 0.7);
+}
 </style>
