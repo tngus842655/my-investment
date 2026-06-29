@@ -278,7 +278,11 @@ const buildChart = (pts: MonthlyPoint[], cmpPts: MonthlyPoint[]) => {
   if (pts.length < 2) return null
 
   // 두 시리즈의 최대값 기준 Y축
-  const allEvals = [...pts.map((p) => p.evalAmount), ...cmpPts.map((p) => p.evalAmount)]
+  const allEvals = [
+    ...pts.map((p) => p.evalAmount),
+    ...pts.map((p) => p.totalInvested),
+    ...cmpPts.map((p) => p.evalAmount),
+  ]
   const maxY = Math.max(...allEvals) * 1.08
 
   const toX = (i: number, total: number) => PAD.left + (i / (total - 1)) * PW
