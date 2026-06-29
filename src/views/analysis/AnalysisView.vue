@@ -136,8 +136,8 @@ const timelineMilestones = computed(() => {
     const pct = Math.max(Math.round((pastAsset / T) * 100), 0)
     if (firstPct - pct >= MIN_GAP) {
       pastMilestones.unshift({ year: y, pct, isGoal: false, isPast: true })
-      firstPct = pct
     }
+    firstPct = pct
     if (pct < MIN_GAP) break
   }
 
