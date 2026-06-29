@@ -106,7 +106,7 @@ const progressPct = computed(() => {
   return Math.min(Math.round((C / T) * 100), 100)
 })
 
-// 타임라인 마일스톤: 시작연도 ~ 목표연도 사이 연도들
+// 타임라인 마일스톤: 과거 역산 + 현재 + 미래 예측
 const timelineMilestones = computed(() => {
   const goal = fireGoalYear.value
   const T = targetAsset.value
@@ -120,11 +120,28 @@ const timelineMilestones = computed(() => {
 
   const totalYears = goal.year - currentYear
   const step = totalYears <= 5 ? 1 : totalYears <= 15 ? 3 : totalYears <= 30 ? 5 : totalYears <= 60 ? 10 : 20
+  const MIN_GAP = 8
 
-  const MIN_GAP = 8 // 레이블 간 최소 간격 (%)
-
-  // 과거 데이터가 있으면 가장 오래된 연도부터, 없으면 현재 연도부터 시작
   const nowPct = Math.min(progressPct.value, 100 - MIN_GAP)
+
+  // 과거 연도 역산 (현재 자산 기준으로 n개월 전 자산 추정)
+  const pastMilestones: typeof milestones = []
+  let firstPct = nowPct
+  for (let y = currentYear - step; y >= currentYear - 100; y -= step) {
+    const monthsAgo = (currentYear - y) * 12 + (currentMonth - 1)
+    const pastAsset = r === 0
+      ? C - M * monthsAgo
+      : (C - (M * (Math.pow(1 + r, monthsAgo) - 1)) / r) / Math.pow(1 + r, monthsAgo)
+    if (pastAsset <= 0) break
+    const pct = Math.max(Math.round((pastAsset / T) * 100), 0)
+    if (firstPct - pct >= MIN_GAP) {
+      pastMilestones.unshift({ year: y, pct, isGoal: false, isPast: true })
+      firstPct = pct
+    }
+    if (pct < MIN_GAP) break
+  }
+
+  milestones.push(...pastMilestones)
   milestones.push({ year: currentYear, month: currentMonth, pct: nowPct, isGoal: false, isPast: false })
   let lastPct = nowPct
 
@@ -446,7 +463,7 @@ onMounted(loadData)
                   <div class="pt-milestone-label label-goal">{{ m.year }}.{{ m.month }}</div>
                 </template>
                 <template v-else>
-                  <div class="pt-milestone-label" :class="m.isPast ? 'label-done' : 'label-future'">
+                  <div class="pt-milestone-label" :class="m.isPast ? 'label-past' : m.year === currentYear ? 'label-now' : 'label-future'">
                     {{ m.month ? `${m.year}.${m.month}` : m.year }}
                   </div>
                 </template>
@@ -740,6 +757,8 @@ onMounted(loadData)
   white-space: nowrap;
   margin-top: 4px;
 }
+.label-past   { color: rgba(var(--v-theme-on-surface), 0.25); }
+.label-now    { color: rgb(var(--v-theme-primary)); font-weight: 700; }
 .label-done   { color: rgba(var(--v-theme-primary), 0.6); }
 .label-future { color: rgba(var(--v-theme-on-surface), 0.3); }
 .label-goal   { color: rgb(var(--v-theme-primary)); font-size: 10px; }
