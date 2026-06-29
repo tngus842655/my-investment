@@ -118,7 +118,7 @@ const timelineMilestones = computed(() => {
   const step = totalYears <= 5 ? 1 : totalYears <= 15 ? 3 : totalYears <= 30 ? 5 : totalYears <= 60 ? 10 : 20
 
   const MIN_GAP = 8 // 레이블 간 최소 간격 (%)
-  const nowPct = T > 0 ? Math.min(Math.round((C / T) * 100), 100 - MIN_GAP) : 0
+  const nowPct = Math.min(progressPct.value, 100 - MIN_GAP)
   milestones.push({ year: currentYear, pct: nowPct, isGoal: false, isPast: false })
   let lastPct = nowPct
 
