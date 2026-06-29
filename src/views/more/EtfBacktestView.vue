@@ -467,7 +467,7 @@ const yearlyRows = computed(() => {
               </span>
             </template>
           </v-text-field>
-          <div v-if="result?.currency === 'USD' && monthlyAmount && monthlyAmount > 0" class="monthly-krw-hint">
+          <div v-if="result?.currency !== 'KRW' && monthlyAmount && monthlyAmount > 0" class="monthly-krw-hint">
             ≈ ₩{{ Math.round((monthlyAmount ?? 0) * exchangeRate).toLocaleString() }}원/월
           </div>
         </div>
