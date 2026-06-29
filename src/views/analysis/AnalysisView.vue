@@ -106,28 +106,33 @@ const progressPct = computed(() => {
   return Math.min(Math.round((C / T) * 100), 100)
 })
 
-// 타임라인 마일스톤: 시간 기준 X축 (0% = 지금, 100% = 목표 달성 시점)
+// 타임라인 마일스톤: 시작연도 ~ 목표연도 사이 연도들
 const timelineMilestones = computed(() => {
   const goal = fireGoalYear.value
-  if (!goal || !goal.totalMonths) return []
+  const T = targetAsset.value
+  if (!goal || !T) return []
 
-  const totalMonths = goal.totalMonths
+  const C = currentAsset.value
+  const M = monthlyInvestment.value
+  const r = (annualReturn.value ?? 0) / 100 / 12
+
   const milestones: { year: number; month?: number; pct: number; isGoal: boolean; isPast: boolean }[] = []
 
   const totalYears = goal.year - currentYear
   const step = totalYears <= 5 ? 1 : totalYears <= 15 ? 3 : totalYears <= 30 ? 5 : totalYears <= 60 ? 10 : 20
-  const MIN_GAP = 8
 
-  // 현재 위치: 시간 기준 0%
-  milestones.push({ year: currentYear, month: currentMonth, pct: 0, isGoal: false, isPast: false })
-  let lastPct = 0
+  const MIN_GAP = 8 // 레이블 간 최소 간격 (%)
+
+  // 과거 데이터가 있으면 가장 오래된 연도부터, 없으면 현재 연도부터 시작
+  const nowPct = Math.min(progressPct.value, 100 - MIN_GAP)
+  milestones.push({ year: currentYear, pct: nowPct, isGoal: false, isPast: false })
+  let lastPct = nowPct
 
   for (let y = currentYear + step; y < goal.year; y += step) {
-    // 현재월 기준으로 해당 연도 1월까지의 개월 수
-    const monthsFromNow = (y - currentYear) * 12 - (currentMonth - 1)
-    const pct = Math.min(Math.round((monthsFromNow / totalMonths) * 100), 99)
+    const monthsToYearEnd = (y - currentYear) * 12 - (currentMonth - 1)
+    const yearEndAsset = Math.round(calcAsset(C, M, r, monthsToYearEnd))
+    const pct = Math.min(Math.round((yearEndAsset / T) * 100), 100)
     if (pct - lastPct < MIN_GAP) continue
-    if (100 - pct < MIN_GAP) break
     milestones.push({ year: y, pct, isGoal: false, isPast: false })
     lastPct = pct
   }
@@ -411,9 +416,9 @@ onMounted(loadData)
           <!-- 프로그레스 바 + 마일스톤 -->
           <div class="pt-bar-wrap">
             <div class="pt-bar-bg">
-              <div class="pt-bar-fill" style="width: 0%" />
-              <!-- 현재 위치 마커 (시간 기준 0% = 지금) -->
-              <div class="pt-now-marker" style="left: 0%">
+              <div class="pt-bar-fill" :style="{ width: progressPct + '%' }" />
+              <!-- 현재 위치 마커 -->
+              <div class="pt-now-marker" :style="{ left: progressPct + '%' }">
                 <div class="pt-now-dot" />
               </div>
               <!-- bar 안쪽 수직선 (goal 제외) -->
@@ -433,7 +438,7 @@ onMounted(loadData)
                 v-for="m in timelineMilestones"
                 :key="m.year"
                 class="pt-milestone"
-                :class="{ 'pt-milestone--goal': m.isGoal, 'pt-milestone--now': m.pct === 0 && !m.isGoal }"
+                :class="{ 'pt-milestone--goal': m.isGoal }"
                 :style="{ left: m.pct + '%' }"
               >
                 <template v-if="m.isGoal">
@@ -441,8 +446,8 @@ onMounted(loadData)
                   <div class="pt-milestone-label label-goal">{{ m.year }}.{{ m.month }}</div>
                 </template>
                 <template v-else>
-                  <div class="pt-milestone-label" :class="m.pct === 0 ? 'label-now' : m.isPast ? 'label-done' : 'label-future'">
-                    {{ m.pct === 0 ? `${m.year}.${m.month}` : m.year }}
+                  <div class="pt-milestone-label" :class="m.isPast ? 'label-done' : 'label-future'">
+                    {{ m.year }}
                   </div>
                 </template>
               </div>
@@ -666,11 +671,11 @@ onMounted(loadData)
   min-width: 0%;
 }
 
-/* 현재 위치 마커 (left:0% 기준, 왼쪽 클리핑 방지) */
+/* 현재 위치 마커 */
 .pt-now-marker {
   position: absolute;
   top: 50%;
-  transform: translateX(0);
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -711,11 +716,6 @@ onMounted(loadData)
   align-items: center;
   margin-top: 4px;
 }
-/* 현재 위치(0%) 라벨은 왼쪽 정렬 */
-.pt-milestone.pt-milestone--now {
-  transform: translateX(0);
-  align-items: flex-start;
-}
 .pt-milestone--goal {
   top: 50%;
   transform: translate(-100%, -50%);
@@ -740,7 +740,6 @@ onMounted(loadData)
   white-space: nowrap;
   margin-top: 4px;
 }
-.label-now    { color: rgb(var(--v-theme-primary)); font-weight: 700; }
 .label-done   { color: rgba(var(--v-theme-primary), 0.6); }
 .label-future { color: rgba(var(--v-theme-on-surface), 0.3); }
 .label-goal   { color: rgb(var(--v-theme-primary)); font-size: 10px; }
