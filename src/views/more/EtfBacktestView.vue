@@ -464,29 +464,26 @@ const yearlyRows = computed(() => {
           @keyup.enter="run"
         />
 
-        <div>
-          <v-text-field
-            v-model.number="monthlyAmount"
-            label="월 투자금"
-            variant="outlined"
-            density="compact"
-            rounded="lg"
-            type="number"
-            min="1"
-            :disabled="loading"
-            :error-messages="monthlyAmountError"
-            @keyup.enter="run"
-          >
-            <template #append-inner>
-              <span class="text-caption text-medium-emphasis">
-                {{ result?.currency === 'KRW' ? '원' : 'USD' }}
-              </span>
-            </template>
-          </v-text-field>
-          <div v-if="!monthlyAmountError && result?.currency !== 'KRW' && monthlyAmount && monthlyAmount > 0" class="monthly-krw-hint">
-            ≈ ₩{{ Math.round((monthlyAmount ?? 0) * exchangeRate).toLocaleString() }}원/월
-          </div>
-        </div>
+        <v-text-field
+          v-model.number="monthlyAmount"
+          label="월 투자금"
+          variant="outlined"
+          density="compact"
+          rounded="lg"
+          type="number"
+          min="1"
+          :disabled="loading"
+          :error-messages="monthlyAmountError"
+          :hint="!monthlyAmountError && result?.currency !== 'KRW' && monthlyAmount && monthlyAmount > 0 ? `${fmtMoneyKrw(monthlyAmount, 'USD')}/월` : ''"
+          persistent-hint
+          @keyup.enter="run"
+        >
+          <template #append-inner>
+            <span class="text-caption text-medium-emphasis">
+              {{ result?.currency === 'KRW' ? '원' : 'USD' }}
+            </span>
+          </template>
+        </v-text-field>
 
         <!-- 빠른 선택 -->
         <div>
@@ -899,12 +896,6 @@ const yearlyRows = computed(() => {
   margin-top: 2px;
 }
 
-.monthly-krw-hint {
-  font-size: 11px;
-  color: rgba(var(--v-theme-on-surface), 0.45);
-  margin-top: 4px;
-  padding-left: 4px;
-}
 
 .stat-krw {
   font-size: 10px;
