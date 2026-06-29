@@ -17,6 +17,7 @@ import FireHistoryView from '@/views/more/FireHistoryView.vue'
 import AssetGrowthView from '@/views/more/AssetGrowthView.vue'
 import DividendCalendarView from '@/views/more/DividendCalendarView.vue'
 import EtfAnalysisView from '@/views/more/EtfAnalysisView.vue'
+import EtfBacktestView from '@/views/more/EtfBacktestView.vue'
 import FeedbackView from '@/views/more/FeedbackView.vue'
 import ChangePasswordView from '@/views/more/ChangePasswordView.vue'
 import AdminView from '@/views/admin/AdminView.vue'
@@ -161,6 +162,11 @@ const router = createRouter({
           path: 'etf-analysis',
           name: 'etfAnalysis',
           component: EtfAnalysisView,
+        },
+        {
+          path: 'etf-backtest',
+          name: 'etfBacktest',
+          component: EtfBacktestView,
         },
         {
           path: 'feedback',

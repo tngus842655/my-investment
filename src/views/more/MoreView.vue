@@ -170,14 +170,14 @@ const currentThemeLabel = computed(() => {
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3 menu-disabled">
+      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/etf-backtest')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-history</v-icon></div>
         <div>
           <div class="text-body-2 font-weight-medium">ETF 백테스트</div>
-          <div class="text-caption text-medium-emphasis">과거 데이터 기반 수익률 시뮬레이션</div>
+          <div class="text-caption text-medium-emphasis">과거 DCA 투자 수익률 시뮬레이션</div>
         </div>
         <v-spacer />
-        <v-chip size="x-small" color="primary" variant="tonal">준비중</v-chip>
+        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/dividend-calendar')">
