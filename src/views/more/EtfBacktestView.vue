@@ -135,34 +135,6 @@ const run = async () => {
   }
 }
 
-// ── 공유 ─────────────────────────────────────────────
-const shareResult = async () => {
-  const r = result.value
-  if (!r) return
-  const s = r.summary
-  const text = [
-    `📊 ETF 백테스트 결과 — ${r.ticker}`,
-    `기간: ${fmtYm(s.startYm)} ~ ${fmtYm(s.endYm)} (${periodText.value})`,
-    `월 투자금: ${fmtMoney(monthlyAmount.value ?? 0, r.currency)}`,
-    '',
-    `총 투자원금: ${fmtMoney(s.totalInvested, r.currency)}`,
-    `최종 평가금액: ${fmtMoney(s.evalAmount, r.currency)}`,
-    `총 수익금: ${fmtMoney(s.profit, r.currency)}`,
-    `총 수익률: ${fmtPct(s.totalReturn)}`,
-    `연평균(CAGR): ${fmtPct(s.cagr)}`,
-    `최대 낙폭(MDD): ${fmtPct(s.mdd)}`,
-    '',
-    '— Fire Path 앱에서 확인',
-  ].join('\n')
-
-  if (navigator.share) {
-    await navigator.share({ text }).catch(() => {})
-  } else {
-    await navigator.clipboard.writeText(text)
-    showMessage('결과가 클립보드에 복사되었습니다.', 'success')
-  }
-}
-
 // ── 포맷터 ───────────────────────────────────────────
 const fmtMoney = (v: number, currency: string) => {
   if (currency === 'KRW') return `₩${Math.round(v).toLocaleString()}`
@@ -455,19 +427,14 @@ const yearlyRows = computed(() => {
 
     <!-- 결과 -->
     <template v-if="result">
-      <!-- 기간 헤더 + 공유 버튼 -->
+      <!-- 기간 헤더 -->
       <div class="d-flex align-center justify-space-between mb-3 px-1">
         <div class="text-body-2 font-weight-bold">
           {{ result.name }} ({{ result.ticker }})
         </div>
-        <div class="d-flex align-center ga-2">
-          <div class="period-badge">
-            {{ fmtYm(result.summary.startYm) }} ~ {{ fmtYm(result.summary.endYm) }}
-            <span class="period-duration">{{ periodText }}</span>
-          </div>
-          <v-btn icon variant="text" size="x-small" @click="shareResult">
-            <v-icon size="18" color="primary">mdi-share-variant-outline</v-icon>
-          </v-btn>
+        <div class="period-badge">
+          {{ fmtYm(result.summary.startYm) }} ~ {{ fmtYm(result.summary.endYm) }}
+          <span class="period-duration">{{ periodText }}</span>
         </div>
       </div>
 
