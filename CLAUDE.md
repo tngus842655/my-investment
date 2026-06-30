@@ -4,6 +4,16 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
+## 0. 코딩 완료 후 필수 체크
+
+**수정한 파일이 있으면 반드시 타입 체크를 실행하고 오류가 없는지 확인할 것.**
+
+```bash
+npx tsc --noEmit
+```
+
+오류가 있으면 커밋 전에 수정한다. 오류가 없을 때만 커밋·푸시한다.
+
 ## 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
