@@ -42,6 +42,7 @@ const props = defineProps<{
     memo?: string
   } | null
   initialType?: TransactionType
+  initialAccount?: string
 }>()
 
 const emit = defineEmits<{
@@ -277,6 +278,10 @@ watch(dialog, async (opened) => {
     memo.value = props.initialData.memo ?? ''
   } else {
     reset(false)
+    if (props.initialAccount) {
+      selectedAccountFilter.value = props.initialAccount
+      newAccountName.value = props.initialAccount
+    }
   }
 })
 

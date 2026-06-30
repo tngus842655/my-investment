@@ -31,6 +31,7 @@ const dialog = defineModel<boolean>()
 
 const props = defineProps<{
   initialData?: PortfolioAsset | null
+  initialAccount?: string
 }>()
 
 const emit = defineEmits<{
@@ -164,6 +165,7 @@ watch(dialog, async (opened) => {
     await loadInitialTx(props.initialData.id)
   } else {
     reset(false)
+    if (props.initialAccount) accountName.value = props.initialAccount
   }
 })
 

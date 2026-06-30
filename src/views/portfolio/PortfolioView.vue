@@ -879,7 +879,7 @@ onUnmounted(() => {
     </template>
   </v-container>
 
-  <PortfolioAddDialog v-model="dialog" @saved="loadPortfolios" />
+  <PortfolioAddDialog v-model="dialog" :initial-account="selectedAccount ?? undefined" @saved="loadPortfolios" />
   <PortfolioAddDialog v-model="editDialog" :initial-data="selectedPortfolio" @saved="onSaved" />
 
   <v-dialog v-model="deleteDialog" max-width="320">

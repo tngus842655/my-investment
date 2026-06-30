@@ -667,6 +667,7 @@ onUnmounted(() => {
   <TransactionAddDialog
     v-model="addDialog"
     :initial-type="filter === 'SELL' ? 'SELL' : 'BUY'"
+    :initial-account="selectedAccount ?? undefined"
     @saved="refresh"
   />
 
