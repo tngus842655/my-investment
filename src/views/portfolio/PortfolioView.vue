@@ -841,27 +841,14 @@ onUnmounted(() => {
 
               <!-- 일반 자산 카드 -->
               <template v-else>
-                <!-- 수량 · 평균단가 → 현재가 한 줄 -->
-                <div class="compact-price-row">
-                  <span class="compact-label">{{ item.quantity }}주</span>
-                  <span class="compact-sep">·</span>
-                  <span class="compact-label">{{
-                    formatPrice(item.avg_price, item.currency)
-                  }}</span>
-                  <span class="compact-arrow">→</span>
-                  <template v-if="item.isPriceFallback">
-                    <span class="compact-fail">조회 실패</span>
-                  </template>
-                  <template v-else>
-                    <span class="compact-label">{{
-                      formatPrice(item.currentPrice ?? 0, item.currency)
-                    }}</span>
-                  </template>
-                </div>
-                <!-- 평가금액 + 평가손익 한 줄 -->
-                <div class="d-flex justify-space-between align-center mt-2" style="gap: 6px">
-                  <div class="text-body-2 font-weight-bold text-primary" style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">
-                    {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원
+                <!-- 수량 · 평가금액 | 손익 한 줄 -->
+                <div class="d-flex justify-space-between align-center mt-1" style="gap: 6px">
+                  <div style="min-width: 0; overflow: hidden">
+                    <span class="compact-label">{{ item.quantity }}주</span>
+                    <span class="compact-sep mx-1">·</span>
+                    <span class="text-body-2 font-weight-bold text-primary" style="white-space: nowrap">
+                      {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원
+                    </span>
                   </div>
                   <div
                     class="text-body-2 font-weight-bold"
