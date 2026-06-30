@@ -41,6 +41,9 @@ const isEditMode = computed(() => !!props.initialData)
 
 const ticker = ref('')
 const krSearchQuery = ref('')  // 국내주식 한글 검색어
+const selectedKrStock = ref<{ value: string; name: string } | null>(null)
+
+watch(selectedKrStock, (v) => { ticker.value = v?.value ?? '' })
 const assetType = ref('')
 const currency = ref('KRW')
 const initQuantity = ref('')
@@ -134,6 +137,7 @@ watch(assetType, (newType) => {
   else if (newType === '국내주식' || newType === '현금') currency.value = 'KRW'
   ticker.value = ''
   krSearchQuery.value = ''
+  selectedKrStock.value = null
   if (newType === '현금') {
     ticker.value = '-'
     initQuantity.value = '1'
@@ -146,9 +150,13 @@ watch(dialog, async (opened) => {
   if (!opened) return
   if (props.initialData) {
     ticker.value = props.initialData.ticker
-    krSearchQuery.value = props.initialData.asset_type === '국내주식'
-      ? (KR_STOCK_NAMES[props.initialData.ticker] ?? props.initialData.ticker)
-      : ''
+    if (props.initialData.asset_type === '국내주식') {
+      const name = KR_STOCK_NAMES[props.initialData.ticker] ?? props.initialData.ticker
+      selectedKrStock.value = { value: props.initialData.ticker, name }
+      krSearchQuery.value = name
+    } else {
+      krSearchQuery.value = ''
+    }
     assetType.value = props.initialData.asset_type
     currency.value = props.initialData.currency
     await loadInitialTx(props.initialData.id)
@@ -386,6 +394,7 @@ const save = async () => {
 const reset = (closeDialog = true) => {
   ticker.value = ''
   krSearchQuery.value = ''
+  selectedKrStock.value = null
   assetType.value = ''
   currency.value = 'KRW'
   initQuantity.value = ''
@@ -418,11 +427,11 @@ const reset = (closeDialog = true) => {
         <!-- 국내주식: 한글명 검색 자동완성 -->
         <v-autocomplete
           v-if="assetType === '국내주식'"
-          v-model="ticker"
+          v-model="selectedKrStock"
           v-model:search="krSearchQuery"
           :items="filteredKrItems"
-          item-title="title"
-          item-value="value"
+          item-title="name"
+          return-object
           label="종목 검색"
           placeholder="삼성전자, 카카오 등 종목명 입력"
           prepend-inner-icon="mdi-magnify"
@@ -435,7 +444,11 @@ const reset = (closeDialog = true) => {
           no-data-text="검색 결과가 없습니다"
           clearable
           auto-select-first
-        />
+        >
+          <template #item="{ props: itemProps, item }">
+            <v-list-item v-bind="itemProps" :subtitle="item.raw?.value" />
+          </template>
+        </v-autocomplete>
 
         <!-- 해외주식 / 암호화폐: 기존 텍스트 필드 -->
         <v-text-field
