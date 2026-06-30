@@ -399,7 +399,7 @@ const deletePortfolio = async () => {
 // ── 포맷 유틸 ─────────────────────────────────────
 const formatKrw = (v: number) => Math.round(v).toLocaleString('ko-KR')
 
-// 총합 카드용 한글 축약 표기
+// 총합 카드용 — 1억 이상일 때만 한글 축약, 미만은 숫자 그대로
 const formatKrwShort = (v: number): string => {
   const abs = Math.abs(v)
   const sign = v < 0 ? '-' : ''
@@ -407,10 +407,6 @@ const formatKrwShort = (v: number): string => {
     const eok = Math.floor(abs / 100_000_000)
     const man = Math.round((abs % 100_000_000) / 10_000)
     return man > 0 ? `${sign}${eok}억 ${man.toLocaleString()}만` : `${sign}${eok}억`
-  }
-  if (abs >= 10_000) {
-    const man = Math.round(abs / 10_000)
-    return `${sign}${man.toLocaleString()}만`
   }
   return `${sign}${Math.round(abs).toLocaleString()}`
 }
