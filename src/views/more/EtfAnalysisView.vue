@@ -62,8 +62,8 @@ const inputB = ref('')
 watch(marketA, () => { inputA.value = ''; searchA.value = ''; notFoundA.value = false })
 watch(marketB, () => { inputB.value = ''; searchB.value = ''; notFoundB.value = false })
 
-watch(inputA, () => { notFoundA.value = false })
-watch(inputB, () => { notFoundB.value = false })
+watch(inputA, (v) => { if (v == null) inputA.value = ''; notFoundA.value = false })
+watch(inputB, (v) => { if (v == null) inputB.value = ''; notFoundB.value = false })
 
 const sanitizeTicker = (v: string) => v.replace(/[^A-Za-z0-9.-]/g, '')
 const onInputA = (e: Event) => { inputA.value = sanitizeTicker((e.target as HTMLInputElement).value) }
@@ -343,6 +343,7 @@ const aiData = computed(() => {
         </div>
         <v-autocomplete
           v-if="marketA === 'domestic'"
+          key="autocomplete-a"
           v-model="inputA"
           v-model:search="searchA"
           :items="filteredA"
@@ -368,6 +369,7 @@ const aiData = computed(() => {
         </v-autocomplete>
         <v-text-field
           v-else
+          key="textfield-a"
           v-model="inputA"
           label="티커 (예: SPY, QQQ)"
           variant="outlined"
@@ -396,6 +398,7 @@ const aiData = computed(() => {
         </div>
         <v-autocomplete
           v-if="marketB === 'domestic'"
+          key="autocomplete-b"
           v-model="inputB"
           v-model:search="searchB"
           :items="filteredB"
@@ -421,6 +424,7 @@ const aiData = computed(() => {
         </v-autocomplete>
         <v-text-field
           v-else
+          key="textfield-b"
           v-model="inputB"
           label="비교 티커 (선택)"
           variant="outlined"
