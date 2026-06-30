@@ -5,11 +5,11 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { TICKER_NAMES } from '@/utils/tickerNames'
-import { KR_STOCK_NAMES, KR_ETF_NAMES } from '@/utils/tickerNames.kr'
+import { KR_STOCK_NAMES } from '@/utils/tickerNames.kr'
 import { getStockPrice } from '@/services/market'
 
-// 국내주식 + 국내ETF 검색용: [{ title: '삼성전자 (005930)', value: '005930' }, ...]
-const krStockItems = Object.entries({ ...KR_STOCK_NAMES, ...KR_ETF_NAMES }).map(([code, name]) => ({
+// 국내주식 검색용: [{ title: '삼성전자 (005930)', value: '005930' }, ...]
+const krStockItems = Object.entries(KR_STOCK_NAMES).map(([code, name]) => ({
   title: `${name} (${code})`,
   value: code,
   name,
@@ -49,15 +49,13 @@ const saving = ref(false)
 const loadingInitial = ref(false)
 const existingInitialTxId = ref<string | null>(null)
 
-const assetTypes = ['국내주식', '해외주식', '국내ETF', '해외ETF', '암호화폐']
+const assetTypes = ['국내주식', '해외주식', '암호화폐']
 
 const tickerConfig = computed(() => {
   switch (assetType.value) {
     case '해외주식':
-    case '해외ETF':
-      return { label: '티커', placeholder: assetType.value === '해외ETF' ? 'SPY' : 'AAPL', disabled: false }
+      return { label: '티커', placeholder: 'AAPL', disabled: false }
     case '국내주식':
-    case '국내ETF':
       return { label: '종목코드', placeholder: '005930', disabled: false }
     case '암호화폐':
       return { label: '코인 영문코드', placeholder: 'BTC', disabled: false }
@@ -69,14 +67,12 @@ const tickerConfig = computed(() => {
 })
 
 const currencyLocked = computed(() =>
-  ['해외주식', '국내주식', '국내ETF', '해외ETF'].includes(assetType.value) || (isEditMode.value && assetType.value === '현금'),
+  ['해외주식', '국내주식'].includes(assetType.value) || (isEditMode.value && assetType.value === '현금'),
 )
 
 const currencyHint = computed(() => {
   if (assetType.value === '해외주식') return '해외주식은 USD로 고정됩니다'
   if (assetType.value === '국내주식') return '국내주식은 KRW로 고정됩니다'
-  if (assetType.value === '해외ETF') return '해외ETF는 USD로 고정됩니다'
-  if (assetType.value === '국내ETF') return '국내ETF는 KRW로 고정됩니다'
   if (assetType.value === '현금' && isEditMode.value) return '현금 통화는 수정할 수 없습니다'
   if (assetType.value === '현금') return '원화(KRW)와 달러(USD) 현금은 각각 따로 관리됩니다'
   if (assetType.value === '암호화폐') return '업비트 등 KRW 거래소는 KRW, 바이낸스 등은 USD'
@@ -134,8 +130,8 @@ const loadInitialTx = async (portfolioId: string) => {
 
 watch(assetType, (newType) => {
   if (isEditMode.value) return
-  if (newType === '해외주식' || newType === '해외ETF') currency.value = 'USD'
-  else if (newType === '국내주식' || newType === '국내ETF' || newType === '현금') currency.value = 'KRW'
+  if (newType === '해외주식') currency.value = 'USD'
+  else if (newType === '국내주식' || newType === '현금') currency.value = 'KRW'
   ticker.value = ''
   krSearchQuery.value = ''
   if (newType === '현금') {
@@ -150,8 +146,8 @@ watch(dialog, async (opened) => {
   if (!opened) return
   if (props.initialData) {
     ticker.value = props.initialData.ticker
-    krSearchQuery.value = (props.initialData.asset_type === '국내주식' || props.initialData.asset_type === '국내ETF')
-      ? (KR_STOCK_NAMES[props.initialData.ticker] ?? KR_ETF_NAMES[props.initialData.ticker] ?? props.initialData.ticker)
+    krSearchQuery.value = props.initialData.asset_type === '국내주식'
+      ? (KR_STOCK_NAMES[props.initialData.ticker] ?? props.initialData.ticker)
       : ''
     assetType.value = props.initialData.asset_type
     currency.value = props.initialData.currency
@@ -164,9 +160,9 @@ watch(dialog, async (opened) => {
 const isCrypto = computed(() => assetType.value === '암호화폐')
 const maxPrice = computed(() => {
   if (isCrypto.value) return 999_999_999
-  if (assetType.value === '해외주식' || assetType.value === '해외ETF') return 1_000_000
+  if (assetType.value === '해외주식') return 1_000_000
   if (assetType.value === '현금') return 10_000_000_000
-  return 100_000_000  // 국내주식, 국내ETF
+  return 100_000_000  // 국내주식
 })
 const maxQuantity = computed(() => isCrypto.value ? 99_999_999 : 100_000)      // 암호화폐 1억 / 주식·현금 10만
 
@@ -197,17 +193,17 @@ const handleAvgPrice = (v: string) => {
 }
 
 const tickerMaxLength = computed(() => {
-  if (assetType.value === '해외주식' || assetType.value === '해외ETF') return 5
-  if (assetType.value === '국내주식' || assetType.value === '국내ETF') return 6
+  if (assetType.value === '해외주식') return 5
+  if (assetType.value === '국내주식') return 6
   return 10  // 암호화폐
 })
 
 const tickerError = computed(() => {
   const t = ticker.value?.trim() ?? ''
   if (!t || assetType.value === '현금') return ''
-  if (assetType.value === '국내주식' || assetType.value === '국내ETF') return '' // 자동완성으로 선택하므로 별도 검증 불필요
+  if (assetType.value === '국내주식') return '' // 자동완성으로 선택하므로 별도 검증 불필요
   if (t.length > tickerMaxLength.value) return `티커는 ${tickerMaxLength.value}자 이하로 입력해주세요.`
-  if ((assetType.value === '해외주식' || assetType.value === '해외ETF') && !/^[A-Za-z]{1,5}$/.test(t)) return '티커는 영문자 5자 이하로 입력해주세요. (예: AAPL, SPY)'
+  if (assetType.value === '해외주식' && !/^[A-Za-z]{1,5}$/.test(t)) return '티커는 영문자 5자 이하로 입력해주세요. (예: AAPL)'
   return ''
 })
 
@@ -243,7 +239,7 @@ const save = async () => {
   if (!isValid.value) return
   if (!isEditMode.value && assetType.value !== '현금') {
     const t = ticker.value.trim().toUpperCase()
-    if (assetType.value === '해외주식' || assetType.value === '해외ETF') {
+    if (assetType.value === '해외주식') {
       saving.value = true
       try {
         await getStockPrice(t, '해외주식', 'USD')
@@ -252,7 +248,7 @@ const save = async () => {
         saving.value = false
         return
       }
-    } else if (assetType.value !== '국내주식' && assetType.value !== '국내ETF' && !TICKER_NAMES[t]) {
+    } else if (assetType.value !== '국내주식' && !TICKER_NAMES[t]) {
       showMessage(`등록되지 않은 코인 영문코드입니다. 다시 확인해주세요.`, 'error')
       return
     }
@@ -419,9 +415,9 @@ const reset = (closeDialog = true) => {
           persistent-hint
         />
 
-        <!-- 국내주식/국내ETF: 한글명 검색 자동완성 -->
+        <!-- 국내주식: 한글명 검색 자동완성 -->
         <v-autocomplete
-          v-if="assetType === '국내주식' || assetType === '국내ETF'"
+          v-if="assetType === '국내주식'"
           v-model="ticker"
           v-model:search="krSearchQuery"
           :items="filteredKrItems"
@@ -441,9 +437,9 @@ const reset = (closeDialog = true) => {
           auto-select-first
         />
 
-        <!-- 해외주식 / 해외ETF / 암호화폐: 기존 텍스트 필드 -->
+        <!-- 해외주식 / 암호화폐: 기존 텍스트 필드 -->
         <v-text-field
-          v-else-if="assetType !== '국내주식' && assetType !== '국내ETF'"
+          v-else-if="assetType !== '국내주식'"
           v-model="ticker"
           :label="tickerConfig.label"
           :placeholder="tickerConfig.placeholder"
