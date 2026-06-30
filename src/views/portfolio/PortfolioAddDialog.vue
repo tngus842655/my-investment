@@ -579,16 +579,16 @@ const reset = (closeDialog = true) => {
           </div>
         </template>
 
-        <!-- 합계 프리뷰 -->
-        <div v-if="totalInitialAmount && assetType !== '현금'" class="total-preview mt-1">
-          <span class="total-label">매수 총금액</span>
-          <span class="total-value">{{ totalInitialAmount }}</span>
-        </div>
-
         <!-- 수정 모드: 현재 총 보유수량 표시 -->
         <div v-if="isEditMode && assetType !== '현금' && props.initialData" class="total-preview mt-1">
           <span class="total-label">현재 총 보유수량</span>
           <span class="total-value">{{ props.initialData.quantity.toLocaleString() }}주</span>
+        </div>
+
+        <!-- 합계 프리뷰 -->
+        <div v-if="totalInitialAmount && assetType !== '현금'" class="total-preview mt-1">
+          <span class="total-label">매수 총금액</span>
+          <span class="total-value">{{ totalInitialAmount }}</span>
         </div>
       </v-card-text>
 
