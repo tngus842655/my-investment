@@ -4,7 +4,7 @@ import type { PortfolioAsset } from '@/types/portfolio'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
-import { TICKER_NAMES } from '@/utils/tickerNames'
+import { TICKER_NAMES, getTickerDisplayName } from '@/utils/tickerNames'
 import { KR_STOCK_NAMES, KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 import { getStockPrice } from '@/services/market'
 
@@ -342,7 +342,7 @@ const save = async () => {
             ? currency.value === 'USD'
               ? '현금(달러)'
               : '현금(원화)'
-            : tickerToSave
+            : getTickerDisplayName(tickerToSave)
         const suffix =
           assetType.value === '현금'
             ? `이 [${accountNameToSave}] 계좌에 이미 등록되어 있습니다.`
