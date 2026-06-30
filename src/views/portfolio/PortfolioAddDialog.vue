@@ -5,11 +5,11 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { TICKER_NAMES } from '@/utils/tickerNames'
-import { KR_STOCK_NAMES } from '@/utils/tickerNames.kr'
+import { KR_STOCK_NAMES, KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 import { getStockPrice } from '@/services/market'
 
-// 국내주식 검색용: [{ title: '삼성전자 (005930)', value: '005930' }, ...]
-const krStockItems = Object.entries(KR_STOCK_NAMES).map(([code, name]) => ({
+// 국내주식 + 국내ETF 검색용: [{ title: '삼성전자 (005930)', value: '005930' }, ...]
+const krStockItems = Object.entries({ ...KR_STOCK_NAMES, ...KR_ETF_NAMES }).map(([code, name]) => ({
   title: `${name} (${code})`,
   value: code,
   name,
@@ -151,7 +151,7 @@ watch(dialog, async (opened) => {
   if (props.initialData) {
     ticker.value = props.initialData.ticker
     if (props.initialData.asset_type === '국내주식') {
-      const name = KR_STOCK_NAMES[props.initialData.ticker] ?? props.initialData.ticker
+      const name = KR_STOCK_NAMES[props.initialData.ticker] ?? KR_ETF_NAMES[props.initialData.ticker] ?? props.initialData.ticker
       selectedKrStock.value = { value: props.initialData.ticker, name }
       krSearchQuery.value = name
     } else {
