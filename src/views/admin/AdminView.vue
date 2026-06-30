@@ -180,7 +180,6 @@ onMounted(async () => {
         </v-btn>
         <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-account-plus-outline" class="mb-2" @click="router.push('/admin/signup-log')">
           가입 이력 조회
-          <v-badge v-if="todaySignupCount > 0" :content="todaySignupCount" color="error" inline class="ml-2" />
         </v-btn>
         <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-history" class="mb-2" @click="router.push('/admin/access-history')">
           이력 조회
