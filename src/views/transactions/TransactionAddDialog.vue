@@ -319,7 +319,8 @@ const save = async () => {
         .eq('account_name', accountNameToSave)
         .maybeSingle()
       if (existing) {
-        showMessage(`${tickerToSave} 종목이 이미 등록되어 있습니다. (계좌: ${accountNameToSave})`, 'warning')
+        const displayName = getTickerDisplayName(tickerToSave)
+        showMessage(`${displayName} 종목이 이미 등록되어 있습니다. (계좌: ${accountNameToSave})`, 'warning')
         saving.value = false
         return
       }
