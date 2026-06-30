@@ -468,6 +468,7 @@ const yearlyRows = computed(() =>
           density="compact"
           rounded="lg"
           hide-details
+          clearable
           :disabled="loading"
           @focus="recentTarget = 'main'"
           @input="(e: Event) => { tickerInput = sanitizeTicker((e.target as HTMLInputElement).value) }"
