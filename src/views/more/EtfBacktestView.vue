@@ -826,7 +826,7 @@ const yearlyRows = computed(() => {
       <v-card class="glass-card pa-4" rounded="xl">
         <div class="d-flex align-center justify-space-between mb-3">
           <div class="text-body-2 font-weight-bold">연도별 스냅샷 (연말 기준)</div>
-          <button class="toggle-btn" @click="showRecentOnly = !showRecentOnly">
+          <button v-if="result && result.monthly.length > 5" class="toggle-btn" @click="showRecentOnly = !showRecentOnly">
             {{ showRecentOnly ? '전체 보기' : '최근 5년' }}
           </button>
         </div>
