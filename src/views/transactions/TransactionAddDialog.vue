@@ -136,8 +136,15 @@ const portfolioItems = computed(() => [
         : name
       : p.ticker
     const assetLabel = p.asset_type.replace('주식', '')
-    const accountLabel = !selectedAccountFilter.value && p.account_name && p.account_name !== '기본' ? ` · ${p.account_name}` : ''
-    return { title: `${label} · ${assetLabel}${accountLabel}`, value: p.id }
+    let accountPrefix = ''
+    if (!selectedAccountFilter.value && p.account_name && p.account_name !== '기본') {
+      const acc = p.account_name
+      // 한글은 2자, 영문/숫자는 4자 제한
+      const isKorean = /[ㄱ-ㅎ가-힣]/.test(acc)
+      const truncated = isKorean ? acc.slice(0, 2) : acc.slice(0, 4)
+      accountPrefix = `[${truncated}] `
+    }
+    return { title: `${accountPrefix}${label} · ${assetLabel}`, value: p.id }
   }),
   { title: '+ 새 종목 추가', value: NEW_PORTFOLIO_VALUE },
 ])
