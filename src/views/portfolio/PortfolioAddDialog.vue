@@ -276,10 +276,26 @@ const save = async () => {
     }
 
     if (isEditMode.value && props.initialData) {
+      const newAccountName = accountName.value.trim() || '미지정'
+      // 계좌명 변경 시 중복 체크
+      if (newAccountName !== (props.initialData.account_name ?? '미지정')) {
+        const { data: dup } = await supabase
+          .from('portfolios')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('ticker', props.initialData.ticker)
+          .eq('account_name', newAccountName)
+          .maybeSingle()
+        if (dup) {
+          showMessage(`이미 [${newAccountName}] 계좌에 등록된 종목입니다.`, 'error')
+          saving.value = false
+          return
+        }
+      }
       // 통화 + 계좌명 수정
       const { error } = await supabase
         .from('portfolios')
-        .update({ currency: currency.value, account_name: accountName.value.trim() || '미지정' })
+        .update({ currency: currency.value, account_name: newAccountName })
         .eq('id', props.initialData.id)
       if (error) throw error
 
