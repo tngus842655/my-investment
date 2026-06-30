@@ -498,7 +498,8 @@ const selectedAccount = ref<string | null>(null)
 
 const accountOptions = computed(() => {
   const accounts = [...new Set(portfolios.value.map((p) => p.account_name ?? '미지정'))]
-  return accounts.length > 1 ? accounts : []
+  if (accounts.length <= 1) return []
+  return ['미지정', ...accounts.filter((a) => a !== '미지정')]
 })
 
 const sortedPortfolios = computed(() => {

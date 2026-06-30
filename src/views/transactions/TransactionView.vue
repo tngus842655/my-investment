@@ -47,8 +47,10 @@ const loadAccountOptions = async () => {
     .select('id, account_name')
     .eq('user_id', userId)
   if (!data) return
-  const accounts = [...new Set(data.map((p) => p.account_name ?? '기본'))]
-  accountOptions.value = accounts.length > 1 ? accounts : []
+  const accounts = [...new Set(data.map((p) => p.account_name ?? '미지정'))]
+  accountOptions.value = accounts.length > 1
+    ? ['미지정', ...accounts.filter((a) => a !== '미지정')]
+    : []
   // 초기에는 전체
   accountPortfolioIds.value = data.map((p) => p.id)
 }
