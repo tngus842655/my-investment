@@ -15,8 +15,10 @@ interface Feedback {
   category: string
   title: string
   content: string
+  admin_comment: string | null
+  is_read_by_user: boolean
   created_at: string
-  status: 'NEW' | 'CHECKED' | 'DONE'
+  status: 'RECEIVED' | 'REVIEWING' | 'DONE' | 'REJECTED'
 }
 
 const feedbacks = ref<Feedback[]>([])
@@ -27,19 +29,20 @@ const deleteDialog = ref(false)
 const deleteTarget = ref<Feedback | null>(null)
 const deleteLoading = ref(false)
 
+// 답변 작성 상태
+const commentDraft = ref<Record<string, string>>({})
+const commentSaving = ref<Record<string, boolean>>({})
+
 const categories = ['버그신고', '기능제안', '기타의견']
 
-const statusColor: Record<string, string> = {
-  NEW: 'error',
-  CHECKED: 'warning',
-  DONE: 'success',
+const statusConfig: Record<string, { label: string; color: string }> = {
+  RECEIVED: { label: '접수', color: 'primary' },
+  REVIEWING: { label: '검토중', color: 'warning' },
+  DONE: { label: '반영완료', color: 'success' },
+  REJECTED: { label: '반려', color: 'error' },
 }
 
-const statusLabel: Record<string, string> = {
-  NEW: '미확인',
-  CHECKED: '확인',
-  DONE: '완료',
-}
+const statusOrder: Feedback['status'][] = ['RECEIVED', 'REVIEWING', 'DONE', 'REJECTED']
 
 const filtered = computed(() => {
   let list = feedbacks.value
@@ -49,12 +52,23 @@ const filtered = computed(() => {
   return list
 })
 
+// 상태별 카운트
+const countByStatus = computed(() => {
+  const counts: Record<string, number> = {}
+  for (const s of statusOrder) counts[s] = feedbacks.value.filter(f => f.status === s).length
+  return counts
+})
+const unreadCount = computed(() => feedbacks.value.filter(f => !f.is_read_by_user).length)
+
 const toggleCategory = (cat: string) => {
   categoryFilter.value = categoryFilter.value === cat ? null : cat
 }
 
-const toggleExpand = (id: string) => {
-  expandedId.value = expandedId.value === id ? null : id
+const toggleExpand = (f: Feedback) => {
+  expandedId.value = expandedId.value === f.id ? null : f.id
+  if (expandedId.value === f.id && commentDraft.value[f.id] === undefined) {
+    commentDraft.value[f.id] = f.admin_comment ?? ''
+  }
 }
 
 const KST = 'Asia/Seoul'
@@ -85,9 +99,34 @@ const loadFeedbacks = async () => {
 }
 
 const updateStatus = async (id: string, status: string) => {
-  const { error } = await supabase.from('feedback').update({ status }).eq('id', id)
+  const { error } = await supabase
+    .from('feedback')
+    .update({ status, is_read_by_user: false })
+    .eq('id', id)
   if (error) { showMessage('상태 변경 실패', 'error'); return }
-  feedbacks.value = feedbacks.value.map(f => f.id === id ? { ...f, status: status as Feedback['status'] } : f)
+  feedbacks.value = feedbacks.value.map(f =>
+    f.id === id ? { ...f, status: status as Feedback['status'], is_read_by_user: false } : f,
+  )
+}
+
+const saveComment = async (id: string) => {
+  const comment = (commentDraft.value[id] ?? '').trim()
+  commentSaving.value[id] = true
+  try {
+    const { error } = await supabase
+      .from('feedback')
+      .update({ admin_comment: comment || null, is_read_by_user: false })
+      .eq('id', id)
+    if (error) throw error
+    feedbacks.value = feedbacks.value.map(f =>
+      f.id === id ? { ...f, admin_comment: comment || null, is_read_by_user: false } : f,
+    )
+    showMessage('답변이 저장되었습니다.', 'success')
+  } catch {
+    showMessage('저장 실패', 'error')
+  } finally {
+    commentSaving.value[id] = false
+  }
 }
 
 const confirmDelete = (f: Feedback) => {
@@ -113,7 +152,7 @@ const deleteFeedback = async () => {
 
 <template>
   <v-container class="pa-4 pa-sm-6" style="max-width: 700px">
-    <div class="d-flex align-center ga-3 mb-6">
+    <div class="d-flex align-center ga-3 mb-4">
       <button class="back-btn" @click="router.back()">
         <v-icon size="20">mdi-arrow-left</v-icon>
       </button>
@@ -128,6 +167,21 @@ const deleteFeedback = async () => {
     </template>
 
     <template v-else-if="isAdmin">
+      <!-- 요약 칩 -->
+      <div class="d-flex ga-2 flex-wrap mb-4">
+        <div v-if="unreadCount > 0" class="summary-chip summary-chip--alert">
+          <span class="dot dot--red" />미확인 {{ unreadCount }}건
+        </div>
+        <div
+          v-for="s in statusOrder"
+          :key="s"
+          class="summary-chip"
+        >
+          <span class="dot" :class="`dot--${statusConfig[s].color}`" />
+          {{ statusConfig[s].label }} {{ countByStatus[s] }}
+        </div>
+      </div>
+
       <!-- 검색 + 필터 -->
       <div class="d-flex ga-2 mb-4 flex-wrap align-center">
         <v-text-field
@@ -159,13 +213,19 @@ const deleteFeedback = async () => {
 
       <!-- 카드 목록 -->
       <div v-else class="d-flex flex-column ga-3">
-        <div v-for="f in filtered" :key="f.id" class="feedback-card">
+        <div
+          v-for="f in filtered"
+          :key="f.id"
+          class="feedback-card"
+          :class="{ 'feedback-card--unread': !f.is_read_by_user }"
+        >
           <!-- 상단 행: 상태 + 카테고리 + 날짜 + 삭제 -->
           <div class="d-flex align-center ga-2 mb-2">
             <v-chip size="x-small" color="primary" variant="outlined">{{ f.category }}</v-chip>
-            <v-chip size="x-small" :color="statusColor[f.status]" variant="tonal">
-              {{ statusLabel[f.status] }}
+            <v-chip size="x-small" :color="statusConfig[f.status]?.color ?? 'default'" variant="tonal">
+              {{ statusConfig[f.status]?.label ?? f.status }}
             </v-chip>
+            <v-chip v-if="!f.is_read_by_user" size="x-small" color="error" variant="tonal">미확인</v-chip>
             <v-spacer />
             <span class="date-text">{{ formatDate(f.created_at) }}</span>
             <button class="delete-btn" @click.stop="confirmDelete(f)">
@@ -174,31 +234,58 @@ const deleteFeedback = async () => {
           </div>
 
           <!-- 제목 + 펼치기 -->
-          <div class="d-flex align-center ga-1 mb-1 cursor-pointer" @click="toggleExpand(f.id)">
+          <div class="d-flex align-center ga-1 mb-1 cursor-pointer" @click="toggleExpand(f)">
             <span class="title-text">{{ f.title }}</span>
-            <v-icon size="16" style="opacity:0.4; transition: transform 0.2s" :style="expandedId === f.id ? 'transform:rotate(180deg)' : ''">
-              mdi-chevron-down
-            </v-icon>
+            <v-icon
+              size="16"
+              style="opacity:0.4; transition: transform 0.2s; flex-shrink:0"
+              :style="expandedId === f.id ? 'transform:rotate(180deg)' : ''"
+            >mdi-chevron-down</v-icon>
           </div>
 
           <!-- 이메일 -->
           <div class="email-text mb-3">{{ f.email }}</div>
 
-          <!-- 내용 (펼침) -->
-          <div v-if="expandedId === f.id" class="content-box mb-3">
-            <div class="text-body-2" style="white-space:pre-wrap; line-height:1.7">{{ f.content }}</div>
-          </div>
+          <!-- 펼침 영역 -->
+          <template v-if="expandedId === f.id">
+            <!-- 내용 -->
+            <div class="content-box mb-3">
+              <div class="text-body-2" style="white-space:pre-wrap; line-height:1.7">{{ f.content }}</div>
+            </div>
 
-          <!-- 상태 버튼 -->
-          <div class="d-flex ga-2">
-            <button
-              v-for="(label, key) in statusLabel"
-              :key="key"
-              class="status-btn"
-              :class="{ [`status-btn--${key}`]: f.status === key }"
-              @click="updateStatus(f.id, key)"
-            >{{ label }}</button>
-          </div>
+            <!-- 관리자 답변 작성 -->
+            <div class="answer-editor mb-3">
+              <div class="text-caption font-weight-bold mb-2" style="color: rgba(var(--v-theme-on-surface), 0.6)">
+                관리자 답변
+              </div>
+              <textarea
+                v-model="commentDraft[f.id]"
+                class="comment-textarea"
+                placeholder="답변을 입력하면 사용자에게 표시됩니다. (비워두면 답변 없음으로 처리)"
+                rows="3"
+              />
+              <div class="d-flex justify-end mt-2">
+                <button
+                  class="save-btn"
+                  :disabled="commentSaving[f.id]"
+                  @click="saveComment(f.id)"
+                >
+                  {{ commentSaving[f.id] ? '저장 중...' : '답변 저장' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- 상태 버튼 -->
+            <div class="d-flex ga-2 flex-wrap">
+              <button
+                v-for="s in statusOrder"
+                :key="s"
+                class="status-btn"
+                :class="{ [`status-btn--${s}`]: f.status === s }"
+                @click="updateStatus(f.id, s)"
+              >{{ statusConfig[s].label }}</button>
+            </div>
+          </template>
         </div>
       </div>
     </template>
@@ -247,6 +334,36 @@ const deleteFeedback = async () => {
   border: 1px solid var(--fp-outline) !important;
 }
 
+/* 요약 칩 */
+.summary-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: rgba(var(--v-theme-on-surface), 0.05);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.7);
+}
+.summary-chip--alert {
+  background: rgba(var(--v-theme-error), 0.08);
+  border-color: rgba(var(--v-theme-error), 0.25);
+  color: rgb(var(--v-theme-error));
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot--red { background: rgb(var(--v-theme-error)); }
+.dot--primary { background: rgb(var(--v-theme-primary)); }
+.dot--warning { background: rgb(var(--v-theme-warning)); }
+.dot--success { background: rgb(var(--v-theme-success)); }
+.dot--error { background: rgb(var(--v-theme-error)); }
+
 /* 필터 버튼 */
 .filter-btn {
   padding: 6px 12px;
@@ -272,6 +389,9 @@ const deleteFeedback = async () => {
   border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
   border-radius: 16px;
   padding: 14px 16px;
+}
+.feedback-card--unread {
+  border-left: 3px solid rgb(var(--v-theme-error));
 }
 
 .date-text {
@@ -312,6 +432,43 @@ const deleteFeedback = async () => {
   border: 1px solid rgba(var(--v-theme-on-surface), 0.06);
 }
 
+/* 관리자 답변 에디터 */
+.answer-editor {
+  background: rgba(var(--v-theme-primary), 0.04);
+  border-radius: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(var(--v-theme-primary), 0.12);
+}
+
+.comment-textarea {
+  width: 100%;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: rgb(var(--v-theme-surface));
+  color: rgb(var(--v-theme-on-surface));
+  font-size: 13px;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+  caret-color: rgb(var(--v-theme-primary));
+}
+.comment-textarea::placeholder { color: rgba(var(--v-theme-on-surface), 0.35); }
+
+.save-btn {
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: none;
+  background: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.save-btn:disabled { opacity: 0.5; cursor: default; }
+.save-btn:not(:disabled):active { opacity: 0.8; }
+
 /* 상태 버튼 */
 .status-btn {
   padding: 5px 14px;
@@ -324,12 +481,12 @@ const deleteFeedback = async () => {
   cursor: pointer;
   transition: all 0.15s;
 }
-.status-btn--NEW {
-  border-color: rgb(var(--v-theme-error));
-  background: rgba(var(--v-theme-error), 0.1);
-  color: rgb(var(--v-theme-error));
+.status-btn--RECEIVED {
+  border-color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.1);
+  color: rgb(var(--v-theme-primary));
 }
-.status-btn--CHECKED {
+.status-btn--REVIEWING {
   border-color: rgb(var(--v-theme-warning));
   background: rgba(var(--v-theme-warning), 0.1);
   color: rgb(var(--v-theme-warning));
@@ -338,5 +495,10 @@ const deleteFeedback = async () => {
   border-color: rgb(var(--v-theme-success));
   background: rgba(var(--v-theme-success), 0.1);
   color: rgb(var(--v-theme-success));
+}
+.status-btn--REJECTED {
+  border-color: rgb(var(--v-theme-error));
+  background: rgba(var(--v-theme-error), 0.1);
+  color: rgb(var(--v-theme-error));
 }
 </style>
