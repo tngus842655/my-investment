@@ -449,6 +449,8 @@ const formatPrice = (v: number, currency: string) => {
 }
 
 const formatPercent = (v: number) => (v >= 0 ? '+' : '') + v.toFixed(2) + '%'
+const truncateAccount = (name: string) =>
+  /[ㄱ-ㅎ가-힣]/.test(name) ? name.slice(0, 2) : name.slice(0, 4)
 const formatProfit = (v: number) => (v > 0 ? '+' : '') + formatKrw(v)
 const assetTypeColor = (type: string): string =>
   ({
@@ -794,7 +796,7 @@ onUnmounted(() => {
                       >mdi-chart-line</v-icon
                     >
                   </div>
-                  <div style="min-width: 0; overflow: hidden">
+                  <div style="min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">
                     <template v-if="item.asset_type === '현금'">
                       <span class="ticker-name font-weight-bold">{{
                         getTickerLabel(item.ticker).name
@@ -805,13 +807,12 @@ onUnmounted(() => {
                         getTickerLabel(item.ticker).name
                       }}</span>
                       <span class="ticker-sub ml-1">{{ item.ticker }}</span>
+                      <span v-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
                     </template>
                     <template v-else>
                       <span class="ticker-name font-weight-bold">{{ item.ticker }}</span>
+                      <span v-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
                     </template>
-                    <div v-if="item.account_name && item.account_name !== '미지정'" class="account-tag">
-                      {{ item.account_name }}
-                    </div>
                   </div>
                 </div>
                 <v-chip
@@ -955,7 +956,7 @@ onUnmounted(() => {
   background: rgba(var(--v-theme-primary), 0.1);
   border-radius: 4px;
   padding: 1px 5px;
-  margin-top: 2px;
+  vertical-align: middle;
 }
 
 .compact-price-row {
