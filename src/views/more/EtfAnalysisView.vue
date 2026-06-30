@@ -341,47 +341,47 @@ const aiData = computed(() => {
             <v-btn value="domestic" size="x-small">국내</v-btn>
           </v-btn-toggle>
         </div>
-        <v-autocomplete
-          v-if="marketA === 'domestic'"
-          key="autocomplete-a"
-          v-model="inputA"
-          v-model:search="searchA"
-          :items="filteredA"
-          item-title="name"
-          item-value="value"
-          label="국내 ETF 검색"
-          placeholder="TIGER 미국S&P500 등 종목명 입력"
-          prepend-inner-icon="mdi-magnify"
-          variant="outlined"
-          density="compact"
-          rounded="lg"
-          hide-details
-          clearable
-          auto-select-first
-          no-data-text="검색 결과가 없습니다"
-          :custom-filter="krFilter"
-          class="mb-3"
-          @keyup.enter="fetchInfo"
-        >
-          <template #item="{ props: itemProps, item }">
-            <v-list-item v-bind="itemProps" :subtitle="item.raw.value" />
-          </template>
-        </v-autocomplete>
-        <v-text-field
-          v-else
-          key="textfield-a"
-          v-model="inputA"
-          label="티커 (예: SPY, QQQ)"
-          variant="outlined"
-          density="compact"
-          rounded="lg"
-          hide-details
-          clearable
-          maxlength="10"
-          class="mb-3"
-          @input="onInputA"
-          @keyup.enter="fetchInfo"
-        />
+        <div :key="`field-a-${marketA}`">
+          <v-autocomplete
+            v-if="marketA === 'domestic'"
+            v-model="inputA"
+            v-model:search="searchA"
+            :items="filteredA"
+            item-title="name"
+            item-value="value"
+            label="국내 ETF 검색"
+            placeholder="TIGER 미국S&P500 등 종목명 입력"
+            prepend-inner-icon="mdi-magnify"
+            variant="outlined"
+            density="compact"
+            rounded="lg"
+            hide-details
+            clearable
+            auto-select-first
+            no-data-text="검색 결과가 없습니다"
+            :custom-filter="krFilter"
+            class="mb-3"
+            @keyup.enter="fetchInfo"
+          >
+            <template #item="{ props: itemProps, item }">
+              <v-list-item v-bind="itemProps" :subtitle="item.raw?.value" />
+            </template>
+          </v-autocomplete>
+          <v-text-field
+            v-else
+            v-model="inputA"
+            label="티커 (예: SPY, QQQ)"
+            variant="outlined"
+            density="compact"
+            rounded="lg"
+            hide-details
+            clearable
+            maxlength="10"
+            class="mb-3"
+            @input="onInputA"
+            @keyup.enter="fetchInfo"
+          />
+        </div>
 
         <!-- 구분선 -->
         <div class="d-flex align-center ga-2 mb-3">
@@ -396,47 +396,47 @@ const aiData = computed(() => {
             <v-btn value="domestic" size="x-small">국내</v-btn>
           </v-btn-toggle>
         </div>
-        <v-autocomplete
-          v-if="marketB === 'domestic'"
-          key="autocomplete-b"
-          v-model="inputB"
-          v-model:search="searchB"
-          :items="filteredB"
-          item-title="name"
-          item-value="value"
-          label="국내 ETF 검색"
-          placeholder="TIGER 미국S&P500 등 종목명 입력"
-          prepend-inner-icon="mdi-magnify"
-          variant="outlined"
-          density="compact"
-          rounded="lg"
-          hide-details
-          clearable
-          auto-select-first
-          no-data-text="검색 결과가 없습니다"
-          :custom-filter="krFilter"
-          class="mb-3"
-          @keyup.enter="fetchInfo"
-        >
-          <template #item="{ props: itemProps, item }">
-            <v-list-item v-bind="itemProps" :subtitle="item.raw.value" />
-          </template>
-        </v-autocomplete>
-        <v-text-field
-          v-else
-          key="textfield-b"
-          v-model="inputB"
-          label="비교 티커 (선택)"
-          variant="outlined"
-          density="compact"
-          rounded="lg"
-          hide-details
-          clearable
-          maxlength="10"
-          class="mb-3"
-          @input="onInputB"
-          @keyup.enter="fetchInfo"
-        />
+        <div :key="`field-b-${marketB}`">
+          <v-autocomplete
+            v-if="marketB === 'domestic'"
+            v-model="inputB"
+            v-model:search="searchB"
+            :items="filteredB"
+            item-title="name"
+            item-value="value"
+            label="국내 ETF 검색"
+            placeholder="TIGER 미국S&P500 등 종목명 입력"
+            prepend-inner-icon="mdi-magnify"
+            variant="outlined"
+            density="compact"
+            rounded="lg"
+            hide-details
+            clearable
+            auto-select-first
+            no-data-text="검색 결과가 없습니다"
+            :custom-filter="krFilter"
+            class="mb-3"
+            @keyup.enter="fetchInfo"
+          >
+            <template #item="{ props: itemProps, item }">
+              <v-list-item v-bind="itemProps" :subtitle="item.raw?.value" />
+            </template>
+          </v-autocomplete>
+          <v-text-field
+            v-else
+            v-model="inputB"
+            label="비교 티커 (선택)"
+            variant="outlined"
+            density="compact"
+            rounded="lg"
+            hide-details
+            clearable
+            maxlength="10"
+            class="mb-3"
+            @input="onInputB"
+            @keyup.enter="fetchInfo"
+          />
+        </div>
       </template>
 
       <div class="d-flex align-center ga-2">
