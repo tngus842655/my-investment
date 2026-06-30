@@ -607,7 +607,7 @@ onUnmounted(() => {
       </div>
 
       <!-- 정렬 바 -->
-      <div class="d-flex justify-space-between align-center mb-2">
+      <div class="d-flex justify-space-between align-center mb-1">
         <span style="font-size: 12px; color: rgba(var(--v-theme-on-surface), 0.4)">
           총 {{ sortedPortfolios.length }}개 종목
         </span>
@@ -634,6 +634,7 @@ onUnmounted(() => {
           </v-list>
         </v-menu>
       </div>
+      <p v-if="sortedPortfolios.length > 0" class="swipe-hint">← 카드를 왼쪽으로 밀면 수정/삭제할 수 있어요</p>
 
       <!-- 자산 카드 목록 -->
       <TransitionGroup name="cards" tag="div">
@@ -922,6 +923,13 @@ onUnmounted(() => {
   overflow: hidden;
   border-radius: 20px;
   transition: transform 0.2s ease;
+}
+
+.swipe-hint {
+  font-size: 11px;
+  color: rgba(var(--v-theme-on-surface), 0.35);
+  text-align: center;
+  margin: 0 0 8px;
 }
 
 /* ── 드래그 카드 이동 애니메이션 ── */
