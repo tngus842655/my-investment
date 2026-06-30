@@ -426,11 +426,10 @@ const reset = (closeDialog = true) => {
           label="계좌 구분"
           prepend-inner-icon="mdi-bank-outline"
           variant="outlined"
-          density="comfortable"
+          density="compact"
           maxlength="20"
           placeholder="미지정"
           hint="같은 종목을 여러 계좌로 나눠 관리할 때 사용 (예: 미래에셋, ISA)"
-          persistent-hint
         />
 
         <!-- 자산유형 -->
@@ -440,8 +439,8 @@ const reset = (closeDialog = true) => {
           label="자산유형"
           prepend-inner-icon="mdi-shape"
           variant="outlined"
-          density="comfortable"
-          class="mt-2"
+          density="compact"
+          class="mt-1"
           :disabled="isEditMode"
           :hint="isEditMode ? '자산유형은 수정할 수 없습니다.' : ''"
           :persistent-hint="isEditMode"
@@ -459,8 +458,8 @@ const reset = (closeDialog = true) => {
           placeholder="삼성전자, 카카오 등 종목명 입력"
           prepend-inner-icon="mdi-magnify"
           variant="outlined"
-          density="comfortable"
-          class="mt-2"
+          density="compact"
+          class="mt-1"
           :disabled="isEditMode"
           :hint="isEditMode ? '티커/코드는 수정할 수 없습니다.' : ''"
           :persistent-hint="isEditMode"
@@ -483,8 +482,8 @@ const reset = (closeDialog = true) => {
           :disabled="tickerConfig.disabled || isEditMode"
           prepend-inner-icon="mdi-finance"
           variant="outlined"
-          density="comfortable"
-          class="mt-2"
+          density="compact"
+          class="mt-1"
           :maxlength="tickerMaxLength"
           :hint="isEditMode && assetType !== '현금' ? '티커/코드는 수정할 수 없습니다.' : ''"
           :error-messages="!isEditMode ? tickerError : ''"
@@ -498,19 +497,19 @@ const reset = (closeDialog = true) => {
           label="통화"
           prepend-inner-icon="mdi-cash"
           variant="outlined"
-          density="comfortable"
-          class="mt-2"
+          density="compact"
+          class="mt-1"
           :disabled="currencyLocked"
           :hint="currencyHint"
           :persistent-hint="!!currencyHint"
         />
 
         <!-- 초기 잔고 섹션 -->
-        <div class="section-divider my-4">
+        <div class="section-divider my-2">
           <span>초기 잔고 <span class="optional-label">(거래 기록 이전 보유량)</span></span>
         </div>
 
-        <div class="info-banner mb-3">
+        <div class="info-banner mb-2">
           <v-icon size="14" color="primary" class="mr-1 flex-shrink-0"
             >mdi-information-outline</v-icon
           >
@@ -537,7 +536,7 @@ const reset = (closeDialog = true) => {
             @update:model-value="handleAvgPrice"
             label="보유금액"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             rounded="lg"
             :prepend-inner-icon="currency === 'USD' ? 'mdi-currency-usd' : 'mdi-currency-krw'"
             placeholder="0"
@@ -558,7 +557,7 @@ const reset = (closeDialog = true) => {
               :max="maxQuantity"
               prepend-inner-icon="mdi-counter"
               variant="outlined"
-              density="comfortable"
+              density="compact"
               rounded="lg"
               placeholder="0"
               :disabled="loadingInitial"
@@ -569,7 +568,7 @@ const reset = (closeDialog = true) => {
               @update:model-value="handleAvgPrice"
               label="평균단가"
               variant="outlined"
-              density="comfortable"
+              density="compact"
               rounded="lg"
               :prepend-inner-icon="currency === 'USD' ? 'mdi-currency-usd' : 'mdi-currency-krw'"
               placeholder="0"
