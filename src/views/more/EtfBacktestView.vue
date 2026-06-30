@@ -438,7 +438,7 @@ const yearlyRows = computed(() =>
       >
         <div class="text-body-2 font-weight-bold">조회 조건</div>
         <div class="d-flex align-center ga-2 text-caption text-medium-emphasis">
-          <span>{{ tickerInput }}{{ compareInput ? ` vs ${compareInput}` : '' }} · {{ startYm.slice(0, 4) }}년~</span>
+          <span>{{ tickerInput }}{{ compareInput ? ` vs ${compareInput}` : '' }}{{ startYm ? ` · ${startYm.slice(0, 4)}년~` : '' }}</span>
           <v-icon size="18">{{ inputCollapsed ? 'mdi-chevron-down' : 'mdi-chevron-up' }}</v-icon>
         </div>
       </div>

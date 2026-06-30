@@ -71,8 +71,8 @@ watch(marketB, () => { inputB.value = ''; searchB.value = ''; selectedB.value = 
 watch(selectedA, (v) => { inputA.value = v?.value ?? '' })
 watch(selectedB, (v) => { inputB.value = v?.value ?? '' })
 
-watch(inputA, (v) => { if (v == null) inputA.value = ''; notFoundA.value = false })
-watch(inputB, (v) => { if (v == null) inputB.value = ''; notFoundB.value = false })
+watch(inputA, (v) => { if (v == null) { inputA.value = '' }; notFoundA.value = false })
+watch(inputB, (v) => { if (v == null) { inputB.value = '' }; notFoundB.value = false })
 
 const sanitizeTicker = (v: string) => v.replace(/[^A-Za-z0-9.-]/g, '')
 const onInputA = (e: Event) => { inputA.value = sanitizeTicker((e.target as HTMLInputElement).value) }
