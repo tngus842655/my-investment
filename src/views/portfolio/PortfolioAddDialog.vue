@@ -415,11 +415,11 @@ const reset = (closeDialog = true) => {
 <template>
   <v-dialog v-model="dialog" max-width="500">
     <v-card rounded="xl" class="glass-dialog">
-      <v-card-title class="text-h5 font-weight-bold py-4">
+      <v-card-title class="text-h5 font-weight-bold pt-4 pb-2 px-4">
         {{ isEditMode ? '자산 수정' : '자산 추가' }}
       </v-card-title>
 
-      <v-card-text>
+      <v-card-text class="px-4 pt-0 pb-2">
         <!-- 계좌 구분 -->
         <v-text-field
           v-model="accountName"
@@ -430,6 +430,7 @@ const reset = (closeDialog = true) => {
           maxlength="20"
           placeholder="미지정"
           hint="같은 종목을 여러 계좌로 나눠 관리할 때 사용 (예: 미래에셋, ISA)"
+          @blur="if (!accountName.trim()) accountName = '미지정'"
         />
 
         <!-- 자산유형 -->
@@ -585,7 +586,7 @@ const reset = (closeDialog = true) => {
         </div>
       </v-card-text>
 
-      <v-card-actions class="pa-4">
+      <v-card-actions class="px-4 py-2">
         <v-btn variant="text" :disabled="saving" @click="reset()">취소</v-btn>
         <v-spacer />
         <v-btn color="primary" :disabled="!isValid" :loading="saving" @click="save">
