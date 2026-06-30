@@ -402,7 +402,7 @@ const formatKrw = (v: number) => Math.round(v).toLocaleString('ko-KR')
 // 화면 너비 감지 — 360px 미만(폴드 등 좁은 화면)이면 한글 축약
 const windowWidth = ref(window.innerWidth)
 const onResize = () => { windowWidth.value = window.innerWidth }
-const isNarrowScreen = computed(() => windowWidth.value < 360)
+const isNarrowScreen = computed(() => windowWidth.value < 420)
 
 const formatKrwShort = (v: number): string => {
   const abs = Math.abs(v)
