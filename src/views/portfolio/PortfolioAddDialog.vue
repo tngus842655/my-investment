@@ -4,7 +4,7 @@ import type { PortfolioAsset } from '@/types/portfolio'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
-import { TICKER_NAMES } from '@/utils/tickerNames'
+import { TICKER_NAMES, getTickerDisplayName } from '@/utils/tickerNames'
 import { KR_STOCK_NAMES, KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 import { getStockPrice } from '@/services/market'
 
@@ -31,6 +31,7 @@ const dialog = defineModel<boolean>()
 
 const props = defineProps<{
   initialData?: PortfolioAsset | null
+  initialAccount?: string
 }>()
 
 const emit = defineEmits<{
@@ -42,6 +43,7 @@ const isEditMode = computed(() => !!props.initialData)
 const ticker = ref('')
 const krSearchQuery = ref('')  // 국내주식 한글 검색어
 const selectedKrStock = ref<{ value: string; name: string } | null>(null)
+const accountName = ref('미지정')
 
 watch(selectedKrStock, (v) => { ticker.value = v?.value ?? '' })
 const assetType = ref('')
@@ -159,9 +161,11 @@ watch(dialog, async (opened) => {
     }
     assetType.value = props.initialData.asset_type
     currency.value = props.initialData.currency
+    accountName.value = props.initialData.account_name ?? '미지정'
     await loadInitialTx(props.initialData.id)
   } else {
     reset(false)
+    if (props.initialAccount) accountName.value = props.initialAccount
   }
 })
 
@@ -272,10 +276,26 @@ const save = async () => {
     }
 
     if (isEditMode.value && props.initialData) {
-      // 통화 수정
+      const newAccountName = accountName.value.trim() || '미지정'
+      // 계좌명 변경 시 중복 체크
+      if (newAccountName !== (props.initialData.account_name ?? '미지정')) {
+        const { data: dup } = await supabase
+          .from('portfolios')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('ticker', props.initialData.ticker)
+          .eq('account_name', newAccountName)
+          .maybeSingle()
+        if (dup) {
+          showMessage(`이미 [${newAccountName}] 계좌에 등록된 종목입니다.`, 'error')
+          saving.value = false
+          return
+        }
+      }
+      // 통화 + 계좌명 수정
       const { error } = await supabase
         .from('portfolios')
-        .update({ currency: currency.value })
+        .update({ currency: currency.value, account_name: newAccountName })
         .eq('id', props.initialData.id)
       if (error) throw error
 
@@ -326,11 +346,13 @@ const save = async () => {
             ? 'CASH_USD'
             : 'CASH_KRW'
           : (ticker.value?.trim() ?? '').toUpperCase()
+      const accountNameToSave = accountName.value.trim() || '미지정'
       const { data: existing } = await supabase
         .from('portfolios')
         .select('id')
         .eq('user_id', user.id)
         .eq('ticker', tickerToSave)
+        .eq('account_name', accountNameToSave)
         .maybeSingle()
       if (existing) {
         const label =
@@ -338,11 +360,11 @@ const save = async () => {
             ? currency.value === 'USD'
               ? '현금(달러)'
               : '현금(원화)'
-            : tickerToSave
+            : getTickerDisplayName(tickerToSave)
         const suffix =
           assetType.value === '현금'
-            ? '이 이미 등록되어 있습니다.'
-            : ' 종목이 이미 등록되어 있습니다.'
+            ? `이 [${accountNameToSave}] 계좌에 이미 등록되어 있습니다.`
+            : ` 종목이 [${accountNameToSave}] 계좌에 이미 등록되어 있습니다.`
         showMessage(`${label}${suffix}`, 'warning')
         saving.value = false
         return
@@ -355,6 +377,7 @@ const save = async () => {
           ticker: tickerToSave,
           asset_type: assetType.value,
           currency: currency.value,
+          account_name: accountNameToSave,
           quantity: 0,
           avg_price: 0,
         })
@@ -397,6 +420,7 @@ const reset = (closeDialog = true) => {
   selectedKrStock.value = null
   assetType.value = ''
   currency.value = 'KRW'
+  accountName.value = '미지정'
   initQuantity.value = ''
   initAvgPrice.value = ''
   existingInitialTxId.value = null
@@ -407,11 +431,24 @@ const reset = (closeDialog = true) => {
 <template>
   <v-dialog v-model="dialog" max-width="500">
     <v-card rounded="xl" class="glass-dialog">
-      <v-card-title class="text-h5 font-weight-bold py-4">
+      <v-card-title class="text-h5 font-weight-bold pt-4 pb-2 px-4">
         {{ isEditMode ? '자산 수정' : '자산 추가' }}
       </v-card-title>
 
-      <v-card-text>
+      <v-card-text class="px-4 pt-0 pb-2">
+        <!-- 계좌 구분 -->
+        <v-text-field
+          v-model="accountName"
+          label="계좌 구분"
+          prepend-inner-icon="mdi-bank-outline"
+          variant="outlined"
+          density="compact"
+          maxlength="20"
+          placeholder="미지정"
+          hint="같은 종목을 여러 계좌로 나눠 관리할 때 사용 (예: 미래에셋, ISA)"
+          @blur="() => { if (!accountName.trim()) accountName = '미지정' }"
+        />
+
         <!-- 자산유형 -->
         <v-select
           v-model="assetType"
@@ -419,9 +456,11 @@ const reset = (closeDialog = true) => {
           label="자산유형"
           prepend-inner-icon="mdi-shape"
           variant="outlined"
+          density="compact"
+          class="mt-1"
           :disabled="isEditMode"
           :hint="isEditMode ? '자산유형은 수정할 수 없습니다.' : ''"
-          persistent-hint
+          :persistent-hint="isEditMode"
         />
 
         <!-- 국내주식: 한글명 검색 자동완성 -->
@@ -436,10 +475,11 @@ const reset = (closeDialog = true) => {
           placeholder="삼성전자, 카카오 등 종목명 입력"
           prepend-inner-icon="mdi-magnify"
           variant="outlined"
-          class="mt-3"
+          density="compact"
+          class="mt-1"
           :disabled="isEditMode"
           :hint="isEditMode ? '티커/코드는 수정할 수 없습니다.' : ''"
-          persistent-hint
+          :persistent-hint="isEditMode"
           :custom-filter="krFilter"
           no-data-text="검색 결과가 없습니다"
           clearable
@@ -459,11 +499,12 @@ const reset = (closeDialog = true) => {
           :disabled="tickerConfig.disabled || isEditMode"
           prepend-inner-icon="mdi-finance"
           variant="outlined"
-          class="mt-3"
+          density="compact"
+          class="mt-1"
           :maxlength="tickerMaxLength"
           :hint="isEditMode && assetType !== '현금' ? '티커/코드는 수정할 수 없습니다.' : ''"
           :error-messages="!isEditMode ? tickerError : ''"
-          persistent-hint
+          :persistent-hint="isEditMode"
         />
 
         <!-- 통화 -->
@@ -473,26 +514,27 @@ const reset = (closeDialog = true) => {
           label="통화"
           prepend-inner-icon="mdi-cash"
           variant="outlined"
-          class="mt-3"
+          density="compact"
+          class="mt-1"
           :disabled="currencyLocked"
           :hint="currencyHint"
-          persistent-hint
+          :persistent-hint="!!currencyHint"
         />
 
-        <!-- 초기 잔고 섹션 -->
-        <div class="section-divider my-4">
-          <span>초기 잔고 <span class="optional-label">(거래 기록 이전 보유량)</span></span>
+        <!-- 보유 내역 섹션 -->
+        <div class="section-divider my-2">
+          <span>{{ isEditMode ? '초기 잔고' : '현재 보유 내역' }}</span>
         </div>
 
-        <div class="info-banner mb-3">
+        <div class="info-banner mb-2">
           <v-icon size="14" color="primary" class="mr-1 flex-shrink-0"
             >mdi-information-outline</v-icon
           >
           <span class="text-caption">
             {{
               isEditMode
-                ? '매수·매도 거래 이전에 이미 보유하던 수량/단가입니다. 수정 시 이후 거래와 합산해 재계산됩니다.'
-                : '앱 사용 전부터 보유하던 수량/단가를 입력하세요. 이후 매수·매도 거래와 합산됩니다.'
+                ? '앱에 최초 입력한 잔고입니다. 이후 거래 내역은 거래 메뉴에서 수정하세요.'
+                : '현재 보유 중인 수량과 평균 매수가를 입력하세요. 이후 거래 내역과 합산되어 손익이 계산됩니다.'
             }}
           </span>
         </div>
@@ -511,7 +553,7 @@ const reset = (closeDialog = true) => {
             @update:model-value="handleAvgPrice"
             label="보유금액"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             rounded="lg"
             :prepend-inner-icon="currency === 'USD' ? 'mdi-currency-usd' : 'mdi-currency-krw'"
             placeholder="0"
@@ -532,7 +574,7 @@ const reset = (closeDialog = true) => {
               :max="maxQuantity"
               prepend-inner-icon="mdi-counter"
               variant="outlined"
-              density="comfortable"
+              density="compact"
               rounded="lg"
               placeholder="0"
               :disabled="loadingInitial"
@@ -543,7 +585,7 @@ const reset = (closeDialog = true) => {
               @update:model-value="handleAvgPrice"
               label="평균단가"
               variant="outlined"
-              density="comfortable"
+              density="compact"
               rounded="lg"
               :prepend-inner-icon="currency === 'USD' ? 'mdi-currency-usd' : 'mdi-currency-krw'"
               placeholder="0"
@@ -553,6 +595,12 @@ const reset = (closeDialog = true) => {
           </div>
         </template>
 
+        <!-- 수정 모드: 현재 총 보유수량 표시 -->
+        <div v-if="isEditMode && assetType !== '현금' && props.initialData" class="total-preview mt-1">
+          <span class="total-label">현재 총 보유수량</span>
+          <span class="total-value">{{ props.initialData.quantity.toLocaleString() }}주</span>
+        </div>
+
         <!-- 합계 프리뷰 -->
         <div v-if="totalInitialAmount && assetType !== '현금'" class="total-preview mt-1">
           <span class="total-label">매수 총금액</span>
@@ -560,7 +608,7 @@ const reset = (closeDialog = true) => {
         </div>
       </v-card-text>
 
-      <v-card-actions class="pa-4">
+      <v-card-actions class="px-4 py-2">
         <v-btn variant="text" :disabled="saving" @click="reset()">취소</v-btn>
         <v-spacer />
         <v-btn color="primary" :disabled="!isValid" :loading="saving" @click="save">

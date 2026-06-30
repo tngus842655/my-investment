@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { prefetchTickerLogos } from '@/services/tickerLogo'
 import { supabase } from '@/services/supabase'
 import PortfolioAddDialog from './PortfolioAddDialog.vue'
@@ -399,6 +399,32 @@ const deletePortfolio = async () => {
 // ── 포맷 유틸 ─────────────────────────────────────
 const formatKrw = (v: number) => Math.round(v).toLocaleString('ko-KR')
 
+// 화면 너비 감지 — 360px 미만(폴드 등 좁은 화면)이면 한글 축약
+const windowWidth = ref(window.innerWidth)
+const onResize = () => { windowWidth.value = window.innerWidth }
+const isNarrowScreen = computed(() => windowWidth.value < 420)
+
+const formatKrwShort = (v: number): string => {
+  const abs = Math.abs(v)
+  const sign = v < 0 ? '-' : ''
+  if (abs >= 100_000_000) {
+    const eok = (abs / 100_000_000).toFixed(2).replace(/\.?0+$/, '')
+    return `${sign}${eok}억`
+  }
+  if (abs >= 10_000) {
+    const man = Math.round(abs / 10_000)
+    return `${sign}${man.toLocaleString()}만`
+  }
+  return `${sign}${Math.round(abs).toLocaleString()}`
+}
+
+// 총합 카드용 — 좁은 화면이면 한글 축약, 아니면 숫자 그대로
+const formatSummaryKrw = (v: number) => isNarrowScreen.value ? formatKrwShort(v) : formatKrw(v)
+const formatSummaryProfit = (v: number) =>
+  isNarrowScreen.value
+    ? (v > 0 ? '+' : '') + formatKrwShort(v)
+    : formatProfit(v)
+
 // 평균단가/현재가 표시 — KRW는 금액이 크면 축약, USD는 소수점 처리
 const formatPrice = (v: number, currency: string) => {
   if (currency === 'KRW') {
@@ -423,6 +449,8 @@ const formatPrice = (v: number, currency: string) => {
 }
 
 const formatPercent = (v: number) => (v >= 0 ? '+' : '') + v.toFixed(2) + '%'
+const truncateAccount = (name: string) =>
+  /[ㄱ-ㅎ가-힣]/.test(name) ? name.slice(0, 2) : name.slice(0, 4)
 const formatProfit = (v: number) => (v > 0 ? '+' : '') + formatKrw(v)
 const assetTypeColor = (type: string): string =>
   ({
@@ -467,19 +495,32 @@ const setSort = (key: SortKey) => {
   closeSwipe()
 }
 
+// ── 계좌 필터 ─────────────────────────────────────
+const selectedAccount = ref<string | null>(null)
+
+const accountOptions = computed(() => {
+  const accounts = [...new Set(portfolios.value.map((p) => p.account_name ?? '미지정'))]
+  if (accounts.length <= 1) return []
+  return ['미지정', ...accounts.filter((a) => a !== '미지정').sort((a, b) => a.localeCompare(b, 'ko'))]
+})
+
 const sortedPortfolios = computed(() => {
-  if (sortKey.value === 'custom') return portfolios.value
-  const list = [...portfolios.value]
-  switch (sortKey.value) {
-    case 'eval':   return list.sort((a, b) => (b.evaluationAmountKrw ?? 0) - (a.evaluationAmountKrw ?? 0))
-    case 'profit': return list.sort((a, b) => (b.profitAmountKrw ?? 0) - (a.profitAmountKrw ?? 0))
-    case 'rate':   return list.sort((a, b) => (b.profitRate ?? 0) - (a.profitRate ?? 0))
-    case 'name': {
-      const getName = (ticker: string) => TICKER_NAMES[ticker.toUpperCase()] ?? ticker
-      return list.sort((a, b) => getName(a.ticker).localeCompare(getName(b.ticker), 'ko'))
+  const base = (() => {
+    if (sortKey.value === 'custom') return portfolios.value
+    const list = [...portfolios.value]
+    switch (sortKey.value) {
+      case 'eval':   return list.sort((a, b) => (b.evaluationAmountKrw ?? 0) - (a.evaluationAmountKrw ?? 0))
+      case 'profit': return list.sort((a, b) => (b.profitAmountKrw ?? 0) - (a.profitAmountKrw ?? 0))
+      case 'rate':   return list.sort((a, b) => (b.profitRate ?? 0) - (a.profitRate ?? 0))
+      case 'name': {
+        const getName = (ticker: string) => TICKER_NAMES[ticker.toUpperCase()] ?? ticker
+        return list.sort((a, b) => getName(a.ticker).localeCompare(getName(b.ticker), 'ko'))
+      }
+      default:       return list
     }
-    default:       return list
-  }
+  })()
+  if (!selectedAccount.value) return base
+  return base.filter((p) => (p.account_name ?? '미지정') === selectedAccount.value)
 })
 
 const onGlobalMouseUp = () => {
@@ -493,6 +534,7 @@ onMounted(async () => {
   window.addEventListener('mousemove', onDragMove)
   window.addEventListener('touchmove', onDragMove, { passive: false })
   window.addEventListener('touchend', endDrag)
+  window.addEventListener('resize', onResize)
 })
 onUnmounted(() => {
   dragCloneEl?.remove()
@@ -500,6 +542,7 @@ onUnmounted(() => {
   window.removeEventListener('mousemove', onDragMove)
   window.removeEventListener('touchmove', onDragMove)
   window.removeEventListener('touchend', endDrag)
+  window.removeEventListener('resize', onResize)
 })
 </script>
 
@@ -579,21 +622,18 @@ onUnmounted(() => {
         <div class="summary-grid">
           <div class="summary-row">
             <span class="text-caption text-medium-emphasis">매입금액</span>
-            <span class="text-caption font-weight-medium">{{ formatKrw(totalCostKrw) }}</span>
+            <span class="text-caption font-weight-medium">{{ formatSummaryKrw(totalCostKrw) }}</span>
           </div>
           <div class="summary-row">
             <span class="text-caption text-medium-emphasis">평가손익</span>
             <span
               class="text-caption font-weight-medium"
               :class="totalProfitAmountKrw >= 0 ? 'text-success' : 'text-error'"
-              >{{ formatProfit(totalProfitAmountKrw) }}</span
-            >
+            >{{ formatSummaryProfit(totalProfitAmountKrw) }}</span>
           </div>
           <div class="summary-row">
             <span class="text-caption text-medium-emphasis">평가금액</span>
-            <span class="text-caption font-weight-medium">{{
-              formatKrw(totalEvaluationAmountKrw)
-            }}</span>
+            <span class="text-caption font-weight-medium">{{ formatSummaryKrw(totalEvaluationAmountKrw) }}</span>
           </div>
           <div class="summary-row">
             <span class="text-caption text-medium-emphasis">수익률(%)</span>
@@ -604,6 +644,22 @@ onUnmounted(() => {
             >
           </div>
         </div>
+      </div>
+
+      <!-- 계좌 필터 -->
+      <div v-if="accountOptions.length > 0" class="account-filter-row mb-2">
+        <button
+          class="account-chip"
+          :class="{ 'account-chip-active': selectedAccount === null }"
+          @click="selectedAccount = null"
+        >전체</button>
+        <button
+          v-for="acc in accountOptions"
+          :key="acc"
+          class="account-chip"
+          :class="{ 'account-chip-active': selectedAccount === acc }"
+          @click="selectedAccount = acc"
+        >{{ acc }}</button>
       </div>
 
       <!-- 정렬 바 -->
@@ -640,7 +696,7 @@ onUnmounted(() => {
         <div
           v-for="item in sortedPortfolios"
           :key="item.id"
-          class="portfolio-card-wrap mb-2"
+          class="portfolio-card-wrap mb-1"
           :data-id="item.id"
           :style="draggingId === item.id ? { opacity: '0', pointerEvents: 'none' } : {}"
           @click="swipedId && swipedId !== item.id ? closeSwipe() : undefined"
@@ -667,7 +723,7 @@ onUnmounted(() => {
             @mouseup="(e) => onSwipeMouseUp(e, item.id)"
           >
             <div
-              class="glass-card asset-card pa-3"
+              class="glass-card asset-card pa-2"
               :class="
                 item.asset_type === '현금'
                   ? 'border-cash-left'
@@ -677,8 +733,8 @@ onUnmounted(() => {
               "
             >
               <!-- 상단: 종목명 + 수익률 + 드래그 핸들 -->
-              <div class="d-flex justify-space-between align-center mb-2">
-                <div class="d-flex align-center ga-2">
+              <div class="d-flex justify-space-between align-center mb-1" style="gap: 6px">
+                <div class="d-flex align-center ga-2" style="min-width: 0; flex: 1">
                   <v-icon
                     v-if="sortKey === 'custom'"
                     class="drag-handle"
@@ -740,20 +796,22 @@ onUnmounted(() => {
                       >mdi-chart-line</v-icon
                     >
                   </div>
-                  <div>
+                  <div style="min-width: 0; overflow: hidden; display: flex; align-items: center; gap: 4px">
                     <template v-if="item.asset_type === '현금'">
-                      <span class="text-body-1 font-weight-bold">{{
+                      <span class="ticker-name font-weight-bold">{{
                         getTickerLabel(item.ticker).name
                       }}</span>
                     </template>
                     <template v-else-if="getTickerLabel(item.ticker).showTicker">
-                      <span class="text-body-1 font-weight-bold">{{
+                      <span class="ticker-name font-weight-bold">{{
                         getTickerLabel(item.ticker).name
                       }}</span>
-                      <span class="ticker-sub ml-1">{{ item.ticker }}</span>
+                      <span v-if="item.currency === 'USD'" class="ticker-sub ml-1">{{ item.ticker }}</span>
+                      <span v-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
                     </template>
                     <template v-else>
-                      <span class="text-body-1 font-weight-bold">{{ item.ticker }}</span>
+                      <span class="ticker-name font-weight-bold">{{ item.ticker }}</span>
+                      <span v-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
                     </template>
                   </div>
                 </div>
@@ -762,6 +820,7 @@ onUnmounted(() => {
                   :color="(item.profitRate ?? 0) >= 0 ? 'success' : 'error'"
                   size="x-small"
                   variant="tonal"
+                  style="flex-shrink: 0"
                 >
                   {{ formatPercent(item.profitRate ?? 0) }}
                 </v-chip>
@@ -783,31 +842,19 @@ onUnmounted(() => {
 
               <!-- 일반 자산 카드 -->
               <template v-else>
-                <!-- 수량 · 평균단가 → 현재가 한 줄 -->
-                <div class="compact-price-row">
-                  <span class="compact-label">{{ item.quantity }}주</span>
-                  <span class="compact-sep">·</span>
-                  <span class="compact-label">{{
-                    formatPrice(item.avg_price, item.currency)
-                  }}</span>
-                  <span class="compact-arrow">→</span>
-                  <template v-if="item.isPriceFallback">
-                    <span class="compact-fail">조회 실패</span>
-                  </template>
-                  <template v-else>
-                    <span class="compact-label">{{
-                      formatPrice(item.currentPrice ?? 0, item.currency)
-                    }}</span>
-                  </template>
-                </div>
-                <!-- 평가금액 + 평가손익 한 줄 -->
-                <div class="d-flex justify-space-between align-center mt-2">
-                  <div class="text-body-2 font-weight-bold text-primary">
-                    {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원
+                <!-- 수량 · 평가금액 | 손익 한 줄 -->
+                <div class="d-flex justify-space-between align-center mt-1" style="gap: 6px">
+                  <div style="min-width: 0; overflow: hidden">
+                    <span class="compact-label">{{ item.quantity }}주</span>
+                    <span class="compact-sep mx-1">·</span>
+                    <span class="text-body-2 font-weight-bold text-primary" style="white-space: nowrap">
+                      {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원
+                    </span>
                   </div>
                   <div
                     class="text-body-2 font-weight-bold"
                     :class="(item.profitAmountKrw ?? 0) >= 0 ? 'text-success' : 'text-error'"
+                    style="flex-shrink: 0; white-space: nowrap"
                   >
                     {{ formatProfit(item.profitAmountKrw ?? 0) }}원
                   </div>
@@ -821,7 +868,7 @@ onUnmounted(() => {
     </template>
   </v-container>
 
-  <PortfolioAddDialog v-model="dialog" @saved="loadPortfolios" />
+  <PortfolioAddDialog v-model="dialog" :initial-account="selectedAccount ?? undefined" @saved="loadPortfolios" />
   <PortfolioAddDialog v-model="editDialog" :initial-data="selectedPortfolio" @saved="onSaved" />
 
   <v-dialog v-model="deleteDialog" max-width="320">
@@ -852,9 +899,9 @@ onUnmounted(() => {
 
 
 .ticker-logo-wrap {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
   background: rgba(var(--v-theme-on-surface), 0.05);
   display: flex;
   align-items: center;
@@ -863,8 +910,8 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 .ticker-logo {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   object-fit: contain;
 }
 
@@ -875,7 +922,7 @@ onUnmounted(() => {
   background: rgba(var(--v-theme-warning), 0.1);
 }
 .logo-text {
-  font-size: 15px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: -0.5px;
 }
@@ -886,10 +933,26 @@ onUnmounted(() => {
   color: var(--fp-warning);
 }
 
+.ticker-name {
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
 .ticker-sub {
   font-size: 11px;
   font-weight: 400;
   color: rgba(var(--v-theme-on-surface), 0.45);
+}
+
+.account-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.1);
+  border-radius: 4px;
+  padding: 1px 5px;
+  vertical-align: middle;
 }
 
 .compact-price-row {
@@ -933,6 +996,29 @@ onUnmounted(() => {
 }
 
 /* ── 드래그 카드 이동 애니메이션 ── */
+.account-filter-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.account-chip {
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
+  background: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+  transition: all 0.15s;
+}
+.account-chip:active { opacity: 0.7; }
+.account-chip-active {
+  border-color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.07);
+}
+
 .sort-btn {
   display: flex;
   align-items: center;
@@ -966,6 +1052,17 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   white-space: nowrap;
+}
+.summary-amount-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.summary-amount-sub {
+  font-size: 9px;
+  color: rgba(var(--v-theme-on-surface), 0.35);
+  line-height: 1.3;
+  margin-top: 1px;
 }
 
 .cards-move {

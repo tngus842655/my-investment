@@ -19,6 +19,7 @@ import DividendCalendarView from '@/views/more/DividendCalendarView.vue'
 import EtfAnalysisView from '@/views/more/EtfAnalysisView.vue'
 import EtfBacktestView from '@/views/more/EtfBacktestView.vue'
 import FeedbackView from '@/views/more/FeedbackView.vue'
+import ReleaseNotesView from '@/views/more/ReleaseNotesView.vue'
 import ChangePasswordView from '@/views/more/ChangePasswordView.vue'
 import AdminView from '@/views/admin/AdminView.vue'
 import AdminResetPasswordView from '@/views/admin/AdminResetPasswordView.vue'
@@ -177,6 +178,11 @@ const router = createRouter({
           path: 'change-password',
           name: 'changePassword',
           component: ChangePasswordView,
+        },
+        {
+          path: 'release-notes',
+          name: 'releaseNotes',
+          component: ReleaseNotesView,
         },
       ],
     },

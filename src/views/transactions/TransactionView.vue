@@ -34,9 +34,26 @@ const transactions = ref<Transaction[]>([])
 const filter = ref<FilterType>('ALL')
 const selectedYear = ref<number | null>(null)
 const selectedMonth = ref<number | null>(null)
+const selectedAccount = ref<string | null>(null)
+const accountOptions = ref<string[]>([])
+const accountPortfolioIds = ref<string[]>([])
 
 const yearOptions = ref<number[]>([])
 const monthOptions = ref<number[]>([])
+
+const loadAccountOptions = async () => {
+  const { data } = await supabase
+    .from('portfolios')
+    .select('id, account_name')
+    .eq('user_id', userId)
+  if (!data) return
+  const accounts = [...new Set(data.map((p) => p.account_name ?? '미지정'))]
+  accountOptions.value = accounts.length > 1
+    ? ['미지정', ...accounts.filter((a) => a !== '미지정').sort((a, b) => a.localeCompare(b, 'ko'))]
+    : []
+  // 초기에는 전체
+  accountPortfolioIds.value = data.map((p) => p.id)
+}
 
 const loadYearOptions = async () => {
   const { data } = await supabase
@@ -106,6 +123,8 @@ async function buildQuery(from: number, to: number) {
     .range(from, to)
 
   if (filter.value !== 'ALL') q = q.eq('transaction_type', filter.value)
+  if (selectedAccount.value && accountPortfolioIds.value.length > 0)
+    q = q.in('portfolio_id', accountPortfolioIds.value)
   const df = parsedDateFilter.value
   if (df) {
     if (df.length === 7) {
@@ -141,7 +160,7 @@ const loadPage = async (pageNum: number) => {
     if (pageNum === 0) transactions.value = rows
     else transactions.value = [...transactions.value, ...rows]
 
-    hasMore.value = (data ?? []).length === PAGE_SIZE
+    hasMore.value = rows.length === PAGE_SIZE
     currentPage.value = pageNum
   } catch (e) {
     console.error(e)
@@ -195,6 +214,8 @@ const loadTotals = async () => {
     .neq('transaction_type', 'INITIAL')
 
   if (filter.value !== 'ALL') q = q.eq('transaction_type', filter.value)
+  if (selectedAccount.value && accountPortfolioIds.value.length > 0)
+    q = q.in('portfolio_id', accountPortfolioIds.value)
   const df = parsedDateFilter.value
   if (df) {
     if (df.length === 7) {
@@ -242,6 +263,18 @@ const openDeleteDialog = (item: Transaction) => {
 
 watch(filter, () => { resetAndLoad(); loadTotals() })
 watch(parsedDateFilter, () => {
+  resetAndLoad()
+  loadTotals()
+})
+watch(selectedAccount, async (acc) => {
+  if (!acc) {
+    const { data } = await supabase.from('portfolios').select('id').eq('user_id', userId)
+    accountPortfolioIds.value = (data ?? []).map((p) => p.id)
+  } else {
+    const { data } = await supabase
+      .from('portfolios').select('id').eq('user_id', userId).eq('account_name', acc)
+    accountPortfolioIds.value = (data ?? []).map((p) => p.id)
+  }
   resetAndLoad()
   loadTotals()
 })
@@ -391,7 +424,7 @@ onMounted(async () => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
   userId = user.id
-  await Promise.all([resetAndLoad(), loadTotals(), loadYearOptions()])
+  await Promise.all([resetAndLoad(), loadTotals(), loadYearOptions(), loadAccountOptions()])
   try { usdToKrw.value = await getExchangeRate('USD', 'KRW') } catch {}
   await nextTick()
   setupObserver()
@@ -485,6 +518,22 @@ onUnmounted(() => {
           <v-icon v-else-if="f === 'SELL'" size="13" class="mr-1">mdi-arrow-up-bold</v-icon>
           {{ f === 'ALL' ? '전체' : f === 'BUY' ? '매수' : '매도' }}
         </button>
+      </div>
+
+      <!-- 계좌 필터 -->
+      <div v-if="accountOptions.length > 0" class="account-filter-row mb-3">
+        <button
+          class="account-chip"
+          :class="{ 'account-chip-active': selectedAccount === null }"
+          @click="selectedAccount = null; closeSwipe()"
+        >전체</button>
+        <button
+          v-for="acc in accountOptions"
+          :key="acc"
+          class="account-chip"
+          :class="{ 'account-chip-active': selectedAccount === acc }"
+          @click="selectedAccount = acc; closeSwipe()"
+        >{{ acc }}</button>
       </div>
 
       <!-- 날짜 드롭다운 + 건수 -->
@@ -620,6 +669,7 @@ onUnmounted(() => {
   <TransactionAddDialog
     v-model="addDialog"
     :initial-type="filter === 'SELL' ? 'SELL' : 'BUY'"
+    :initial-account="selectedAccount ?? undefined"
     @saved="refresh"
   />
 
@@ -700,6 +750,29 @@ onUnmounted(() => {
   font-size: 18px;
   font-weight: 500;
   color: rgb(var(--v-theme-on-surface));
+}
+
+.account-filter-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.account-chip {
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
+  background: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+  transition: all 0.15s;
+}
+.account-chip:active { opacity: 0.7; }
+.account-chip-active {
+  border-color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.07);
 }
 
 .filter-wrap {

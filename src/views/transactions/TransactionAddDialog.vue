@@ -42,6 +42,7 @@ const props = defineProps<{
     memo?: string
   } | null
   initialType?: TransactionType
+  initialAccount?: string
 }>()
 
 const emit = defineEmits<{
@@ -55,6 +56,7 @@ interface Portfolio {
   ticker: string
   asset_type: string
   currency: string
+  account_name: string
 }
 
 const NEW_PORTFOLIO_VALUE = '__NEW__'
@@ -62,6 +64,12 @@ const assetTypes = ['국내주식', '해외주식', '암호화폐']
 
 const portfolios = ref<Portfolio[]>([])
 const loadingPortfolios = ref(false)
+const selectedAccountFilter = ref<string | null>(null)
+
+const accountOptions = computed(() => {
+  const accounts = [...new Set(portfolios.value.map((p) => p.account_name ?? '미지정'))]
+  return accounts.length > 1 ? accounts : []
+})
 
 const txType = ref<TransactionType>('BUY')
 const selectedPortfolioId = ref('')
@@ -76,6 +84,7 @@ const isNewPortfolio = computed(() => selectedPortfolioId.value === NEW_PORTFOLI
 const newTicker = ref('')
 const newAssetType = ref('')
 const newCurrency = ref('KRW')
+const newAccountName = ref('미지정')
 
 const newTickerConfig = computed(() => {
   switch (newAssetType.value) {
@@ -111,8 +120,14 @@ const effectiveCurrency = computed(() => {
   return selectedPortfolio.value?.currency ?? 'KRW'
 })
 
+const filteredPortfolios = computed(() =>
+  selectedAccountFilter.value
+    ? portfolios.value.filter((p) => (p.account_name ?? '미지정') === selectedAccountFilter.value)
+    : portfolios.value
+)
+
 const portfolioItems = computed(() => [
-  ...portfolios.value.map((p) => {
+  ...filteredPortfolios.value.map((p) => {
     const name = getTickerDisplayName(p.ticker)
     const hasKoreanName = name !== p.ticker
     const isOverseas = p.asset_type === '해외주식'
@@ -122,7 +137,15 @@ const portfolioItems = computed(() => [
         : name
       : p.ticker
     const assetLabel = p.asset_type.replace('주식', '')
-    return { title: `${label} · ${assetLabel}`, value: p.id }
+    let accountPrefix = ''
+    if (!selectedAccountFilter.value && p.account_name && p.account_name !== '미지정') {
+      const acc = p.account_name
+      // 한글은 2자, 영문/숫자는 4자 제한
+      const isKorean = /[ㄱ-ㅎ가-힣]/.test(acc)
+      const truncated = isKorean ? acc.slice(0, 2) : acc.slice(0, 4)
+      accountPrefix = `[${truncated}] `
+    }
+    return { title: `${accountPrefix}${label} · ${assetLabel}`, value: p.id }
   }),
   { title: '+ 새 종목 추가', value: NEW_PORTFOLIO_VALUE },
 ])
@@ -224,7 +247,7 @@ const loadPortfolios = async () => {
     if (!user) return
     const { data, error } = await supabase
       .from('portfolios')
-      .select('id, ticker, asset_type, currency')
+      .select('id, ticker, asset_type, currency, account_name')
       .eq('user_id', user.id)
       .neq('asset_type', '현금')
       .order('sort_order', { ascending: true })
@@ -238,6 +261,12 @@ const loadPortfolios = async () => {
   }
 }
 
+watch(selectedAccountFilter, (acc) => {
+  selectedPortfolioId.value = ''
+  // 새 종목 패널이 열려있지 않을 때만 계좌명 자동 세팅 (직접 입력값 덮어쓰기 방지)
+  if (!isNewPortfolio.value) newAccountName.value = acc ?? '미지정'
+})
+
 watch(dialog, async (opened) => {
   if (!opened) return
   await loadPortfolios()
@@ -250,6 +279,10 @@ watch(dialog, async (opened) => {
     memo.value = props.initialData.memo ?? ''
   } else {
     reset(false)
+    if (props.initialAccount) {
+      selectedAccountFilter.value = props.initialAccount
+      newAccountName.value = props.initialAccount
+    }
   }
 })
 
@@ -307,14 +340,17 @@ const save = async () => {
     // 새 종목 먼저 등록
     if (isNewPortfolio.value) {
       const tickerToSave = newAssetType.value === '현금' ? 'CASH' : newTicker.value.trim().toUpperCase()
+      const accountNameToSave = newAccountName.value.trim() || '미지정'
       const { data: existing } = await supabase
         .from('portfolios')
         .select('id')
         .eq('user_id', user.id)
         .eq('ticker', tickerToSave)
+        .eq('account_name', accountNameToSave)
         .maybeSingle()
       if (existing) {
-        showMessage(`${tickerToSave} 종목이 이미 등록되어 있습니다.`, 'warning')
+        const displayName = getTickerDisplayName(tickerToSave)
+        showMessage(`${displayName} 종목이 이미 등록되어 있습니다. (계좌: ${accountNameToSave})`, 'warning')
         saving.value = false
         return
       }
@@ -326,6 +362,7 @@ const save = async () => {
           ticker: tickerToSave,
           asset_type: newAssetType.value,
           currency: newCurrency.value,
+          account_name: accountNameToSave,
           quantity: 0,
           avg_price: 0,
         })
@@ -390,6 +427,8 @@ const reset = (closeDialog = true) => {
   selectedKrStock.value = null
   newAssetType.value = ''
   newCurrency.value = 'KRW'
+  newAccountName.value = '미지정'
+  selectedAccountFilter.value = null
   if (closeDialog) dialog.value = false
 }
 </script>
@@ -420,7 +459,23 @@ const reset = (closeDialog = true) => {
         </div>
       </div>
 
-      <v-card-text class="pt-4 pb-2" style="overflow-y: auto; flex: 1">
+      <v-card-text class="pt-2 pb-1" style="overflow-y: auto; flex: 1">
+        <!-- 계좌 필터 -->
+        <div v-if="accountOptions.length > 0" class="account-filter-row mb-2">
+          <button
+            class="account-chip"
+            :class="{ 'account-chip-active': selectedAccountFilter === null }"
+            @click="selectedAccountFilter = null"
+          >전체</button>
+          <button
+            v-for="acc in accountOptions"
+            :key="acc"
+            class="account-chip"
+            :class="{ 'account-chip-active': selectedAccountFilter === acc }"
+            @click="selectedAccountFilter = acc"
+          >{{ acc }}</button>
+        </div>
+
         <!-- 종목 선택 -->
         <v-select
           v-model="selectedPortfolioId"
@@ -428,7 +483,7 @@ const reset = (closeDialog = true) => {
           label="종목 선택"
           prepend-inner-icon="mdi-finance"
           variant="outlined"
-          density="comfortable"
+          density="compact"
           rounded="lg"
           :loading="loadingPortfolios"
           :disabled="isEditMode"
@@ -446,20 +501,31 @@ const reset = (closeDialog = true) => {
 
         <!-- 새 종목 입력 필드 (인라인 펼침) -->
         <v-expand-transition>
-          <div v-if="isNewPortfolio" class="new-portfolio-panel mt-3">
+          <div v-if="isNewPortfolio" class="new-portfolio-panel mt-1">
             <div class="new-portfolio-label mb-2">
               <v-icon size="13" color="primary" class="mr-1">mdi-plus-circle-outline</v-icon>
               새 종목 정보 입력
             </div>
+            <v-text-field
+              v-model="newAccountName"
+              label="계좌명"
+              placeholder="기본"
+              prepend-inner-icon="mdi-bank-outline"
+              variant="outlined"
+              density="compact"
+              rounded="lg"
+              maxlength="20"
+              class="mb-1"
+            />
             <v-select
               v-model="newAssetType"
               :items="assetTypes"
               label="자산유형"
               prepend-inner-icon="mdi-shape"
               variant="outlined"
-              density="comfortable"
+              density="compact"
               rounded="lg"
-              class="mb-2"
+              class="mb-1"
             />
             <!-- 국내주식: 한글명 검색 자동완성 -->
             <v-autocomplete
@@ -474,9 +540,9 @@ const reset = (closeDialog = true) => {
               placeholder="삼성전자, 카카오 등 종목명 입력"
               prepend-inner-icon="mdi-magnify"
               variant="outlined"
-              density="comfortable"
+              density="compact"
               rounded="lg"
-              class="mb-2"
+              class="mb-1"
               no-data-text="검색 결과가 없습니다"
               clearable
               auto-select-first
@@ -494,9 +560,9 @@ const reset = (closeDialog = true) => {
               :disabled="newTickerConfig.disabled"
               prepend-inner-icon="mdi-finance"
               variant="outlined"
-              density="comfortable"
+              density="compact"
               rounded="lg"
-              class="mb-2"
+              class="mb-1"
               maxlength="20"
               :error-messages="newTickerError"
             />
@@ -506,7 +572,7 @@ const reset = (closeDialog = true) => {
               label="통화"
               prepend-inner-icon="mdi-cash"
               variant="outlined"
-              density="comfortable"
+              density="compact"
               rounded="lg"
               :disabled="newCurrencyLocked"
             />
@@ -524,7 +590,7 @@ const reset = (closeDialog = true) => {
             :max="maxQuantity"
             prepend-inner-icon="mdi-counter"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             rounded="lg"
             :error-messages="quantityError"
           />
@@ -533,7 +599,7 @@ const reset = (closeDialog = true) => {
             @update:model-value="handleUnitPrice"
             label="거래단가"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             rounded="lg"
             :prepend-inner-icon="effectiveCurrency === 'USD' ? 'mdi-currency-usd' : 'mdi-currency-krw'"
             :error-messages="unitPriceError"
@@ -547,9 +613,9 @@ const reset = (closeDialog = true) => {
           type="date"
           prepend-inner-icon="mdi-calendar-outline"
           variant="outlined"
-          density="comfortable"
+          density="compact"
           rounded="lg"
-          class="mt-3"
+          class="mt-1"
           :min="MIN_TX_DATE"
           :max="new Date().toISOString().slice(0, 10)"
           :error-messages="txDateError"
@@ -562,16 +628,16 @@ const reset = (closeDialog = true) => {
           placeholder="예: 분할매수, 목표가 도달"
           prepend-inner-icon="mdi-note-text-outline"
           variant="outlined"
-          density="comfortable"
+          density="compact"
           rounded="lg"
-          class="mt-3"
+          class="mt-1"
           maxlength="50"
         />
 
         <!-- 합계 프리뷰 -->
         <div
           v-if="totalAmount"
-          class="total-preview mt-3"
+          class="total-preview mt-2"
           :class="txType === 'BUY' ? 'preview-buy' : 'preview-sell'"
         >
           <span class="total-label">총 {{ txType === 'BUY' ? '매수' : '매도' }}금액</span>
@@ -581,7 +647,7 @@ const reset = (closeDialog = true) => {
 
       <v-divider />
 
-      <v-card-actions class="pa-4">
+      <v-card-actions class="px-4 py-2">
         <v-btn variant="text" :disabled="saving" @click="reset()">취소</v-btn>
         <v-spacer />
         <v-btn
@@ -656,6 +722,29 @@ const reset = (closeDialog = true) => {
 
 
 /* 새 종목 추가 항목 강조 */
+.account-filter-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.account-chip {
+  padding: 3px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
+  background: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+  transition: all 0.15s;
+}
+.account-chip:active { opacity: 0.7; }
+.account-chip-active {
+  border-color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.07);
+}
+
 .new-portfolio-item { color: rgb(var(--v-theme-primary)) !important; font-weight: 600; }
 
 /* 새 종목 인라인 패널 */

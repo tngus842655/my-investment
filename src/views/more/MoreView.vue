@@ -253,6 +253,16 @@ const currentThemeLabel = computed(() => {
         <span v-if="unreadFeedbackCount > 0" class="unread-dot mr-2" />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
+
+      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/release-notes')">
+        <div class="menu-icon"><v-icon size="18" color="primary">mdi-notebook-edit-outline</v-icon></div>
+        <div>
+          <div class="text-body-2 font-weight-medium">개발자 노트</div>
+          <div class="text-caption text-medium-emphasis">업데이트 내역을 확인하세요.</div>
+        </div>
+        <v-spacer />
+        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
+      </div>
     </div>
 
     <!-- 관리자 섹션 -->

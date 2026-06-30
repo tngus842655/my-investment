@@ -46,6 +46,7 @@ interface MiniPortfolio {
   currency: string
   quantity: number
   avg_price: number
+  account_name: string
   evaluationKrw: number
 }
 
@@ -108,7 +109,7 @@ const loadDashboard = async () => {
     const [goalResult, summaryResult, portfolioResult, rate] = await Promise.all([
       supabase.from('investment_goals').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('asset_summary').select('current_asset').eq('user_id', user.id).maybeSingle(),
-      supabase.from('portfolios').select('id,ticker,asset_type,currency,quantity,avg_price').eq('user_id', user.id).order('sort_order', { ascending: true }).limit(4),
+      supabase.from('portfolios').select('id,ticker,asset_type,currency,quantity,avg_price,account_name').eq('user_id', user.id).order('sort_order', { ascending: true }).limit(4),
       getCachedExchangeRate(),
     ])
 
@@ -330,7 +331,10 @@ onMounted(loadDashboard)
                   </template>
                   <template v-else>{{ item.ticker }}</template>
                 </div>
-                <div class="mini-asset-type">{{ item.asset_type }}</div>
+                <div class="mini-asset-type">
+                  {{ item.asset_type }}
+                  <span v-if="item.account_name && item.account_name !== '미지정'" class="mini-account-tag">{{ item.account_name }}</span>
+                </div>
               </div>
             </div>
 
@@ -506,6 +510,17 @@ onMounted(loadDashboard)
   font-size: 11px;
   color: rgba(var(--v-theme-on-surface), 0.45);
   margin-top: 1px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.mini-account-tag {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.1);
+  border-radius: 4px;
+  padding: 0 4px;
 }
 .mini-amount {
   font-size: 13px;
