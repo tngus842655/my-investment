@@ -1,16 +1,33 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { supabase } from '@/services/supabase'
+import { ADMIN_EMAIL } from '@/config/admin'
 
 const router = useRouter()
 const route = useRoute()
 const contentRef = ref<HTMLElement | null>(null)
+const unreadFeedbackCount = ref(0)
+
+const fetchUnreadCount = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || user.email === ADMIN_EMAIL) return
+  const { count } = await supabase
+    .from('feedback')
+    .select('id', { count: 'exact', head: true })
+    .eq('email', user.email ?? '')
+    .eq('is_read_by_user', false)
+  unreadFeedbackCount.value = count ?? 0
+}
+
+fetchUnreadCount()
 
 watch(() => route.path, async () => {
   await nextTick()
   contentRef.value?.scrollTo({ top: 0 })
-  // window도 같이 초기화 (사파리 대응)
   window.scrollTo({ top: 0 })
+  // 의견 관리 화면에서 돌아올 때 뱃지 갱신
+  if (route.path === '/more') fetchUnreadCount()
 })
 
 const tabs = [
@@ -38,9 +55,10 @@ const isActive = (tabRoute: string) => route.path === tabRoute
         :class="{ active: isActive(tab.route) }"
         @click="router.push(tab.route)"
       >
-        <div class="tab-icon-wrap" :class="{ 'tab-icon-active': isActive(tab.route) }">
+        <div class="tab-icon-wrap" :class="{ 'tab-icon-active': isActive(tab.route) }" style="position:relative">
           <img v-if="tab.img" :src="tab.img" class="tab-png-icon" :class="{ 'tab-png-active': isActive(tab.route) }" :alt="tab.label" />
           <v-icon v-else size="26">{{ isActive(tab.route) ? tab.activeIcon : tab.icon }}</v-icon>
+          <span v-if="tab.route === '/more' && unreadFeedbackCount > 0" class="nav-unread-dot" />
         </div>
         <span class="bottom-nav-label">{{ tab.label }}</span>
         <span class="bottom-nav-desc">{{ tab.desc }}</span>
@@ -158,6 +176,17 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   font-weight: 600;
   letter-spacing: 0.01em;
   line-height: 1;
+}
+
+.nav-unread-dot {
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgb(var(--v-theme-error));
+  border: 1.5px solid rgb(var(--v-theme-surface));
 }
 
 .bottom-nav-desc {
