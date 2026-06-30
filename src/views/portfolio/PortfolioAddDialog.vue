@@ -430,7 +430,7 @@ const reset = (closeDialog = true) => {
           maxlength="20"
           placeholder="미지정"
           hint="같은 종목을 여러 계좌로 나눠 관리할 때 사용 (예: 미래에셋, ISA)"
-          @blur="if (!accountName.trim()) accountName = '미지정'"
+          @blur="() => { if (!accountName.trim()) accountName = '미지정' }"
         />
 
         <!-- 자산유형 -->
