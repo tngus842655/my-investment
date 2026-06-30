@@ -446,7 +446,7 @@ const reset = (closeDialog = true) => {
           auto-select-first
         >
           <template #item="{ props: itemProps, item }">
-            <v-list-item v-bind="itemProps" :subtitle="item.raw?.value" />
+            <v-list-item v-bind="itemProps" :subtitle="(item as any).raw?.value" />
           </template>
         </v-autocomplete>
 

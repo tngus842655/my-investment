@@ -373,7 +373,7 @@ const aiData = computed(() => {
             @keyup.enter="fetchInfo"
           >
             <template #item="{ props: itemProps, item }">
-              <v-list-item v-bind="itemProps" :subtitle="item.raw?.value" />
+              <v-list-item v-bind="itemProps" :subtitle="(item as any).raw?.value" />
             </template>
           </v-autocomplete>
           <v-text-field
@@ -428,7 +428,7 @@ const aiData = computed(() => {
             @keyup.enter="fetchInfo"
           >
             <template #item="{ props: itemProps, item }">
-              <v-list-item v-bind="itemProps" :subtitle="item.raw?.value" />
+              <v-list-item v-bind="itemProps" :subtitle="(item as any).raw?.value" />
             </template>
           </v-autocomplete>
           <v-text-field
