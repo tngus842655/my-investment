@@ -177,8 +177,8 @@ const deleteFeedback = async () => {
           :key="s"
           class="summary-chip"
         >
-          <span class="dot" :class="`dot--${statusConfig[s].color}`" />
-          {{ statusConfig[s].label }} {{ countByStatus[s] }}
+          <span class="dot" :class="`dot--${statusConfig[s]?.color}`" />
+          {{ statusConfig[s]?.label }} {{ countByStatus[s] ?? 0 }}
         </div>
       </div>
 
@@ -283,7 +283,7 @@ const deleteFeedback = async () => {
                 class="status-btn"
                 :class="{ [`status-btn--${s}`]: f.status === s }"
                 @click="updateStatus(f.id, s)"
-              >{{ statusConfig[s].label }}</button>
+              >{{ statusConfig[s]?.label }}</button>
             </div>
           </template>
         </div>
