@@ -286,94 +286,154 @@ const aiData = computed(() => {
 
     <!-- 입력 -->
     <v-card rounded="xl" class="pa-4 mb-4">
-      <!-- 기준 ETF -->
-      <div class="text-caption text-medium-emphasis mb-1">기준 ETF</div>
-      <v-btn-toggle v-model="marketA" density="compact" rounded="lg" mandatory class="mb-2" color="primary" variant="outlined">
-        <v-btn value="overseas" size="small">해외</v-btn>
-        <v-btn value="domestic" size="small">국내</v-btn>
-      </v-btn-toggle>
-      <v-autocomplete
-        v-if="marketA === 'domestic'"
-        v-model="inputA"
-        v-model:search="searchA"
-        :items="filteredA"
-        item-title="title"
-        item-value="value"
-        label="국내 ETF 검색"
-        placeholder="TIGER 미국S&P500 등 종목명 입력"
-        prepend-inner-icon="mdi-magnify"
-        variant="outlined"
-        density="compact"
-        rounded="lg"
-        hide-details
-        clearable
-        auto-select-first
-        no-data-text="검색 결과가 없습니다"
-        :custom-filter="krFilter"
-        class="mb-3"
-        @keyup.enter="fetchInfo"
-      />
-      <v-text-field
-        v-else
-        v-model="inputA"
-        label="티커 (예: SPY, QQQ)"
-        variant="outlined"
-        density="compact"
-        rounded="lg"
-        hide-details
-        clearable
-        maxlength="10"
-        class="mb-3"
-        @input="onInputA"
-        @keyup.enter="fetchInfo"
-      />
 
-      <!-- 구분선 -->
-      <div class="d-flex align-center ga-2 mb-3">
-        <v-divider /><span class="text-caption text-medium-emphasis font-weight-bold">vs</span><v-divider />
-      </div>
+      <!-- 둘 다 해외일 때: 기존 1줄 레이아웃 -->
+      <template v-if="marketA === 'overseas' && marketB === 'overseas'">
+        <div class="d-flex align-center ga-2 mb-3">
+          <v-text-field
+            v-model="inputA"
+            label="티커 (예: SPY)"
+            variant="outlined"
+            density="compact"
+            rounded="lg"
+            hide-details
+            clearable
+            maxlength="10"
+            style="flex:1"
+            @input="onInputA"
+            @keyup.enter="fetchInfo"
+          />
+          <div class="text-body-2 font-weight-bold text-medium-emphasis">vs</div>
+          <v-text-field
+            v-model="inputB"
+            label="비교 티커 (선택)"
+            variant="outlined"
+            density="compact"
+            rounded="lg"
+            hide-details
+            clearable
+            maxlength="10"
+            style="flex:1"
+            @input="onInputB"
+            @keyup.enter="fetchInfo"
+          />
+        </div>
+        <div class="d-flex align-center ga-1 mb-3">
+          <v-btn-toggle v-model="marketA" density="compact" rounded="lg" mandatory color="primary" variant="outlined" style="flex:1">
+            <v-btn value="overseas" size="x-small" style="flex:1">해외</v-btn>
+            <v-btn value="domestic" size="x-small" style="flex:1">국내</v-btn>
+          </v-btn-toggle>
+          <div style="width:28px" />
+          <v-btn-toggle v-model="marketB" density="compact" rounded="lg" mandatory color="primary" variant="outlined" style="flex:1">
+            <v-btn value="overseas" size="x-small" style="flex:1">해외</v-btn>
+            <v-btn value="domestic" size="x-small" style="flex:1">국내</v-btn>
+          </v-btn-toggle>
+        </div>
+      </template>
 
-      <!-- 비교 ETF -->
-      <div class="text-caption text-medium-emphasis mb-1">비교 ETF <span class="text-caption" style="opacity:0.5">(선택)</span></div>
-      <v-btn-toggle v-model="marketB" density="compact" rounded="lg" mandatory class="mb-2" color="primary" variant="outlined">
-        <v-btn value="overseas" size="small">해외</v-btn>
-        <v-btn value="domestic" size="small">국내</v-btn>
-      </v-btn-toggle>
-      <v-autocomplete
-        v-if="marketB === 'domestic'"
-        v-model="inputB"
-        v-model:search="searchB"
-        :items="filteredB"
-        item-title="title"
-        item-value="value"
-        label="국내 ETF 검색"
-        placeholder="TIGER 미국S&P500 등 종목명 입력"
-        prepend-inner-icon="mdi-magnify"
-        variant="outlined"
-        density="compact"
-        rounded="lg"
-        hide-details
-        clearable
-        auto-select-first
-        no-data-text="검색 결과가 없습니다"
-        :custom-filter="krFilter"
-        class="mb-3"
-        @keyup.enter="fetchInfo"
-      />
-      <v-text-field
-        v-else
-        v-model="inputB"
-        label="비교 티커 (선택)"
-        variant="outlined"
-        density="compact"
-        rounded="lg"
-        hide-details
-        clearable
-        maxlength="10"
-        class="mb-3"
-        @input="onInputB"
-        @keyup.enter="fetchInfo"
-      />
+      <!-- 하나라도 국내일 때: 2줄 레이아웃 -->
+      <template v-else>
+        <!-- 기준 ETF -->
+        <div class="d-flex align-center justify-space-between mb-1">
+          <div class="text-caption text-medium-emphasis">기준 ETF</div>
+          <v-btn-toggle v-model="marketA" density="compact" rounded="lg" mandatory color="primary" variant="outlined">
+            <v-btn value="overseas" size="x-small">해외</v-btn>
+            <v-btn value="domestic" size="x-small">국내</v-btn>
+          </v-btn-toggle>
+        </div>
+        <v-autocomplete
+          v-if="marketA === 'domestic'"
+          v-model="inputA"
+          v-model:search="searchA"
+          :items="filteredA"
+          item-title="name"
+          item-value="value"
+          label="국내 ETF 검색"
+          placeholder="TIGER 미국S&P500 등 종목명 입력"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="compact"
+          rounded="lg"
+          hide-details
+          clearable
+          auto-select-first
+          no-data-text="검색 결과가 없습니다"
+          :custom-filter="krFilter"
+          class="mb-3"
+          @keyup.enter="fetchInfo"
+        >
+          <template #item="{ props: itemProps, item }">
+            <v-list-item v-bind="itemProps" :subtitle="item.raw.value" />
+          </template>
+        </v-autocomplete>
+        <v-text-field
+          v-else
+          v-model="inputA"
+          label="티커 (예: SPY, QQQ)"
+          variant="outlined"
+          density="compact"
+          rounded="lg"
+          hide-details
+          clearable
+          maxlength="10"
+          class="mb-3"
+          @input="onInputA"
+          @keyup.enter="fetchInfo"
+        />
+
+        <!-- 구분선 -->
+        <div class="d-flex align-center ga-2 mb-3">
+          <v-divider /><span class="text-caption text-medium-emphasis font-weight-bold">vs</span><v-divider />
+        </div>
+
+        <!-- 비교 ETF -->
+        <div class="d-flex align-center justify-space-between mb-1">
+          <div class="text-caption text-medium-emphasis">비교 ETF <span style="opacity:0.5">(선택)</span></div>
+          <v-btn-toggle v-model="marketB" density="compact" rounded="lg" mandatory color="primary" variant="outlined">
+            <v-btn value="overseas" size="x-small">해외</v-btn>
+            <v-btn value="domestic" size="x-small">국내</v-btn>
+          </v-btn-toggle>
+        </div>
+        <v-autocomplete
+          v-if="marketB === 'domestic'"
+          v-model="inputB"
+          v-model:search="searchB"
+          :items="filteredB"
+          item-title="name"
+          item-value="value"
+          label="국내 ETF 검색"
+          placeholder="TIGER 미국S&P500 등 종목명 입력"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="compact"
+          rounded="lg"
+          hide-details
+          clearable
+          auto-select-first
+          no-data-text="검색 결과가 없습니다"
+          :custom-filter="krFilter"
+          class="mb-3"
+          @keyup.enter="fetchInfo"
+        >
+          <template #item="{ props: itemProps, item }">
+            <v-list-item v-bind="itemProps" :subtitle="item.raw.value" />
+          </template>
+        </v-autocomplete>
+        <v-text-field
+          v-else
+          v-model="inputB"
+          label="비교 티커 (선택)"
+          variant="outlined"
+          density="compact"
+          rounded="lg"
+          hide-details
+          clearable
+          maxlength="10"
+          class="mb-3"
+          @input="onInputB"
+          @keyup.enter="fetchInfo"
+        />
+      </template>
 
       <div class="d-flex align-center ga-2">
         <v-btn
