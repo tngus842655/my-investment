@@ -263,7 +263,8 @@ const loadPortfolios = async () => {
 
 watch(selectedAccountFilter, (acc) => {
   selectedPortfolioId.value = ''
-  newAccountName.value = acc ?? '미지정'
+  // 새 종목 패널이 열려있지 않을 때만 계좌명 자동 세팅 (직접 입력값 덮어쓰기 방지)
+  if (!isNewPortfolio.value) newAccountName.value = acc ?? '미지정'
 })
 
 watch(dialog, async (opened) => {

@@ -160,7 +160,7 @@ const loadPage = async (pageNum: number) => {
     if (pageNum === 0) transactions.value = rows
     else transactions.value = [...transactions.value, ...rows]
 
-    hasMore.value = (data ?? []).length === PAGE_SIZE
+    hasMore.value = rows.length === PAGE_SIZE
     currentPage.value = pageNum
   } catch (e) {
     console.error(e)
