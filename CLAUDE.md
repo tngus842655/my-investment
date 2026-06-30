@@ -1,5 +1,74 @@
 # CLAUDE.md
 
+Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+
+## 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+## 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+## 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+## 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+---
+
+**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
 ## 📋 남은 작업 목록
 
 새 세션 시작 시 **TODO.md** 를 먼저 읽어 남은 작업을 파악할 것.
@@ -40,6 +109,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 4. **⚠️ 머지 완료 후 반드시 세션 시작 시의 원래 작업 브랜치로 돌아올 것** (`git checkout claude/원래브랜치명`)
 
 **⚠️ 충돌 방지 핵심 규칙:**
+
 - squash merge 후 같은 브랜치에서 계속 작업하면 다음 PR에서 반드시 충돌 발생
 - main에 push할 때는 **항상 새 브랜치**를 만들어서 변경 파일만 담아 PR 생성
 - **절대 `git push origin main` 직접 push 시도 금지** — main은 보호 브랜치라 항상 막힘
@@ -93,19 +163,19 @@ VITE_SUPABASE_ANON_KEY=
 
 사용자별 1개 (user_id unique). FIRE 목표 설정.
 
-| 컬럼명             | 타입        | 설명                         |
-| ------------------ | ----------- | ---------------------------- |
-| id                 | uuid        | PK                           |
-| user_id            | uuid        | FK → auth.users, unique      |
-| target_asset       | int8        | 목표 자산 (KRW)              |
-| monthly_investment | int8        | 월 투자금액 (KRW)            |
-| annual_return      | float8      | 연 기대 수익률 (%, nullable) |
-| target_date        | date        | 목표 달성 날짜 (nullable)    |
-| theme              | text        | 앱 테마 (light/dark/system 등, 기본값 system) |
+| 컬럼명             | 타입        | 설명                                                               |
+| ------------------ | ----------- | ------------------------------------------------------------------ |
+| id                 | uuid        | PK                                                                 |
+| user_id            | uuid        | FK → auth.users, unique                                            |
+| target_asset       | int8        | 목표 자산 (KRW)                                                    |
+| monthly_investment | int8        | 월 투자금액 (KRW)                                                  |
+| annual_return      | float8      | 연 기대 수익률 (%, nullable)                                       |
+| target_date        | date        | 목표 달성 날짜 (nullable)                                          |
+| theme              | text        | 앱 테마 (light/dark/system 등, 기본값 system)                      |
 | portfolio_sort     | text        | 포트폴리오 정렬 기준 (custom/eval/profit/rate/name, 기본값 custom) |
-| hide_asset         | boolean     | 자산 숨김 여부 (기본값 false) |
-| created_at         | timestamptz |                              |
-| updated_at         | timestamptz |                              |
+| hide_asset         | boolean     | 자산 숨김 여부 (기본값 false)                                      |
+| created_at         | timestamptz |                                                                    |
+| updated_at         | timestamptz |                                                                    |
 
 #### asset_summary
 
@@ -141,14 +211,14 @@ VITE_SUPABASE_ANON_KEY=
 
 일별 자산 스냅샷. 매일 자정(KST) pg_cron으로 자동 저장 + PortfolioView 로드 시 당일 upsert. 미래예측 차트의 과거 실선에 사용.
 
-| 컬럼명       | 타입        | 설명                                         |
-| ------------ | ----------- | -------------------------------------------- |
-| id           | uuid        | PK                                           |
-| user_id      | uuid        | FK → auth.users                              |
-| recorded_at  | date        | 기록 날짜 (user_id + recorded_at unique)     |
-| current_asset| int8        | 해당 일 평가 자산 (KRW, 현금 제외)           |
-| progress_pct | float8      | FIRE 달성률 % (nullable)                     |
-| created_at   | timestamptz |                                              |
+| 컬럼명        | 타입        | 설명                                     |
+| ------------- | ----------- | ---------------------------------------- |
+| id            | uuid        | PK                                       |
+| user_id       | uuid        | FK → auth.users                          |
+| recorded_at   | date        | 기록 날짜 (user_id + recorded_at unique) |
+| current_asset | int8        | 해당 일 평가 자산 (KRW, 현금 제외)       |
+| progress_pct  | float8      | FIRE 달성률 % (nullable)                 |
+| created_at    | timestamptz |                                          |
 
 **pg_cron 스케줄:** `daily-asset-snapshot` — `0 15 * * *` (UTC) = 매일 KST 00:00 실행
 
@@ -191,37 +261,37 @@ END;
 
 로그인 이력 기록. RLS 적용 (관리자만 조회).
 
-| 컬럼명    | 타입        | 설명            |
-| --------- | ----------- | --------------- |
-| id        | uuid        | PK              |
-| user_id   | uuid        | FK → auth.users |
-| email     | text        | 로그인 이메일   |
-| login_at  | timestamptz | 로그인 시각     |
+| 컬럼명   | 타입        | 설명            |
+| -------- | ----------- | --------------- |
+| id       | uuid        | PK              |
+| user_id  | uuid        | FK → auth.users |
+| email    | text        | 로그인 이메일   |
+| login_at | timestamptz | 로그인 시각     |
 
 #### signup_log
 
 회원가입 이력 기록. RLS 적용 (관리자만 조회). 재가입 시 `deleted_at` 초기화로 재활성화 처리.
 
-| 컬럼명       | 타입        | 설명                        |
-| ------------ | ----------- | --------------------------- |
-| id           | uuid        | PK                          |
-| email        | text        | 가입 이메일 (unique)        |
-| signed_up_at | timestamptz | 최초 가입 시각              |
-| deleted_at   | timestamptz | 탈퇴 시각 (nullable)        |
+| 컬럼명       | 타입        | 설명                 |
+| ------------ | ----------- | -------------------- |
+| id           | uuid        | PK                   |
+| email        | text        | 가입 이메일 (unique) |
+| signed_up_at | timestamptz | 최초 가입 시각       |
+| deleted_at   | timestamptz | 탈퇴 시각 (nullable) |
 
 #### feedback
 
 사용자 피드백. RLS 적용.
 
-| 컬럼명     | 타입        | 설명                          |
-| ---------- | ----------- | ----------------------------- |
-| id         | uuid        | PK                            |
-| email      | text        | 작성자 이메일                 |
-| category   | text        | 피드백 카테고리               |
-| title      | text        | 제목                          |
-| content    | text        | 내용                          |
-| status     | text        | 처리 상태 (기본값: 'NEW')     |
-| created_at | timestamptz |                               |
+| 컬럼명     | 타입        | 설명                      |
+| ---------- | ----------- | ------------------------- |
+| id         | uuid        | PK                        |
+| email      | text        | 작성자 이메일             |
+| category   | text        | 피드백 카테고리           |
+| title      | text        | 제목                      |
+| content    | text        | 내용                      |
+| status     | text        | 처리 상태 (기본값: 'NEW') |
+| created_at | timestamptz |                           |
 
 ### 공통 패턴
 
