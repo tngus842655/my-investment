@@ -399,23 +399,6 @@ const deletePortfolio = async () => {
 // ── 포맷 유틸 ─────────────────────────────────────
 const formatKrw = (v: number) => Math.round(v).toLocaleString('ko-KR')
 
-// 한글 축약 표기 (카드 메인 금액)
-const formatKrwShort = (v: number): string => {
-  const abs = Math.abs(v)
-  const sign = v < 0 ? '-' : ''
-  if (abs >= 100_000_000) {
-    const eok = Math.floor(abs / 100_000_000)
-    const man = Math.round((abs % 100_000_000) / 10_000)
-    return man > 0 ? `${sign}${eok}억 ${man.toLocaleString()}만` : `${sign}${eok}억`
-  }
-  if (abs >= 10_000) {
-    const man = Math.round(abs / 10_000)
-    return `${sign}${man.toLocaleString()}만`
-  }
-  return `${sign}${Math.round(abs).toLocaleString()}`
-}
-const formatProfitShort = (v: number) => (v > 0 ? '+' : '') + formatKrwShort(v)
-
 // 평균단가/현재가 표시 — KRW는 금액이 크면 축약, USD는 소수점 처리
 const formatPrice = (v: number, currency: string) => {
   if (currency === 'KRW') {
@@ -851,20 +834,15 @@ onUnmounted(() => {
                 </div>
                 <!-- 평가금액 + 평가손익 한 줄 -->
                 <div class="d-flex justify-space-between align-center mt-2" style="gap: 6px">
-                  <div style="min-width: 0">
-                    <div class="text-body-2 font-weight-bold text-primary amount-main">
-                      {{ formatKrwShort(item.evaluationAmountKrw ?? 0) }}원
-                    </div>
-                    <div class="amount-sub">{{ formatKrw(item.evaluationAmountKrw ?? 0) }}원</div>
+                  <div class="text-body-2 font-weight-bold text-primary" style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">
+                    {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원
                   </div>
-                  <div style="flex-shrink: 0; text-align: right">
-                    <div
-                      class="text-body-2 font-weight-bold amount-main"
-                      :class="(item.profitAmountKrw ?? 0) >= 0 ? 'text-success' : 'text-error'"
-                    >
-                      {{ formatProfitShort(item.profitAmountKrw ?? 0) }}원
-                    </div>
-                    <div class="amount-sub">{{ formatProfit(item.profitAmountKrw ?? 0) }}원</div>
+                  <div
+                    class="text-body-2 font-weight-bold"
+                    :class="(item.profitAmountKrw ?? 0) >= 0 ? 'text-success' : 'text-error'"
+                    style="flex-shrink: 0; white-space: nowrap"
+                  >
+                    {{ formatProfit(item.profitAmountKrw ?? 0) }}원
                   </div>
                 </div>
               </template>
@@ -939,18 +917,6 @@ onUnmounted(() => {
 }
 .logo-text-kr {
   color: var(--fp-warning);
-}
-
-.amount-main {
-  white-space: nowrap;
-  line-height: 1.2;
-}
-.amount-sub {
-  font-size: 9px;
-  color: rgba(var(--v-theme-on-surface), 0.35);
-  white-space: nowrap;
-  line-height: 1.3;
-  margin-top: 1px;
 }
 
 .ticker-name {
