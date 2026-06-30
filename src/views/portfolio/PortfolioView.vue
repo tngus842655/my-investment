@@ -696,7 +696,7 @@ onUnmounted(() => {
         <div
           v-for="item in sortedPortfolios"
           :key="item.id"
-          class="portfolio-card-wrap mb-2"
+          class="portfolio-card-wrap mb-1"
           :data-id="item.id"
           :style="draggingId === item.id ? { opacity: '0', pointerEvents: 'none' } : {}"
           @click="swipedId && swipedId !== item.id ? closeSwipe() : undefined"
@@ -723,7 +723,7 @@ onUnmounted(() => {
             @mouseup="(e) => onSwipeMouseUp(e, item.id)"
           >
             <div
-              class="glass-card asset-card pa-3"
+              class="glass-card asset-card pa-2"
               :class="
                 item.asset_type === '현금'
                   ? 'border-cash-left'
@@ -733,7 +733,7 @@ onUnmounted(() => {
               "
             >
               <!-- 상단: 종목명 + 수익률 + 드래그 핸들 -->
-              <div class="d-flex justify-space-between align-center mb-2" style="gap: 6px">
+              <div class="d-flex justify-space-between align-center mb-1" style="gap: 6px">
                 <div class="d-flex align-center ga-2" style="min-width: 0; flex: 1">
                   <v-icon
                     v-if="sortKey === 'custom'"
@@ -899,9 +899,9 @@ onUnmounted(() => {
 
 
 .ticker-logo-wrap {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
   background: rgba(var(--v-theme-on-surface), 0.05);
   display: flex;
   align-items: center;
@@ -910,8 +910,8 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 .ticker-logo {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   object-fit: contain;
 }
 
@@ -922,7 +922,7 @@ onUnmounted(() => {
   background: rgba(var(--v-theme-warning), 0.1);
 }
 .logo-text {
-  font-size: 15px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: -0.5px;
 }
@@ -934,7 +934,7 @@ onUnmounted(() => {
 }
 
 .ticker-name {
-  font-size: 1rem;
+  font-size: 0.875rem;
   white-space: nowrap;
 }
 
