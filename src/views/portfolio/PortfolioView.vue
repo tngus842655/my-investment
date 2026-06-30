@@ -467,19 +467,31 @@ const setSort = (key: SortKey) => {
   closeSwipe()
 }
 
+// ── 계좌 필터 ─────────────────────────────────────
+const selectedAccount = ref<string | null>(null)
+
+const accountOptions = computed(() => {
+  const accounts = [...new Set(portfolios.value.map((p) => p.account_name ?? '기본'))]
+  return accounts.length > 1 ? accounts : []
+})
+
 const sortedPortfolios = computed(() => {
-  if (sortKey.value === 'custom') return portfolios.value
-  const list = [...portfolios.value]
-  switch (sortKey.value) {
-    case 'eval':   return list.sort((a, b) => (b.evaluationAmountKrw ?? 0) - (a.evaluationAmountKrw ?? 0))
-    case 'profit': return list.sort((a, b) => (b.profitAmountKrw ?? 0) - (a.profitAmountKrw ?? 0))
-    case 'rate':   return list.sort((a, b) => (b.profitRate ?? 0) - (a.profitRate ?? 0))
-    case 'name': {
-      const getName = (ticker: string) => TICKER_NAMES[ticker.toUpperCase()] ?? ticker
-      return list.sort((a, b) => getName(a.ticker).localeCompare(getName(b.ticker), 'ko'))
+  const base = (() => {
+    if (sortKey.value === 'custom') return portfolios.value
+    const list = [...portfolios.value]
+    switch (sortKey.value) {
+      case 'eval':   return list.sort((a, b) => (b.evaluationAmountKrw ?? 0) - (a.evaluationAmountKrw ?? 0))
+      case 'profit': return list.sort((a, b) => (b.profitAmountKrw ?? 0) - (a.profitAmountKrw ?? 0))
+      case 'rate':   return list.sort((a, b) => (b.profitRate ?? 0) - (a.profitRate ?? 0))
+      case 'name': {
+        const getName = (ticker: string) => TICKER_NAMES[ticker.toUpperCase()] ?? ticker
+        return list.sort((a, b) => getName(a.ticker).localeCompare(getName(b.ticker), 'ko'))
+      }
+      default:       return list
     }
-    default:       return list
-  }
+  })()
+  if (!selectedAccount.value) return base
+  return base.filter((p) => (p.account_name ?? '기본') === selectedAccount.value)
 })
 
 const onGlobalMouseUp = () => {
@@ -604,6 +616,22 @@ onUnmounted(() => {
             >
           </div>
         </div>
+      </div>
+
+      <!-- 계좌 필터 -->
+      <div v-if="accountOptions.length > 0" class="account-filter-row mb-2">
+        <button
+          class="account-chip"
+          :class="{ 'account-chip-active': selectedAccount === null }"
+          @click="selectedAccount = null"
+        >전체</button>
+        <button
+          v-for="acc in accountOptions"
+          :key="acc"
+          class="account-chip"
+          :class="{ 'account-chip-active': selectedAccount === acc }"
+          @click="selectedAccount = acc"
+        >{{ acc }}</button>
       </div>
 
       <!-- 정렬 바 -->
@@ -947,6 +975,29 @@ onUnmounted(() => {
 }
 
 /* ── 드래그 카드 이동 애니메이션 ── */
+.account-filter-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.account-chip {
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
+  background: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+  transition: all 0.15s;
+}
+.account-chip:active { opacity: 0.7; }
+.account-chip-active {
+  border-color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.07);
+}
+
 .sort-btn {
   display: flex;
   align-items: center;
