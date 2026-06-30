@@ -136,7 +136,8 @@ const portfolioItems = computed(() => [
         : name
       : p.ticker
     const assetLabel = p.asset_type.replace('주식', '')
-    return { title: `${label} · ${assetLabel}`, value: p.id }
+    const accountLabel = !selectedAccountFilter.value && p.account_name && p.account_name !== '기본' ? ` · ${p.account_name}` : ''
+    return { title: `${label} · ${assetLabel}${accountLabel}`, value: p.id }
   }),
   { title: '+ 새 종목 추가', value: NEW_PORTFOLIO_VALUE },
 ])
