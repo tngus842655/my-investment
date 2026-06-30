@@ -588,7 +588,7 @@ const reset = (closeDialog = true) => {
         <!-- 수정 모드: 현재 총 보유수량 표시 -->
         <div v-if="isEditMode && assetType !== '현금' && props.initialData" class="total-preview mt-1">
           <span class="total-label">현재 총 보유수량</span>
-          <span class="total-value">{{ props.initialData.quantity.toLocaleString() }}주 (초기 {{ Number(initQuantity) || 0 }}주 + 거래 {{ (props.initialData.quantity - (Number(initQuantity) || 0)).toLocaleString() }}주)</span>
+          <span class="total-value">{{ props.initialData.quantity.toLocaleString() }}주</span>
         </div>
       </v-card-text>
 
