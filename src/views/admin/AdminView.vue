@@ -77,7 +77,7 @@ onMounted(async () => {
 
   const [{ data }, { count }, { count: signupToday }, accessTodayRes] = await Promise.all([
     supabase.from('signup_log').select('*').order('signed_up_at', { ascending: false }),
-    supabase.from('feedback').select('id', { count: 'exact', head: true }).eq('status', 'NEW'),
+    supabase.from('feedback').select('id', { count: 'exact', head: true }).eq('status', 'RECEIVED'),
     supabase.from('signup_log').select('id', { count: 'exact', head: true }).gte('signed_up_at', todayFrom),
     supabase.from('access_log').select('email').gte('accessed_at', todayFrom),
   ])
