@@ -11,13 +11,21 @@ const unreadFeedbackCount = ref(0)
 
 const fetchUnreadCount = async () => {
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user || user.email === ADMIN_EMAIL) return
-  const { count } = await supabase
-    .from('feedback')
-    .select('id', { count: 'exact', head: true })
-    .eq('email', user.email ?? '')
-    .eq('is_read_by_user', false)
-  unreadFeedbackCount.value = count ?? 0
+  if (!user) return
+  if (user.email === ADMIN_EMAIL) {
+    const { count } = await supabase
+      .from('feedback')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'RECEIVED')
+    unreadFeedbackCount.value = count ?? 0
+  } else {
+    const { count } = await supabase
+      .from('feedback')
+      .select('id', { count: 'exact', head: true })
+      .eq('email', user.email ?? '')
+      .eq('is_read_by_user', false)
+    unreadFeedbackCount.value = count ?? 0
+  }
 }
 
 fetchUnreadCount()
@@ -26,8 +34,8 @@ watch(() => route.path, async () => {
   await nextTick()
   contentRef.value?.scrollTo({ top: 0 })
   window.scrollTo({ top: 0 })
-  // 의견 관리 화면에서 돌아올 때 뱃지 갱신
-  if (route.path === '/more') fetchUnreadCount()
+  // 의견 관련 화면에서 돌아올 때 뱃지 갱신
+  if (route.path === '/more' || route.path === '/admin/feedback') fetchUnreadCount()
 })
 
 const tabs = [

@@ -77,7 +77,7 @@ onMounted(async () => {
 
   const [{ data }, { count }, { count: signupToday }, accessTodayRes] = await Promise.all([
     supabase.from('signup_log').select('*').order('signed_up_at', { ascending: false }),
-    supabase.from('feedback').select('id', { count: 'exact', head: true }).eq('status', 'NEW'),
+    supabase.from('feedback').select('id', { count: 'exact', head: true }).eq('status', 'RECEIVED'),
     supabase.from('signup_log').select('id', { count: 'exact', head: true }).gte('signed_up_at', todayFrom),
     supabase.from('access_log').select('email').gte('accessed_at', todayFrom),
   ])
@@ -180,7 +180,6 @@ onMounted(async () => {
         </v-btn>
         <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-account-plus-outline" class="mb-2" @click="router.push('/admin/signup-log')">
           가입 이력 조회
-          <v-badge v-if="todaySignupCount > 0" :content="todaySignupCount" color="error" inline class="ml-2" />
         </v-btn>
         <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-history" class="mb-2" @click="router.push('/admin/access-history')">
           이력 조회
