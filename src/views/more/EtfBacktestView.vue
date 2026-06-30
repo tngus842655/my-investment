@@ -395,13 +395,16 @@ const onMouseMove = (e: MouseEvent) => { showTooltip(e.clientX) }
 // ── 연도별 테이블 ─────────────────────────────────────
 const showRecentOnly = ref(true)
 
-const yearlyRows = computed(() => {
+const allYearlyRows = computed(() => {
   if (!result.value) return []
   const map = new Map<string, MonthlyPoint>()
   for (const m of result.value.monthly) { map.set(m.ym.slice(0, 4), m) }
-  const all = [...map.values()]
-  return showRecentOnly.value ? all.slice(-5) : all
+  return [...map.values()]
 })
+
+const yearlyRows = computed(() =>
+  showRecentOnly.value ? allYearlyRows.value.slice(-5) : allYearlyRows.value
+)
 </script>
 
 <template>
@@ -826,7 +829,7 @@ const yearlyRows = computed(() => {
       <v-card class="glass-card pa-4" rounded="xl">
         <div class="d-flex align-center justify-space-between mb-3">
           <div class="text-body-2 font-weight-bold">연도별 스냅샷 (연말 기준)</div>
-          <button v-if="result && result.monthly.length > 5" class="toggle-btn" @click="showRecentOnly = !showRecentOnly">
+          <button v-if="allYearlyRows.length > 5" class="toggle-btn" @click="showRecentOnly = !showRecentOnly">
             {{ showRecentOnly ? '전체 보기' : '최근 5년' }}
           </button>
         </div>
