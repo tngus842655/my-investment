@@ -42,6 +42,7 @@ const isEditMode = computed(() => !!props.initialData)
 const ticker = ref('')
 const krSearchQuery = ref('')  // 국내주식 한글 검색어
 const selectedKrStock = ref<{ value: string; name: string } | null>(null)
+const accountName = ref('기본')
 
 watch(selectedKrStock, (v) => { ticker.value = v?.value ?? '' })
 const assetType = ref('')
@@ -159,6 +160,7 @@ watch(dialog, async (opened) => {
     }
     assetType.value = props.initialData.asset_type
     currency.value = props.initialData.currency
+    accountName.value = props.initialData.account_name ?? '기본'
     await loadInitialTx(props.initialData.id)
   } else {
     reset(false)
@@ -272,10 +274,10 @@ const save = async () => {
     }
 
     if (isEditMode.value && props.initialData) {
-      // 통화 수정
+      // 통화 + 계좌명 수정
       const { error } = await supabase
         .from('portfolios')
-        .update({ currency: currency.value })
+        .update({ currency: currency.value, account_name: accountName.value.trim() || '기본' })
         .eq('id', props.initialData.id)
       if (error) throw error
 
@@ -326,11 +328,13 @@ const save = async () => {
             ? 'CASH_USD'
             : 'CASH_KRW'
           : (ticker.value?.trim() ?? '').toUpperCase()
+      const accountNameToSave = accountName.value.trim() || '기본'
       const { data: existing } = await supabase
         .from('portfolios')
         .select('id')
         .eq('user_id', user.id)
         .eq('ticker', tickerToSave)
+        .eq('account_name', accountNameToSave)
         .maybeSingle()
       if (existing) {
         const label =
@@ -341,8 +345,8 @@ const save = async () => {
             : tickerToSave
         const suffix =
           assetType.value === '현금'
-            ? '이 이미 등록되어 있습니다.'
-            : ' 종목이 이미 등록되어 있습니다.'
+            ? `이 [${accountNameToSave}] 계좌에 이미 등록되어 있습니다.`
+            : ` 종목이 [${accountNameToSave}] 계좌에 이미 등록되어 있습니다.`
         showMessage(`${label}${suffix}`, 'warning')
         saving.value = false
         return
@@ -355,6 +359,7 @@ const save = async () => {
           ticker: tickerToSave,
           asset_type: assetType.value,
           currency: currency.value,
+          account_name: accountNameToSave,
           quantity: 0,
           avg_price: 0,
         })
@@ -397,6 +402,7 @@ const reset = (closeDialog = true) => {
   selectedKrStock.value = null
   assetType.value = ''
   currency.value = 'KRW'
+  accountName.value = '기본'
   initQuantity.value = ''
   initAvgPrice.value = ''
   existingInitialTxId.value = null
@@ -421,6 +427,19 @@ const reset = (closeDialog = true) => {
           variant="outlined"
           :disabled="isEditMode"
           :hint="isEditMode ? '자산유형은 수정할 수 없습니다.' : ''"
+          persistent-hint
+        />
+
+        <!-- 계좌 구분 -->
+        <v-text-field
+          v-model="accountName"
+          label="계좌 구분"
+          prepend-inner-icon="mdi-bank-outline"
+          variant="outlined"
+          class="mt-3"
+          maxlength="20"
+          placeholder="기본"
+          hint="같은 종목을 여러 계좌로 나눠 관리할 때 사용 (예: 미래에셋, ISA)"
           persistent-hint
         />
 

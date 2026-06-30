@@ -755,6 +755,9 @@ onUnmounted(() => {
                     <template v-else>
                       <span class="text-body-1 font-weight-bold">{{ item.ticker }}</span>
                     </template>
+                    <div v-if="item.account_name && item.account_name !== '기본'" class="account-tag">
+                      {{ item.account_name }}
+                    </div>
                   </div>
                 </div>
                 <v-chip
@@ -890,6 +893,17 @@ onUnmounted(() => {
   font-size: 11px;
   font-weight: 400;
   color: rgba(var(--v-theme-on-surface), 0.45);
+}
+
+.account-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.1);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-top: 2px;
 }
 
 .compact-price-row {

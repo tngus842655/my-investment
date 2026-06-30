@@ -12,6 +12,7 @@ export interface PortfolioAsset {
   quantity: number
   avg_price: number
   currency: string
+  account_name: string
   sort_order: number
   created_at: string
   updated_at: string
