@@ -4,6 +4,17 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
+## 0. 코딩 완료 후 필수 체크
+
+**수정한 파일이 있으면 반드시 타입 체크를 실행하고 오류가 없는지 확인할 것.**
+
+```bash
+./node_modules/.bin/vue-tsc --noEmit
+```
+
+`npx tsc --noEmit`은 Vue SFC를 검사하지 못하므로 반드시 `vue-tsc`를 사용할 것.
+오류가 있으면 커밋 전에 수정한다. 오류가 없을 때만 커밋·푸시한다.
+
 ## 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
@@ -270,15 +281,28 @@ END;
 
 사용자 피드백. RLS 적용.
 
-| 컬럼명     | 타입        | 설명                      |
-| ---------- | ----------- | ------------------------- |
-| id         | uuid        | PK                        |
-| email      | text        | 작성자 이메일             |
-| category   | text        | 피드백 카테고리           |
-| title      | text        | 제목                      |
-| content    | text        | 내용                      |
-| status     | text        | 처리 상태 (기본값: 'NEW') |
-| created_at | timestamptz |                           |
+| 컬럼명            | 타입        | 설명                                                                      |
+| ----------------- | ----------- | ------------------------------------------------------------------------- |
+| id                | uuid        | PK                                                                        |
+| email             | text        | 작성자 이메일                                                             |
+| category          | text        | 피드백 카테고리 (버그신고/기능제안/기타의견)                              |
+| title             | text        | 제목                                                                      |
+| content           | text        | 내용                                                                      |
+| status            | text        | 처리 상태 (기본값: 'RECEIVED') RECEIVED/REVIEWING/DONE/REJECTED           |
+| admin_comment     | text        | 관리자 답변 (nullable)                                                    |
+| is_read_by_user   | boolean     | 사용자 확인 여부 (기본값 true). 관리자가 상태변경/답변 저장 시 false로 전환 |
+| created_at        | timestamptz |                                                                           |
+
+**RLS 정책 (feedback 테이블):**
+
+| 정책명                                  | 커맨드  | 설명                                                    |
+| --------------------------------------- | ------- | ------------------------------------------------------- |
+| 로그인 유저 insert                      | INSERT  | 로그인한 모든 사용자 insert 가능                        |
+| 관리자 전체 조회                        | SELECT  | 관리자만 전체 조회 가능                                 |
+| 관리자 수정                             | UPDATE  | 관리자만 수정 가능 (상태 변경, 답변 저장 등)            |
+| 관리자 삭제                             | DELETE  | 관리자만 삭제 가능                                      |
+| Users can read own feedback             | SELECT  | 사용자가 본인 이메일의 의견 조회 가능                   |
+| Users can update read status on own feedback | UPDATE | 사용자가 본인 의견의 is_read_by_user 업데이트 가능  |
 
 ### 공통 패턴
 

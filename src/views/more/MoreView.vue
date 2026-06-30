@@ -12,12 +12,21 @@ const confirmDialog = ref(false)
 const themeSheet = ref(false)
 const isAdmin = ref(false)
 const newFeedbackCount = ref(0)
+const unreadFeedbackCount = ref(0)
 
 supabase.auth.getUser().then(async ({ data: { user } }) => {
-  if (user?.email === ADMIN_EMAIL) {
+  if (!user) return
+  if (user.email === ADMIN_EMAIL) {
     isAdmin.value = true
-    const { count } = await supabase.from('feedback').select('id', { count: 'exact', head: true }).eq('status', 'NEW')
+    const { count } = await supabase.from('feedback').select('id', { count: 'exact', head: true }).eq('status', 'RECEIVED')
     newFeedbackCount.value = count ?? 0
+  } else {
+    const { count } = await supabase
+      .from('feedback')
+      .select('id', { count: 'exact', head: true })
+      .eq('email', user.email ?? '')
+      .eq('is_read_by_user', false)
+    unreadFeedbackCount.value = count ?? 0
   }
 })
 
@@ -237,10 +246,11 @@ const currentThemeLabel = computed(() => {
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/feedback')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-message-text-outline</v-icon></div>
         <div>
-          <div class="text-body-2 font-weight-medium">의견 보내기</div>
+          <div class="text-body-2 font-weight-medium">의견 관리</div>
           <div class="text-caption text-medium-emphasis">불편한 점이나 개선 아이디어를 보내주세요.</div>
         </div>
         <v-spacer />
+        <span v-if="unreadFeedbackCount > 0" class="unread-dot mr-2" />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
     </div>
@@ -457,6 +467,14 @@ const currentThemeLabel = computed(() => {
 .glass-dialog {
   background: var(--fp-surface) !important;
   border: 1px solid var(--fp-outline) !important;
+}
+
+.unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgb(var(--v-theme-error));
+  flex-shrink: 0;
 }
 
 .delete-account-btn {

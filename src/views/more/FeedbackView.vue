@@ -10,11 +10,25 @@ const category = ref<string | null>(null)
 const title = ref('')
 const content = ref('')
 const userEmail = ref('')
-const loading = ref(false)
-const submitted = ref(false)
+const submitting = ref(false)
+const listLoading = ref(true)
+const expandedId = ref<string | null>(null)
 
 const TITLE_MAX = 100
 const CONTENT_MAX = 2000
+
+interface MyFeedback {
+  id: string
+  category: string
+  title: string
+  content: string
+  status: string
+  admin_comment: string | null
+  is_read_by_user: boolean
+  created_at: string
+}
+
+const feedbacks = ref<MyFeedback[]>([])
 
 const categories = [
   { label: '버그 신고', value: '버그신고', icon: 'mdi-bug-outline' },
@@ -22,124 +36,213 @@ const categories = [
   { label: '기타 의견', value: '기타의견', icon: 'mdi-chat-outline' },
 ]
 
-const isValid = computed(() => !!category.value && title.value.trim().length > 0 && content.value.trim().length > 0)
+const statusConfig: Record<string, { label: string; color: string }> = {
+  RECEIVED: { label: '접수', color: 'primary' },
+  REVIEWING: { label: '검토중', color: 'warning' },
+  DONE: { label: '반영완료', color: 'success' },
+  REJECTED: { label: '반려', color: 'error' },
+}
+
+const isValid = computed(
+  () => !!category.value && title.value.trim().length > 0 && content.value.trim().length > 0,
+)
+
+const KST = 'Asia/Seoul'
+const formatDate = (iso: string) => {
+  const d = new Date(iso)
+  const parts = new Intl.DateTimeFormat('ko-KR', {
+    timeZone: KST, year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(d)
+  const get = (type: string) => parts.find(p => p.type === type)?.value ?? ''
+  return `${get('year')}.${get('month')}.${get('day')}`
+}
 
 onMounted(async () => {
   const { data: { user } } = await supabase.auth.getUser()
   userEmail.value = user?.email ?? ''
+  await loadFeedbacks()
+  await markAllRead()
 })
+
+const loadFeedbacks = async () => {
+  listLoading.value = true
+  const { data } = await supabase
+    .from('feedback')
+    .select('id, category, title, content, status, admin_comment, is_read_by_user, created_at')
+    .eq('email', userEmail.value)
+    .order('created_at', { ascending: false })
+  feedbacks.value = data ?? []
+  listLoading.value = false
+}
+
+const markAllRead = async () => {
+  const unread = feedbacks.value.filter(f => !f.is_read_by_user)
+  if (unread.length === 0) return
+  await supabase
+    .from('feedback')
+    .update({ is_read_by_user: true })
+    .eq('email', userEmail.value)
+    .eq('is_read_by_user', false)
+  feedbacks.value = feedbacks.value.map(f => ({ ...f, is_read_by_user: true }))
+}
 
 const submit = async () => {
   if (!isValid.value) {
     showMessage('모든 항목을 입력해주세요.', 'error')
     return
   }
-  loading.value = true
+  submitting.value = true
   try {
     const { error } = await supabase.from('feedback').insert({
       email: userEmail.value,
       category: category.value,
       title: title.value.trim(),
       content: content.value.trim(),
+      status: 'RECEIVED',
     })
     if (error) throw error
-    submitted.value = true
+    category.value = null
+    title.value = ''
+    content.value = ''
+    showMessage('의견이 접수되었습니다.', 'success')
+    await loadFeedbacks()
   } catch {
     showMessage('전송 중 오류가 발생했습니다.', 'error')
   } finally {
-    loading.value = false
+    submitting.value = false
   }
+}
+
+const toggleExpand = (id: string) => {
+  expandedId.value = expandedId.value === id ? null : id
 }
 </script>
 
 <template>
-  <!-- 전송 완료 화면 -->
-  <div v-if="submitted" class="success-screen">
-    <div class="success-inner">
-      <div class="success-icon-wrap mb-6">
-        <v-icon size="56" color="primary">mdi-check-circle-outline</v-icon>
-      </div>
-      <div class="text-h6 font-weight-bold mb-3">전달되었습니다!</div>
-      <div class="text-body-2 text-medium-emphasis text-center" style="line-height: 1.8">
-        보내주신 의견은 다음 업데이트에<br>적극 반영하겠습니다.<br>소중한 의견 감사합니다. 🙏
-      </div>
-      <div class="success-actions mt-8" style="width: 100%; max-width: 280px">
-        <button class="action-btn action-btn--primary" @click="router.back()">
-          돌아가기
-        </button>
+  <v-container class="pa-4 pa-sm-6" style="max-width: 600px">
+    <!-- 헤더 -->
+    <div class="d-flex align-center ga-3 mb-5">
+      <button class="back-btn" @click="router.back()">
+        <v-icon size="20">mdi-arrow-left</v-icon>
+      </button>
+      <div>
+        <div class="text-h5 font-weight-bold">의견 관리</div>
+        <div class="text-body-2 text-medium-emphasis">불편한 점이나 개선 아이디어를 보내주세요.</div>
       </div>
     </div>
-  </div>
 
-  <!-- 입력 폼 -->
-  <template v-else>
-    <v-container class="pa-4 pa-sm-6 pb-0" style="max-width: 600px">
-      <div class="d-flex align-center ga-3 mb-5">
-        <button class="back-btn" @click="router.back()">
-          <v-icon size="20">mdi-arrow-left</v-icon>
-        </button>
-        <div>
-          <div class="text-h5 font-weight-bold">의견 보내기</div>
-          <div class="text-body-2 text-medium-emphasis">불편한 점이나 개선 아이디어를 보내주세요.</div>
-        </div>
-      </div>
-
-      <!-- 구분 -->
-      <div class="field-card mb-3">
-        <div class="field-label mb-3">구분 <span class="required">*</span></div>
-        <div class="d-flex ga-2">
-          <button
-            v-for="cat in categories"
-            :key="cat.value"
-            class="cat-btn"
-            :class="{ 'cat-btn--active': category === cat.value }"
-            @click="category = cat.value"
-          >
-            <v-icon size="14" class="mr-1">{{ cat.icon }}</v-icon>{{ cat.label }}
-          </button>
-        </div>
-      </div>
-
-      <!-- 제목 -->
-      <div class="field-card mb-3">
-        <div class="field-label mb-2">제목 <span class="required">*</span></div>
-        <input
-          v-model="title"
-          class="plain-input"
-          placeholder="제목을 입력해주세요"
-          :maxlength="TITLE_MAX"
-        />
-      </div>
-
-      <!-- 내용 -->
-      <div class="field-card mb-4">
-        <div class="field-label mb-2">내용 <span class="required">*</span></div>
-        <textarea
-          v-model="content"
-          class="plain-input plain-textarea"
-          placeholder="자세한 내용을 입력해주세요"
-          :maxlength="CONTENT_MAX"
-          rows="7"
-        />
-        <div class="char-count">{{ content.length }} / {{ CONTENT_MAX }}</div>
-      </div>
-    </v-container>
-
-    <!-- 하단 고정 버튼 -->
-    <div class="submit-bar">
-      <div class="submit-bar-inner">
+    <!-- 새 의견 작성 -->
+    <div class="section-label mb-2">새 의견 작성</div>
+    <div class="field-card mb-2">
+      <div class="field-label mb-3">구분 <span class="required">*</span></div>
+      <div class="d-flex ga-2">
         <button
-          class="submit-btn"
-          :class="{ 'submit-btn--disabled': !isValid || loading }"
-          :disabled="!isValid || loading"
-          @click="submit"
+          v-for="cat in categories"
+          :key="cat.value"
+          class="cat-btn"
+          :class="{ 'cat-btn--active': category === cat.value }"
+          @click="category = cat.value"
         >
-          <span v-if="loading">전송 중...</span>
-          <span v-else>의견 보내기</span>
+          <v-icon size="14" class="mr-1">{{ cat.icon }}</v-icon>{{ cat.label }}
         </button>
       </div>
     </div>
-  </template>
+
+    <div class="field-card mb-2">
+      <div class="d-flex align-center justify-space-between mb-2">
+        <div class="field-label">제목 <span class="required">*</span></div>
+        <span class="char-count">{{ title.length }} / {{ TITLE_MAX }}</span>
+      </div>
+      <input
+        v-model="title"
+        class="plain-input"
+        placeholder="제목을 입력해주세요"
+        :maxlength="TITLE_MAX"
+      />
+    </div>
+
+    <div class="field-card mb-4">
+      <div class="d-flex align-center justify-space-between mb-2">
+        <div class="field-label">내용 <span class="required">*</span></div>
+        <span class="char-count">{{ content.length }} / {{ CONTENT_MAX }}</span>
+      </div>
+      <textarea
+        v-model="content"
+        class="plain-input plain-textarea"
+        placeholder="자세한 내용을 입력해주세요"
+        :maxlength="CONTENT_MAX"
+        rows="5"
+      />
+    </div>
+
+    <button
+      class="submit-btn mb-8"
+      :class="{ 'submit-btn--disabled': !isValid || submitting }"
+      :disabled="!isValid || submitting"
+      @click="submit"
+    >
+      <span v-if="submitting">전송 중...</span>
+      <span v-else>의견 보내기</span>
+    </button>
+
+    <!-- 내 의견 목록 -->
+    <div class="section-label mb-2">내 의견 목록</div>
+
+    <template v-if="listLoading">
+      <v-skeleton-loader v-for="i in 2" :key="i" type="card" class="mb-3 rounded-xl" />
+    </template>
+
+    <div v-else-if="feedbacks.length === 0" class="empty-state">
+      <v-icon size="36" style="opacity:0.25" class="mb-2">mdi-inbox-outline</v-icon>
+      <div class="text-body-2 text-medium-emphasis">작성한 의견이 없습니다.</div>
+    </div>
+
+    <div v-else class="d-flex flex-column ga-3 pb-6">
+      <div
+        v-for="f in feedbacks"
+        :key="f.id"
+        class="feedback-card"
+        :class="{ 'feedback-card--answered': !!f.admin_comment }"
+      >
+        <!-- 상단 행 -->
+        <div class="d-flex align-center ga-2 mb-2">
+          <v-chip size="x-small" color="primary" variant="outlined">{{ f.category }}</v-chip>
+          <v-chip
+            size="x-small"
+            :color="statusConfig[f.status]?.color ?? 'default'"
+            variant="tonal"
+          >{{ statusConfig[f.status]?.label ?? f.status }}</v-chip>
+          <v-spacer />
+          <span class="date-text">{{ formatDate(f.created_at) }}</span>
+        </div>
+
+        <!-- 제목 + 작성내용 토글 -->
+        <div class="d-flex align-center ga-1 cursor-pointer" @click="toggleExpand(f.id)">
+          <span class="title-text">{{ f.title }}</span>
+          <v-icon
+            size="16"
+            style="opacity:0.4; transition: transform 0.2s; flex-shrink:0; margin-left:auto"
+            :style="expandedId === f.id ? 'transform:rotate(180deg)' : ''"
+          >mdi-chevron-down</v-icon>
+        </div>
+
+        <!-- 작성 내용 (토글) -->
+        <div v-if="expandedId === f.id" class="content-box mt-2">
+          <div class="text-caption text-medium-emphasis mb-1">작성 내용</div>
+          <div class="text-body-2" style="white-space:pre-wrap; line-height:1.7">{{ f.content }}</div>
+        </div>
+
+        <!-- 관리자 답변 (항상 노출) -->
+        <div v-if="f.admin_comment" class="answer-box mt-3">
+          <div class="d-flex align-center ga-1 mb-1">
+            <v-icon size="14" color="primary">mdi-message-reply-outline</v-icon>
+            <span class="text-caption font-weight-bold text-primary">관리자 답변</span>
+          </div>
+          <div class="text-body-2" style="white-space:pre-wrap; line-height:1.7">{{ f.admin_comment }}</div>
+        </div>
+      </div>
+    </div>
+  </v-container>
 </template>
 
 <style scoped>
@@ -158,6 +261,15 @@ const submit = async () => {
 }
 .back-btn:active { opacity: 0.6; }
 
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(var(--v-theme-on-surface), 0.4);
+  padding: 0 4px;
+}
+
 .field-card {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
@@ -171,11 +283,8 @@ const submit = async () => {
   color: rgb(var(--v-theme-on-surface));
 }
 
-.required {
-  color: rgb(var(--v-theme-error));
-}
+.required { color: rgb(var(--v-theme-error)); }
 
-/* 카테고리 버튼 */
 .cat-btn {
   flex: 1;
   padding: 8px 4px;
@@ -191,11 +300,9 @@ const submit = async () => {
 }
 .cat-btn--active {
   border-color: rgb(var(--v-theme-primary));
-  background: transparent;
   color: rgb(var(--v-theme-primary));
 }
 
-/* 입력 필드 */
 .plain-input {
   width: 100%;
   border: none;
@@ -206,35 +313,12 @@ const submit = async () => {
   caret-color: rgb(var(--v-theme-primary));
   resize: none;
 }
-.plain-input::placeholder {
-  color: rgba(var(--v-theme-on-surface), 0.35);
-}
-.plain-textarea {
-  min-height: 140px;
-  line-height: 1.65;
-  display: block;
-}
+.plain-input::placeholder { color: rgba(var(--v-theme-on-surface), 0.35); }
+.plain-textarea { min-height: 100px; line-height: 1.65; display: block; }
 
 .char-count {
-  text-align: right;
   font-size: 11px;
   color: rgba(var(--v-theme-on-surface), 0.35);
-  margin-top: 8px;
-}
-
-/* 하단 버튼 바 */
-.submit-bar {
-  position: sticky;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: rgb(var(--v-theme-background));
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.06);
-}
-.submit-bar-inner {
-  max-width: 568px;
-  margin: 0 auto;
 }
 
 .submit-btn {
@@ -251,47 +335,60 @@ const submit = async () => {
   letter-spacing: 0.02em;
 }
 .submit-btn:active { opacity: 0.8; }
-.submit-btn--disabled {
-  opacity: 0.4;
-  cursor: default;
-}
+.submit-btn--disabled { opacity: 0.4; cursor: default; }
 .submit-btn--disabled:active { opacity: 0.4; }
 
-/* 완료 화면 */
-.success-screen {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: calc(100vh - 56px);
-  padding: 24px;
-}
-.success-inner {
+.empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding: 40px 0;
+  color: rgba(var(--v-theme-on-surface), 0.4);
 }
-.success-icon-wrap {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  background: rgba(var(--v-theme-primary), 0.1);
+
+.feedback-card {
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  border-radius: 16px;
+  padding: 14px 16px;
+  transition: border-color 0.15s;
+}
+.feedback-card--answered {
+  border-color: rgba(var(--v-theme-primary), 0.3);
+}
+
+.cursor-pointer { cursor: pointer; }
+
+.date-text {
+  font-size: 12px;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+}
+
+.title-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.answer-preview {
   display: flex;
   align-items: center;
-  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(var(--v-theme-primary), 0.06);
 }
-.action-btn {
-  width: 100%;
-  padding: 14px;
-  border-radius: 14px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: opacity 0.15s;
-  border: none;
+
+.content-box {
+  background: rgba(var(--v-theme-on-surface), 0.04);
+  border-radius: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.06);
 }
-.action-btn:active { opacity: 0.7; }
-.action-btn--primary {
-  background: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-on-primary));
+
+.answer-box {
+  background: rgba(var(--v-theme-primary), 0.06);
+  border-radius: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(var(--v-theme-primary), 0.15);
 }
 </style>
