@@ -205,7 +205,7 @@ const toggleExpand = (id: string) => {
         :class="{ 'feedback-card--answered': !!f.admin_comment }"
       >
         <!-- 상단 행 -->
-        <div class="d-flex align-center ga-2 mb-2 cursor-pointer" @click="toggleExpand(f.id)">
+        <div class="d-flex align-center ga-2 mb-2">
           <v-chip size="x-small" color="primary" variant="outlined">{{ f.category }}</v-chip>
           <v-chip
             size="x-small"
@@ -214,36 +214,31 @@ const toggleExpand = (id: string) => {
           >{{ statusConfig[f.status]?.label ?? f.status }}</v-chip>
           <v-spacer />
           <span class="date-text">{{ formatDate(f.created_at) }}</span>
+        </div>
+
+        <!-- 제목 + 작성내용 토글 -->
+        <div class="d-flex align-center ga-1 cursor-pointer" @click="toggleExpand(f.id)">
+          <span class="title-text">{{ f.title }}</span>
           <v-icon
             size="16"
-            style="opacity:0.4; transition: transform 0.2s; flex-shrink:0"
+            style="opacity:0.4; transition: transform 0.2s; flex-shrink:0; margin-left:auto"
             :style="expandedId === f.id ? 'transform:rotate(180deg)' : ''"
           >mdi-chevron-down</v-icon>
         </div>
 
-        <!-- 제목 -->
-        <div class="title-text cursor-pointer mb-1" @click="toggleExpand(f.id)">{{ f.title }}</div>
-
-        <!-- 관리자 답변 미리보기 (접힌 상태, 답변 있을 때만) -->
-        <div v-if="f.admin_comment && expandedId !== f.id" class="answer-preview mt-2">
-          <v-icon size="12" color="primary" class="mr-1">mdi-message-reply-outline</v-icon>
-          <span class="text-caption text-primary">관리자 답변이 등록되었습니다</span>
+        <!-- 작성 내용 (토글) -->
+        <div v-if="expandedId === f.id" class="content-box mt-2">
+          <div class="text-caption text-medium-emphasis mb-1">작성 내용</div>
+          <div class="text-body-2" style="white-space:pre-wrap; line-height:1.7">{{ f.content }}</div>
         </div>
 
-        <!-- 펼침 내용 -->
-        <div v-if="expandedId === f.id" class="mt-3">
-          <div class="content-box mb-3">
-            <div class="text-caption text-medium-emphasis mb-1">작성 내용</div>
-            <div class="text-body-2" style="white-space:pre-wrap; line-height:1.7">{{ f.content }}</div>
+        <!-- 관리자 답변 (항상 노출) -->
+        <div v-if="f.admin_comment" class="answer-box mt-3">
+          <div class="d-flex align-center ga-1 mb-1">
+            <v-icon size="14" color="primary">mdi-message-reply-outline</v-icon>
+            <span class="text-caption font-weight-bold text-primary">관리자 답변</span>
           </div>
-
-          <div v-if="f.admin_comment" class="answer-box">
-            <div class="d-flex align-center ga-1 mb-1">
-              <v-icon size="14" color="primary">mdi-message-reply-outline</v-icon>
-              <span class="text-caption font-weight-bold text-primary">관리자 답변</span>
-            </div>
-            <div class="text-body-2" style="white-space:pre-wrap; line-height:1.7">{{ f.admin_comment }}</div>
-          </div>
+          <div class="text-body-2" style="white-space:pre-wrap; line-height:1.7">{{ f.admin_comment }}</div>
         </div>
       </div>
     </div>
