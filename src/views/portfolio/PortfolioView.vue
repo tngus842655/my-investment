@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { prefetchTickerLogos } from '@/services/tickerLogo'
 import { supabase } from '@/services/supabase'
 import PortfolioAddDialog from './PortfolioAddDialog.vue'
@@ -399,7 +399,11 @@ const deletePortfolio = async () => {
 // ── 포맷 유틸 ─────────────────────────────────────
 const formatKrw = (v: number) => Math.round(v).toLocaleString('ko-KR')
 
-// 총합 카드용 — 1억 이상일 때만 한글 축약, 미만은 숫자 그대로
+// 화면 너비 감지 — 360px 미만(폴드 등 좁은 화면)이면 한글 축약
+const windowWidth = ref(window.innerWidth)
+const onResize = () => { windowWidth.value = window.innerWidth }
+const isNarrowScreen = computed(() => windowWidth.value < 360)
+
 const formatKrwShort = (v: number): string => {
   const abs = Math.abs(v)
   const sign = v < 0 ? '-' : ''
@@ -410,7 +414,13 @@ const formatKrwShort = (v: number): string => {
   }
   return `${sign}${Math.round(abs).toLocaleString()}`
 }
-const formatProfitShort = (v: number) => (v > 0 ? '+' : '') + formatKrwShort(v)
+
+// 총합 카드용 — 좁은 화면이면 한글 축약, 아니면 숫자 그대로
+const formatSummaryKrw = (v: number) => isNarrowScreen.value ? formatKrwShort(v) : formatKrw(v)
+const formatSummaryProfit = (v: number) =>
+  isNarrowScreen.value
+    ? (v > 0 ? '+' : '') + formatKrwShort(v)
+    : formatProfit(v)
 
 // 평균단가/현재가 표시 — KRW는 금액이 크면 축약, USD는 소수점 처리
 const formatPrice = (v: number, currency: string) => {
@@ -518,6 +528,7 @@ onMounted(async () => {
   window.addEventListener('mousemove', onDragMove)
   window.addEventListener('touchmove', onDragMove, { passive: false })
   window.addEventListener('touchend', endDrag)
+  window.addEventListener('resize', onResize)
 })
 onUnmounted(() => {
   dragCloneEl?.remove()
@@ -525,6 +536,7 @@ onUnmounted(() => {
   window.removeEventListener('mousemove', onDragMove)
   window.removeEventListener('touchmove', onDragMove)
   window.removeEventListener('touchend', endDrag)
+  window.removeEventListener('resize', onResize)
 })
 </script>
 
@@ -604,18 +616,18 @@ onUnmounted(() => {
         <div class="summary-grid">
           <div class="summary-row">
             <span class="text-caption text-medium-emphasis">매입금액</span>
-            <span class="text-caption font-weight-medium">{{ formatKrwShort(totalCostKrw) }}</span>
+            <span class="text-caption font-weight-medium">{{ formatSummaryKrw(totalCostKrw) }}</span>
           </div>
           <div class="summary-row">
             <span class="text-caption text-medium-emphasis">평가손익</span>
             <span
               class="text-caption font-weight-medium"
               :class="totalProfitAmountKrw >= 0 ? 'text-success' : 'text-error'"
-            >{{ formatProfitShort(totalProfitAmountKrw) }}</span>
+            >{{ formatSummaryProfit(totalProfitAmountKrw) }}</span>
           </div>
           <div class="summary-row">
             <span class="text-caption text-medium-emphasis">평가금액</span>
-            <span class="text-caption font-weight-medium">{{ formatKrwShort(totalEvaluationAmountKrw) }}</span>
+            <span class="text-caption font-weight-medium">{{ formatSummaryKrw(totalEvaluationAmountKrw) }}</span>
           </div>
           <div class="summary-row">
             <span class="text-caption text-medium-emphasis">수익률(%)</span>
