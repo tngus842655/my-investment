@@ -806,7 +806,7 @@ onUnmounted(() => {
                       <span class="ticker-name font-weight-bold">{{
                         getTickerLabel(item.ticker).name
                       }}</span>
-                      <span class="ticker-sub ml-1">{{ item.ticker }}</span>
+                      <span v-if="item.currency === 'USD'" class="ticker-sub ml-1">{{ item.ticker }}</span>
                       <span v-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
                     </template>
                     <template v-else>
