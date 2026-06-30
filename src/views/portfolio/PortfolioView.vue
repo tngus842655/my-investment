@@ -796,7 +796,7 @@ onUnmounted(() => {
                       >mdi-chart-line</v-icon
                     >
                   </div>
-                  <div style="min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">
+                  <div style="min-width: 0; overflow: hidden; display: flex; align-items: center; gap: 4px">
                     <template v-if="item.asset_type === '현금'">
                       <span class="ticker-name font-weight-bold">{{
                         getTickerLabel(item.ticker).name
@@ -936,10 +936,6 @@ onUnmounted(() => {
 .ticker-name {
   font-size: 1rem;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
-  max-width: 100%;
 }
 
 .ticker-sub {
