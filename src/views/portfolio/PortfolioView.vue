@@ -408,9 +408,8 @@ const formatKrwShort = (v: number): string => {
   const abs = Math.abs(v)
   const sign = v < 0 ? '-' : ''
   if (abs >= 100_000_000) {
-    const eok = Math.floor(abs / 100_000_000)
-    const man = Math.round((abs % 100_000_000) / 10_000)
-    return man > 0 ? `${sign}${eok}억 ${man.toLocaleString()}만` : `${sign}${eok}억`
+    const eok = (abs / 100_000_000).toFixed(2).replace(/\.?0+$/, '')
+    return `${sign}${eok}억`
   }
   if (abs >= 10_000) {
     const man = Math.round(abs / 10_000)
