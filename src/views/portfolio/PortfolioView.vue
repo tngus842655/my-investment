@@ -705,8 +705,8 @@ onUnmounted(() => {
               "
             >
               <!-- 상단: 종목명 + 수익률 + 드래그 핸들 -->
-              <div class="d-flex justify-space-between align-center mb-2">
-                <div class="d-flex align-center ga-2">
+              <div class="d-flex justify-space-between align-center mb-2" style="gap: 6px">
+                <div class="d-flex align-center ga-2" style="min-width: 0; flex: 1">
                   <v-icon
                     v-if="sortKey === 'custom'"
                     class="drag-handle"
@@ -768,20 +768,20 @@ onUnmounted(() => {
                       >mdi-chart-line</v-icon
                     >
                   </div>
-                  <div>
+                  <div style="min-width: 0; overflow: hidden">
                     <template v-if="item.asset_type === '현금'">
-                      <span class="text-body-1 font-weight-bold">{{
+                      <span class="ticker-name font-weight-bold">{{
                         getTickerLabel(item.ticker).name
                       }}</span>
                     </template>
                     <template v-else-if="getTickerLabel(item.ticker).showTicker">
-                      <span class="text-body-1 font-weight-bold">{{
+                      <span class="ticker-name font-weight-bold">{{
                         getTickerLabel(item.ticker).name
                       }}</span>
                       <span class="ticker-sub ml-1">{{ item.ticker }}</span>
                     </template>
                     <template v-else>
-                      <span class="text-body-1 font-weight-bold">{{ item.ticker }}</span>
+                      <span class="ticker-name font-weight-bold">{{ item.ticker }}</span>
                     </template>
                     <div v-if="item.account_name && item.account_name !== '기본'" class="account-tag">
                       {{ item.account_name }}
@@ -793,6 +793,7 @@ onUnmounted(() => {
                   :color="(item.profitRate ?? 0) >= 0 ? 'success' : 'error'"
                   size="x-small"
                   variant="tonal"
+                  style="flex-shrink: 0"
                 >
                   {{ formatPercent(item.profitRate ?? 0) }}
                 </v-chip>
@@ -832,13 +833,14 @@ onUnmounted(() => {
                   </template>
                 </div>
                 <!-- 평가금액 + 평가손익 한 줄 -->
-                <div class="d-flex justify-space-between align-center mt-2">
-                  <div class="text-body-2 font-weight-bold text-primary">
+                <div class="d-flex justify-space-between align-center mt-2" style="gap: 6px">
+                  <div class="text-body-2 font-weight-bold text-primary" style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">
                     {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원
                   </div>
                   <div
                     class="text-body-2 font-weight-bold"
                     :class="(item.profitAmountKrw ?? 0) >= 0 ? 'text-success' : 'text-error'"
+                    style="flex-shrink: 0; white-space: nowrap"
                   >
                     {{ formatProfit(item.profitAmountKrw ?? 0) }}원
                   </div>
@@ -915,6 +917,15 @@ onUnmounted(() => {
 }
 .logo-text-kr {
   color: var(--fp-warning);
+}
+
+.ticker-name {
+  font-size: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  max-width: 100%;
 }
 
 .ticker-sub {
