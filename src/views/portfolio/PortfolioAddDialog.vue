@@ -418,6 +418,18 @@ const reset = (closeDialog = true) => {
       </v-card-title>
 
       <v-card-text>
+        <!-- 계좌 구분 -->
+        <v-text-field
+          v-model="accountName"
+          label="계좌 구분"
+          prepend-inner-icon="mdi-bank-outline"
+          variant="outlined"
+          maxlength="20"
+          placeholder="기본"
+          hint="같은 종목을 여러 계좌로 나눠 관리할 때 사용 (예: 미래에셋, ISA)"
+          persistent-hint
+        />
+
         <!-- 자산유형 -->
         <v-select
           v-model="assetType"
@@ -425,21 +437,9 @@ const reset = (closeDialog = true) => {
           label="자산유형"
           prepend-inner-icon="mdi-shape"
           variant="outlined"
+          class="mt-3"
           :disabled="isEditMode"
           :hint="isEditMode ? '자산유형은 수정할 수 없습니다.' : ''"
-          persistent-hint
-        />
-
-        <!-- 계좌 구분 -->
-        <v-text-field
-          v-model="accountName"
-          label="계좌 구분"
-          prepend-inner-icon="mdi-bank-outline"
-          variant="outlined"
-          class="mt-3"
-          maxlength="20"
-          placeholder="기본"
-          hint="같은 종목을 여러 계좌로 나눠 관리할 때 사용 (예: 미래에셋, ISA)"
           persistent-hint
         />
 

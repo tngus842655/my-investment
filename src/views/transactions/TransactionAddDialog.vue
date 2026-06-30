@@ -459,6 +459,17 @@ const reset = (closeDialog = true) => {
               <v-icon size="13" color="primary" class="mr-1">mdi-plus-circle-outline</v-icon>
               새 종목 정보 입력
             </div>
+            <v-text-field
+              v-model="newAccountName"
+              label="계좌명"
+              placeholder="기본"
+              prepend-inner-icon="mdi-bank-outline"
+              variant="outlined"
+              density="comfortable"
+              rounded="lg"
+              maxlength="20"
+              class="mb-2"
+            />
             <v-select
               v-model="newAssetType"
               :items="assetTypes"
@@ -517,17 +528,6 @@ const reset = (closeDialog = true) => {
               density="comfortable"
               rounded="lg"
               :disabled="newCurrencyLocked"
-              class="mb-2"
-            />
-            <v-text-field
-              v-model="newAccountName"
-              label="계좌명"
-              placeholder="기본"
-              prepend-inner-icon="mdi-bank-outline"
-              variant="outlined"
-              density="comfortable"
-              rounded="lg"
-              maxlength="20"
             />
           </div>
         </v-expand-transition>
