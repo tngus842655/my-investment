@@ -458,9 +458,9 @@ const reset = (closeDialog = true) => {
         </div>
       </div>
 
-      <v-card-text class="pt-4 pb-2" style="overflow-y: auto; flex: 1">
+      <v-card-text class="pt-2 pb-1" style="overflow-y: auto; flex: 1">
         <!-- 계좌 필터 -->
-        <div v-if="accountOptions.length > 0" class="account-filter-row mb-3">
+        <div v-if="accountOptions.length > 0" class="account-filter-row mb-2">
           <button
             class="account-chip"
             :class="{ 'account-chip-active': selectedAccountFilter === null }"
@@ -482,7 +482,7 @@ const reset = (closeDialog = true) => {
           label="종목 선택"
           prepend-inner-icon="mdi-finance"
           variant="outlined"
-          density="comfortable"
+          density="compact"
           rounded="lg"
           :loading="loadingPortfolios"
           :disabled="isEditMode"
@@ -500,7 +500,7 @@ const reset = (closeDialog = true) => {
 
         <!-- 새 종목 입력 필드 (인라인 펼침) -->
         <v-expand-transition>
-          <div v-if="isNewPortfolio" class="new-portfolio-panel mt-3">
+          <div v-if="isNewPortfolio" class="new-portfolio-panel mt-1">
             <div class="new-portfolio-label mb-2">
               <v-icon size="13" color="primary" class="mr-1">mdi-plus-circle-outline</v-icon>
               새 종목 정보 입력
@@ -511,10 +511,10 @@ const reset = (closeDialog = true) => {
               placeholder="기본"
               prepend-inner-icon="mdi-bank-outline"
               variant="outlined"
-              density="comfortable"
+              density="compact"
               rounded="lg"
               maxlength="20"
-              class="mb-2"
+              class="mb-1"
             />
             <v-select
               v-model="newAssetType"
@@ -522,9 +522,9 @@ const reset = (closeDialog = true) => {
               label="자산유형"
               prepend-inner-icon="mdi-shape"
               variant="outlined"
-              density="comfortable"
+              density="compact"
               rounded="lg"
-              class="mb-2"
+              class="mb-1"
             />
             <!-- 국내주식: 한글명 검색 자동완성 -->
             <v-autocomplete
@@ -539,9 +539,9 @@ const reset = (closeDialog = true) => {
               placeholder="삼성전자, 카카오 등 종목명 입력"
               prepend-inner-icon="mdi-magnify"
               variant="outlined"
-              density="comfortable"
+              density="compact"
               rounded="lg"
-              class="mb-2"
+              class="mb-1"
               no-data-text="검색 결과가 없습니다"
               clearable
               auto-select-first
@@ -559,9 +559,9 @@ const reset = (closeDialog = true) => {
               :disabled="newTickerConfig.disabled"
               prepend-inner-icon="mdi-finance"
               variant="outlined"
-              density="comfortable"
+              density="compact"
               rounded="lg"
-              class="mb-2"
+              class="mb-1"
               maxlength="20"
               :error-messages="newTickerError"
             />
@@ -571,7 +571,7 @@ const reset = (closeDialog = true) => {
               label="통화"
               prepend-inner-icon="mdi-cash"
               variant="outlined"
-              density="comfortable"
+              density="compact"
               rounded="lg"
               :disabled="newCurrencyLocked"
             />
@@ -589,7 +589,7 @@ const reset = (closeDialog = true) => {
             :max="maxQuantity"
             prepend-inner-icon="mdi-counter"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             rounded="lg"
             :error-messages="quantityError"
           />
@@ -598,7 +598,7 @@ const reset = (closeDialog = true) => {
             @update:model-value="handleUnitPrice"
             label="거래단가"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             rounded="lg"
             :prepend-inner-icon="effectiveCurrency === 'USD' ? 'mdi-currency-usd' : 'mdi-currency-krw'"
             :error-messages="unitPriceError"
@@ -612,9 +612,9 @@ const reset = (closeDialog = true) => {
           type="date"
           prepend-inner-icon="mdi-calendar-outline"
           variant="outlined"
-          density="comfortable"
+          density="compact"
           rounded="lg"
-          class="mt-3"
+          class="mt-1"
           :min="MIN_TX_DATE"
           :max="new Date().toISOString().slice(0, 10)"
           :error-messages="txDateError"
@@ -627,16 +627,16 @@ const reset = (closeDialog = true) => {
           placeholder="예: 분할매수, 목표가 도달"
           prepend-inner-icon="mdi-note-text-outline"
           variant="outlined"
-          density="comfortable"
+          density="compact"
           rounded="lg"
-          class="mt-3"
+          class="mt-1"
           maxlength="50"
         />
 
         <!-- 합계 프리뷰 -->
         <div
           v-if="totalAmount"
-          class="total-preview mt-3"
+          class="total-preview mt-2"
           :class="txType === 'BUY' ? 'preview-buy' : 'preview-sell'"
         >
           <span class="total-label">총 {{ txType === 'BUY' ? '매수' : '매도' }}금액</span>
@@ -646,7 +646,7 @@ const reset = (closeDialog = true) => {
 
       <v-divider />
 
-      <v-card-actions class="pa-4">
+      <v-card-actions class="px-4 py-2">
         <v-btn variant="text" :disabled="saving" @click="reset()">취소</v-btn>
         <v-spacer />
         <v-btn
