@@ -426,6 +426,7 @@ const reset = (closeDialog = true) => {
           label="계좌 구분"
           prepend-inner-icon="mdi-bank-outline"
           variant="outlined"
+          density="comfortable"
           maxlength="20"
           placeholder="미지정"
           hint="같은 종목을 여러 계좌로 나눠 관리할 때 사용 (예: 미래에셋, ISA)"
@@ -439,10 +440,11 @@ const reset = (closeDialog = true) => {
           label="자산유형"
           prepend-inner-icon="mdi-shape"
           variant="outlined"
-          class="mt-3"
+          density="comfortable"
+          class="mt-2"
           :disabled="isEditMode"
           :hint="isEditMode ? '자산유형은 수정할 수 없습니다.' : ''"
-          persistent-hint
+          :persistent-hint="isEditMode"
         />
 
         <!-- 국내주식: 한글명 검색 자동완성 -->
@@ -457,10 +459,11 @@ const reset = (closeDialog = true) => {
           placeholder="삼성전자, 카카오 등 종목명 입력"
           prepend-inner-icon="mdi-magnify"
           variant="outlined"
-          class="mt-3"
+          density="comfortable"
+          class="mt-2"
           :disabled="isEditMode"
           :hint="isEditMode ? '티커/코드는 수정할 수 없습니다.' : ''"
-          persistent-hint
+          :persistent-hint="isEditMode"
           :custom-filter="krFilter"
           no-data-text="검색 결과가 없습니다"
           clearable
@@ -480,11 +483,12 @@ const reset = (closeDialog = true) => {
           :disabled="tickerConfig.disabled || isEditMode"
           prepend-inner-icon="mdi-finance"
           variant="outlined"
-          class="mt-3"
+          density="comfortable"
+          class="mt-2"
           :maxlength="tickerMaxLength"
           :hint="isEditMode && assetType !== '현금' ? '티커/코드는 수정할 수 없습니다.' : ''"
           :error-messages="!isEditMode ? tickerError : ''"
-          persistent-hint
+          :persistent-hint="isEditMode"
         />
 
         <!-- 통화 -->
@@ -494,10 +498,11 @@ const reset = (closeDialog = true) => {
           label="통화"
           prepend-inner-icon="mdi-cash"
           variant="outlined"
-          class="mt-3"
+          density="comfortable"
+          class="mt-2"
           :disabled="currencyLocked"
           :hint="currencyHint"
-          persistent-hint
+          :persistent-hint="!!currencyHint"
         />
 
         <!-- 초기 잔고 섹션 -->
