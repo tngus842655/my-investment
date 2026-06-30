@@ -266,13 +266,13 @@ onMounted(loadData)
             <div class="slider-label">연 수익률</div>
             <div class="slider-value">{{ simReturn.toFixed(1) }}%</div>
           </div>
-          <v-slider v-model="simReturn" :min="1" :max="25" :step="0.5" color="primary" track-color="rgba(var(--v-theme-primary), 0.15)" hide-details thumb-size="18" />
+          <v-slider v-model="simReturn" :min="1" :max="Math.max(25, Math.ceil(baseReturn + 20))" :step="0.5" color="primary" track-color="rgba(var(--v-theme-primary), 0.15)" hide-details thumb-size="18" />
           <div class="d-flex justify-space-between mt-1">
             <span class="slider-hint">1%</span>
             <span class="slider-hint">
               기준 <span class="base-mark">{{ baseReturn }}%</span>
             </span>
-            <span class="slider-hint">25%</span>
+            <span class="slider-hint">{{ Math.max(25, Math.ceil(baseReturn + 20)) }}%</span>
           </div>
         </div>
       </div>

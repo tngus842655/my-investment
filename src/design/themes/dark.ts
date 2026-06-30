@@ -30,6 +30,8 @@ export const darkTheme: FpTheme = {
     typeColors: {
       해외주식: '#818CF8',
       국내주식: '#38BDF8',
+      해외ETF:  '#FB923C',
+      국내ETF:  '#A78BFA',
       ETF:     '#16B5A5',
       암호화폐: '#FCD34D',
       현금:    '#34D399',

@@ -41,6 +41,9 @@ const isEditMode = computed(() => !!props.initialData)
 
 const ticker = ref('')
 const krSearchQuery = ref('')  // 국내주식 한글 검색어
+const selectedKrStock = ref<{ value: string; name: string } | null>(null)
+
+watch(selectedKrStock, (v) => { ticker.value = v?.value ?? '' })
 const assetType = ref('')
 const currency = ref('KRW')
 const initQuantity = ref('')
@@ -131,10 +134,10 @@ const loadInitialTx = async (portfolioId: string) => {
 watch(assetType, (newType) => {
   if (isEditMode.value) return
   if (newType === '해외주식') currency.value = 'USD'
-  else if (newType === '국내주식') currency.value = 'KRW'
-  else if (newType === '현금') currency.value = 'KRW'
+  else if (newType === '국내주식' || newType === '현금') currency.value = 'KRW'
   ticker.value = ''
   krSearchQuery.value = ''
+  selectedKrStock.value = null
   if (newType === '현금') {
     ticker.value = '-'
     initQuantity.value = '1'
@@ -147,9 +150,13 @@ watch(dialog, async (opened) => {
   if (!opened) return
   if (props.initialData) {
     ticker.value = props.initialData.ticker
-    krSearchQuery.value = props.initialData.asset_type === '국내주식'
-      ? (KR_STOCK_NAMES[props.initialData.ticker] ?? props.initialData.ticker)
-      : ''
+    if (props.initialData.asset_type === '국내주식') {
+      const name = KR_STOCK_NAMES[props.initialData.ticker] ?? KR_ETF_NAMES[props.initialData.ticker] ?? props.initialData.ticker
+      selectedKrStock.value = { value: props.initialData.ticker, name }
+      krSearchQuery.value = name
+    } else {
+      krSearchQuery.value = ''
+    }
     assetType.value = props.initialData.asset_type
     currency.value = props.initialData.currency
     await loadInitialTx(props.initialData.id)
@@ -160,10 +167,10 @@ watch(dialog, async (opened) => {
 
 const isCrypto = computed(() => assetType.value === '암호화폐')
 const maxPrice = computed(() => {
-  if (isCrypto.value) return 999_999_999               // 암호화폐: 10억 KRW
-  if (assetType.value === '해외주식') return 1_000_000  // 해외주식: $100만 USD
-  if (assetType.value === '현금') return 10_000_000_000 // 현금: 100억 KRW/USD
-  return 100_000_000                                    // 국내주식: 1억 KRW
+  if (isCrypto.value) return 999_999_999
+  if (assetType.value === '해외주식') return 1_000_000
+  if (assetType.value === '현금') return 10_000_000_000
+  return 100_000_000  // 국내주식
 })
 const maxQuantity = computed(() => isCrypto.value ? 99_999_999 : 100_000)      // 암호화폐 1억 / 주식·현금 10만
 
@@ -204,7 +211,7 @@ const tickerError = computed(() => {
   if (!t || assetType.value === '현금') return ''
   if (assetType.value === '국내주식') return '' // 자동완성으로 선택하므로 별도 검증 불필요
   if (t.length > tickerMaxLength.value) return `티커는 ${tickerMaxLength.value}자 이하로 입력해주세요.`
-  if (assetType.value === '해외주식' && !/^[A-Za-z]{1,5}$/.test(t)) return '해외주식 티커는 영문자 5자 이하로 입력해주세요. (예: AAPL)'
+  if (assetType.value === '해외주식' && !/^[A-Za-z]{1,5}$/.test(t)) return '티커는 영문자 5자 이하로 입력해주세요. (예: AAPL)'
   return ''
 })
 
@@ -387,6 +394,7 @@ const save = async () => {
 const reset = (closeDialog = true) => {
   ticker.value = ''
   krSearchQuery.value = ''
+  selectedKrStock.value = null
   assetType.value = ''
   currency.value = 'KRW'
   initQuantity.value = ''
@@ -419,11 +427,11 @@ const reset = (closeDialog = true) => {
         <!-- 국내주식: 한글명 검색 자동완성 -->
         <v-autocomplete
           v-if="assetType === '국내주식'"
-          v-model="ticker"
+          v-model="selectedKrStock"
           v-model:search="krSearchQuery"
           :items="filteredKrItems"
-          item-title="title"
-          item-value="value"
+          item-title="name"
+          return-object
           label="종목 검색"
           placeholder="삼성전자, 카카오 등 종목명 입력"
           prepend-inner-icon="mdi-magnify"
@@ -436,7 +444,11 @@ const reset = (closeDialog = true) => {
           no-data-text="검색 결과가 없습니다"
           clearable
           auto-select-first
-        />
+        >
+          <template #item="{ props: itemProps, item }">
+            <v-list-item v-bind="itemProps" :subtitle="item.raw?.value" />
+          </template>
+        </v-autocomplete>
 
         <!-- 해외주식 / 암호화폐: 기존 텍스트 필드 -->
         <v-text-field

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
+import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 
 const router = useRouter()
 
@@ -35,14 +36,22 @@ interface BacktestResult {
   }
 }
 
+// ── 환율 ─────────────────────────────────────────────
+const exchangeRate = ref(1350)
+
 // ── 입력 ─────────────────────────────────────────────
 const tickerInput = ref('')
 const compareInput = ref('')
 const monthlyAmount = ref<number | null>(100)
 const startYm = ref('')
+const queriedStartYm = ref('')  // 실행 시점의 입력 시작일
 const loading = ref(false)
 const result = ref<BacktestResult | null>(null)
 const compareResult = ref<BacktestResult | null>(null)
+
+// DCA 툴팁 제어 (스크롤 시 닫기)
+const dcaOpen = ref(false)
+const closeDca = () => { dcaOpen.value = false }
 
 // ── 최근 사용 ETF ─────────────────────────────────────
 const RECENT_KEY = 'etf-backtest-recent'
@@ -118,16 +127,38 @@ const onManualChange = () => {
   syncStartYm()
 }
 
-onMounted(() => {
+onMounted(async () => {
   applyQuickPeriod('10y')
   loadRecent()
+  window.addEventListener('scroll', closeDca, { passive: true })
+  exchangeRate.value = await getCachedExchangeRate()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', closeDca)
 })
 
 const sanitizeTicker = (v: string) => v.replace(/[^A-Za-z0-9.-]/g, '').toUpperCase()
 
+const isUsdMode = computed(() => result.value?.currency !== 'KRW')
+
+const MAX_USD = 100_000  // $100,000
+const MAX_KRW = 100_000_000  // 1억원
+
+const monthlyAmountError = computed(() => {
+  const v = monthlyAmount.value
+  if (v === null || v === undefined || String(v) === '') return ''
+  if (!Number.isFinite(v) || v <= 0) return '0보다 큰 금액을 입력해주세요.'
+  if (!Number.isInteger(v)) return '소수점 없이 정수로 입력해주세요.'
+  if (isUsdMode.value && v > MAX_USD) return `최대 $${MAX_USD.toLocaleString()}까지 입력 가능합니다.`
+  if (!isUsdMode.value && v > MAX_KRW) return `최대 ${(MAX_KRW / 10000).toLocaleString()}만원까지 입력 가능합니다.`
+  return ''
+})
+
 const canRun = computed(() =>
-  tickerInput.value.trim().length > 0 &&
+  (tickerInput.value ?? '').trim().length > 0 &&
   (monthlyAmount.value ?? 0) > 0 &&
+  !monthlyAmountError.value &&
   startYm.value.length > 0
 )
 
@@ -141,8 +172,8 @@ const fetchBacktest = async (ticker: string): Promise<BacktestResult> => {
 }
 
 const run = async () => {
-  const ticker = sanitizeTicker(tickerInput.value.trim())
-  const cTicker = sanitizeTicker(compareInput.value.trim())
+  const ticker = sanitizeTicker((tickerInput.value ?? '').trim())
+  const cTicker = sanitizeTicker((compareInput.value ?? '').trim())
   if (!ticker) { showMessage('티커를 입력해주세요.', 'warning'); return }
   if (!monthlyAmount.value || monthlyAmount.value <= 0) { showMessage('월 투자금을 입력해주세요.', 'warning'); return }
   if (cTicker && cTicker === ticker) { showMessage('비교 티커가 기준 티커와 동일합니다.', 'warning'); return }
@@ -150,6 +181,7 @@ const run = async () => {
   loading.value = true
   result.value = null
   compareResult.value = null
+  queriedStartYm.value = startYm.value
 
   try {
     const tasks = [fetchBacktest(ticker)]
@@ -175,6 +207,13 @@ const run = async () => {
 const fmtMoney = (v: number, currency: string) => {
   if (currency === 'KRW') return `₩${Math.round(v).toLocaleString()}`
   return `$${v.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+}
+const fmtMoneyKrw = (v: number, currency: string): string | null => {
+  if (currency !== 'USD') return null
+  const krw = Math.round(v * exchangeRate.value)
+  if (krw >= 1e8) return `≈ ₩${(krw / 1e8).toFixed(1)}억`
+  if (krw >= 1e4) return `≈ ₩${Math.round(krw / 1e4).toLocaleString()}만`
+  return `≈ ₩${krw.toLocaleString()}`
 }
 const fmtPct = (v: number, digits = 1) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(digits)}%`
 const fmtYm = (ym: string) => { const [y, m] = ym.split('-'); return `${y}년 ${Number(m)}월` }
@@ -253,7 +292,12 @@ const PAD = { top: 12, right: 16, bottom: 28, left: 12 }
 const PW = VW - PAD.left - PAD.right
 const PH = VH - PAD.top - PAD.bottom
 
-watch(() => result.value, () => { showRecentOnly.value = true })
+const inputCollapsed = ref(false)
+
+watch(() => result.value, () => {
+  showRecentOnly.value = true
+  if (result.value) inputCollapsed.value = true
+})
 
 const filteredPts = computed(() => result.value?.monthly ?? [])
 const filteredCmpPts = computed(() => compareResult.value?.monthly ?? [])
@@ -351,13 +395,16 @@ const onMouseMove = (e: MouseEvent) => { showTooltip(e.clientX) }
 // ── 연도별 테이블 ─────────────────────────────────────
 const showRecentOnly = ref(true)
 
-const yearlyRows = computed(() => {
+const allYearlyRows = computed(() => {
   if (!result.value) return []
   const map = new Map<string, MonthlyPoint>()
   for (const m of result.value.monthly) { map.set(m.ym.slice(0, 4), m) }
-  const all = [...map.values()]
-  return showRecentOnly.value ? all.slice(-5) : all
+  return [...map.values()]
 })
+
+const yearlyRows = computed(() =>
+  showRecentOnly.value ? allYearlyRows.value.slice(-5) : allYearlyRows.value
+)
 </script>
 
 <template>
@@ -371,9 +418,9 @@ const yearlyRows = computed(() => {
         <div class="text-h6 font-weight-bold">ETF 백테스트</div>
         <div class="d-flex align-center ga-1 text-caption text-medium-emphasis">
           과거
-          <v-tooltip :text="tooltips.dca" location="bottom" open-on-click max-width="260">
+          <v-tooltip :model-value="dcaOpen" :text="tooltips.dca" location="bottom" max-width="260">
             <template #activator="{ props }">
-              <span v-bind="props" class="tooltip-term">DCA</span>
+              <span v-bind="props" class="tooltip-term" @click.stop="dcaOpen = !dcaOpen">DCA</span>
             </template>
           </v-tooltip>
           투자 수익률 시뮬레이션
@@ -382,7 +429,21 @@ const yearlyRows = computed(() => {
     </div>
 
     <!-- 입력 카드 -->
-    <v-card class="glass-card pa-4 mb-4" rounded="xl">
+    <v-card class="glass-card mb-4" rounded="xl">
+      <!-- 접기/펼치기 헤더 (결과 있을 때만) -->
+      <div
+        v-if="result"
+        class="collapse-header"
+        @click="inputCollapsed = !inputCollapsed"
+      >
+        <div class="text-body-2 font-weight-bold">조회 조건</div>
+        <div class="d-flex align-center ga-2 text-caption text-medium-emphasis">
+          <span>{{ tickerInput }}{{ compareInput ? ` vs ${compareInput}` : '' }}{{ startYm ? ` · ${startYm.slice(0, 4)}년~` : '' }}</span>
+          <v-icon size="18">{{ inputCollapsed ? 'mdi-chevron-down' : 'mdi-chevron-up' }}</v-icon>
+        </div>
+      </div>
+
+      <div v-show="!inputCollapsed" class="pa-4">
       <div class="d-flex flex-column ga-3">
         <!-- 최근 조회 -->
         <template v-if="recentTickers.length > 0">
@@ -407,6 +468,7 @@ const yearlyRows = computed(() => {
           density="compact"
           rounded="lg"
           hide-details
+          clearable
           :disabled="loading"
           @focus="recentTarget = 'main'"
           @input="(e: Event) => { tickerInput = sanitizeTicker((e.target as HTMLInputElement).value) }"
@@ -421,6 +483,7 @@ const yearlyRows = computed(() => {
           density="compact"
           rounded="lg"
           hide-details
+          clearable
           :disabled="loading"
           @focus="recentTarget = 'compare'"
           @input="(e: Event) => { compareInput = sanitizeTicker((e.target as HTMLInputElement).value) }"
@@ -433,10 +496,12 @@ const yearlyRows = computed(() => {
           variant="outlined"
           density="compact"
           rounded="lg"
-          hide-details
           type="number"
           min="1"
           :disabled="loading"
+          :error-messages="monthlyAmountError"
+          :hint="!monthlyAmountError && result?.currency !== 'KRW' && monthlyAmount && monthlyAmount > 0 ? `${fmtMoneyKrw(monthlyAmount, 'USD')}/월` : ''"
+          persistent-hint
           @keyup.enter="run"
         >
           <template #append-inner>
@@ -496,10 +561,20 @@ const yearlyRows = computed(() => {
       <div class="text-caption text-medium-emphasis mt-3">
         * 해외 ETF/주식 전용 · 배당 재투자 포함 근사치 · 세금/수수료 미포함
       </div>
+      </div><!-- /v-show -->
     </v-card>
 
     <!-- 결과 -->
     <template v-if="result">
+      <!-- 상장일 안내 배너 -->
+      <div v-if="result.summary.startYm > queriedStartYm" class="inception-banner mb-3">
+        <v-icon size="14" color="warning">mdi-information-outline</v-icon>
+        <span>
+          입력하신 시작일({{ fmtYm(queriedStartYm) }})보다 상장일이 늦어
+          <strong>{{ fmtYm(result.summary.startYm) }}</strong>부터 계산되었습니다.
+        </span>
+      </div>
+
       <!-- 기간 헤더 -->
       <div class="d-flex align-center justify-space-between mb-3 px-1">
         <div class="text-body-2 font-weight-bold">
@@ -517,6 +592,9 @@ const yearlyRows = computed(() => {
         <div class="highlight-value text-success">
           {{ fmtMoney(result.summary.evalAmount, result.currency) }}
         </div>
+        <div v-if="fmtMoneyKrw(result.summary.evalAmount, result.currency)" class="krw-hint">
+          {{ fmtMoneyKrw(result.summary.evalAmount, result.currency) }}
+        </div>
         <div class="peak-hint">
           최고 {{ fmtMoney(result.summary.peakEval, result.currency) }} · {{ fmtYm(result.summary.peakYm) }}
         </div>
@@ -528,6 +606,9 @@ const yearlyRows = computed(() => {
           <div class="stat-label">총 수익금</div>
           <div class="stat-value" :class="`text-${profitColor(result.summary.profit)}`">
             {{ fmtMoney(result.summary.profit, result.currency) }}
+          </div>
+          <div v-if="fmtMoneyKrw(result.summary.profit, result.currency)" class="stat-krw">
+            {{ fmtMoneyKrw(result.summary.profit, result.currency) }}
           </div>
         </div>
         <div class="glass-card pa-3 rounded-xl text-center">
@@ -563,6 +644,9 @@ const yearlyRows = computed(() => {
         <div class="glass-card pa-3 rounded-xl text-center">
           <div class="stat-label">투자원금</div>
           <div class="stat-value">{{ fmtMoney(result.summary.totalInvested, result.currency) }}</div>
+          <div v-if="fmtMoneyKrw(result.summary.totalInvested, result.currency)" class="stat-krw">
+            {{ fmtMoneyKrw(result.summary.totalInvested, result.currency) }}
+          </div>
         </div>
       </div>
 
@@ -695,10 +779,12 @@ const yearlyRows = computed(() => {
               <div class="ct-date">{{ fmtYm(tooltip.pt.ym) }}</div>
               <template v-if="chartMode === 'amount'">
                 <div class="ct-row"><span class="ct-label">투자원금</span><span class="ct-val">{{ fmtMoney(tooltip.pt.totalInvested, result!.currency) }}</span></div>
+                <div v-if="fmtMoneyKrw(tooltip.pt.totalInvested, result!.currency)" class="ct-krw">{{ fmtMoneyKrw(tooltip.pt.totalInvested, result!.currency) }}</div>
                 <div class="ct-row">
                   <span class="ct-label">평가금액</span>
                   <span class="ct-val" :class="`text-${profitColor(tooltip.pt.evalAmount - tooltip.pt.totalInvested)}`">{{ fmtMoney(tooltip.pt.evalAmount, result!.currency) }}</span>
                 </div>
+                <div v-if="fmtMoneyKrw(tooltip.pt.evalAmount, result!.currency)" class="ct-krw" :class="`text-${profitColor(tooltip.pt.evalAmount - tooltip.pt.totalInvested)}`">{{ fmtMoneyKrw(tooltip.pt.evalAmount, result!.currency) }}</div>
                 <div class="ct-row">
                   <span class="ct-label">수익률</span>
                   <span class="ct-val" :class="`text-${profitColor(tooltip.pt.evalAmount - tooltip.pt.totalInvested)}`">{{ fmtPct((tooltip.pt.evalAmount - tooltip.pt.totalInvested) / tooltip.pt.totalInvested) }}</span>
@@ -713,6 +799,7 @@ const yearlyRows = computed(() => {
                   <span class="ct-label">평가금액</span>
                   <span class="ct-val">{{ fmtMoney(tooltip.pt.evalAmount, result!.currency) }}</span>
                 </div>
+                <div v-if="fmtMoneyKrw(tooltip.pt.evalAmount, result!.currency)" class="ct-krw">{{ fmtMoneyKrw(tooltip.pt.evalAmount, result!.currency) }}</div>
               </template>
             </div>
           </div>
@@ -743,7 +830,7 @@ const yearlyRows = computed(() => {
       <v-card class="glass-card pa-4" rounded="xl">
         <div class="d-flex align-center justify-space-between mb-3">
           <div class="text-body-2 font-weight-bold">연도별 스냅샷 (연말 기준)</div>
-          <button class="toggle-btn" @click="showRecentOnly = !showRecentOnly">
+          <button v-if="allYearlyRows.length > 5" class="toggle-btn" @click="showRecentOnly = !showRecentOnly">
             {{ showRecentOnly ? '전체 보기' : '최근 5년' }}
           </button>
         </div>
@@ -764,6 +851,11 @@ const yearlyRows = computed(() => {
 </template>
 
 <style scoped>
+/* number input 스피너 숨김 */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type='number'] { -moz-appearance: textfield; }
+
 .glass-card {
   background: var(--fp-surface);
   border: 1px solid var(--fp-outline);
@@ -840,6 +932,32 @@ const yearlyRows = computed(() => {
 .highlight-card-full {
   text-align: center;
   margin-bottom: 8px;
+}
+
+.inception-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  background: rgba(var(--v-theme-warning), 0.08);
+  border: 1px solid rgba(var(--v-theme-warning), 0.25);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: rgba(var(--v-theme-on-surface), 0.75);
+  line-height: 1.5;
+}
+
+.krw-hint {
+  font-size: 12px;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+  margin-top: 2px;
+}
+
+
+.stat-krw {
+  font-size: 10px;
+  color: rgba(var(--v-theme-on-surface), 0.4);
+  margin-top: 2px;
 }
 
 .peak-hint {
@@ -1065,5 +1183,28 @@ const yearlyRows = computed(() => {
   color: rgba(var(--v-theme-on-surface), 0.35);
   cursor: pointer;
   flex-shrink: 0;
+}
+
+/* ── 입력 카드 접기 헤더 ──────────────────────────── */
+.collapse-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  color: rgba(var(--v-theme-on-surface), 0.7);
+  border-radius: 8px;
+}
+.collapse-header:hover {
+  background: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+/* ── 차트 툴팁 원화 환산 ─────────────────────────── */
+.ct-krw {
+  font-size: 11px;
+  opacity: 0.65;
+  margin-top: 1px;
 }
 </style>

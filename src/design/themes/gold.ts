@@ -31,6 +31,8 @@ export const goldTheme: FpTheme = {
     typeColors: {
       해외주식: '#7A9FB8',   // 블루-그레이 (해외)
       국내주식: '#C4884A',   // 앰버 (국내)
+      해외ETF:  '#5BB8A0',  // 틸 (해외ETF)
+      국내ETF:  '#C9993A',  // 골드 (국내ETF)
       ETF:     '#C9993A',   // 골드 (ETF — 핵심 자산)
       암호화폐: '#9B7EB8',   // 퍼플 (크립토)
       현금:    '#4CAF79',   // 그린 (현금)

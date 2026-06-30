@@ -14,9 +14,10 @@ const krStockItems = Object.entries({ ...KR_STOCK_NAMES, ...KR_ETF_NAMES }).map(
 }))
 
 const krSearchQuery = ref('')
+const selectedKrStock = ref<{ value: string; name: string } | null>(null)
 
 const filteredKrItems = computed(() =>
-  krSearchQuery.value.trim().length === 0 ? [] : krStockItems,
+  (krSearchQuery.value ?? '').trim().length === 0 ? [] : krStockItems,
 )
 
 const krFilter = (_value: string, query: string, item?: { raw: { title: string } }) => {
@@ -90,11 +91,14 @@ const newCurrencyLocked = computed(() =>
   ['해외주식', '국내주식', '현금'].includes(newAssetType.value),
 )
 
+watch(selectedKrStock, (v) => { newTicker.value = v?.value ?? '' })
+
 watch(newAssetType, (type) => {
   if (type === '해외주식') newCurrency.value = 'USD'
   else if (['국내주식', '현금'].includes(type)) newCurrency.value = 'KRW'
   newTicker.value = ''
   krSearchQuery.value = ''
+  selectedKrStock.value = null
   if (type === '현금') newTicker.value = '-'
 })
 
@@ -383,6 +387,7 @@ const reset = (closeDialog = true) => {
   memo.value = ''
   newTicker.value = ''
   krSearchQuery.value = ''
+  selectedKrStock.value = null
   newAssetType.value = ''
   newCurrency.value = 'KRW'
   if (closeDialog) dialog.value = false
@@ -459,12 +464,12 @@ const reset = (closeDialog = true) => {
             <!-- 국내주식: 한글명 검색 자동완성 -->
             <v-autocomplete
               v-if="newAssetType === '국내주식'"
-              v-model="newTicker"
+              v-model="selectedKrStock"
               v-model:search="krSearchQuery"
               :items="filteredKrItems"
               :custom-filter="krFilter"
-              item-title="title"
-              item-value="value"
+              item-title="name"
+              return-object
               label="종목 검색"
               placeholder="삼성전자, 카카오 등 종목명 입력"
               prepend-inner-icon="mdi-magnify"
@@ -475,7 +480,11 @@ const reset = (closeDialog = true) => {
               no-data-text="검색 결과가 없습니다"
               clearable
               auto-select-first
-            />
+            >
+              <template #item="{ props: itemProps, item }">
+                <v-list-item v-bind="itemProps" :subtitle="item.raw?.value" />
+              </template>
+            </v-autocomplete>
             <!-- 해외주식 / 암호화폐: 기존 텍스트 입력 -->
             <v-text-field
               v-else
