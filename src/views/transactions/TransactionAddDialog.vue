@@ -55,6 +55,7 @@ interface Portfolio {
   ticker: string
   asset_type: string
   currency: string
+  account_name: string
 }
 
 const NEW_PORTFOLIO_VALUE = '__NEW__'
@@ -76,6 +77,7 @@ const isNewPortfolio = computed(() => selectedPortfolioId.value === NEW_PORTFOLI
 const newTicker = ref('')
 const newAssetType = ref('')
 const newCurrency = ref('KRW')
+const newAccountName = ref('기본')
 
 const newTickerConfig = computed(() => {
   switch (newAssetType.value) {
@@ -122,7 +124,8 @@ const portfolioItems = computed(() => [
         : name
       : p.ticker
     const assetLabel = p.asset_type.replace('주식', '')
-    return { title: `${label} · ${assetLabel}`, value: p.id }
+    const accountLabel = p.account_name && p.account_name !== '기본' ? ` · ${p.account_name}` : ''
+    return { title: `${label} · ${assetLabel}${accountLabel}`, value: p.id }
   }),
   { title: '+ 새 종목 추가', value: NEW_PORTFOLIO_VALUE },
 ])
@@ -224,7 +227,7 @@ const loadPortfolios = async () => {
     if (!user) return
     const { data, error } = await supabase
       .from('portfolios')
-      .select('id, ticker, asset_type, currency')
+      .select('id, ticker, asset_type, currency, account_name')
       .eq('user_id', user.id)
       .neq('asset_type', '현금')
       .order('sort_order', { ascending: true })
@@ -307,14 +310,16 @@ const save = async () => {
     // 새 종목 먼저 등록
     if (isNewPortfolio.value) {
       const tickerToSave = newAssetType.value === '현금' ? 'CASH' : newTicker.value.trim().toUpperCase()
+      const accountNameToSave = newAccountName.value.trim() || '기본'
       const { data: existing } = await supabase
         .from('portfolios')
         .select('id')
         .eq('user_id', user.id)
         .eq('ticker', tickerToSave)
+        .eq('account_name', accountNameToSave)
         .maybeSingle()
       if (existing) {
-        showMessage(`${tickerToSave} 종목이 이미 등록되어 있습니다.`, 'warning')
+        showMessage(`${tickerToSave} 종목이 이미 등록되어 있습니다. (계좌: ${accountNameToSave})`, 'warning')
         saving.value = false
         return
       }
@@ -326,6 +331,7 @@ const save = async () => {
           ticker: tickerToSave,
           asset_type: newAssetType.value,
           currency: newCurrency.value,
+          account_name: accountNameToSave,
           quantity: 0,
           avg_price: 0,
         })
@@ -390,6 +396,7 @@ const reset = (closeDialog = true) => {
   selectedKrStock.value = null
   newAssetType.value = ''
   newCurrency.value = 'KRW'
+  newAccountName.value = '기본'
   if (closeDialog) dialog.value = false
 }
 </script>
@@ -509,6 +516,17 @@ const reset = (closeDialog = true) => {
               density="comfortable"
               rounded="lg"
               :disabled="newCurrencyLocked"
+              class="mb-2"
+            />
+            <v-text-field
+              v-model="newAccountName"
+              label="계좌명"
+              placeholder="기본"
+              prepend-inner-icon="mdi-bank-outline"
+              variant="outlined"
+              density="comfortable"
+              rounded="lg"
+              maxlength="20"
             />
           </div>
         </v-expand-transition>
