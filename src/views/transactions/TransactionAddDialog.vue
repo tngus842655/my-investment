@@ -482,7 +482,7 @@ const reset = (closeDialog = true) => {
               auto-select-first
             >
               <template #item="{ props: itemProps, item }">
-                <v-list-item v-bind="itemProps" :subtitle="item.raw?.value" />
+                <v-list-item v-bind="itemProps" :subtitle="(item as any).raw?.value" />
               </template>
             </v-autocomplete>
             <!-- 해외주식 / 암호화폐: 기존 텍스트 입력 -->
