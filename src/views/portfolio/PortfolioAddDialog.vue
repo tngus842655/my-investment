@@ -505,9 +505,9 @@ const reset = (closeDialog = true) => {
           :persistent-hint="!!currencyHint"
         />
 
-        <!-- 초기 잔고 섹션 -->
+        <!-- 현재 보유 내역 섹션 -->
         <div class="section-divider my-2">
-          <span>초기 잔고 <span class="optional-label">(거래 기록 이전 보유량)</span></span>
+          <span>현재 보유 내역</span>
         </div>
 
         <div class="info-banner mb-2">
@@ -517,8 +517,8 @@ const reset = (closeDialog = true) => {
           <span class="text-caption">
             {{
               isEditMode
-                ? '매수·매도 거래 이전에 이미 보유하던 수량/단가입니다. 수정 시 이후 거래와 합산해 재계산됩니다.'
-                : '앱 사용 전부터 보유하던 수량/단가를 입력하세요. 이후 매수·매도 거래와 합산됩니다.'
+                ? '현재 보유 중인 수량과 평균 매수가입니다. 수정 시 이후 거래 내역과 합산해 재계산됩니다.'
+                : '현재 보유 중인 수량과 평균 매수가를 입력하세요. 이후 거래 내역과 합산되어 손익이 계산됩니다.'
             }}
           </span>
         </div>
