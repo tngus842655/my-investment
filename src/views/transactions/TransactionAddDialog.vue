@@ -63,6 +63,12 @@ const assetTypes = ['국내주식', '해외주식', '암호화폐']
 
 const portfolios = ref<Portfolio[]>([])
 const loadingPortfolios = ref(false)
+const selectedAccountFilter = ref<string | null>(null)
+
+const accountOptions = computed(() => {
+  const accounts = [...new Set(portfolios.value.map((p) => p.account_name ?? '기본'))]
+  return accounts.length > 1 ? accounts : []
+})
 
 const txType = ref<TransactionType>('BUY')
 const selectedPortfolioId = ref('')
@@ -113,8 +119,14 @@ const effectiveCurrency = computed(() => {
   return selectedPortfolio.value?.currency ?? 'KRW'
 })
 
+const filteredPortfolios = computed(() =>
+  selectedAccountFilter.value
+    ? portfolios.value.filter((p) => (p.account_name ?? '기본') === selectedAccountFilter.value)
+    : portfolios.value
+)
+
 const portfolioItems = computed(() => [
-  ...portfolios.value.map((p) => {
+  ...filteredPortfolios.value.map((p) => {
     const name = getTickerDisplayName(p.ticker)
     const hasKoreanName = name !== p.ticker
     const isOverseas = p.asset_type === '해외주식'
@@ -124,8 +136,7 @@ const portfolioItems = computed(() => [
         : name
       : p.ticker
     const assetLabel = p.asset_type.replace('주식', '')
-    const accountLabel = p.account_name && p.account_name !== '기본' ? ` · ${p.account_name}` : ''
-    return { title: `${label} · ${assetLabel}${accountLabel}`, value: p.id }
+    return { title: `${label} · ${assetLabel}`, value: p.id }
   }),
   { title: '+ 새 종목 추가', value: NEW_PORTFOLIO_VALUE },
 ])
@@ -240,6 +251,10 @@ const loadPortfolios = async () => {
     loadingPortfolios.value = false
   }
 }
+
+watch(selectedAccountFilter, () => {
+  selectedPortfolioId.value = ''
+})
 
 watch(dialog, async (opened) => {
   if (!opened) return
@@ -398,6 +413,7 @@ const reset = (closeDialog = true) => {
   newAssetType.value = ''
   newCurrency.value = 'KRW'
   newAccountName.value = '기본'
+  selectedAccountFilter.value = null
   if (closeDialog) dialog.value = false
 }
 </script>
@@ -429,6 +445,22 @@ const reset = (closeDialog = true) => {
       </div>
 
       <v-card-text class="pt-4 pb-2" style="overflow-y: auto; flex: 1">
+        <!-- 계좌 필터 -->
+        <div v-if="accountOptions.length > 0" class="account-filter-row mb-3">
+          <button
+            class="account-chip"
+            :class="{ 'account-chip-active': selectedAccountFilter === null }"
+            @click="selectedAccountFilter = null"
+          >전체</button>
+          <button
+            v-for="acc in accountOptions"
+            :key="acc"
+            class="account-chip"
+            :class="{ 'account-chip-active': selectedAccountFilter === acc }"
+            @click="selectedAccountFilter = acc"
+          >{{ acc }}</button>
+        </div>
+
         <!-- 종목 선택 -->
         <v-select
           v-model="selectedPortfolioId"
@@ -675,6 +707,29 @@ const reset = (closeDialog = true) => {
 
 
 /* 새 종목 추가 항목 강조 */
+.account-filter-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.account-chip {
+  padding: 3px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
+  background: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+  transition: all 0.15s;
+}
+.account-chip:active { opacity: 0.7; }
+.account-chip-active {
+  border-color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.07);
+}
+
 .new-portfolio-item { color: rgb(var(--v-theme-primary)) !important; font-weight: 600; }
 
 /* 새 종목 인라인 패널 */
