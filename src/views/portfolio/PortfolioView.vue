@@ -634,7 +634,6 @@ onUnmounted(() => {
           </v-list>
         </v-menu>
       </div>
-      <p v-if="sortedPortfolios.length > 0" class="swipe-hint">← 카드를 왼쪽으로 밀면 수정/삭제할 수 있어요</p>
 
       <!-- 자산 카드 목록 -->
       <TransitionGroup name="cards" tag="div">
@@ -818,6 +817,7 @@ onUnmounted(() => {
           </div>
         </div>
       </TransitionGroup>
+      <p v-if="sortedPortfolios.length > 0" class="swipe-hint">← 카드를 왼쪽으로 밀면 수정/삭제할 수 있어요</p>
     </template>
   </v-container>
 
