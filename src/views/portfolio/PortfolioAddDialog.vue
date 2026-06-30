@@ -505,9 +505,9 @@ const reset = (closeDialog = true) => {
           :persistent-hint="!!currencyHint"
         />
 
-        <!-- 현재 보유 내역 섹션 -->
+        <!-- 보유 내역 섹션 -->
         <div class="section-divider my-2">
-          <span>현재 보유 내역</span>
+          <span>{{ isEditMode ? '초기 잔고' : '현재 보유 내역' }}</span>
         </div>
 
         <div class="info-banner mb-2">
@@ -517,7 +517,7 @@ const reset = (closeDialog = true) => {
           <span class="text-caption">
             {{
               isEditMode
-                ? '현재 보유 중인 수량과 평균 매수가입니다. 수정 시 이후 거래 내역과 합산해 재계산됩니다.'
+                ? '앱에 최초 입력한 잔고입니다. 이후 거래 내역은 거래 메뉴에서 수정하세요.'
                 : '현재 보유 중인 수량과 평균 매수가를 입력하세요. 이후 거래 내역과 합산되어 손익이 계산됩니다.'
             }}
           </span>
@@ -583,6 +583,12 @@ const reset = (closeDialog = true) => {
         <div v-if="totalInitialAmount && assetType !== '현금'" class="total-preview mt-1">
           <span class="total-label">매수 총금액</span>
           <span class="total-value">{{ totalInitialAmount }}</span>
+        </div>
+
+        <!-- 수정 모드: 현재 총 보유수량 표시 -->
+        <div v-if="isEditMode && assetType !== '현금' && props.initialData" class="total-preview mt-1">
+          <span class="total-label">현재 총 보유수량</span>
+          <span class="total-value">{{ props.initialData.quantity.toLocaleString() }}주 (초기 {{ Number(initQuantity) || 0 }}주 + 거래 {{ (props.initialData.quantity - (Number(initQuantity) || 0)).toLocaleString() }}주)</span>
         </div>
       </v-card-text>
 
