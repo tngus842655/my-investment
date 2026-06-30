@@ -260,8 +260,9 @@ const loadPortfolios = async () => {
   }
 }
 
-watch(selectedAccountFilter, () => {
+watch(selectedAccountFilter, (acc) => {
   selectedPortfolioId.value = ''
+  newAccountName.value = acc ?? '미지정'
 })
 
 watch(dialog, async (opened) => {

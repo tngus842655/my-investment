@@ -425,7 +425,7 @@ const reset = (closeDialog = true) => {
           prepend-inner-icon="mdi-bank-outline"
           variant="outlined"
           maxlength="20"
-          placeholder="기본"
+          placeholder="미지정"
           hint="같은 종목을 여러 계좌로 나눠 관리할 때 사용 (예: 미래에셋, ISA)"
           persistent-hint
         />
