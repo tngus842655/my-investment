@@ -230,8 +230,10 @@ const aiData = computed(() => {
     return { mode: 'single' as const, summary: `${a.ticker}은 ${parts.join(', ')}의 ETF입니다. 리스크는 ${risk} 편입니다.` }
   }
 
-  const cagrW = better(a.cagr, b.cagr, true)
-  const mddW  = better(a.mdd,  b.mdd,  true)
+  const dA = dispA.value
+  const dB = dispB.value
+  const cagrW = better(dA?.cagr ?? null, dB?.cagr ?? null, true)
+  const mddW  = better(dA?.mdd  ?? null, dB?.mdd  ?? null, true)
   const terW  = better(a.expenseRatio,  b.expenseRatio,  false, 2)
   const divW  = better(a.dividendYield, b.dividendYield, true)
 
@@ -244,8 +246,8 @@ const aiData = computed(() => {
   const winnerTicker = ws === 'b' ? b.ticker : a.ticker
 
   const reasons: string[] = []
-  if (ws && cagrW === ws && a.cagr != null) reasons.push('CAGR 수익률 우수')
-  if (ws && mddW  === ws && a.mdd  != null) reasons.push('최대 낙폭(MDD) 안정적')
+  if (ws && cagrW === ws && dA?.cagr != null) reasons.push('CAGR 수익률 우수')
+  if (ws && mddW  === ws && dA?.mdd  != null) reasons.push('최대 낙폭(MDD) 안정적')
   if (ws && terW  === ws && a.expenseRatio != null) reasons.push('운용보수(TER) 저렴')
   if (ws && divW  === ws && (a.dividendYield ?? 0) > 0) reasons.push('배당률 높음')
 
