@@ -52,15 +52,24 @@ const krFilter = (_value: string, query: string, item?: { raw: { title: string }
 const searchA = ref('')
 const searchB = ref('')
 
-const filteredA = computed(() => searchA.value.trim().length === 0 ? [] : krEtfItems)
-const filteredB = computed(() => searchB.value.trim().length === 0 ? [] : krEtfItems)
+const filteredA = computed(() => (searchA.value ?? '').trim().length === 0 ? [] : krEtfItems)
+const filteredB = computed(() => (searchB.value ?? '').trim().length === 0 ? [] : krEtfItems)
 
+// 국내 모드: 선택된 ETF 객체 (코드는 .value, 한글명은 .name)
+const selectedA = ref<{ value: string; name: string } | null>(null)
+const selectedB = ref<{ value: string; name: string } | null>(null)
+
+// fetchInfo에서 사용할 실제 티커 코드
 const inputA = ref('')
 const inputB = ref('')
 
-// 국내 모드 변경 시 입력 초기화
-watch(marketA, () => { inputA.value = ''; searchA.value = ''; notFoundA.value = false })
-watch(marketB, () => { inputB.value = ''; searchB.value = ''; notFoundB.value = false })
+// 국내 모드 변경 시 초기화
+watch(marketA, () => { inputA.value = ''; searchA.value = ''; selectedA.value = null; notFoundA.value = false })
+watch(marketB, () => { inputB.value = ''; searchB.value = ''; selectedB.value = null; notFoundB.value = false })
+
+// 국내 선택 시 코드 추출
+watch(selectedA, (v) => { inputA.value = v?.value ?? '' })
+watch(selectedB, (v) => { inputB.value = v?.value ?? '' })
 
 watch(inputA, (v) => { if (v == null) inputA.value = ''; notFoundA.value = false })
 watch(inputB, (v) => { if (v == null) inputB.value = ''; notFoundB.value = false })
@@ -344,11 +353,11 @@ const aiData = computed(() => {
         <div :key="`field-a-${marketA}`">
           <v-autocomplete
             v-if="marketA === 'domestic'"
-            v-model="inputA"
+            v-model="selectedA"
             v-model:search="searchA"
             :items="filteredA"
             item-title="name"
-            item-value="value"
+            return-object
             label="국내 ETF 검색"
             placeholder="TIGER 미국S&P500 등 종목명 입력"
             prepend-inner-icon="mdi-magnify"
@@ -399,11 +408,11 @@ const aiData = computed(() => {
         <div :key="`field-b-${marketB}`">
           <v-autocomplete
             v-if="marketB === 'domestic'"
-            v-model="inputB"
+            v-model="selectedB"
             v-model:search="searchB"
             :items="filteredB"
             item-title="name"
-            item-value="value"
+            return-object
             label="국내 ETF 검색"
             placeholder="TIGER 미국S&P500 등 종목명 입력"
             prepend-inner-icon="mdi-magnify"
@@ -445,7 +454,7 @@ const aiData = computed(() => {
           variant="text"
           size="small"
           rounded="lg"
-          @click="inputA = ''; inputB = ''; searchA = ''; searchB = ''; dataA = null; dataB = null"
+          @click="inputA = ''; inputB = ''; searchA = ''; searchB = ''; selectedA = null; selectedB = null; dataA = null; dataB = null"
         >초기화</v-btn>
         <v-spacer />
         <v-btn color="primary" rounded="lg" :loading="loading" @click="fetchInfo">분석</v-btn>
