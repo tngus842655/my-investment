@@ -499,7 +499,7 @@ const selectedAccount = ref<string | null>(null)
 const accountOptions = computed(() => {
   const accounts = [...new Set(portfolios.value.map((p) => p.account_name ?? '미지정'))]
   if (accounts.length <= 1) return []
-  return ['미지정', ...accounts.filter((a) => a !== '미지정')]
+  return ['미지정', ...accounts.filter((a) => a !== '미지정').sort((a, b) => a.localeCompare(b, 'ko'))]
 })
 
 const sortedPortfolios = computed(() => {

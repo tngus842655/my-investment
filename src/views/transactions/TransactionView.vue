@@ -49,7 +49,7 @@ const loadAccountOptions = async () => {
   if (!data) return
   const accounts = [...new Set(data.map((p) => p.account_name ?? '미지정'))]
   accountOptions.value = accounts.length > 1
-    ? ['미지정', ...accounts.filter((a) => a !== '미지정')]
+    ? ['미지정', ...accounts.filter((a) => a !== '미지정').sort((a, b) => a.localeCompare(b, 'ko'))]
     : []
   // 초기에는 전체
   accountPortfolioIds.value = data.map((p) => p.id)
