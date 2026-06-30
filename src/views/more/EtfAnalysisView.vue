@@ -3,7 +3,8 @@ import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
-import { TICKER_NAMES, getTickerDisplayName } from '@/utils/tickerNames'
+import { getTickerDisplayName } from '@/utils/tickerNames'
+import { KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 
 const router = useRouter()
 
@@ -29,31 +30,45 @@ interface EtfInfo {
   chartData?: ChartPoint[]
 }
 
+// ── 국내/해외 모드 ────────────────────────────────────
+type Market = 'overseas' | 'domestic'
+const marketA = ref<Market>('overseas')
+const marketB = ref<Market>('overseas')
+
+// 국내 ETF 자동완성 목록
+const krEtfItems = Object.entries(KR_ETF_NAMES).map(([code, name]) => ({
+  title: `${name} (${code})`,
+  value: code,
+  name,
+}))
+
+const krFilter = (_value: string, query: string, item?: { raw: { title: string } }) => {
+  if (!item) return false
+  const q = query.replace(/\s/g, '').toLowerCase()
+  const t = item.raw.title.replace(/\s/g, '').toLowerCase()
+  return t.includes(q)
+}
+
+const searchA = ref('')
+const searchB = ref('')
+
+const filteredA = computed(() => searchA.value.trim().length === 0 ? [] : krEtfItems)
+const filteredB = computed(() => searchB.value.trim().length === 0 ? [] : krEtfItems)
+
 const inputA = ref('')
 const inputB = ref('')
 
-const sanitizeTicker = (v: string) => v.replace(/[^A-Za-z0-9가-힣ㄱ-ㅎ.-]/g, '')
-const onInputA = (e: Event) => { inputA.value = sanitizeTicker((e.target as HTMLInputElement).value) }
-const onInputB = (e: Event) => { inputB.value = sanitizeTicker((e.target as HTMLInputElement).value) }
-
-// 한글 이름 → 티커 코드 역방향 조회
-const resolveToTicker = (input: string): string => {
-  const trimmed = input.trim()
-  if (!trimmed) return ''
-  if (!/[ㄱ-ㅎ가-힣]/.test(trimmed)) return trimmed.toUpperCase()
-  // 한글 입력인 경우 TICKER_NAMES 역방향 검색
-  for (const [ticker, name] of Object.entries(TICKER_NAMES)) {
-    if (name === trimmed) return ticker
-  }
-  // 부분 일치 (첫 번째 결과)
-  for (const [ticker, name] of Object.entries(TICKER_NAMES)) {
-    if (name.includes(trimmed)) return ticker
-  }
-  return trimmed
-}
+// 국내 모드 변경 시 입력 초기화
+watch(marketA, () => { inputA.value = ''; searchA.value = ''; notFoundA.value = false })
+watch(marketB, () => { inputB.value = ''; searchB.value = ''; notFoundB.value = false })
 
 watch(inputA, () => { notFoundA.value = false })
 watch(inputB, () => { notFoundB.value = false })
+
+const sanitizeTicker = (v: string) => v.replace(/[^A-Za-z0-9.-]/g, '')
+const onInputA = (e: Event) => { inputA.value = sanitizeTicker((e.target as HTMLInputElement).value) }
+const onInputB = (e: Event) => { inputB.value = sanitizeTicker((e.target as HTMLInputElement).value) }
+
 const dataA = ref<EtfInfo | null>(null)
 const dataB = ref<EtfInfo | null>(null)
 const loading = ref(false)
@@ -63,16 +78,10 @@ const notFoundB = ref(false)
 const isEmptyResult = (info: EtfInfo) =>
   info.currentPrice == null && info.totalAssets == null && info.cagr == null && info.mdd == null
 
-const TICKER_REGEX = /^[A-Za-z0-9가-힣ㄱ-ㅎ.-]{1,20}$/
-
 const fetchInfo = async () => {
-  const rawA = inputA.value.trim()
-  const rawB = inputB.value.trim()
-  if (!rawA) { showMessage('티커를 입력해주세요.', 'warning'); return }
-  if (!TICKER_REGEX.test(rawA)) { showMessage('올바른 티커 형식이 아닙니다. (예: SPY, QQQ, 069500)', 'warning'); return }
-  if (rawB && !TICKER_REGEX.test(rawB)) { showMessage('비교 티커 형식이 올바르지 않습니다.', 'warning'); return }
-  const tA = resolveToTicker(rawA)
-  const tB = rawB ? resolveToTicker(rawB) : ''
+  const tA = inputA.value.trim().toUpperCase()
+  const tB = inputB.value.trim().toUpperCase()
+  if (!tA) { showMessage('티커를 입력해주세요.', 'warning'); return }
   if (tB && tA === tB) { showMessage('두 티커가 동일합니다. 서로 다른 티커를 입력해주세요.', 'warning'); return }
 
   const tickers = [tA, tB].filter(Boolean)
@@ -277,40 +286,102 @@ const aiData = computed(() => {
 
     <!-- 입력 -->
     <v-card rounded="xl" class="pa-4 mb-4">
+      <!-- 기준 ETF -->
+      <div class="text-caption text-medium-emphasis mb-1">기준 ETF</div>
+      <v-btn-toggle v-model="marketA" density="compact" rounded="lg" mandatory class="mb-2" color="primary" variant="outlined">
+        <v-btn value="overseas" size="small">해외</v-btn>
+        <v-btn value="domestic" size="small">국내</v-btn>
+      </v-btn-toggle>
+      <v-autocomplete
+        v-if="marketA === 'domestic'"
+        v-model="inputA"
+        v-model:search="searchA"
+        :items="filteredA"
+        item-title="title"
+        item-value="value"
+        label="국내 ETF 검색"
+        placeholder="TIGER 미국S&P500 등 종목명 입력"
+        prepend-inner-icon="mdi-magnify"
+        variant="outlined"
+        density="compact"
+        rounded="lg"
+        hide-details
+        clearable
+        auto-select-first
+        no-data-text="검색 결과가 없습니다"
+        :custom-filter="krFilter"
+        class="mb-3"
+        @keyup.enter="fetchInfo"
+      />
+      <v-text-field
+        v-else
+        v-model="inputA"
+        label="티커 (예: SPY, QQQ)"
+        variant="outlined"
+        density="compact"
+        rounded="lg"
+        hide-details
+        clearable
+        maxlength="10"
+        class="mb-3"
+        @input="onInputA"
+        @keyup.enter="fetchInfo"
+      />
+
+      <!-- 구분선 -->
       <div class="d-flex align-center ga-2 mb-3">
-        <v-text-field
-          v-model="inputA"
-          label="티커 (예: SPY)"
-          variant="outlined"
-          density="compact"
-          rounded="lg"
-          hide-details
-          maxlength="6"
-          style="flex:1"
-          @input="onInputA"
-          @keyup.enter="fetchInfo"
-        />
-        <div class="text-body-2 font-weight-bold text-medium-emphasis">vs</div>
-        <v-text-field
-          v-model="inputB"
-          label="비교 티커 (선택)"
-          variant="outlined"
-          density="compact"
-          rounded="lg"
-          hide-details
-          maxlength="6"
-          style="flex:1"
-          @input="onInputB"
-          @keyup.enter="fetchInfo"
-        />
+        <v-divider /><span class="text-caption text-medium-emphasis font-weight-bold">vs</span><v-divider />
       </div>
+
+      <!-- 비교 ETF -->
+      <div class="text-caption text-medium-emphasis mb-1">비교 ETF <span class="text-caption" style="opacity:0.5">(선택)</span></div>
+      <v-btn-toggle v-model="marketB" density="compact" rounded="lg" mandatory class="mb-2" color="primary" variant="outlined">
+        <v-btn value="overseas" size="small">해외</v-btn>
+        <v-btn value="domestic" size="small">국내</v-btn>
+      </v-btn-toggle>
+      <v-autocomplete
+        v-if="marketB === 'domestic'"
+        v-model="inputB"
+        v-model:search="searchB"
+        :items="filteredB"
+        item-title="title"
+        item-value="value"
+        label="국내 ETF 검색"
+        placeholder="TIGER 미국S&P500 등 종목명 입력"
+        prepend-inner-icon="mdi-magnify"
+        variant="outlined"
+        density="compact"
+        rounded="lg"
+        hide-details
+        clearable
+        auto-select-first
+        no-data-text="검색 결과가 없습니다"
+        :custom-filter="krFilter"
+        class="mb-3"
+        @keyup.enter="fetchInfo"
+      />
+      <v-text-field
+        v-else
+        v-model="inputB"
+        label="비교 티커 (선택)"
+        variant="outlined"
+        density="compact"
+        rounded="lg"
+        hide-details
+        clearable
+        maxlength="10"
+        class="mb-3"
+        @input="onInputB"
+        @keyup.enter="fetchInfo"
+      />
+
       <div class="d-flex align-center ga-2">
         <v-btn
           v-if="dataA || inputA || inputB"
           variant="text"
           size="small"
           rounded="lg"
-          @click="inputA = ''; inputB = ''; dataA = null; dataB = null"
+          @click="inputA = ''; inputB = ''; searchA = ''; searchB = ''; dataA = null; dataB = null"
         >초기화</v-btn>
         <v-spacer />
         <v-btn color="primary" rounded="lg" :loading="loading" @click="fetchInfo">분석</v-btn>
