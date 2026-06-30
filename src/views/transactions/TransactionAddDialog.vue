@@ -66,7 +66,7 @@ const loadingPortfolios = ref(false)
 const selectedAccountFilter = ref<string | null>(null)
 
 const accountOptions = computed(() => {
-  const accounts = [...new Set(portfolios.value.map((p) => p.account_name ?? '기본'))]
+  const accounts = [...new Set(portfolios.value.map((p) => p.account_name ?? '미지정'))]
   return accounts.length > 1 ? accounts : []
 })
 
@@ -83,7 +83,7 @@ const isNewPortfolio = computed(() => selectedPortfolioId.value === NEW_PORTFOLI
 const newTicker = ref('')
 const newAssetType = ref('')
 const newCurrency = ref('KRW')
-const newAccountName = ref('기본')
+const newAccountName = ref('미지정')
 
 const newTickerConfig = computed(() => {
   switch (newAssetType.value) {
@@ -121,7 +121,7 @@ const effectiveCurrency = computed(() => {
 
 const filteredPortfolios = computed(() =>
   selectedAccountFilter.value
-    ? portfolios.value.filter((p) => (p.account_name ?? '기본') === selectedAccountFilter.value)
+    ? portfolios.value.filter((p) => (p.account_name ?? '미지정') === selectedAccountFilter.value)
     : portfolios.value
 )
 
@@ -137,7 +137,7 @@ const portfolioItems = computed(() => [
       : p.ticker
     const assetLabel = p.asset_type.replace('주식', '')
     let accountPrefix = ''
-    if (!selectedAccountFilter.value && p.account_name && p.account_name !== '기본') {
+    if (!selectedAccountFilter.value && p.account_name && p.account_name !== '미지정') {
       const acc = p.account_name
       // 한글은 2자, 영문/숫자는 4자 제한
       const isKorean = /[ㄱ-ㅎ가-힣]/.test(acc)
@@ -333,7 +333,7 @@ const save = async () => {
     // 새 종목 먼저 등록
     if (isNewPortfolio.value) {
       const tickerToSave = newAssetType.value === '현금' ? 'CASH' : newTicker.value.trim().toUpperCase()
-      const accountNameToSave = newAccountName.value.trim() || '기본'
+      const accountNameToSave = newAccountName.value.trim() || '미지정'
       const { data: existing } = await supabase
         .from('portfolios')
         .select('id')
@@ -420,7 +420,7 @@ const reset = (closeDialog = true) => {
   selectedKrStock.value = null
   newAssetType.value = ''
   newCurrency.value = 'KRW'
-  newAccountName.value = '기본'
+  newAccountName.value = '미지정'
   selectedAccountFilter.value = null
   if (closeDialog) dialog.value = false
 }

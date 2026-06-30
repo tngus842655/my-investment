@@ -497,7 +497,7 @@ const setSort = (key: SortKey) => {
 const selectedAccount = ref<string | null>(null)
 
 const accountOptions = computed(() => {
-  const accounts = [...new Set(portfolios.value.map((p) => p.account_name ?? '기본'))]
+  const accounts = [...new Set(portfolios.value.map((p) => p.account_name ?? '미지정'))]
   return accounts.length > 1 ? accounts : []
 })
 
@@ -517,7 +517,7 @@ const sortedPortfolios = computed(() => {
     }
   })()
   if (!selectedAccount.value) return base
-  return base.filter((p) => (p.account_name ?? '기본') === selectedAccount.value)
+  return base.filter((p) => (p.account_name ?? '미지정') === selectedAccount.value)
 })
 
 const onGlobalMouseUp = () => {
@@ -808,7 +808,7 @@ onUnmounted(() => {
                     <template v-else>
                       <span class="ticker-name font-weight-bold">{{ item.ticker }}</span>
                     </template>
-                    <div v-if="item.account_name && item.account_name !== '기본'" class="account-tag">
+                    <div v-if="item.account_name && item.account_name !== '미지정'" class="account-tag">
                       {{ item.account_name }}
                     </div>
                   </div>

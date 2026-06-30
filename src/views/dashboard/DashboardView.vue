@@ -333,7 +333,7 @@ onMounted(loadDashboard)
                 </div>
                 <div class="mini-asset-type">
                   {{ item.asset_type }}
-                  <span v-if="item.account_name && item.account_name !== '기본'" class="mini-account-tag">{{ item.account_name }}</span>
+                  <span v-if="item.account_name && item.account_name !== '미지정'" class="mini-account-tag">{{ item.account_name }}</span>
                 </div>
               </div>
             </div>

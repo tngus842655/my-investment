@@ -42,7 +42,7 @@ const isEditMode = computed(() => !!props.initialData)
 const ticker = ref('')
 const krSearchQuery = ref('')  // 국내주식 한글 검색어
 const selectedKrStock = ref<{ value: string; name: string } | null>(null)
-const accountName = ref('기본')
+const accountName = ref('미지정')
 
 watch(selectedKrStock, (v) => { ticker.value = v?.value ?? '' })
 const assetType = ref('')
@@ -160,7 +160,7 @@ watch(dialog, async (opened) => {
     }
     assetType.value = props.initialData.asset_type
     currency.value = props.initialData.currency
-    accountName.value = props.initialData.account_name ?? '기본'
+    accountName.value = props.initialData.account_name ?? '미지정'
     await loadInitialTx(props.initialData.id)
   } else {
     reset(false)
@@ -277,7 +277,7 @@ const save = async () => {
       // 통화 + 계좌명 수정
       const { error } = await supabase
         .from('portfolios')
-        .update({ currency: currency.value, account_name: accountName.value.trim() || '기본' })
+        .update({ currency: currency.value, account_name: accountName.value.trim() || '미지정' })
         .eq('id', props.initialData.id)
       if (error) throw error
 
@@ -328,7 +328,7 @@ const save = async () => {
             ? 'CASH_USD'
             : 'CASH_KRW'
           : (ticker.value?.trim() ?? '').toUpperCase()
-      const accountNameToSave = accountName.value.trim() || '기본'
+      const accountNameToSave = accountName.value.trim() || '미지정'
       const { data: existing } = await supabase
         .from('portfolios')
         .select('id')
@@ -402,7 +402,7 @@ const reset = (closeDialog = true) => {
   selectedKrStock.value = null
   assetType.value = ''
   currency.value = 'KRW'
-  accountName.value = '기본'
+  accountName.value = '미지정'
   initQuantity.value = ''
   initAvgPrice.value = ''
   existingInitialTxId.value = null
