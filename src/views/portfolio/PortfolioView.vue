@@ -608,27 +608,18 @@ onUnmounted(() => {
         <div class="summary-grid">
           <div class="summary-row">
             <span class="text-caption text-medium-emphasis">매입금액</span>
-            <div class="summary-amount-wrap">
-              <span class="text-caption font-weight-medium">{{ formatKrwShort(totalCostKrw) }}</span>
-              <span class="summary-amount-sub">{{ formatKrw(totalCostKrw) }}</span>
-            </div>
+            <span class="text-caption font-weight-medium">{{ formatKrwShort(totalCostKrw) }}</span>
           </div>
           <div class="summary-row">
             <span class="text-caption text-medium-emphasis">평가손익</span>
-            <div class="summary-amount-wrap">
-              <span
-                class="text-caption font-weight-medium"
-                :class="totalProfitAmountKrw >= 0 ? 'text-success' : 'text-error'"
-              >{{ formatProfitShort(totalProfitAmountKrw) }}</span>
-              <span class="summary-amount-sub">{{ formatProfit(totalProfitAmountKrw) }}</span>
-            </div>
+            <span
+              class="text-caption font-weight-medium"
+              :class="totalProfitAmountKrw >= 0 ? 'text-success' : 'text-error'"
+            >{{ formatProfitShort(totalProfitAmountKrw) }}</span>
           </div>
           <div class="summary-row">
             <span class="text-caption text-medium-emphasis">평가금액</span>
-            <div class="summary-amount-wrap">
-              <span class="text-caption font-weight-medium">{{ formatKrwShort(totalEvaluationAmountKrw) }}</span>
-              <span class="summary-amount-sub">{{ formatKrw(totalEvaluationAmountKrw) }}</span>
-            </div>
+            <span class="text-caption font-weight-medium">{{ formatKrwShort(totalEvaluationAmountKrw) }}</span>
           </div>
           <div class="summary-row">
             <span class="text-caption text-medium-emphasis">수익률(%)</span>
