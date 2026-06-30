@@ -156,7 +156,7 @@ const monthlyAmountError = computed(() => {
 })
 
 const canRun = computed(() =>
-  tickerInput.value.trim().length > 0 &&
+  (tickerInput.value ?? '').trim().length > 0 &&
   (monthlyAmount.value ?? 0) > 0 &&
   !monthlyAmountError.value &&
   startYm.value.length > 0
@@ -172,8 +172,8 @@ const fetchBacktest = async (ticker: string): Promise<BacktestResult> => {
 }
 
 const run = async () => {
-  const ticker = sanitizeTicker(tickerInput.value.trim())
-  const cTicker = sanitizeTicker(compareInput.value.trim())
+  const ticker = sanitizeTicker((tickerInput.value ?? '').trim())
+  const cTicker = sanitizeTicker((compareInput.value ?? '').trim())
   if (!ticker) { showMessage('티커를 입력해주세요.', 'warning'); return }
   if (!monthlyAmount.value || monthlyAmount.value <= 0) { showMessage('월 투자금을 입력해주세요.', 'warning'); return }
   if (cTicker && cTicker === ticker) { showMessage('비교 티커가 기준 티커와 동일합니다.', 'warning'); return }
