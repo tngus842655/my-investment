@@ -879,7 +879,7 @@ onUnmounted(() => {
         <strong>{{ selectedPortfolio ? getTickerDisplayName(selectedPortfolio.ticker) : '' }}</strong
         >을(를) 삭제하시겠습니까?<br />
         <span class="text-caption text-error">
-          해당 자산의 거래내역도 모두 함께 삭제됩니다.<br />이 작업은 되돌릴 수 없습니다.
+          <template v-if="selectedPortfolio?.asset_type !== '현금'">해당 자산의 거래내역도 모두 함께 삭제됩니다.<br /></template>이 작업은 되돌릴 수 없습니다.
         </span>
       </v-card-text>
       <v-divider />
