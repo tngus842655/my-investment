@@ -123,8 +123,10 @@ const PAGE_LABELS: Record<string, string> = {
   '/asset-growth': '자산 성장',
   '/dividend-calendar': '배당 캘린더',
   '/etf-analysis': 'ETF 분석',
+  '/etf-backtest': 'ETF 백테스트',
   '/feedback': '피드백',
   '/change-password': '비밀번호 변경',
+  '/release-notes': '개발자 노트',
   '/goalSettings': '목표 설정',
 }
 
