@@ -230,26 +230,28 @@ onMounted(() => {
       <div class="glass-card pa-5 mb-3">
         <div class="d-flex align-center justify-space-between mb-1">
           <div class="field-label">현재 자산</div>
-          <button class="hide-toggle-btn" @click="toggleHideAsset">
-            <v-icon size="18" :style="{ color: hideAsset ? 'rgb(var(--v-theme-primary))' : 'rgba(var(--v-theme-on-surface), 0.35)' }">
-              {{ hideAsset ? 'mdi-eye-off-outline' : 'mdi-eye-outline' }}
-            </v-icon>
-          </button>
+          <div class="d-flex align-center ga-3">
+            <div v-if="cashTotalKrw > 0" class="cash-toggle-row">
+              <span class="cash-toggle-label">현금포함</span>
+              <button
+                type="button"
+                class="toggle-switch"
+                :class="{ 'toggle-switch-active': includeCash }"
+                @click="setIncludeCash(!includeCash)"
+              >
+                <span class="toggle-switch-thumb" />
+              </button>
+            </div>
+            <button class="hide-toggle-btn" @click="toggleHideAsset">
+              <v-icon size="18" :style="{ color: hideAsset ? 'rgb(var(--v-theme-primary))' : 'rgba(var(--v-theme-on-surface), 0.35)' }">
+                {{ hideAsset ? 'mdi-eye-off-outline' : 'mdi-eye-outline' }}
+              </v-icon>
+            </button>
+          </div>
         </div>
         <div class="hero-amount font-weight-bold mb-1">
           <span v-if="hideAsset" class="asset-hidden">•••••</span>
           <span v-else>{{ displayedCurrentAsset > 0 ? Math.round(displayedCurrentAsset).toLocaleString('ko-KR') + '원' : '-' }}</span>
-        </div>
-        <div v-if="cashTotalKrw > 0" class="cash-toggle-row mb-1">
-          <span class="cash-toggle-label">현금포함</span>
-          <button
-            type="button"
-            class="toggle-switch"
-            :class="{ 'toggle-switch-active': includeCash }"
-            @click="setIncludeCash(!includeCash)"
-          >
-            <span class="toggle-switch-thumb" />
-          </button>
         </div>
         <div class="text-body-2" style="color: rgba(var(--v-theme-on-surface), 0.45)">
           <template v-if="displayedCurrentAsset > 0">
