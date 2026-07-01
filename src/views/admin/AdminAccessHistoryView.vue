@@ -22,6 +22,8 @@ const logs = ref<LogItem[]>([])
 const emailSearch = ref('')
 const dateSearch = ref('')
 const pageSearch = ref('')
+const excludeTestEmail = ref(false)
+const TEST_EMAIL = 'tngus842655@naver.com'
 
 const parseDateInput = (val: string) => {
   const v = val.replace(/-/g, '').trim()
@@ -55,6 +57,9 @@ const search = async () => {
       if (emailSearch.value.trim())
         query = query.ilike('email', `%${emailSearch.value.trim()}%`)
 
+      if (excludeTestEmail.value)
+        query = query.neq('email', TEST_EMAIL)
+
       const datePrefix = parseDateInput(dateSearch.value)
       if (datePrefix)
         query = query.gte('login_at', `${datePrefix}T00:00:00+09:00`).lt('login_at', nextDatePrefix(datePrefix))
@@ -75,6 +80,9 @@ const search = async () => {
 
       if (pageSearch.value)
         query = query.eq('page', pageSearch.value)
+
+      if (excludeTestEmail.value)
+        query = query.neq('email', TEST_EMAIL)
 
       const datePrefix = parseDateInput(dateSearch.value)
       if (datePrefix)
@@ -199,6 +207,13 @@ onMounted(async () => {
           maxlength="8"
           class="mb-3"
           @keyup.enter="search"
+        />
+        <v-checkbox
+          v-model="excludeTestEmail"
+          :label="`테스트 계정 제외 (${TEST_EMAIL})`"
+          density="compact"
+          hide-details
+          class="mb-1"
         />
         <v-btn
           variant="tonal"
