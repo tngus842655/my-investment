@@ -230,7 +230,7 @@ onMounted(() => {
       <div class="glass-card pa-5 mb-3">
         <div class="d-flex align-center justify-space-between mb-1">
           <div class="field-label">현재 자산</div>
-          <div class="d-flex align-center" style="gap: 10px">
+          <div class="d-flex align-center" style="gap: 22px">
             <div v-if="cashTotalKrw > 0" class="cash-toggle-row">
               <span class="cash-toggle-label">현금 포함</span>
               <button
