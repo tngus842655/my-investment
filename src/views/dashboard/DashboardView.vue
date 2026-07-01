@@ -121,6 +121,30 @@ const estimatedDate = computed(() => {
 const assetTypeColor = (type: string) =>
   ({ 국내주식: 'blue', 해외주식: 'purple', ETF: 'teal', 암호화폐: 'amber', 현금: 'green' })[type] ?? 'grey'
 
+// ── 공지사항 팝업 (신규 공지 최초 1회 노출) ─────────────
+const LAST_SEEN_NOTICE_KEY = 'firepath-last-seen-notice-id'
+const noticeDialog = ref(false)
+const latestNotice = ref<{ id: string; title: string; content: string } | null>(null)
+
+const checkLatestNotice = async () => {
+  const { data } = await supabase
+    .from('notices')
+    .select('id,title,content')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (!data) return
+  if (data.id !== localStorage.getItem(LAST_SEEN_NOTICE_KEY)) {
+    latestNotice.value = data
+    noticeDialog.value = true
+  }
+}
+
+const closeNoticeDialog = () => {
+  if (latestNotice.value) localStorage.setItem(LAST_SEEN_NOTICE_KEY, latestNotice.value.id)
+  noticeDialog.value = false
+}
+
 const loadDashboard = async () => {
   loading.value = true
   try {
@@ -162,7 +186,10 @@ const loadDashboard = async () => {
   }
 }
 
-onMounted(loadDashboard)
+onMounted(() => {
+  loadDashboard()
+  checkLatestNotice()
+})
 </script>
 
 <template>
@@ -388,6 +415,20 @@ onMounted(loadDashboard)
       </div>
     </template>
   </v-container>
+
+  <!-- 공지사항 팝업 -->
+  <v-dialog v-model="noticeDialog" max-width="360" persistent>
+    <v-card v-if="latestNotice" rounded="xl" class="glass-dialog">
+      <v-card-title class="d-flex align-center ga-2 pt-5 px-5">
+        <v-icon color="primary" size="20">mdi-bullhorn-outline</v-icon>
+        <span class="text-body-1 font-weight-bold">{{ latestNotice.title }}</span>
+      </v-card-title>
+      <v-card-text class="px-5 notice-popup-content">{{ latestNotice.content }}</v-card-text>
+      <v-card-actions class="px-5 pb-4">
+        <v-btn color="primary" variant="flat" rounded="lg" block @click="closeNoticeDialog">확인</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <style scoped>
@@ -605,6 +646,17 @@ onMounted(loadDashboard)
   border-color: rgb(var(--v-theme-primary));
   color: rgb(var(--v-theme-primary));
   background: rgba(var(--v-theme-primary), 0.07);
+}
+
+.glass-dialog {
+  background: rgb(var(--v-theme-surface)) !important;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08) !important;
+}
+
+.notice-popup-content {
+  white-space: pre-wrap;
+  line-height: 1.7;
+  color: rgba(var(--v-theme-on-surface), 0.8);
 }
 
 </style>

@@ -178,6 +178,9 @@ onMounted(async () => {
           사용자 의견
           <v-badge v-if="newFeedbackCount > 0" :content="newFeedbackCount" color="error" inline class="ml-2" />
         </v-btn>
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-bullhorn-outline" class="mb-2" @click="router.push('/admin/notices')">
+          공지사항 관리
+        </v-btn>
         <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-account-plus-outline" class="mb-2" @click="router.push('/admin/signup-log')">
           가입 이력 조회
         </v-btn>

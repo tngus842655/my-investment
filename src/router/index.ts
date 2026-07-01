@@ -30,6 +30,8 @@ import AdminDataView from '@/views/admin/AdminDataView.vue'
 import AdminTickerView from '@/views/admin/AdminTickerView.vue'
 import AdminFeedbackView from '@/views/admin/AdminFeedbackView.vue'
 import AdminAccessHistoryView from '@/views/admin/AdminAccessHistoryView.vue'
+import AdminNoticesView from '@/views/admin/AdminNoticesView.vue'
+import NoticesView from '@/views/more/NoticesView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -91,6 +93,12 @@ const router = createRouter({
       path: '/admin/feedback',
       name: 'adminFeedback',
       component: AdminFeedbackView,
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/admin/notices',
+      name: 'adminNotices',
+      component: AdminNoticesView,
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
@@ -199,6 +207,12 @@ const router = createRouter({
           name: 'releaseNotes',
           component: ReleaseNotesView,
           meta: { label: '개발자 노트' },
+        },
+        {
+          path: 'notices',
+          name: 'notices',
+          component: NoticesView,
+          meta: { label: '공지사항' },
         },
       ],
     },
