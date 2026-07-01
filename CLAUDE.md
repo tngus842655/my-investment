@@ -172,6 +172,7 @@ VITE_SUPABASE_ANON_KEY=
 | theme              | text        | 앱 테마 (light/dark/system 등, 기본값 system)                      |
 | portfolio_sort     | text        | 포트폴리오 정렬 기준 (custom/eval/profit/rate/name, 기본값 custom) |
 | hide_asset         | boolean     | 자산 숨김 여부 (기본값 false)                                      |
+| include_cash       | boolean     | 대시보드 현재 자산에 현금 포함 여부 (기본값 false)                 |
 | created_at         | timestamptz |                                                                    |
 | updated_at         | timestamptz |                                                                    |
 

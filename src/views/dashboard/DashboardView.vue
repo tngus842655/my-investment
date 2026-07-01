@@ -34,10 +34,31 @@ const toggleHideAsset = () => {
   })
 }
 
+const includeCash = ref(localStorage.getItem('firepath-include-cash') === 'true')
+const cashTotalKrw = ref(0)
+
+const setIncludeCash = (v: boolean) => {
+  if (includeCash.value === v) return
+  includeCash.value = v
+  localStorage.setItem('firepath-include-cash', String(v))
+  supabase.auth.getUser().then(({ data: { user } }) => {
+    if (!user) return
+    supabase.from('investment_goals')
+      .update({ include_cash: v })
+      .eq('user_id', user.id)
+      .then()
+  })
+}
+
 const targetAsset = ref(0)
 const currentAsset = ref(0)
 const monthlyInvestment = ref(0)
 const annualReturn = ref<number | null>(null)
+
+// 현금 제외 투자자산(currentAsset)에 토글 상태에 따라 현금 합산 (FIRE 달성률 등 다른 계산에는 영향 없음)
+const displayedCurrentAsset = computed(() =>
+  includeCash.value ? currentAsset.value + cashTotalKrw.value : currentAsset.value,
+)
 
 interface MiniPortfolio {
   id: string
@@ -106,10 +127,11 @@ const loadDashboard = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const [goalResult, summaryResult, portfolioResult, rate] = await Promise.all([
+    const [goalResult, summaryResult, portfolioResult, cashResult, rate] = await Promise.all([
       supabase.from('investment_goals').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('asset_summary').select('current_asset').eq('user_id', user.id).maybeSingle(),
       supabase.from('portfolios').select('id,ticker,asset_type,currency,quantity,avg_price,account_name').eq('user_id', user.id).order('sort_order', { ascending: true }).limit(4),
+      supabase.from('portfolios').select('quantity,avg_price,currency').eq('user_id', user.id).eq('asset_type', '현금'),
       getCachedExchangeRate(),
     ])
 
@@ -119,6 +141,13 @@ const loadDashboard = async () => {
       annualReturn.value = goalResult.data.annual_return ?? null
     }
     currentAsset.value = summaryResult.data?.current_asset ?? 0
+
+    cashTotalKrw.value = Math.round(
+      (cashResult.data ?? []).reduce((sum, c) => {
+        const amount = c.avg_price * c.quantity
+        return sum + (c.currency === 'USD' ? amount * rate : amount)
+      }, 0),
+    )
 
     topPortfolios.value = (portfolioResult.data ?? []).map((p) => {
       const eval_ = p.avg_price * p.quantity
@@ -177,10 +206,22 @@ onMounted(loadDashboard)
         </div>
         <div class="hero-amount font-weight-bold mb-1">
           <span v-if="hideAsset" class="asset-hidden">•••••</span>
-          <span v-else>{{ currentAsset > 0 ? Math.round(currentAsset).toLocaleString('ko-KR') + '원' : '-' }}</span>
+          <span v-else>{{ displayedCurrentAsset > 0 ? Math.round(displayedCurrentAsset).toLocaleString('ko-KR') + '원' : '-' }}</span>
+        </div>
+        <div v-if="cashTotalKrw > 0" class="d-flex ga-1 mb-1">
+          <button
+            class="cash-toggle-chip"
+            :class="{ 'cash-toggle-chip-active': !includeCash }"
+            @click="setIncludeCash(false)"
+          >투자자산만</button>
+          <button
+            class="cash-toggle-chip"
+            :class="{ 'cash-toggle-chip-active': includeCash }"
+            @click="setIncludeCash(true)"
+          >현금 포함</button>
         </div>
         <div class="text-body-2" style="color: rgba(var(--v-theme-on-surface), 0.45)">
-          <template v-if="currentAsset > 0">
+          <template v-if="displayedCurrentAsset > 0">
             목표 자산 <span v-if="hideAsset">•••</span><span v-else>{{ formatShortMoney(targetAsset) }}원</span>
           </template>
           <template v-else>
@@ -546,6 +587,24 @@ onMounted(loadDashboard)
 .asset-hidden {
   letter-spacing: 4px;
   font-size: 24px;
+}
+
+.cash-toggle-chip {
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
+  background: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+  transition: all 0.15s;
+}
+.cash-toggle-chip:active { opacity: 0.7; }
+.cash-toggle-chip-active {
+  border-color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.07);
 }
 
 </style>
