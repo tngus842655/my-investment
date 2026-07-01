@@ -46,9 +46,6 @@ const portfolioUserCount = computed(() =>
 )
 
 const includeCashCount = computed(() => goals.value.filter(g => g.include_cash).length)
-const includeCashRate = computed(() =>
-  goalStats.value?.count ? Math.round(includeCashCount.value / goalStats.value.count * 100) : 0
-)
 
 // 목표 설정은 했지만 포트폴리오 미등록
 const noPortfolioCount = computed(() => {
@@ -170,7 +167,6 @@ onMounted(async () => {
           <div class="stat-value" style="color: rgb(var(--v-theme-primary))">
             {{ includeCashCount }}<span class="stat-unit">명</span>
           </div>
-          <div class="stat-sub">목표 설정 회원의 {{ includeCashRate }}%</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">인기 테마</div>
