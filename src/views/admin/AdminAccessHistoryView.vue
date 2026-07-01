@@ -8,8 +8,9 @@ const router = useRouter()
 const loading = ref(false)
 const isAdmin = ref(false)
 
-type TabType = 'login' | 'access'
+type TabType = 'login' | 'access' | 'session'
 const activeTab = ref<TabType>('login')
+const SESSION_GAP_MS = 60 * 60 * 1000 // 1시간 이상 공백 시 새 세션
 
 interface LogItem {
   id: string
@@ -74,7 +75,7 @@ const search = async () => {
       logs.value = ((data ?? []) as { id: string; email: string; login_at: string }[])
         .filter(l => l.email !== ADMIN_EMAIL)
         .map(l => ({ id: l.id, email: l.email, timestamp: l.login_at }))
-    } else {
+    } else if (activeTab.value === 'access') {
       let query = supabase
         .from('access_log')
         .select('id, email, page, accessed_at')
@@ -97,6 +98,41 @@ const search = async () => {
       const { data } = await query
       logs.value = ((data ?? []) as { id: string; email: string; page: string; accessed_at: string }[])
         .map(l => ({ id: l.id, email: l.email, timestamp: l.accessed_at, page: l.page }))
+    } else {
+      // access_log를 이메일별 시간순으로 묶어 1시간 이상 공백이면 새 세션(=1회 접속)으로 간주
+      // 최신 순으로 가져온 뒤 뒤집어서 처리 — 전체 이력이 많아도 최근 데이터가 잘리지 않게 함
+      let query = supabase
+        .from('access_log')
+        .select('email, accessed_at')
+        .order('accessed_at', { ascending: false })
+        .limit(1000)
+
+      if (emailSearch.value.trim())
+        query = query.ilike('email', `%${emailSearch.value.trim()}%`)
+
+      if (excludeTestEmail.value)
+        query = query.neq('email', TEST_EMAIL)
+
+      const datePrefix = parseDateInput(dateSearch.value)
+      if (datePrefix)
+        query = query.gte('accessed_at', `${datePrefix}T00:00:00+09:00`).lt('accessed_at', nextDatePrefix(datePrefix))
+
+      const { data } = await query
+      const rows = ((data ?? []) as { email: string; accessed_at: string }[]).reverse()
+
+      const lastAccessedAt = new Map<string, number>()
+      const sessionStarts: { email: string; accessed_at: string }[] = []
+      for (const row of rows) {
+        const t = new Date(row.accessed_at).getTime()
+        const prev = lastAccessedAt.get(row.email)
+        if (prev === undefined || t - prev > SESSION_GAP_MS) sessionStarts.push(row)
+        lastAccessedAt.set(row.email, t)
+      }
+
+      logs.value = sessionStarts
+        .sort((a, b) => new Date(b.accessed_at).getTime() - new Date(a.accessed_at).getTime())
+        .slice(0, 100)
+        .map((s, i) => ({ id: `${s.email}-${s.accessed_at}-${i}`, email: s.email, timestamp: s.accessed_at }))
     }
   } finally {
     loading.value = false
@@ -165,6 +201,9 @@ onMounted(async () => {
         </button>
         <button class="tab-btn" :class="{ active: activeTab === 'access' }" @click="switchTab('access')">
           <v-icon size="15" class="mr-1">mdi-file-eye-outline</v-icon>페이지 접속 이력
+        </button>
+        <button class="tab-btn" :class="{ active: activeTab === 'session' }" @click="switchTab('session')">
+          <v-icon size="15" class="mr-1">mdi-account-clock-outline</v-icon>세션 이력
         </button>
       </div>
 
@@ -253,7 +292,7 @@ onMounted(async () => {
               <div class="d-flex align-center justify-space-between">
                 <div class="d-flex align-center ga-2 mr-2" style="min-width: 0">
                   <v-icon size="15" color="primary">
-                    {{ activeTab === 'login' ? 'mdi-login' : 'mdi-file-eye-outline' }}
+                    {{ activeTab === 'login' ? 'mdi-login' : activeTab === 'access' ? 'mdi-file-eye-outline' : 'mdi-account-clock-outline' }}
                   </v-icon>
                   <div style="min-width: 0">
                     <div class="log-email text-truncate">{{ log.email }}</div>
