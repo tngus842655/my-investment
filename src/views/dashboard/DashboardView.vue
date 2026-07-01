@@ -250,12 +250,12 @@ onMounted(() => {
           </div>
         </div>
         <div class="hero-amount font-weight-bold mb-1">
-          <span v-if="hideAsset" class="asset-hidden">•••••</span>
+          <span v-if="hideAsset" class="asset-hidden">금액 숨김</span>
           <span v-else>{{ displayedCurrentAsset > 0 ? Math.round(displayedCurrentAsset).toLocaleString('ko-KR') + '원' : '-' }}</span>
         </div>
         <div class="text-body-2" style="color: rgba(var(--v-theme-on-surface), 0.45)">
           <template v-if="displayedCurrentAsset > 0">
-            목표 자산 <span v-if="hideAsset">•••</span><span v-else>{{ formatShortMoney(targetAsset) }}원</span>
+            목표 자산 <span v-if="hideAsset" class="asset-hidden-sm">금액 숨김</span><span v-else>{{ formatShortMoney(targetAsset) }}원</span>
           </template>
           <template v-else>
             <span
@@ -633,8 +633,12 @@ onMounted(() => {
 .hide-toggle-btn:active { opacity: 0.6; }
 
 .asset-hidden {
-  letter-spacing: 4px;
-  font-size: 24px;
+  font-size: 20px;
+  color: rgba(var(--v-theme-on-surface), 0.35);
+}
+
+.asset-hidden-sm {
+  color: rgba(var(--v-theme-on-surface), 0.35);
 }
 
 .cash-toggle-row {
