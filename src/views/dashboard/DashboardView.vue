@@ -249,11 +249,11 @@ onMounted(() => {
             </button>
           </div>
         </div>
-        <div class="hero-amount font-weight-bold mb-1">
+        <div class="hero-amount font-weight-bold mb-1 text-center">
           <span v-if="hideAsset" class="asset-hidden">금액 숨김</span>
           <span v-else>{{ displayedCurrentAsset > 0 ? Math.round(displayedCurrentAsset).toLocaleString('ko-KR') + '원' : '-' }}</span>
         </div>
-        <div class="text-body-2" style="color: rgba(var(--v-theme-on-surface), 0.45)">
+        <div class="text-body-2 text-center" style="color: rgba(var(--v-theme-on-surface), 0.45)">
           <template v-if="displayedCurrentAsset > 0">
             목표 자산 <span v-if="hideAsset" class="asset-hidden-sm">금액 숨김</span><span v-else>{{ formatShortMoney(targetAsset) }}원</span>
           </template>
