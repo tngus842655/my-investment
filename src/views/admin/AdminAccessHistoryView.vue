@@ -22,8 +22,14 @@ const logs = ref<LogItem[]>([])
 const emailSearch = ref('')
 const dateSearch = ref('')
 const pageSearch = ref('')
-const excludeTestEmail = ref(false)
+const EXCLUDE_TEST_EMAIL_KEY = 'firepath-admin-exclude-test-email'
+const excludeTestEmail = ref(localStorage.getItem(EXCLUDE_TEST_EMAIL_KEY) === 'true')
 const TEST_EMAIL = 'tngus842655@naver.com'
+
+const toggleExcludeTestEmail = () => {
+  excludeTestEmail.value = !excludeTestEmail.value
+  localStorage.setItem(EXCLUDE_TEST_EMAIL_KEY, String(excludeTestEmail.value))
+}
 
 const parseDateInput = (val: string) => {
   const v = val.replace(/-/g, '').trim()
@@ -208,13 +214,17 @@ onMounted(async () => {
           class="mb-3"
           @keyup.enter="search"
         />
-        <v-checkbox
-          v-model="excludeTestEmail"
-          label="테스트 계정 제외"
-          density="compact"
-          hide-details
-          class="mb-1"
-        />
+        <div class="toggle-row mb-3">
+          <span class="toggle-row-label">테스트 계정 제외</span>
+          <button
+            type="button"
+            class="toggle-switch"
+            :class="{ 'toggle-switch-active': excludeTestEmail }"
+            @click="toggleExcludeTestEmail"
+          >
+            <span class="toggle-switch-thumb" />
+          </button>
+        </div>
         <v-btn
           variant="tonal"
           color="primary"
@@ -283,6 +293,45 @@ onMounted(async () => {
   font-size: 11px; font-weight: 700;
   letter-spacing: 0.06em; text-transform: uppercase;
   color: rgba(var(--v-theme-on-surface), 0.4);
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.toggle-row-label {
+  font-size: 13px;
+  color: rgba(var(--v-theme-on-surface), 0.7);
+}
+.toggle-switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 20px;
+  background: rgba(var(--v-theme-on-surface), 0.15);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+.toggle-switch-active {
+  background: rgb(var(--v-theme-primary));
+}
+.toggle-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease;
+}
+.toggle-switch-active .toggle-switch-thumb {
+  transform: translateX(18px);
 }
 
 .tab-wrap {
