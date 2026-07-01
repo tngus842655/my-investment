@@ -240,17 +240,16 @@ onMounted(() => {
           <span v-if="hideAsset" class="asset-hidden">•••••</span>
           <span v-else>{{ displayedCurrentAsset > 0 ? Math.round(displayedCurrentAsset).toLocaleString('ko-KR') + '원' : '-' }}</span>
         </div>
-        <div v-if="cashTotalKrw > 0" class="d-flex ga-1 mb-1">
+        <div v-if="cashTotalKrw > 0" class="cash-toggle-row mb-1">
+          <span class="cash-toggle-label">현금포함</span>
           <button
-            class="cash-toggle-chip"
-            :class="{ 'cash-toggle-chip-active': !includeCash }"
-            @click="setIncludeCash(false)"
-          >투자자산만</button>
-          <button
-            class="cash-toggle-chip"
-            :class="{ 'cash-toggle-chip-active': includeCash }"
-            @click="setIncludeCash(true)"
-          >현금 포함</button>
+            type="button"
+            class="toggle-switch"
+            :class="{ 'toggle-switch-active': includeCash }"
+            @click="setIncludeCash(!includeCash)"
+          >
+            <span class="toggle-switch-thumb" />
+          </button>
         </div>
         <div class="text-body-2" style="color: rgba(var(--v-theme-on-surface), 0.45)">
           <template v-if="displayedCurrentAsset > 0">
@@ -636,22 +635,44 @@ onMounted(() => {
   font-size: 24px;
 }
 
-.cash-toggle-chip {
-  padding: 2px 8px;
-  border-radius: 20px;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
-  background: none;
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(var(--v-theme-on-surface), 0.5);
-  transition: all 0.15s;
+.cash-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
-.cash-toggle-chip:active { opacity: 0.7; }
-.cash-toggle-chip-active {
-  border-color: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-primary));
-  background: rgba(var(--v-theme-primary), 0.07);
+.cash-toggle-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.55);
+}
+.toggle-switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 20px;
+  background: rgba(var(--v-theme-on-surface), 0.15);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+.toggle-switch-active {
+  background: rgb(var(--v-theme-primary));
+}
+.toggle-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease;
+}
+.toggle-switch-active .toggle-switch-thumb {
+  transform: translateX(16px);
 }
 
 .glass-dialog {
