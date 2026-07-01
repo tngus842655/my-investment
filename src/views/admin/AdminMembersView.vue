@@ -16,14 +16,13 @@ interface GoalRow {
   annual_return: number | null
   theme: string | null
   portfolio_sort: string | null
+  include_cash: boolean | null
 }
 interface PortfolioRow { user_id: string; ticker: string }
-interface TransactionRow { user_id: string }
 interface SignupRow { deleted_at: string | null }
 
 const goals       = ref<GoalRow[]>([])
 const portfolios  = ref<PortfolioRow[]>([])
-const transactions = ref<TransactionRow[]>([])
 const signups     = ref<SignupRow[]>([])
 const adminUserId = ref<string>('')
 
@@ -46,8 +45,9 @@ const portfolioUserCount = computed(() =>
   new Set(portfolios.value.map(p => p.user_id)).size
 )
 
-const txUserCount = computed(() =>
-  new Set(transactions.value.map(t => t.user_id)).size
+const includeCashCount = computed(() => goals.value.filter(g => g.include_cash).length)
+const includeCashRate = computed(() =>
+  goalStats.value?.count ? Math.round(includeCashCount.value / goalStats.value.count * 100) : 0
 )
 
 // 목표 설정은 했지만 포트폴리오 미등록
@@ -111,17 +111,15 @@ onMounted(async () => {
   isAdmin.value = true
   adminUserId.value = user.id
 
-  const [goalRes, portRes, txRes, signupRes] = await Promise.all([
-    supabase.from('investment_goals').select('user_id, target_asset, monthly_investment, annual_return, theme, portfolio_sort'),
+  const [goalRes, portRes, signupRes] = await Promise.all([
+    supabase.from('investment_goals').select('user_id, target_asset, monthly_investment, annual_return, theme, portfolio_sort, include_cash'),
     supabase.from('portfolios').select('user_id, ticker'),
-    supabase.from('transactions').select('user_id'),
     supabase.from('signup_log').select('deleted_at'),
   ])
 
   const adminId = user.id
   goals.value       = (goalRes.data ?? []).filter(r => r.user_id !== adminId)
   portfolios.value  = (portRes.data ?? []).filter(r => r.user_id !== adminId)
-  transactions.value = (txRes.data ?? []).filter(r => r.user_id !== adminId)
   signups.value     = signupRes.data ?? []
   loading.value = false
 })
@@ -168,8 +166,11 @@ onMounted(async () => {
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">거래 내역 있음</div>
-          <div class="stat-value">{{ txUserCount }}<span class="stat-unit">명</span></div>
+          <div class="stat-label">현금 포함 사용</div>
+          <div class="stat-value" style="color: rgb(var(--v-theme-primary))">
+            {{ includeCashCount }}<span class="stat-unit">명</span>
+          </div>
+          <div class="stat-sub">목표 설정 회원의 {{ includeCashRate }}%</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">인기 테마</div>
