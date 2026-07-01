@@ -10,6 +10,7 @@ interface Notice {
   id: string
   title: string
   content: string
+  is_test: boolean
   created_at: string
 }
 
@@ -63,6 +64,7 @@ onMounted(async () => {
 
       <div v-for="n in notices" :key="n.id" class="notice-card glass-card pa-4 mb-3">
         <div class="d-flex align-center ga-1 cursor-pointer" @click="toggleExpand(n)">
+          <v-chip v-if="n.is_test" size="x-small" color="warning" variant="tonal" class="mr-1">테스트</v-chip>
           <span class="notice-title flex-1">{{ n.title }}</span>
           <v-icon
             size="18"

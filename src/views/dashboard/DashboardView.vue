@@ -124,12 +124,12 @@ const assetTypeColor = (type: string) =>
 // ── 공지사항 팝업 (신규 공지 최초 1회 노출) ─────────────
 const LAST_SEEN_NOTICE_KEY = 'firepath-last-seen-notice-id'
 const noticeDialog = ref(false)
-const latestNotice = ref<{ id: string; title: string; content: string } | null>(null)
+const latestNotice = ref<{ id: string; title: string; content: string; is_test: boolean } | null>(null)
 
 const checkLatestNotice = async () => {
   const { data } = await supabase
     .from('notices')
-    .select('id,title,content')
+    .select('id,title,content,is_test')
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
@@ -422,6 +422,7 @@ onMounted(() => {
       <v-card-title class="d-flex align-center ga-2 pt-5 px-5">
         <v-icon color="primary" size="20">mdi-bullhorn-outline</v-icon>
         <span class="text-body-1 font-weight-bold">{{ latestNotice.title }}</span>
+        <v-chip v-if="latestNotice.is_test" size="x-small" color="warning" variant="tonal">테스트</v-chip>
       </v-card-title>
       <v-card-text class="px-5 notice-popup-content">{{ latestNotice.content }}</v-card-text>
       <v-card-actions class="px-5 pb-4">

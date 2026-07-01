@@ -13,6 +13,7 @@ interface Notice {
   id: string
   title: string
   content: string
+  is_test: boolean
   created_at: string
   updated_at: string
 }
@@ -23,6 +24,7 @@ const editDialog = ref(false)
 const editTarget = ref<Notice | null>(null)
 const titleDraft = ref('')
 const contentDraft = ref('')
+const isTestDraft = ref(false)
 const saving = ref(false)
 
 const deleteDialog = ref(false)
@@ -62,6 +64,7 @@ const openCreateDialog = () => {
   editTarget.value = null
   titleDraft.value = ''
   contentDraft.value = ''
+  isTestDraft.value = false
   editDialog.value = true
 }
 
@@ -69,6 +72,7 @@ const openEditDialog = (n: Notice) => {
   editTarget.value = n
   titleDraft.value = n.title
   contentDraft.value = n.content
+  isTestDraft.value = n.is_test
   editDialog.value = true
 }
 
@@ -81,14 +85,14 @@ const saveNotice = async () => {
     if (editTarget.value) {
       const { error } = await supabase
         .from('notices')
-        .update({ title, content, updated_at: new Date().toISOString() })
+        .update({ title, content, is_test: isTestDraft.value, updated_at: new Date().toISOString() })
         .eq('id', editTarget.value.id)
       if (error) throw error
       showMessage('공지사항이 수정되었습니다.', 'success')
     } else {
-      const { error } = await supabase.from('notices').insert({ title, content })
+      const { error } = await supabase.from('notices').insert({ title, content, is_test: isTestDraft.value })
       if (error) throw error
-      showMessage('공지사항이 등록되었습니다.', 'success')
+      showMessage(isTestDraft.value ? '테스트 공지가 등록되었습니다. (관리자만 확인 가능)' : '공지사항이 등록되었습니다.', 'success')
     }
     editDialog.value = false
     await loadNotices()
@@ -162,6 +166,7 @@ const toggleExpand = (n: Notice) => {
             </button>
           </div>
           <div class="d-flex align-center ga-1 cursor-pointer" @click="toggleExpand(n)">
+            <v-chip v-if="n.is_test" size="x-small" color="warning" variant="tonal">테스트</v-chip>
             <span class="title-text">{{ n.title }}</span>
             <v-icon
               size="16"
@@ -200,6 +205,20 @@ const toggleExpand = (n: Notice) => {
           placeholder="공지 내용을 입력하세요."
           rows="6"
         />
+        <div class="toggle-row mt-3">
+          <div>
+            <div class="toggle-row-label">테스트 공지</div>
+            <div class="toggle-row-sub">체크하면 관리자만 확인 가능 (실제 사용자에게 노출 안 됨)</div>
+          </div>
+          <button
+            type="button"
+            class="toggle-switch"
+            :class="{ 'toggle-switch-active': isTestDraft }"
+            @click="isTestDraft = !isTestDraft"
+          >
+            <span class="toggle-switch-thumb" />
+          </button>
+        </div>
       </v-card-text>
       <v-card-actions class="px-4 pb-4 ga-2">
         <v-btn variant="tonal" rounded="lg" block :disabled="saving" @click="editDialog = false">취소</v-btn>
@@ -312,4 +331,50 @@ const toggleExpand = (n: Notice) => {
   caret-color: rgb(var(--v-theme-primary));
 }
 .content-textarea::placeholder { color: rgba(var(--v-theme-on-surface), 0.35); }
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.toggle-row-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.8);
+}
+.toggle-row-sub {
+  font-size: 11px;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+  margin-top: 1px;
+}
+.toggle-switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 20px;
+  background: rgba(var(--v-theme-on-surface), 0.15);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+.toggle-switch-active {
+  background: rgb(var(--v-theme-primary));
+}
+.toggle-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease;
+}
+.toggle-switch-active .toggle-switch-thumb {
+  transform: translateX(18px);
+}
 </style>
