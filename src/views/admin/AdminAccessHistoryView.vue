@@ -199,11 +199,11 @@ onMounted(async () => {
         <button class="tab-btn" :class="{ active: activeTab === 'login' }" @click="switchTab('login')">
           <v-icon size="15" class="mr-1">mdi-login</v-icon>로그인 이력
         </button>
-        <button class="tab-btn" :class="{ active: activeTab === 'access' }" @click="switchTab('access')">
-          <v-icon size="15" class="mr-1">mdi-file-eye-outline</v-icon>페이지 접속 이력
-        </button>
         <button class="tab-btn" :class="{ active: activeTab === 'session' }" @click="switchTab('session')">
           <v-icon size="15" class="mr-1">mdi-account-clock-outline</v-icon>세션 이력
+        </button>
+        <button class="tab-btn" :class="{ active: activeTab === 'access' }" @click="switchTab('access')">
+          <v-icon size="15" class="mr-1">mdi-file-eye-outline</v-icon>페이지 접속 이력
         </button>
       </div>
 
