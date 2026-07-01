@@ -66,13 +66,13 @@ onMounted(async () => {
         <div class="d-flex align-center ga-1 cursor-pointer" @click="toggleExpand(n)">
           <v-chip v-if="n.is_test" size="x-small" color="warning" variant="tonal" class="mr-1">테스트</v-chip>
           <span class="notice-title flex-1">{{ n.title }}</span>
+          <span class="notice-date">{{ formatDate(n.created_at) }}</span>
           <v-icon
             size="18"
             style="opacity:0.4; transition: transform 0.2s; flex-shrink:0"
             :style="expandedId === n.id ? 'transform:rotate(180deg)' : ''"
           >mdi-chevron-down</v-icon>
         </div>
-        <div class="notice-date mt-1">{{ formatDate(n.created_at) }}</div>
         <div v-if="expandedId === n.id" class="notice-content mt-3">{{ n.content }}</div>
       </div>
     </template>
@@ -92,11 +92,17 @@ onMounted(async () => {
   font-size: 15px;
   font-weight: 700;
   color: rgb(var(--v-theme-on-surface));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .notice-date {
   font-size: 12px;
   color: rgba(var(--v-theme-on-surface), 0.45);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .notice-content {
