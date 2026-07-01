@@ -210,7 +210,7 @@ onMounted(async () => {
         />
         <v-checkbox
           v-model="excludeTestEmail"
-          :label="`테스트 계정 제외 (${TEST_EMAIL})`"
+          label="테스트 계정 제외"
           density="compact"
           hide-details
           class="mb-1"
