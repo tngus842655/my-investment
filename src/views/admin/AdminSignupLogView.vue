@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { ADMIN_EMAIL } from '@/config/admin'
+import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 const router = useRouter()
 const loading = ref(true)
 const isAdmin = ref(false)
@@ -41,6 +42,7 @@ interface MemberDetail {
   annual_return: number | null
   current_asset: number | null
   investment_principal: number | null
+  cash_total_krw: number
   portfolio_count: number
   portfolios: PortfolioItem[]
 }
@@ -72,17 +74,24 @@ const openDetail = async (log: SignupLog) => {
     let lastAccessedAt: string | null = null
     let sessionCount = 0
 
+    let cashTotalKrw = 0
+
     if (userId) {
-      const [goalRes, assetRes, portRes, accessRes] = await Promise.all([
+      const [goalRes, assetRes, portRes, accessRes, rate] = await Promise.all([
         supabase.from('investment_goals').select('target_asset, monthly_investment, annual_return').eq('user_id', userId).maybeSingle(),
         supabase.from('asset_summary').select('current_asset, investment_principal').eq('user_id', userId).maybeSingle(),
         supabase.from('portfolios').select('ticker, quantity, avg_price, currency').eq('user_id', userId).order('sort_order'),
         supabase.from('access_log').select('accessed_at').eq('user_id', userId).order('accessed_at', { ascending: true }),
+        getCachedExchangeRate(),
       ])
       goal = goalRes.data
       assetSummary = assetRes.data
       portfolioItems = (portRes.data ?? []) as PortfolioItem[]
       portfolioCount = portfolioItems.length
+
+      cashTotalKrw = portfolioItems
+        .filter(p => p.ticker === 'CASH_KRW' || p.ticker === 'CASH_USD')
+        .reduce((sum, p) => sum + (p.currency === 'USD' ? p.avg_price * p.quantity * rate : p.avg_price * p.quantity), 0)
 
       // 세션 카운트: 연속 기록 간격 1시간 초과 시 새 세션
       const accessTimes = (accessRes.data ?? []).map(r => new Date(r.accessed_at).getTime())
@@ -105,6 +114,7 @@ const openDetail = async (log: SignupLog) => {
       annual_return: goal?.annual_return ?? null,
       current_asset: assetSummary?.current_asset ?? null,
       investment_principal: assetSummary?.investment_principal ?? null,
+      cash_total_krw: Math.round(cashTotalKrw),
       portfolio_count: portfolioCount,
       portfolios: portfolioItems,
     }
@@ -360,6 +370,7 @@ onMounted(async () => {
         <div class="detail-section-label mb-2">현재 자산</div>
         <div class="detail-row"><span class="detail-key">현재 평가액</span><span class="detail-val">{{ detail.current_asset ? fmtWon(detail.current_asset) : '-' }}</span></div>
         <div class="detail-row"><span class="detail-key">투자 원금</span><span class="detail-val">{{ detail.investment_principal ? fmtWon(detail.investment_principal) : '-' }}</span></div>
+        <div class="detail-row"><span class="detail-key">현금 자산</span><span class="detail-val">{{ detail.cash_total_krw > 0 ? fmtWon(detail.cash_total_krw) : '-' }}</span></div>
         <div class="detail-row" :style="detail.portfolio_count > 0 ? 'cursor:pointer' : ''" @click="detail.portfolio_count > 0 && (portfolioDialog = true)">
           <span class="detail-key">보유 종목 수</span>
           <span class="detail-val" :style="detail.portfolio_count > 0 ? 'color:rgb(var(--v-theme-primary))' : ''">
