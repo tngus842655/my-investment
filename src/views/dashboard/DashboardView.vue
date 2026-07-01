@@ -121,12 +121,17 @@ const estimatedDate = computed(() => {
 const assetTypeColor = (type: string) =>
   ({ 국내주식: 'blue', 해외주식: 'purple', ETF: 'teal', 암호화폐: 'amber', 현금: 'green' })[type] ?? 'grey'
 
-// ── 공지사항 팝업 (신규 공지 최초 1회 노출) ─────────────
-const LAST_SEEN_NOTICE_KEY = 'firepath-last-seen-notice-id'
+// ── 공지사항 팝업 (신규 공지 최초 1회 노출, 유저별로 구분) ─────────────
+const LAST_SEEN_NOTICE_KEY_PREFIX = 'firepath-last-seen-notice-id'
 const noticeDialog = ref(false)
 const latestNotice = ref<{ id: string; title: string; content: string; is_test: boolean } | null>(null)
+let lastSeenNoticeKey: string | null = null
 
 const checkLatestNotice = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  lastSeenNoticeKey = `${LAST_SEEN_NOTICE_KEY_PREFIX}-${user.id}`
+
   const { data } = await supabase
     .from('notices')
     .select('id,title,content,is_test')
@@ -134,14 +139,14 @@ const checkLatestNotice = async () => {
     .limit(1)
     .maybeSingle()
   if (!data) return
-  if (data.id !== localStorage.getItem(LAST_SEEN_NOTICE_KEY)) {
+  if (data.id !== localStorage.getItem(lastSeenNoticeKey)) {
     latestNotice.value = data
     noticeDialog.value = true
   }
 }
 
 const closeNoticeDialog = () => {
-  if (latestNotice.value) localStorage.setItem(LAST_SEEN_NOTICE_KEY, latestNotice.value.id)
+  if (latestNotice.value && lastSeenNoticeKey) localStorage.setItem(lastSeenNoticeKey, latestNotice.value.id)
   noticeDialog.value = false
 }
 
