@@ -5,8 +5,8 @@ import { CRYPTO_NAMES } from './tickerNames.crypto'
 export const TICKER_NAMES: Record<string, string> = {
   // 현금
   CASH: '보유현금',
-  CASH_KRW: '원화현금',
-  CASH_USD: '달러현금',
+  CASH_KRW: '원화',
+  CASH_USD: '달러',
 
   ...US_STOCK_NAMES,
   ...US_ETF_NAMES,

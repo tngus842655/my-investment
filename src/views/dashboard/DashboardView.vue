@@ -34,10 +34,31 @@ const toggleHideAsset = () => {
   })
 }
 
+const includeCash = ref(localStorage.getItem('firepath-include-cash') === 'true')
+const cashTotalKrw = ref(0)
+
+const setIncludeCash = (v: boolean) => {
+  if (includeCash.value === v) return
+  includeCash.value = v
+  localStorage.setItem('firepath-include-cash', String(v))
+  supabase.auth.getUser().then(({ data: { user } }) => {
+    if (!user) return
+    supabase.from('investment_goals')
+      .update({ include_cash: v })
+      .eq('user_id', user.id)
+      .then()
+  })
+}
+
 const targetAsset = ref(0)
 const currentAsset = ref(0)
 const monthlyInvestment = ref(0)
 const annualReturn = ref<number | null>(null)
+
+// 현금 제외 투자자산(currentAsset)에 토글 상태에 따라 현금 합산 (FIRE 달성률 등 다른 계산에는 영향 없음)
+const displayedCurrentAsset = computed(() =>
+  includeCash.value ? currentAsset.value + cashTotalKrw.value : currentAsset.value,
+)
 
 interface MiniPortfolio {
   id: string
@@ -100,16 +121,46 @@ const estimatedDate = computed(() => {
 const assetTypeColor = (type: string) =>
   ({ 국내주식: 'blue', 해외주식: 'purple', ETF: 'teal', 암호화폐: 'amber', 현금: 'green' })[type] ?? 'grey'
 
+// ── 공지사항 팝업 (신규 공지 최초 1회 노출, 유저별로 구분) ─────────────
+const LAST_SEEN_NOTICE_KEY_PREFIX = 'firepath-last-seen-notice-id'
+const noticeDialog = ref(false)
+const latestNotice = ref<{ id: string; title: string; content: string; is_test: boolean } | null>(null)
+let lastSeenNoticeKey: string | null = null
+
+const checkLatestNotice = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  lastSeenNoticeKey = `${LAST_SEEN_NOTICE_KEY_PREFIX}-${user.id}`
+
+  const { data } = await supabase
+    .from('notices')
+    .select('id,title,content,is_test')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (!data) return
+  if (data.id !== localStorage.getItem(lastSeenNoticeKey)) {
+    latestNotice.value = data
+    noticeDialog.value = true
+  }
+}
+
+const closeNoticeDialog = () => {
+  if (latestNotice.value && lastSeenNoticeKey) localStorage.setItem(lastSeenNoticeKey, latestNotice.value.id)
+  noticeDialog.value = false
+}
+
 const loadDashboard = async () => {
   loading.value = true
   try {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const [goalResult, summaryResult, portfolioResult, rate] = await Promise.all([
+    const [goalResult, summaryResult, portfolioResult, cashResult, rate] = await Promise.all([
       supabase.from('investment_goals').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('asset_summary').select('current_asset').eq('user_id', user.id).maybeSingle(),
       supabase.from('portfolios').select('id,ticker,asset_type,currency,quantity,avg_price,account_name').eq('user_id', user.id).order('sort_order', { ascending: true }).limit(4),
+      supabase.from('portfolios').select('quantity,avg_price,currency').eq('user_id', user.id).eq('asset_type', '현금'),
       getCachedExchangeRate(),
     ])
 
@@ -119,6 +170,13 @@ const loadDashboard = async () => {
       annualReturn.value = goalResult.data.annual_return ?? null
     }
     currentAsset.value = summaryResult.data?.current_asset ?? 0
+
+    cashTotalKrw.value = Math.round(
+      (cashResult.data ?? []).reduce((sum, c) => {
+        const amount = c.avg_price * c.quantity
+        return sum + (c.currency === 'USD' ? amount * rate : amount)
+      }, 0),
+    )
 
     topPortfolios.value = (portfolioResult.data ?? []).map((p) => {
       const eval_ = p.avg_price * p.quantity
@@ -133,7 +191,10 @@ const loadDashboard = async () => {
   }
 }
 
-onMounted(loadDashboard)
+onMounted(() => {
+  loadDashboard()
+  checkLatestNotice()
+})
 </script>
 
 <template>
@@ -169,19 +230,32 @@ onMounted(loadDashboard)
       <div class="glass-card pa-5 mb-3">
         <div class="d-flex align-center justify-space-between mb-1">
           <div class="field-label">현재 자산</div>
-          <button class="hide-toggle-btn" @click="toggleHideAsset">
-            <v-icon size="18" :style="{ color: hideAsset ? 'rgb(var(--v-theme-primary))' : 'rgba(var(--v-theme-on-surface), 0.35)' }">
-              {{ hideAsset ? 'mdi-eye-off-outline' : 'mdi-eye-outline' }}
-            </v-icon>
-          </button>
+          <div class="d-flex align-center" style="gap: 22px">
+            <div v-if="cashTotalKrw > 0" class="cash-toggle-row">
+              <span class="cash-toggle-label">현금 포함</span>
+              <button
+                type="button"
+                class="toggle-switch"
+                :class="{ 'toggle-switch-active': includeCash }"
+                @click="setIncludeCash(!includeCash)"
+              >
+                <span class="toggle-switch-thumb" />
+              </button>
+            </div>
+            <button class="hide-toggle-btn" @click="toggleHideAsset">
+              <v-icon size="18" :style="{ color: hideAsset ? 'rgb(var(--v-theme-primary))' : 'rgba(var(--v-theme-on-surface), 0.35)' }">
+                {{ hideAsset ? 'mdi-eye-off-outline' : 'mdi-eye-outline' }}
+              </v-icon>
+            </button>
+          </div>
         </div>
-        <div class="hero-amount font-weight-bold mb-1">
-          <span v-if="hideAsset" class="asset-hidden">•••••</span>
-          <span v-else>{{ currentAsset > 0 ? Math.round(currentAsset).toLocaleString('ko-KR') + '원' : '-' }}</span>
+        <div class="hero-amount font-weight-bold mb-1 text-center">
+          <span v-if="hideAsset" class="asset-hidden">금액 숨김</span>
+          <span v-else>{{ displayedCurrentAsset > 0 ? Math.round(displayedCurrentAsset).toLocaleString('ko-KR') + '원' : '-' }}</span>
         </div>
-        <div class="text-body-2" style="color: rgba(var(--v-theme-on-surface), 0.45)">
-          <template v-if="currentAsset > 0">
-            목표 자산 <span v-if="hideAsset">•••</span><span v-else>{{ formatShortMoney(targetAsset) }}원</span>
+        <div class="text-body-2 text-center" style="color: rgba(var(--v-theme-on-surface), 0.45)">
+          <template v-if="displayedCurrentAsset > 0">
+            목표 자산 <span v-if="hideAsset" class="asset-hidden-sm">금액 숨김</span><span v-else>{{ formatShortMoney(targetAsset) }}원</span>
           </template>
           <template v-else>
             <span
@@ -347,6 +421,21 @@ onMounted(loadDashboard)
       </div>
     </template>
   </v-container>
+
+  <!-- 공지사항 팝업 -->
+  <v-dialog v-model="noticeDialog" max-width="360" persistent>
+    <v-card v-if="latestNotice" rounded="xl" class="glass-dialog">
+      <v-card-title class="d-flex align-center ga-2 pt-5 px-5">
+        <v-icon color="primary" size="20">mdi-bullhorn-outline</v-icon>
+        <span class="text-body-1 font-weight-bold">{{ latestNotice.title }}</span>
+        <v-chip v-if="latestNotice.is_test" size="x-small" color="warning" variant="tonal">테스트</v-chip>
+      </v-card-title>
+      <v-card-text class="px-5 notice-popup-content">{{ latestNotice.content }}</v-card-text>
+      <v-card-actions class="px-5 pb-4">
+        <v-btn color="primary" variant="flat" rounded="lg" block @click="closeNoticeDialog">확인</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <style scoped>
@@ -544,8 +633,63 @@ onMounted(loadDashboard)
 .hide-toggle-btn:active { opacity: 0.6; }
 
 .asset-hidden {
-  letter-spacing: 4px;
-  font-size: 24px;
+  font-size: 20px;
+  color: rgba(var(--v-theme-on-surface), 0.35);
+}
+
+.asset-hidden-sm {
+  color: rgba(var(--v-theme-on-surface), 0.35);
+}
+
+.cash-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cash-toggle-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.55);
+}
+.toggle-switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 20px;
+  background: rgba(var(--v-theme-on-surface), 0.15);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+.toggle-switch-active {
+  background: rgb(var(--v-theme-primary));
+}
+.toggle-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease;
+}
+.toggle-switch-active .toggle-switch-thumb {
+  transform: translateX(16px);
+}
+
+.glass-dialog {
+  background: rgb(var(--v-theme-surface)) !important;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08) !important;
+}
+
+.notice-popup-content {
+  white-space: pre-wrap;
+  line-height: 1.7;
+  color: rgba(var(--v-theme-on-surface), 0.8);
 }
 
 </style>

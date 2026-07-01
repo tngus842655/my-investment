@@ -243,6 +243,16 @@ const currentThemeLabel = computed(() => {
     <!-- 서비스 섹션 -->
     <div class="section-label mb-2">서비스</div>
     <div class="d-flex flex-column ga-2 mb-5">
+      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/notices')">
+        <div class="menu-icon"><v-icon size="18" color="primary">mdi-bullhorn-outline</v-icon></div>
+        <div>
+          <div class="text-body-2 font-weight-medium">공지사항</div>
+          <div class="text-caption text-medium-emphasis">서비스 관련 안내 및 공지를 확인하세요.</div>
+        </div>
+        <v-spacer />
+        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
+      </div>
+
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/feedback')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-message-text-outline</v-icon></div>
         <div>

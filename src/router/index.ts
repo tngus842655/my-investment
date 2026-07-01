@@ -30,6 +30,8 @@ import AdminDataView from '@/views/admin/AdminDataView.vue'
 import AdminTickerView from '@/views/admin/AdminTickerView.vue'
 import AdminFeedbackView from '@/views/admin/AdminFeedbackView.vue'
 import AdminAccessHistoryView from '@/views/admin/AdminAccessHistoryView.vue'
+import AdminNoticesView from '@/views/admin/AdminNoticesView.vue'
+import NoticesView from '@/views/more/NoticesView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -94,10 +96,16 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
+      path: '/admin/notices',
+      name: 'adminNotices',
+      component: AdminNoticesView,
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
       path: '/goalSettings',
       name: 'goalSettings',
       component: GoalSettingsView,
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, label: '목표 설정' },
     },
     {
       path: '/',
@@ -108,81 +116,103 @@ const router = createRouter({
           path: 'dashboard',
           name: 'dashboard',
           component: DashboardView,
+          meta: { label: '대시보드' },
         },
         {
           path: 'portfolio',
           name: 'portfolio',
           component: PortfolioView,
+          meta: { label: '포트폴리오' },
         },
         {
           path: 'transactions',
           name: 'transactions',
           component: TransactionView,
+          meta: { label: '거래 내역' },
         },
         {
           path: 'analysis',
           name: 'analysis',
           component: AnalysisView,
+          meta: { label: '분석' },
         },
         {
           path: 'more',
           name: 'more',
           component: MoreView,
+          meta: { label: '더보기' },
         },
         {
           path: 'portfolio-analysis',
           name: 'portfolioAnalysis',
           component: PortfolioAnalysisView,
+          meta: { label: '포트폴리오 분석' },
         },
         {
           path: 'badges',
           name: 'badges',
           component: BadgesView,
+          meta: { label: '뱃지' },
         },
         {
           path: 'fire-simulator',
           name: 'fireSimulator',
           component: FireSimulatorView,
+          meta: { label: 'FIRE 시뮬레이터' },
         },
         {
           path: 'fire-history',
           name: 'fireHistory',
           component: FireHistoryView,
+          meta: { label: 'FIRE 히스토리' },
         },
         {
           path: 'asset-growth',
           name: 'assetGrowth',
           component: AssetGrowthView,
+          meta: { label: '자산 성장' },
         },
         {
           path: 'dividend-calendar',
           name: 'dividendCalendar',
           component: DividendCalendarView,
+          meta: { label: '배당 캘린더' },
         },
         {
           path: 'etf-analysis',
           name: 'etfAnalysis',
           component: EtfAnalysisView,
+          meta: { label: 'ETF 분석' },
         },
         {
           path: 'etf-backtest',
           name: 'etfBacktest',
           component: EtfBacktestView,
+          meta: { label: 'ETF 백테스트' },
         },
         {
           path: 'feedback',
           name: 'feedback',
           component: FeedbackView,
+          meta: { label: '피드백' },
         },
         {
           path: 'change-password',
           name: 'changePassword',
           component: ChangePasswordView,
+          meta: { label: '비밀번호 변경' },
         },
         {
           path: 'release-notes',
           name: 'releaseNotes',
           component: ReleaseNotesView,
+          meta: { label: '개발자 노트' },
+        },
+        {
+          path: 'notices',
+          name: 'notices',
+          component: NoticesView,
+          meta: { label: '공지사항' },
         },
       ],
     },

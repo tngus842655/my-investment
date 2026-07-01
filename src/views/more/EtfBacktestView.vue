@@ -278,7 +278,7 @@ const compareRows = computed(() => {
       label: 'MDD',
       a: fmtPct(sa.mdd),
       b: fmtPct(sb.mdd),
-      win: better(sa.mdd, sb.mdd, false),
+      win: better(sa.mdd, sb.mdd, true),
       colorA: 'error',
       colorB: 'error',
     },

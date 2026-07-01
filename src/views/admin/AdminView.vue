@@ -26,44 +26,47 @@ const stats = computed(() => {
   const retentionRate = total > 0 ? Math.round((active / total) * 100) : 0
 
   const deletedLogs = logs.value.filter((l) => !!l.deleted_at)
-  const avgDays = deletedLogs.length > 0
-    ? Math.round(
-        deletedLogs.reduce((sum, l) => {
-          const diff = new Date(l.deleted_at!).getTime() - new Date(l.signed_up_at).getTime()
-          return sum + diff / (1000 * 60 * 60 * 24)
-        }, 0) / deletedLogs.length,
-      )
-    : null
+  const avgDays =
+    deletedLogs.length > 0
+      ? Math.round(
+          deletedLogs.reduce((sum, l) => {
+            const diff = new Date(l.deleted_at!).getTime() - new Date(l.signed_up_at).getTime()
+            return sum + diff / (1000 * 60 * 60 * 24)
+          }, 0) / deletedLogs.length,
+        )
+      : null
 
-  const sorted = [...logs.value].sort(
-    (a, b) => new Date(b.signed_up_at).getTime() - new Date(a.signed_up_at).getTime(),
-  )
+  const sorted = [...logs.value].sort((a, b) => new Date(b.signed_up_at).getTime() - new Date(a.signed_up_at).getTime())
   const lastSignup = sorted[0] ?? null
-  const lastDeleted = [...logs.value]
-    .filter((l) => l.deleted_at)
-    .sort((a, b) => new Date(b.deleted_at!).getTime() - new Date(a.deleted_at!).getTime())[0] ?? null
+  const lastDeleted = [...logs.value].filter((l) => l.deleted_at).sort((a, b) => new Date(b.deleted_at!).getTime() - new Date(a.deleted_at!).getTime())[0] ?? null
 
   return { total, active, deleted, retentionRate, avgDays, lastSignup, lastDeleted }
 })
 
 const KST = 'Asia/Seoul'
 
-const todayLabel = new Date().toLocaleDateString('ko-KR', { timeZone: KST, year: 'numeric', month: '2-digit', day: '2-digit' })
-  .replace(/\. /g, '.').replace(/\.$/, '')
+const todayLabel = new Date().toLocaleDateString('ko-KR', { timeZone: KST, year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '')
 
 const formatDateShort = (iso: string) => {
   const d = new Date(iso)
   const pad = (n: number) => String(n).padStart(2, '0')
   const parts = new Intl.DateTimeFormat('ko-KR', {
-    timeZone: KST, year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', hour12: false,
+    timeZone: KST,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
   }).formatToParts(d)
-  const get = (type: string) => parts.find(p => p.type === type)?.value ?? ''
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
   return `${get('year')}.${pad(+get('month'))}.${pad(+get('day'))} (${get('hour')}:${get('minute')})`
 }
 
 onMounted(async () => {
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user || user.email !== ADMIN_EMAIL) {
     router.replace('/dashboard')
     return
@@ -71,8 +74,7 @@ onMounted(async () => {
   isAdmin.value = true
 
   // 오늘 KST 00:00 기준
-  const todayStart = new Date().toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' })
-    .replace(/\. /g, '-').replace('.', '')
+  const todayStart = new Date().toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '-').replace('.', '')
   const todayFrom = `${todayStart}T00:00:00+09:00`
 
   const [{ data }, { count }, { count: signupToday }, accessTodayRes] = await Promise.all([
@@ -85,7 +87,7 @@ onMounted(async () => {
   newFeedbackCount.value = count ?? 0
   todaySignupCount.value = signupToday ?? 0
   // 오늘 접속 unique 유저 수
-  todayAccessCount.value = new Set((accessTodayRes.data ?? []).map(r => r.email)).size
+  todayAccessCount.value = new Set((accessTodayRes.data ?? []).map((r) => r.email)).size
   loading.value = false
 })
 </script>
@@ -115,15 +117,11 @@ onMounted(async () => {
         <div class="stat-grid">
           <div class="stat-card">
             <div class="stat-label">신규 가입</div>
-            <div class="stat-value" :style="todaySignupCount > 0 ? 'color: rgb(var(--v-theme-primary))' : ''">
-              {{ todaySignupCount }}<span class="stat-unit">명</span>
-            </div>
+            <div class="stat-value" :style="todaySignupCount > 0 ? 'color: rgb(var(--v-theme-primary))' : ''">{{ todaySignupCount }}<span class="stat-unit">명</span></div>
           </div>
           <div class="stat-card">
             <div class="stat-label">접속 유저</div>
-            <div class="stat-value" :style="todayAccessCount > 0 ? 'color: rgb(var(--v-theme-primary))' : ''">
-              {{ todayAccessCount }}<span class="stat-unit">명</span>
-            </div>
+            <div class="stat-value" :style="todayAccessCount > 0 ? 'color: rgb(var(--v-theme-primary))' : ''">{{ todayAccessCount }}<span class="stat-unit">명</span></div>
           </div>
         </div>
       </div>
@@ -178,24 +176,13 @@ onMounted(async () => {
           사용자 의견
           <v-badge v-if="newFeedbackCount > 0" :content="newFeedbackCount" color="error" inline class="ml-2" />
         </v-btn>
-        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-account-plus-outline" class="mb-2" @click="router.push('/admin/signup-log')">
-          가입 이력 조회
-        </v-btn>
-        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-history" class="mb-2" @click="router.push('/admin/access-history')">
-          이력 조회
-        </v-btn>
-        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-account-group-outline" class="mb-2" @click="router.push('/admin/members')">
-          회원 현황
-        </v-btn>
-        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-chart-bar" class="mb-2" @click="router.push('/admin/stats')">
-          통계
-        </v-btn>
-        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-lock-reset" class="mb-2" @click="router.push('/admin/reset-password')">
-          회원 비밀번호 재설정
-        </v-btn>
-        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-database-sync-outline" @click="router.push('/admin/data')">
-          데이터 관리
-        </v-btn>
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-account-plus-outline" class="mb-2" @click="router.push('/admin/signup-log')"> 가입 이력 조회 </v-btn>
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-history" class="mb-2" @click="router.push('/admin/access-history')"> 이력 조회 </v-btn>
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-account-group-outline" class="mb-2" @click="router.push('/admin/members')"> 회원 현황 </v-btn>
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-chart-bar" class="mb-2" @click="router.push('/admin/stats')"> 통계 </v-btn>
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-bullhorn-outline" class="mb-2" @click="router.push('/admin/notices')"> 공지사항 관리 </v-btn>
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-lock-reset" class="mb-2" @click="router.push('/admin/reset-password')"> 회원 비밀번호 재설정 </v-btn>
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-database-sync-outline" @click="router.push('/admin/data')"> 데이터 관리 </v-btn>
       </div>
     </template>
   </v-container>
@@ -215,7 +202,9 @@ onMounted(async () => {
   flex-shrink: 0;
   transition: opacity 0.15s;
 }
-.back-btn:active { opacity: 0.6; }
+.back-btn:active {
+  opacity: 0.6;
+}
 
 .glass-card {
   background: rgb(var(--v-theme-surface));

@@ -8,8 +8,9 @@ const router = useRouter()
 const loading = ref(false)
 const isAdmin = ref(false)
 
-type TabType = 'login' | 'access'
+type TabType = 'login' | 'access' | 'session'
 const activeTab = ref<TabType>('login')
+const SESSION_GAP_MS = 60 * 60 * 1000 // 1시간 이상 공백 시 새 세션
 
 interface LogItem {
   id: string
@@ -22,6 +23,14 @@ const logs = ref<LogItem[]>([])
 const emailSearch = ref('')
 const dateSearch = ref('')
 const pageSearch = ref('')
+const EXCLUDE_TEST_EMAIL_KEY = 'firepath-admin-exclude-test-email'
+const excludeTestEmail = ref(localStorage.getItem(EXCLUDE_TEST_EMAIL_KEY) === 'true')
+const TEST_EMAIL = 'tngus842655@naver.com'
+
+const toggleExcludeTestEmail = () => {
+  excludeTestEmail.value = !excludeTestEmail.value
+  localStorage.setItem(EXCLUDE_TEST_EMAIL_KEY, String(excludeTestEmail.value))
+}
 
 const parseDateInput = (val: string) => {
   const v = val.replace(/-/g, '').trim()
@@ -55,6 +64,9 @@ const search = async () => {
       if (emailSearch.value.trim())
         query = query.ilike('email', `%${emailSearch.value.trim()}%`)
 
+      if (excludeTestEmail.value)
+        query = query.neq('email', TEST_EMAIL)
+
       const datePrefix = parseDateInput(dateSearch.value)
       if (datePrefix)
         query = query.gte('login_at', `${datePrefix}T00:00:00+09:00`).lt('login_at', nextDatePrefix(datePrefix))
@@ -63,7 +75,7 @@ const search = async () => {
       logs.value = ((data ?? []) as { id: string; email: string; login_at: string }[])
         .filter(l => l.email !== ADMIN_EMAIL)
         .map(l => ({ id: l.id, email: l.email, timestamp: l.login_at }))
-    } else {
+    } else if (activeTab.value === 'access') {
       let query = supabase
         .from('access_log')
         .select('id, email, page, accessed_at')
@@ -76,6 +88,9 @@ const search = async () => {
       if (pageSearch.value)
         query = query.eq('page', pageSearch.value)
 
+      if (excludeTestEmail.value)
+        query = query.neq('email', TEST_EMAIL)
+
       const datePrefix = parseDateInput(dateSearch.value)
       if (datePrefix)
         query = query.gte('accessed_at', `${datePrefix}T00:00:00+09:00`).lt('accessed_at', nextDatePrefix(datePrefix))
@@ -83,6 +98,41 @@ const search = async () => {
       const { data } = await query
       logs.value = ((data ?? []) as { id: string; email: string; page: string; accessed_at: string }[])
         .map(l => ({ id: l.id, email: l.email, timestamp: l.accessed_at, page: l.page }))
+    } else {
+      // access_log를 이메일별 시간순으로 묶어 1시간 이상 공백이면 새 세션(=1회 접속)으로 간주
+      // 최신 순으로 가져온 뒤 뒤집어서 처리 — 전체 이력이 많아도 최근 데이터가 잘리지 않게 함
+      let query = supabase
+        .from('access_log')
+        .select('email, accessed_at')
+        .order('accessed_at', { ascending: false })
+        .limit(1000)
+
+      if (emailSearch.value.trim())
+        query = query.ilike('email', `%${emailSearch.value.trim()}%`)
+
+      if (excludeTestEmail.value)
+        query = query.neq('email', TEST_EMAIL)
+
+      const datePrefix = parseDateInput(dateSearch.value)
+      if (datePrefix)
+        query = query.gte('accessed_at', `${datePrefix}T00:00:00+09:00`).lt('accessed_at', nextDatePrefix(datePrefix))
+
+      const { data } = await query
+      const rows = ((data ?? []) as { email: string; accessed_at: string }[]).reverse()
+
+      const lastAccessedAt = new Map<string, number>()
+      const sessionStarts: { email: string; accessed_at: string }[] = []
+      for (const row of rows) {
+        const t = new Date(row.accessed_at).getTime()
+        const prev = lastAccessedAt.get(row.email)
+        if (prev === undefined || t - prev > SESSION_GAP_MS) sessionStarts.push(row)
+        lastAccessedAt.set(row.email, t)
+      }
+
+      logs.value = sessionStarts
+        .sort((a, b) => new Date(b.accessed_at).getTime() - new Date(a.accessed_at).getTime())
+        .slice(0, 100)
+        .map((s, i) => ({ id: `${s.email}-${s.accessed_at}-${i}`, email: s.email, timestamp: s.accessed_at }))
     }
   } finally {
     loading.value = false
@@ -110,23 +160,12 @@ const formatDate = (iso: string) => {
   return `${get('year')}.${pad(+get('month'))}.${pad(+get('day'))} (${get('hour')}:${get('minute')}:${pad(d.getSeconds())})`
 }
 
-const PAGE_LABELS: Record<string, string> = {
-  '/dashboard': '대시보드',
-  '/portfolio': '포트폴리오',
-  '/transactions': '거래 내역',
-  '/analysis': '분석',
-  '/more': '더보기',
-  '/portfolio-analysis': '포트폴리오 분석',
-  '/badges': '뱃지',
-  '/fire-simulator': 'FIRE 시뮬레이터',
-  '/fire-history': 'FIRE 히스토리',
-  '/asset-growth': '자산 성장',
-  '/dividend-calendar': '배당 캘린더',
-  '/etf-analysis': 'ETF 분석',
-  '/feedback': '피드백',
-  '/change-password': '비밀번호 변경',
-  '/goalSettings': '목표 설정',
-}
+// 라우터에 등록된 각 페이지의 meta.label을 그대로 사용 — 메뉴 추가 시 라우터에만 label을 채우면 자동 반영됨
+const PAGE_LABELS: Record<string, string> = Object.fromEntries(
+  router.getRoutes()
+    .filter((r) => typeof r.meta.label === 'string')
+    .map((r) => [r.path, r.meta.label as string]),
+)
 
 const PAGE_SELECT_OPTIONS = Object.entries(PAGE_LABELS).map(([value, label]) => ({ value, label: `${label} (${value})` }))
 const pageLabel = (page: string) => PAGE_LABELS[page] ?? page
@@ -159,6 +198,9 @@ onMounted(async () => {
       <div class="tab-wrap mb-4">
         <button class="tab-btn" :class="{ active: activeTab === 'login' }" @click="switchTab('login')">
           <v-icon size="15" class="mr-1">mdi-login</v-icon>로그인 이력
+        </button>
+        <button class="tab-btn" :class="{ active: activeTab === 'session' }" @click="switchTab('session')">
+          <v-icon size="15" class="mr-1">mdi-account-clock-outline</v-icon>세션 이력
         </button>
         <button class="tab-btn" :class="{ active: activeTab === 'access' }" @click="switchTab('access')">
           <v-icon size="15" class="mr-1">mdi-file-eye-outline</v-icon>페이지 접속 이력
@@ -211,6 +253,17 @@ onMounted(async () => {
           class="mb-3"
           @keyup.enter="search"
         />
+        <div class="toggle-row mb-3">
+          <span class="toggle-row-label">테스트 계정 제외</span>
+          <button
+            type="button"
+            class="toggle-switch"
+            :class="{ 'toggle-switch-active': excludeTestEmail }"
+            @click="toggleExcludeTestEmail"
+          >
+            <span class="toggle-switch-thumb" />
+          </button>
+        </div>
         <v-btn
           variant="tonal"
           color="primary"
@@ -239,7 +292,7 @@ onMounted(async () => {
               <div class="d-flex align-center justify-space-between">
                 <div class="d-flex align-center ga-2 mr-2" style="min-width: 0">
                   <v-icon size="15" color="primary">
-                    {{ activeTab === 'login' ? 'mdi-login' : 'mdi-file-eye-outline' }}
+                    {{ activeTab === 'login' ? 'mdi-login' : activeTab === 'access' ? 'mdi-file-eye-outline' : 'mdi-account-clock-outline' }}
                   </v-icon>
                   <div style="min-width: 0">
                     <div class="log-email text-truncate">{{ log.email }}</div>
@@ -279,6 +332,45 @@ onMounted(async () => {
   font-size: 11px; font-weight: 700;
   letter-spacing: 0.06em; text-transform: uppercase;
   color: rgba(var(--v-theme-on-surface), 0.4);
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.toggle-row-label {
+  font-size: 13px;
+  color: rgba(var(--v-theme-on-surface), 0.7);
+}
+.toggle-switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 20px;
+  background: rgba(var(--v-theme-on-surface), 0.15);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+.toggle-switch-active {
+  background: rgb(var(--v-theme-primary));
+}
+.toggle-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease;
+}
+.toggle-switch-active .toggle-switch-thumb {
+  transform: translateX(18px);
 }
 
 .tab-wrap {

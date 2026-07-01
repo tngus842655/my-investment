@@ -172,6 +172,7 @@ VITE_SUPABASE_ANON_KEY=
 | theme              | text        | 앱 테마 (light/dark/system 등, 기본값 system)                      |
 | portfolio_sort     | text        | 포트폴리오 정렬 기준 (custom/eval/profit/rate/name, 기본값 custom) |
 | hide_asset         | boolean     | 자산 숨김 여부 (기본값 false)                                      |
+| include_cash       | boolean     | 대시보드 현재 자산에 현금 포함 여부 (기본값 false)                 |
 | created_at         | timestamptz |                                                                    |
 | updated_at         | timestamptz |                                                                    |
 
@@ -303,6 +304,30 @@ END;
 | 관리자 삭제                             | DELETE  | 관리자만 삭제 가능                                      |
 | Users can read own feedback             | SELECT  | 사용자가 본인 이메일의 의견 조회 가능                   |
 | Users can update read status on own feedback | UPDATE | 사용자가 본인 의견의 is_read_by_user 업데이트 가능  |
+
+#### notices
+
+공지사항. 관리자만 작성 가능, 로그인 유저는 전체 조회 가능. 개발자 노트(버전별 업데이트 이력, 코드 하드코딩)와는 별개로 관리자가 실시간으로 작성하는 공지 게시판.
+
+| 컬럼명     | 타입        | 설명                                             |
+| ---------- | ----------- | ------------------------------------------------ |
+| id         | uuid        | PK                                               |
+| title      | text        | 제목                                             |
+| content    | text        | 내용                                             |
+| is_test    | boolean     | 테스트 공지 여부 (기본값 false). true면 관리자만 조회 가능 |
+| created_at | timestamptz |                                                  |
+| updated_at | timestamptz |                                                  |
+
+**RLS 정책 (notices 테이블):**
+
+| 정책명                | 커맨드 | 설명                                                              |
+| ---------------------- | ------ | ------------------------------------------------------------------ |
+| 로그인 유저 select     | SELECT | is_test = false인 공지는 모든 로그인 유저 조회 가능, true면 관리자만 |
+| 관리자 insert          | INSERT | 관리자만 작성 가능                                                  |
+| 관리자 update          | UPDATE | 관리자만 수정 가능                                                  |
+| 관리자 delete          | DELETE | 관리자만 삭제 가능                                                  |
+
+새 공지 작성 시 대시보드에 최초 1회 팝업 노출. "마지막으로 본 공지 id"는 서버 동기화 없이 로컬스토리지에만 저장(기기별).
 
 ### 공통 패턴
 
