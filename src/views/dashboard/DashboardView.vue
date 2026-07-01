@@ -228,26 +228,24 @@ onMounted(() => {
     <template v-else>
       <!-- 현재 자산 카드 -->
       <div class="glass-card pa-5 mb-3">
-        <div class="d-flex align-center justify-space-between mb-1">
+        <div class="asset-header-row mb-1">
           <div class="field-label">현재 자산</div>
-          <div class="d-flex align-center" style="gap: 22px">
-            <div v-if="cashTotalKrw > 0" class="cash-toggle-row">
-              <span class="cash-toggle-label">현금 포함</span>
-              <button
-                type="button"
-                class="toggle-switch"
-                :class="{ 'toggle-switch-active': includeCash }"
-                @click="setIncludeCash(!includeCash)"
-              >
-                <span class="toggle-switch-thumb" />
-              </button>
-            </div>
-            <button class="hide-toggle-btn" @click="toggleHideAsset">
-              <v-icon size="18" :style="{ color: hideAsset ? 'rgb(var(--v-theme-primary))' : 'rgba(var(--v-theme-on-surface), 0.35)' }">
-                {{ hideAsset ? 'mdi-eye-off-outline' : 'mdi-eye-outline' }}
-              </v-icon>
+          <div v-if="cashTotalKrw > 0" class="cash-toggle-row">
+            <span class="cash-toggle-label">현금 포함</span>
+            <button
+              type="button"
+              class="toggle-switch"
+              :class="{ 'toggle-switch-active': includeCash }"
+              @click="setIncludeCash(!includeCash)"
+            >
+              <span class="toggle-switch-thumb" />
             </button>
           </div>
+          <button class="hide-toggle-btn" @click="toggleHideAsset">
+            <v-icon size="18" :style="{ color: hideAsset ? 'rgb(var(--v-theme-primary))' : 'rgba(var(--v-theme-on-surface), 0.35)' }">
+              {{ hideAsset ? 'mdi-eye-off-outline' : 'mdi-eye-outline' }}
+            </v-icon>
+          </button>
         </div>
         <div class="hero-amount font-weight-bold mb-1">
           <span v-if="hideAsset" class="asset-hidden">•••••</span>
@@ -481,6 +479,15 @@ onMounted(() => {
   font-weight: 500;
   color: rgba(var(--v-theme-on-surface), 0.55);
 }
+
+.asset-header-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+.asset-header-row > .field-label { grid-column: 1; justify-self: start; }
+.asset-header-row > .cash-toggle-row { grid-column: 2; justify-self: center; }
+.asset-header-row > .hide-toggle-btn { grid-column: 3; justify-self: end; }
 
 .hero-amount {
   font-size: 28px;
