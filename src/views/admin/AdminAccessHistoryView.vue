@@ -110,25 +110,12 @@ const formatDate = (iso: string) => {
   return `${get('year')}.${pad(+get('month'))}.${pad(+get('day'))} (${get('hour')}:${get('minute')}:${pad(d.getSeconds())})`
 }
 
-const PAGE_LABELS: Record<string, string> = {
-  '/dashboard': '대시보드',
-  '/portfolio': '포트폴리오',
-  '/transactions': '거래 내역',
-  '/analysis': '분석',
-  '/more': '더보기',
-  '/portfolio-analysis': '포트폴리오 분석',
-  '/badges': '뱃지',
-  '/fire-simulator': 'FIRE 시뮬레이터',
-  '/fire-history': 'FIRE 히스토리',
-  '/asset-growth': '자산 성장',
-  '/dividend-calendar': '배당 캘린더',
-  '/etf-analysis': 'ETF 분석',
-  '/etf-backtest': 'ETF 백테스트',
-  '/feedback': '피드백',
-  '/change-password': '비밀번호 변경',
-  '/release-notes': '개발자 노트',
-  '/goalSettings': '목표 설정',
-}
+// 라우터에 등록된 각 페이지의 meta.label을 그대로 사용 — 메뉴 추가 시 라우터에만 label을 채우면 자동 반영됨
+const PAGE_LABELS: Record<string, string> = Object.fromEntries(
+  router.getRoutes()
+    .filter((r) => typeof r.meta.label === 'string')
+    .map((r) => [r.path, r.meta.label as string]),
+)
 
 const PAGE_SELECT_OPTIONS = Object.entries(PAGE_LABELS).map(([value, label]) => ({ value, label: `${label} (${value})` }))
 const pageLabel = (page: string) => PAGE_LABELS[page] ?? page
