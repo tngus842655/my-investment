@@ -63,15 +63,17 @@ onMounted(async () => {
       </div>
 
       <div v-for="n in notices" :key="n.id" class="notice-card glass-card pa-4 mb-3">
-        <div class="d-flex align-center ga-1 cursor-pointer" @click="toggleExpand(n)">
-          <v-chip v-if="n.is_test" size="x-small" color="warning" variant="tonal" class="mr-1">테스트</v-chip>
-          <span class="notice-title flex-1">{{ n.title }}</span>
+        <div class="d-flex align-center justify-space-between cursor-pointer" @click="toggleExpand(n)">
+          <div class="d-flex align-center ga-1 title-group">
+            <v-chip v-if="n.is_test" size="x-small" color="warning" variant="tonal" class="mr-1">테스트</v-chip>
+            <span class="notice-title">{{ n.title }}</span>
+            <v-icon
+              size="18"
+              style="opacity:0.4; transition: transform 0.2s; flex-shrink:0"
+              :style="expandedId === n.id ? 'transform:rotate(180deg)' : ''"
+            >mdi-chevron-down</v-icon>
+          </div>
           <span class="notice-date">{{ formatDate(n.created_at) }}</span>
-          <v-icon
-            size="18"
-            style="opacity:0.4; transition: transform 0.2s; flex-shrink:0"
-            :style="expandedId === n.id ? 'transform:rotate(180deg)' : ''"
-          >mdi-chevron-down</v-icon>
         </div>
         <div v-if="expandedId === n.id" class="notice-content mt-3">{{ n.content }}</div>
       </div>
@@ -88,6 +90,12 @@ onMounted(async () => {
 
 .cursor-pointer { cursor: pointer; }
 
+.title-group {
+  min-width: 0;
+  overflow: hidden;
+  flex: 1 1 auto;
+}
+
 .notice-title {
   font-size: 15px;
   font-weight: 700;
@@ -103,6 +111,7 @@ onMounted(async () => {
   color: rgba(var(--v-theme-on-surface), 0.45);
   white-space: nowrap;
   flex-shrink: 0;
+  margin-left: 8px;
 }
 
 .notice-content {
