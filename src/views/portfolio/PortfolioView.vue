@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { prefetchTickerLogos } from '@/services/tickerLogo'
 import { supabase } from '@/services/supabase'
 import PortfolioAddDialog from './PortfolioAddDialog.vue'
@@ -9,6 +10,7 @@ import { getStockPrice } from '@/services/market'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel, isEtfTicker, getTickerDisplayName, TICKER_NAMES } from '@/utils/tickerNames'
 
+const router = useRouter()
 const loading = ref(false)
 
 interface PortfolioViewItem extends PortfolioAsset {
@@ -73,6 +75,9 @@ const PRICE_DELAY_INFO = [
   { emoji: '🪙', label: '암호화폐', desc: '실시간에 가까움' },
   { emoji: '💱', label: '환율', desc: '전일 종가 기준 (하루 1회 갱신)' },
 ]
+const goToTickerNameRequest = () => {
+  router.push({ name: 'feedback', query: { category: '기능제안', title: '미국주식 한글표기명 등록요청' } })
+}
 
 // ── 포트폴리오 로드 ───────────────────────────────
 const loadPortfolios = async () => {
@@ -693,6 +698,14 @@ onUnmounted(() => {
               >
                 <span>{{ info.emoji }} {{ info.label }}</span>
                 <span class="text-disabled ml-2">{{ info.desc }}</span>
+              </div>
+              <div
+                class="d-flex align-center ga-1 mt-2 pt-2"
+                style="font-size: 11px; color: rgb(var(--v-theme-primary)); cursor: pointer; border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08)"
+                @click="goToTickerNameRequest"
+              >
+                <v-icon size="12" color="primary">mdi-pencil-plus-outline</v-icon>
+                <span>미국주식 한글표기명 등록요청</span>
               </div>
             </div>
           </v-menu>

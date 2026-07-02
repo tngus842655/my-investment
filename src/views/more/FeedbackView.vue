@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 
 const router = useRouter()
+const route = useRoute()
 
 const category = ref<string | null>(null)
 const title = ref('')
@@ -58,6 +59,15 @@ const formatDate = (iso: string) => {
 }
 
 onMounted(async () => {
+  const queryCategory = route.query.category
+  if (typeof queryCategory === 'string' && categories.some((c) => c.value === queryCategory)) {
+    category.value = queryCategory
+  }
+  const queryTitle = route.query.title
+  if (typeof queryTitle === 'string') {
+    title.value = queryTitle
+  }
+
   const { data: { user } } = await supabase.auth.getUser()
   userEmail.value = user?.email ?? ''
   await loadFeedbacks()
