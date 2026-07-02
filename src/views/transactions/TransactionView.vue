@@ -21,6 +21,7 @@ interface Transaction {
     ticker: string
     asset_type: string
     currency: string
+    account_name: string | null
   }
 }
 
@@ -79,8 +80,10 @@ const loadMonthOptions = async (year: number) => {
   monthOptions.value = months.sort((a, b) => a - b)
 }
 
+let skipMonthReset = false
 watch(selectedYear, (y) => {
-  selectedMonth.value = null
+  if (skipMonthReset) skipMonthReset = false
+  else selectedMonth.value = null
   if (y) loadMonthOptions(y)
   else monthOptions.value = []
 })
@@ -115,7 +118,7 @@ let userId = ''
 async function buildQuery(from: number, to: number) {
   let q = supabase
     .from('transactions')
-    .select('*, portfolios(ticker, asset_type, currency)')
+    .select('*, portfolios(ticker, asset_type, currency, account_name)')
     .eq('user_id', userId)
     .neq('transaction_type', 'INITIAL')
     .order('transaction_date', { ascending: false })
@@ -331,9 +334,22 @@ const totalSell = computed(() => {
 
 
 
+const truncateAccount = (name: string) =>
+  /[ㄱ-ㅎ가-힣]/.test(name) ? name.slice(0, 2) : name.slice(0, 4)
+
 const formatDate = (d: string) => {
   const date = new Date(d)
   return `${date.getMonth() + 1}/${date.getDate()}`
+}
+
+const formatKrwValue = (total: number) => {
+  if (total >= 100000000) {
+    const eok = Math.floor(total / 100000000)
+    const rem = Math.round((total % 100000000) / 10000000)
+    return rem > 0 ? `${eok}억 ${rem}천만원` : `${eok}억원`
+  }
+  if (total >= 10000) return `${Math.round(total / 10000).toLocaleString()}만원`
+  return `${Math.round(total).toLocaleString()}원`
 }
 
 const formatAmount = (t: Transaction) => {
@@ -347,13 +363,12 @@ const formatAmount = (t: Transaction) => {
         : total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
     )
   }
-  if (total >= 100000000) {
-    const eok = Math.floor(total / 100000000)
-    const rem = Math.round((total % 100000000) / 10000000)
-    return rem > 0 ? `${eok}억 ${rem}천만원` : `${eok}억원`
-  }
-  if (total >= 10000) return `${Math.round(total / 10000).toLocaleString()}만원`
-  return `${Math.round(total).toLocaleString()}원`
+  return formatKrwValue(total)
+}
+
+const formatAmountKrw = (t: Transaction) => {
+  const total = t.quantity * t.unit_price * usdToKrw.value
+  return `(${formatKrwValue(total)})`
 }
 
 const formatUnitPrice = (t: Transaction) => {
@@ -424,7 +439,22 @@ onMounted(async () => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
   userId = user.id
-  await Promise.all([resetAndLoad(), loadTotals(), loadYearOptions(), loadAccountOptions()])
+  await Promise.all([loadYearOptions(), loadAccountOptions()])
+
+  // 최근 거래가 있는 연/월을 기본 필터로 선택 (가독성 개선 — 진입 시 전체 내역이 한번에 쏟아지지 않도록)
+  let defaultFilterApplied = false
+  if (yearOptions.value.length > 0) {
+    const latestYear = yearOptions.value[0]!
+    await loadMonthOptions(latestYear)
+    if (monthOptions.value.length > 0) {
+      skipMonthReset = true
+      selectedYear.value = latestYear
+      selectedMonth.value = monthOptions.value[monthOptions.value.length - 1]!
+      defaultFilterApplied = true
+    }
+  }
+  if (!defaultFilterApplied) await Promise.all([resetAndLoad(), loadTotals()])
+
   try { usdToKrw.value = await getExchangeRate('USD', 'KRW') } catch {}
   await nextTick()
   setupObserver()
@@ -630,6 +660,7 @@ onUnmounted(() => {
                         <span class="tx-name">{{ getTickerDisplayName(item.portfolios?.ticker) }}</span>
                         <span v-if="getTickerDisplayName(item.portfolios?.ticker) !== item.portfolios?.ticker" class="tx-ticker flex-shrink-0">{{ item.portfolios?.ticker }}</span>
                         <span class="asset-badge flex-shrink-0" :style="`color: rgb(var(--v-theme-${assetTypeColor(item.portfolios?.asset_type)}))`">{{ item.portfolios?.asset_type }}</span>
+                        <span v-if="item.portfolios?.account_name && item.portfolios.account_name !== '미지정'" class="account-tag flex-shrink-0">{{ truncateAccount(item.portfolios.account_name) }}</span>
                         <span class="tx-type-badge flex-shrink-0" :class="item.transaction_type === 'BUY' ? 'badge-buy' : 'badge-sell'">{{ item.transaction_type === 'BUY' ? '매수' : '매도' }}</span>
                       </div>
                       <div class="d-flex align-center ga-1">
@@ -646,6 +677,7 @@ onUnmounted(() => {
                       <span class="tx-detail">{{ item.quantity % 1 === 0 ? item.quantity : Number(item.quantity).toFixed(4) }}주 × {{ formatUnitPrice(item) }}</span>
                       <span class="tx-amount" :class="item.transaction_type === 'BUY' ? 'amount-plus' : 'amount-minus'">
                         {{ item.transaction_type === 'BUY' ? '+' : '-' }}{{ formatAmount(item) }}
+                        <span v-if="item.portfolios?.currency === 'USD' && usdToKrw" class="tx-amount-krw">{{ formatAmountKrw(item) }}</span>
                       </span>
                     </div>
                   </div>
@@ -869,6 +901,16 @@ onUnmounted(() => {
   opacity: 0.8;
   flex-shrink: 0;
 }
+.account-tag {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 600;
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.1);
+  border-radius: 4px;
+  padding: 1px 5px;
+  vertical-align: middle;
+}
 .tx-type-badge {
   font-size: 9px;
   font-weight: 700;
@@ -889,6 +931,10 @@ onUnmounted(() => {
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 .tx-amount {
+  font-size: 13px;
+  font-weight: 700;
+}
+.tx-amount-krw {
   font-size: 13px;
   font-weight: 700;
 }

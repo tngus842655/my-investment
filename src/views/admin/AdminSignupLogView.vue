@@ -5,6 +5,8 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { ADMIN_EMAIL } from '@/config/admin'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
+import { getTickerDisplayName } from '@/utils/tickerNames'
+import { getStockPrice } from '@/services/market'
 const router = useRouter()
 const loading = ref(true)
 const isAdmin = ref(false)
@@ -30,6 +32,9 @@ interface PortfolioItem {
   quantity: number
   avg_price: number
   currency: string
+  asset_type: string
+  evaluationAmountKrw?: number
+  profitRate?: number | null
 }
 
 interface MemberDetail {
@@ -80,7 +85,7 @@ const openDetail = async (log: SignupLog) => {
       const [goalRes, assetRes, portRes, accessRes, rate] = await Promise.all([
         supabase.from('investment_goals').select('target_asset, monthly_investment, annual_return').eq('user_id', userId).maybeSingle(),
         supabase.from('asset_summary').select('current_asset, investment_principal').eq('user_id', userId).maybeSingle(),
-        supabase.from('portfolios').select('ticker, quantity, avg_price, currency').eq('user_id', userId).order('sort_order'),
+        supabase.from('portfolios').select('ticker, quantity, avg_price, currency, asset_type').eq('user_id', userId).order('sort_order'),
         supabase.from('access_log').select('accessed_at').eq('user_id', userId).order('accessed_at', { ascending: true }),
         getCachedExchangeRate(),
       ])
@@ -92,6 +97,32 @@ const openDetail = async (log: SignupLog) => {
       cashTotalKrw = portfolioItems
         .filter(p => p.ticker === 'CASH_KRW' || p.ticker === 'CASH_USD')
         .reduce((sum, p) => sum + (p.currency === 'USD' ? p.avg_price * p.quantity * rate : p.avg_price * p.quantity), 0)
+
+      // 보유 종목 평가금액/수익률 계산 (현금 제외)
+      const prices = await Promise.all(
+        portfolioItems.map(p =>
+          p.ticker === 'CASH_KRW' || p.ticker === 'CASH_USD'
+            ? Promise.resolve(null)
+            : getStockPrice(p.ticker, p.asset_type, p.currency).catch(() => null),
+        ),
+      )
+      portfolioItems = portfolioItems.map((p, i) => {
+        const isCash = p.ticker === 'CASH_KRW' || p.ticker === 'CASH_USD'
+        const rawPrice = isCash ? null : prices[i]
+        // 암호화폐 + KRW: Finnhub은 USD로 반환하므로 환율 곱해서 KRW 현재가로 변환
+        const isCryptoKrw = p.asset_type === '암호화폐' && p.currency === 'KRW'
+        const currentPrice = rawPrice ? (isCryptoKrw ? rawPrice * rate : rawPrice) : null
+        const price = currentPrice ?? p.avg_price
+        const evalAmount = price * p.quantity
+        const evaluationAmountKrw = p.currency === 'USD' && !isCryptoKrw ? evalAmount * rate : evalAmount
+        const costKrw =
+          p.currency === 'USD' && !isCryptoKrw ? p.avg_price * p.quantity * rate : p.avg_price * p.quantity
+        const profitRate =
+          isCash || currentPrice === null || costKrw === 0
+            ? null
+            : ((evaluationAmountKrw - costKrw) / costKrw) * 100
+        return { ...p, evaluationAmountKrw, profitRate }
+      })
 
       // 세션 카운트: 연속 기록 간격 1시간 초과 시 새 세션
       const accessTimes = (accessRes.data ?? []).map(r => new Date(r.accessed_at).getTime())
@@ -322,14 +353,18 @@ onMounted(async () => {
 <v-dialog v-model="portfolioDialog" max-width="340">
   <v-card rounded="xl" class="pa-2">
     <v-card-title class="text-body-1 font-weight-bold pt-4 px-4">보유 종목</v-card-title>
-    <v-card-text class="px-4 pb-2">
-      <div v-for="(p, i) in detail?.portfolios" :key="p.ticker">
-        <div class="detail-row" :class="{ 'mt-1': i > 0 }">
-          <div>
-            <div class="text-body-2 font-weight-bold">{{ p.ticker }}</div>
-            <div class="text-caption text-medium-emphasis">평균가 {{ p.avg_price.toLocaleString() }} {{ p.currency }}</div>
-          </div>
-          <span class="text-body-2 font-weight-bold">{{ p.quantity.toLocaleString() }}주</span>
+    <v-card-text class="px-4 pb-2" style="max-height: 66vh; overflow-y: auto">
+      <div v-for="(p, i) in detail?.portfolios" :key="`${p.ticker}-${i}`" :class="{ 'mt-2': i > 0 }">
+        <div class="text-body-2 font-weight-bold" style="line-height: 1.3">{{ getTickerDisplayName(p.ticker) }}</div>
+        <div class="d-flex justify-space-between align-center mt-1" style="gap: 8px">
+          <span class="text-caption text-medium-emphasis">{{ p.quantity.toLocaleString() }}주</span>
+          <span
+            class="text-caption font-weight-bold"
+            style="flex-shrink: 0"
+            :class="p.profitRate == null ? 'text-medium-emphasis' : p.profitRate >= 0 ? 'text-success' : 'text-error'"
+          >
+            {{ fmtWon(p.evaluationAmountKrw ?? 0) }}<template v-if="p.profitRate != null"> ({{ p.profitRate >= 0 ? '+' : '' }}{{ p.profitRate.toFixed(1) }}%)</template>
+          </span>
         </div>
         <v-divider v-if="i < (detail?.portfolios.length ?? 0) - 1" class="mt-2" opacity="0.06" />
       </div>

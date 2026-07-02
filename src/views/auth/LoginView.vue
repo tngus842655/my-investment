@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { getErrorMessage } from '@/utils/errorMessage'
@@ -103,6 +103,54 @@ const signIn = async () => {
 }
 
 const onKeydown = (e: KeyboardEvent) => { if (e.key === 'Enter' && isLogin.value) signIn() }
+
+// ── 홈 화면에 추가 안내 배너 (iOS / Android 전용) ──────────────
+const A2HS_DISMISSED_KEY = 'fp-a2hs-dismissed'
+const platform = ref<'ios' | 'android' | null>(null)
+const showInstallBanner = ref(false)
+const installPromptEvent = ref<Event & { prompt: () => Promise<void>; userChoice: Promise<unknown> } | null>(null)
+
+const detectPlatform = (): 'ios' | 'android' | null => {
+  const ua = navigator.userAgent
+  if (/iphone|ipad|ipod/i.test(ua)) return 'ios'
+  if (/android/i.test(ua)) return 'android'
+  return null
+}
+
+const dismissInstallBanner = () => {
+  showInstallBanner.value = false
+  localStorage.setItem(A2HS_DISMISSED_KEY, '1')
+}
+
+const installApp = async () => {
+  if (!installPromptEvent.value) return
+  await installPromptEvent.value.prompt()
+  await installPromptEvent.value.userChoice
+  installPromptEvent.value = null
+  dismissInstallBanner()
+}
+
+const onBeforeInstallPrompt = (e: Event) => {
+  e.preventDefault()
+  installPromptEvent.value = e as Event & { prompt: () => Promise<void>; userChoice: Promise<unknown> }
+}
+
+onMounted(() => {
+  const isStandalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true
+  platform.value = detectPlatform()
+  const dismissed = localStorage.getItem(A2HS_DISMISSED_KEY) === '1'
+  showInstallBanner.value = !isStandalone && !dismissed && platform.value !== null
+
+  if (platform.value === 'android') {
+    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+  }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+})
 </script>
 
 <template>
@@ -119,6 +167,28 @@ const onKeydown = (e: KeyboardEvent) => { if (e.key === 'Enter' && isLogin.value
         <template v-if="!logoMain">
           <div class="brand-title">FIREPATH</div>
           <div class="brand-sub mt-2">Financial Independence, Retire Early</div>
+        </template>
+      </div>
+
+      <!-- 홈 화면에 추가 안내 배너 -->
+      <div v-if="showInstallBanner" class="install-banner mb-4">
+        <button class="install-banner-close" aria-label="닫기" @click="dismissInstallBanner">
+          <v-icon size="14">mdi-close</v-icon>
+        </button>
+        <div class="install-banner-title">홈 화면에 추가하고 앱처럼 사용해보세요</div>
+        <template v-if="platform === 'ios'">
+          <div class="install-banner-desc mt-1">
+            Safari 하단 <b>공유(⬆)</b> 버튼을 누른 뒤 <b>‘홈 화면에 추가’</b>를 선택해주세요
+          </div>
+        </template>
+        <template v-else-if="platform === 'android'">
+          <div v-if="installPromptEvent" class="d-flex align-center justify-space-between mt-1" style="gap: 8px">
+            <span class="install-banner-desc">한 번의 탭으로 설치할 수 있어요</span>
+            <v-btn size="small" color="primary" variant="flat" rounded="lg" @click="installApp">추가</v-btn>
+          </div>
+          <div v-else class="install-banner-desc mt-1">
+            브라우저 메뉴(⋮) → <b>‘홈 화면에 추가’</b>를 선택해주세요
+          </div>
         </template>
       </div>
 
@@ -304,6 +374,33 @@ const onKeydown = (e: KeyboardEvent) => { if (e.key === 'Enter' && isLogin.value
   padding: 28px 24px;
 }
 
+
+.install-banner {
+  position: relative;
+  background: rgba(0, 212, 184, 0.06);
+  border: 1px solid rgba(0, 212, 184, 0.2);
+  border-radius: 16px;
+  padding: 14px 32px 14px 16px;
+}
+
+.install-banner-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: rgba(var(--v-theme-on-surface), 0.4);
+}
+
+.install-banner-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.install-banner-desc {
+  font-size: 12px;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+  line-height: 1.5;
+}
 
 .forgot-link {
   font-size: 12px;

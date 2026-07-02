@@ -5,6 +5,12 @@ const router = useRouter()
 
 const notes = [
   {
+    version: 'v1.0.3',
+    date: '2026.7.2',
+    description: [],
+    items: ['로그인 화면에 홈 화면 추가 안내 배너 추가 (iOS/Android — 한 번 닫으면 다시 표시되지 않음)', '거래내역 카드에 달러 거래 금액과 함께 원화 환산액 표기', '거래내역 화면 진입 시 최근 거래가 있는 월을 기본 필터로 자동 선택해 가독성 개선', '거래내역 카드에서 누락됐던 계좌명 배지 복원'],
+  },
+  {
     version: 'v1.0.2',
     date: '2026.7.1',
     description: [],
