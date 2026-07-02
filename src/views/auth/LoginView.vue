@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { getErrorMessage } from '@/utils/errorMessage'
@@ -130,6 +130,11 @@ const installApp = async () => {
   dismissInstallBanner()
 }
 
+const onBeforeInstallPrompt = (e: Event) => {
+  e.preventDefault()
+  installPromptEvent.value = e as Event & { prompt: () => Promise<void>; userChoice: Promise<unknown> }
+}
+
 onMounted(() => {
   const isStandalone =
     window.matchMedia('(display-mode: standalone)').matches ||
@@ -139,11 +144,12 @@ onMounted(() => {
   showInstallBanner.value = !isStandalone && !dismissed && platform.value !== null
 
   if (platform.value === 'android') {
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault()
-      installPromptEvent.value = e as Event & { prompt: () => Promise<void>; userChoice: Promise<unknown> }
-    })
+    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
 })
 </script>
 
