@@ -79,8 +79,10 @@ const loadMonthOptions = async (year: number) => {
   monthOptions.value = months.sort((a, b) => a - b)
 }
 
+let skipMonthReset = false
 watch(selectedYear, (y) => {
-  selectedMonth.value = null
+  if (skipMonthReset) skipMonthReset = false
+  else selectedMonth.value = null
   if (y) loadMonthOptions(y)
   else monthOptions.value = []
 })
@@ -429,7 +431,22 @@ onMounted(async () => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
   userId = user.id
-  await Promise.all([resetAndLoad(), loadTotals(), loadYearOptions(), loadAccountOptions()])
+  await Promise.all([loadYearOptions(), loadAccountOptions()])
+
+  // 최근 거래가 있는 연/월을 기본 필터로 선택 (가독성 개선 — 진입 시 전체 내역이 한번에 쏟아지지 않도록)
+  let defaultFilterApplied = false
+  if (yearOptions.value.length > 0) {
+    const latestYear = yearOptions.value[0]!
+    await loadMonthOptions(latestYear)
+    if (monthOptions.value.length > 0) {
+      skipMonthReset = true
+      selectedYear.value = latestYear
+      selectedMonth.value = monthOptions.value[monthOptions.value.length - 1]!
+      defaultFilterApplied = true
+    }
+  }
+  if (!defaultFilterApplied) await Promise.all([resetAndLoad(), loadTotals()])
+
   try { usdToKrw.value = await getExchangeRate('USD', 'KRW') } catch {}
   await nextTick()
   setupObserver()
