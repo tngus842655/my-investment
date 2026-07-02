@@ -338,6 +338,16 @@ const formatDate = (d: string) => {
   return `${date.getMonth() + 1}/${date.getDate()}`
 }
 
+const formatKrwValue = (total: number) => {
+  if (total >= 100000000) {
+    const eok = Math.floor(total / 100000000)
+    const rem = Math.round((total % 100000000) / 10000000)
+    return rem > 0 ? `${eok}억 ${rem}천만원` : `${eok}억원`
+  }
+  if (total >= 10000) return `${Math.round(total / 10000).toLocaleString()}만원`
+  return `${Math.round(total).toLocaleString()}원`
+}
+
 const formatAmount = (t: Transaction) => {
   const total = t.quantity * t.unit_price
   const cur = t.portfolios?.currency ?? 'KRW'
@@ -349,18 +359,12 @@ const formatAmount = (t: Transaction) => {
         : total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
     )
   }
-  if (total >= 100000000) {
-    const eok = Math.floor(total / 100000000)
-    const rem = Math.round((total % 100000000) / 10000000)
-    return rem > 0 ? `${eok}억 ${rem}천만원` : `${eok}억원`
-  }
-  if (total >= 10000) return `${Math.round(total / 10000).toLocaleString()}만원`
-  return `${Math.round(total).toLocaleString()}원`
+  return formatKrwValue(total)
 }
 
 const formatAmountKrw = (t: Transaction) => {
   const total = t.quantity * t.unit_price * usdToKrw.value
-  return `(${Math.round(total).toLocaleString()}원)`
+  return `(${formatKrwValue(total)})`
 }
 
 const formatUnitPrice = (t: Transaction) => {
@@ -916,9 +920,8 @@ onUnmounted(() => {
   font-weight: 700;
 }
 .tx-amount-krw {
-  font-size: 11px;
-  font-weight: 500;
-  color: rgba(var(--v-theme-on-surface), 0.5);
+  font-size: 13px;
+  font-weight: 700;
 }
 .amount-minus {
   color: rgb(var(--v-theme-error));
