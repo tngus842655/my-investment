@@ -353,14 +353,18 @@ onMounted(async () => {
 <v-dialog v-model="portfolioDialog" max-width="340">
   <v-card rounded="xl" class="pa-2">
     <v-card-title class="text-body-1 font-weight-bold pt-4 px-4">보유 종목</v-card-title>
-    <v-card-text class="px-4 pb-2">
+    <v-card-text class="px-4 pb-2" style="max-height: 66vh; overflow-y: auto">
       <div v-for="(p, i) in detail?.portfolios" :key="p.ticker" :class="{ 'mt-2': i > 0 }">
         <div class="text-body-2 font-weight-bold" style="line-height: 1.3">{{ getTickerDisplayName(p.ticker) }}</div>
-        <div
-          class="text-caption font-weight-bold mt-1"
-          :class="p.profitRate == null ? 'text-medium-emphasis' : p.profitRate >= 0 ? 'text-success' : 'text-error'"
-        >
-          {{ fmtWon(p.evaluationAmountKrw ?? 0) }}<template v-if="p.profitRate != null"> ({{ p.profitRate >= 0 ? '+' : '' }}{{ p.profitRate.toFixed(1) }}%)</template>
+        <div class="d-flex justify-space-between align-center mt-1" style="gap: 8px">
+          <span class="text-caption text-medium-emphasis">{{ p.quantity.toLocaleString() }}주</span>
+          <span
+            class="text-caption font-weight-bold"
+            style="flex-shrink: 0"
+            :class="p.profitRate == null ? 'text-medium-emphasis' : p.profitRate >= 0 ? 'text-success' : 'text-error'"
+          >
+            {{ fmtWon(p.evaluationAmountKrw ?? 0) }}<template v-if="p.profitRate != null"> ({{ p.profitRate >= 0 ? '+' : '' }}{{ p.profitRate.toFixed(1) }}%)</template>
+          </span>
         </div>
         <v-divider v-if="i < (detail?.portfolios.length ?? 0) - 1" class="mt-2" opacity="0.06" />
       </div>
