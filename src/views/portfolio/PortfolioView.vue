@@ -64,6 +64,15 @@ const totalProfitRate = computed(() => {
   if (totalCostKrw.value === 0) return 0
   return (totalProfitAmountKrw.value / totalCostKrw.value) * 100
 })
+const hasUSD = computed(() => portfolios.value.some((item) => item.currency === 'USD'))
+
+// ── 자산군별 시세 안내 ─────────────────────────────
+const PRICE_DELAY_INFO = [
+  { emoji: '🇰🇷', label: '국내주식', desc: '약 15~20분 지연' },
+  { emoji: '🌎', label: '해외주식', desc: '약 15분 내외 지연' },
+  { emoji: '🪙', label: '암호화폐', desc: '실시간에 가까움' },
+  { emoji: '💱', label: '환율', desc: '전일 종가 기준 (하루 1회 갱신)' },
+]
 
 // ── 포트폴리오 로드 ───────────────────────────────
 const loadPortfolios = async () => {
@@ -664,31 +673,60 @@ onUnmounted(() => {
 
       <!-- 정렬 바 -->
       <div class="d-flex justify-space-between align-center mb-1">
-        <span style="font-size: 12px; color: rgba(var(--v-theme-on-surface), 0.4)">
-          총 {{ sortedPortfolios.length }}개 종목
-        </span>
-        <v-menu location="bottom end">
-          <template #activator="{ props }">
-            <button v-bind="props" class="sort-btn" :class="{ 'sort-btn-active': sortKey !== 'custom' }">
-              <v-icon size="12">mdi-sort</v-icon>
-              <span>{{ sortKey === 'custom' ? '정렬' : SORT_OPTIONS.find(o => o.key === sortKey)?.label }}</span>
-              <v-icon size="11">mdi-chevron-down</v-icon>
-            </button>
-          </template>
-          <v-list density="compact" rounded="lg" min-width="130" elevation="4">
-            <v-list-item
-              v-for="opt in SORT_OPTIONS"
-              :key="opt.key"
-              :active="sortKey === opt.key"
-              :color="sortKey === opt.key ? 'primary' : undefined"
-              @click="setSort(opt.key)"
-            >
-              <v-list-item-title style="font-size: 13px">
-                <span style="margin-right: 6px">{{ opt.emoji }}</span>{{ opt.label }}
-              </v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-menu>
+        <div class="d-flex align-center ga-1">
+          <span style="font-size: 12px; color: rgba(var(--v-theme-on-surface), 0.4)">
+            총 {{ sortedPortfolios.length }}건
+          </span>
+          <v-menu location="bottom start">
+            <template #activator="{ props }">
+              <v-icon v-bind="props" size="13" style="color: rgba(var(--v-theme-on-surface), 0.35)"
+                >mdi-information-outline</v-icon
+              >
+            </template>
+            <div class="glass-card pa-3" style="max-width: 240px">
+              <div class="text-caption font-weight-medium mb-2">자산군별 시세 갱신 안내</div>
+              <div
+                v-for="info in PRICE_DELAY_INFO"
+                :key="info.label"
+                class="d-flex align-center justify-space-between mb-1"
+                style="font-size: 11px"
+              >
+                <span>{{ info.emoji }} {{ info.label }}</span>
+                <span class="text-disabled ml-2">{{ info.desc }}</span>
+              </div>
+            </div>
+          </v-menu>
+        </div>
+        <div class="d-flex align-center ga-2">
+          <span
+            v-if="hasUSD && exchangeRate"
+            style="font-size: 10px; color: rgba(var(--v-theme-on-surface), 0.35)"
+          >
+            적용환율 {{ Math.round(exchangeRate).toLocaleString() }}원 (전일 기준)
+          </span>
+          <v-menu location="bottom end">
+            <template #activator="{ props }">
+              <button v-bind="props" class="sort-btn" :class="{ 'sort-btn-active': sortKey !== 'custom' }">
+                <v-icon size="12">mdi-sort</v-icon>
+                <span>{{ sortKey === 'custom' ? '정렬' : SORT_OPTIONS.find(o => o.key === sortKey)?.label }}</span>
+                <v-icon size="11">mdi-chevron-down</v-icon>
+              </button>
+            </template>
+            <v-list density="compact" rounded="lg" min-width="130" elevation="4">
+              <v-list-item
+                v-for="opt in SORT_OPTIONS"
+                :key="opt.key"
+                :active="sortKey === opt.key"
+                :color="sortKey === opt.key ? 'primary' : undefined"
+                @click="setSort(opt.key)"
+              >
+                <v-list-item-title style="font-size: 13px">
+                  <span style="margin-right: 6px">{{ opt.emoji }}</span>{{ opt.label }}
+                </v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </div>
       </div>
 
       <!-- 자산 카드 목록 -->
