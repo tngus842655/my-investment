@@ -505,9 +505,6 @@ onUnmounted(() => {
 
     <template v-else>
       <!-- 요약 stat grid -->
-      <div v-if="hasUSD && usdToKrw" class="text-right mb-1" style="font-size: 10px; color: rgba(var(--v-theme-on-surface), 0.35)">
-        적용환율 {{ Math.round(usdToKrw).toLocaleString() }}원 (전일 기준)
-      </div>
       <div class="stat-grid mb-4">
         <div class="stat-card">
           <div class="d-flex align-center ga-1 mb-1">
@@ -580,7 +577,7 @@ onUnmounted(() => {
           <button v-if="selectedYear" class="date-clear-btn" @click="selectedYear = null; selectedMonth = null">
             <v-icon size="12">mdi-close</v-icon>
           </button>
-          <span class="date-hint">거래 있는 기간만 조회됩니다</span>
+          <span v-if="hasUSD && usdToKrw" class="date-hint">적용환율 {{ Math.round(usdToKrw).toLocaleString() }}원 (전일 기준)</span>
         </div>
         <span class="text-caption text-disabled flex-shrink-0 ml-auto">총 {{ totalsData.length }}건</span>
       </div>
