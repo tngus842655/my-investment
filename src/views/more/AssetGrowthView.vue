@@ -92,8 +92,10 @@ const chartData = computed(() => {
   const pts = filteredData.value
   if (!pts.length) return null
 
-  const maxAsset = Math.max(...pts.map((p) => p.asset), targetAsset.value || 0)
-  const yMax = maxAsset * 1.12
+  // 목표 자산은 y축 최대값 계산에서 제외 (목표 달성률이 낮으면 실제 자산 막대가
+  // 눌려서 안 보이거나 클릭하기 어려워지는 문제 방지)
+  const maxAsset = Math.max(...pts.map((p) => p.asset), 1)
+  const yMax = maxAsset * 1.25
   const barW = Math.max(4, PW / pts.length - 5)
 
   const toX = (i: number) => PAD.left + (i / pts.length) * PW + PW / pts.length / 2
@@ -113,15 +115,16 @@ const chartData = computed(() => {
     .map((p, i) => ({ x: toX(i), label: p.label }))
     .filter((_, i) => i % step === 0 || i === pts.length - 1)
 
-  // 목표 자산 기준선 Y 위치
+  // 목표 자산 기준선: 차트 범위 안이면 실제 위치에, 범위를 넘으면 상단에 화살표로 표시
   const targetY = targetAsset.value > 0 && targetAsset.value <= yMax
     ? toY(targetAsset.value)
     : null
+  const targetAboveChart = targetAsset.value > yMax
 
   // 최고 자산 달 인덱스
   const maxIdx = pts.reduce((mi, p, i) => (p.asset > pts[mi]!.asset ? i : mi), 0)
 
-  return { pts, barW, toX, toH, toY, yTicks, xLabels, targetY, maxIdx }
+  return { pts, barW, toX, toH, toY, yTicks, xLabels, targetY, targetAboveChart, maxIdx }
 })
 
 // 툴팁 + 선택된 월
@@ -138,19 +141,18 @@ const onChartClick = (pt: MonthlyPoint, x: number, y: number) => {
   }
 }
 
-// 선택된 월의 일별 상세
+// 선택된 월의 일별 상세 (월초 데이터는 전월 마지막 기록과 비교)
 const dailyDetail = computed(() => {
   if (!selectedMonth.value) return []
-  return history.value
-    .filter((p) => p.recorded_at.startsWith(selectedMonth.value!))
-    .map((p, i, arr) => {
-      const prev = i > 0 ? arr[i - 1]!.current_asset : p.current_asset
-      return {
-        date: p.recorded_at,
-        asset: p.current_asset,
-        change: i === 0 ? 0 : p.current_asset - prev,
-      }
-    })
+  const all = history.value // recorded_at 오름차순 정렬된 전체 기록
+  return all
+    .map((p, i) => ({ p, prevAsset: i > 0 ? all[i - 1]!.current_asset : null }))
+    .filter(({ p }) => p.recorded_at.startsWith(selectedMonth.value!))
+    .map(({ p, prevAsset }) => ({
+      date: p.recorded_at,
+      asset: p.current_asset,
+      change: prevAsset === null ? 0 : p.current_asset - prevAsset,
+    }))
     .reverse()
 })
 
@@ -336,6 +338,13 @@ function formatFull(v: number) {
                 font-size="8" fill="rgb(var(--v-theme-primary))"
               >목표</text>
             </template>
+            <!-- 목표가 현재 차트 범위 밖(훨씬 위)일 때 안내 -->
+            <text
+              v-else-if="chartData.targetAboveChart"
+              :x="VW - PAD.right" :y="PAD.top - 8"
+              text-anchor="end" font-size="8"
+              fill="rgb(var(--v-theme-primary))"
+            >▲ 목표 {{ formatShort(targetAsset) }}</text>
 
             <!-- 바 -->
             <g
