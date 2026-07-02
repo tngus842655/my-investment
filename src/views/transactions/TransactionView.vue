@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
-import { getExchangeRate } from '@/services/market'
+import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerDisplayName } from '@/utils/tickerNames'
 import TransactionAddDialog from './TransactionAddDialog.vue'
 
@@ -455,7 +455,7 @@ onMounted(async () => {
   }
   if (!defaultFilterApplied) await Promise.all([resetAndLoad(), loadTotals()])
 
-  try { usdToKrw.value = await getExchangeRate('USD', 'KRW') } catch {}
+  usdToKrw.value = await getCachedExchangeRate()
   await nextTick()
   setupObserver()
 })
