@@ -125,7 +125,7 @@ function adminPlugin(): Plugin {
   }
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [vue(), adminPlugin(), VitePWA({
     registerType: 'autoUpdate',
     includeAssets: ['icons/*.png'],
@@ -157,7 +157,7 @@ export default defineConfig({
         },
       ],
     },
-  }), cloudflare()],
+  }), ...(command === 'build' ? [cloudflare()] : [])],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -166,4 +166,4 @@ export default defineConfig({
   server: {
     port: 3820,
   },
-})
+}))
