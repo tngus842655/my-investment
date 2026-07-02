@@ -356,6 +356,11 @@ const formatAmount = (t: Transaction) => {
   return `${Math.round(total).toLocaleString()}원`
 }
 
+const formatAmountKrw = (t: Transaction) => {
+  const total = t.quantity * t.unit_price * usdToKrw.value
+  return `(${Math.round(total).toLocaleString()}원)`
+}
+
 const formatUnitPrice = (t: Transaction) => {
   const p = t.unit_price
   const cur = t.portfolios?.currency ?? 'KRW'
@@ -646,6 +651,7 @@ onUnmounted(() => {
                       <span class="tx-detail">{{ item.quantity % 1 === 0 ? item.quantity : Number(item.quantity).toFixed(4) }}주 × {{ formatUnitPrice(item) }}</span>
                       <span class="tx-amount" :class="item.transaction_type === 'BUY' ? 'amount-plus' : 'amount-minus'">
                         {{ item.transaction_type === 'BUY' ? '+' : '-' }}{{ formatAmount(item) }}
+                        <span v-if="item.portfolios?.currency === 'USD' && usdToKrw" class="tx-amount-krw">{{ formatAmountKrw(item) }}</span>
                       </span>
                     </div>
                   </div>
@@ -891,6 +897,11 @@ onUnmounted(() => {
 .tx-amount {
   font-size: 13px;
   font-weight: 700;
+}
+.tx-amount-krw {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(var(--v-theme-on-surface), 0.5);
 }
 .amount-minus {
   color: rgb(var(--v-theme-error));
