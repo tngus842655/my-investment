@@ -108,11 +108,15 @@ const openDetail = async (log: SignupLog) => {
       )
       portfolioItems = portfolioItems.map((p, i) => {
         const isCash = p.ticker === 'CASH_KRW' || p.ticker === 'CASH_USD'
-        const currentPrice = isCash ? null : prices[i]
+        const rawPrice = isCash ? null : prices[i]
+        // 암호화폐 + KRW: Finnhub은 USD로 반환하므로 환율 곱해서 KRW 현재가로 변환
+        const isCryptoKrw = p.asset_type === '암호화폐' && p.currency === 'KRW'
+        const currentPrice = rawPrice ? (isCryptoKrw ? rawPrice * rate : rawPrice) : null
         const price = currentPrice ?? p.avg_price
         const evalAmount = price * p.quantity
-        const evaluationAmountKrw = p.currency === 'USD' ? evalAmount * rate : evalAmount
-        const costKrw = p.currency === 'USD' ? p.avg_price * p.quantity * rate : p.avg_price * p.quantity
+        const evaluationAmountKrw = p.currency === 'USD' && !isCryptoKrw ? evalAmount * rate : evalAmount
+        const costKrw =
+          p.currency === 'USD' && !isCryptoKrw ? p.avg_price * p.quantity * rate : p.avg_price * p.quantity
         const profitRate =
           isCash || currentPrice === null || costKrw === 0
             ? null
@@ -351,19 +355,12 @@ onMounted(async () => {
     <v-card-title class="text-body-1 font-weight-bold pt-4 px-4">보유 종목</v-card-title>
     <v-card-text class="px-4 pb-2">
       <div v-for="(p, i) in detail?.portfolios" :key="p.ticker" :class="{ 'mt-2': i > 0 }">
-        <div class="d-flex justify-space-between align-start" style="gap: 8px">
-          <span class="text-body-2 font-weight-bold" style="line-height: 1.3">{{ getTickerDisplayName(p.ticker) }}</span>
-          <span class="text-body-2 font-weight-bold" style="flex-shrink: 0">{{ p.quantity.toLocaleString() }}주</span>
-        </div>
-        <div class="d-flex justify-space-between align-center mt-1" style="gap: 8px">
-          <span class="text-caption text-medium-emphasis">평균가 {{ p.avg_price.toLocaleString() }} {{ p.currency }}</span>
-          <span
-            class="text-caption font-weight-bold"
-            style="flex-shrink: 0"
-            :class="p.profitRate == null ? 'text-medium-emphasis' : p.profitRate >= 0 ? 'text-success' : 'text-error'"
-          >
-            {{ fmtWon(p.evaluationAmountKrw ?? 0) }}<template v-if="p.profitRate != null"> ({{ p.profitRate >= 0 ? '+' : '' }}{{ p.profitRate.toFixed(1) }}%)</template>
-          </span>
+        <div class="text-body-2 font-weight-bold" style="line-height: 1.3">{{ getTickerDisplayName(p.ticker) }}</div>
+        <div
+          class="text-caption font-weight-bold mt-1"
+          :class="p.profitRate == null ? 'text-medium-emphasis' : p.profitRate >= 0 ? 'text-success' : 'text-error'"
+        >
+          {{ fmtWon(p.evaluationAmountKrw ?? 0) }}<template v-if="p.profitRate != null"> ({{ p.profitRate >= 0 ? '+' : '' }}{{ p.profitRate.toFixed(1) }}%)</template>
         </div>
         <v-divider v-if="i < (detail?.portfolios.length ?? 0) - 1" class="mt-2" opacity="0.06" />
       </div>
