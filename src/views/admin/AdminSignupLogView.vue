@@ -5,6 +5,7 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { ADMIN_EMAIL } from '@/config/admin'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
+import { getTickerDisplayName } from '@/utils/tickerNames'
 const router = useRouter()
 const loading = ref(true)
 const isAdmin = ref(false)
@@ -326,7 +327,7 @@ onMounted(async () => {
       <div v-for="(p, i) in detail?.portfolios" :key="p.ticker">
         <div class="detail-row" :class="{ 'mt-1': i > 0 }">
           <div>
-            <div class="text-body-2 font-weight-bold">{{ p.ticker }}</div>
+            <div class="text-body-2 font-weight-bold">{{ getTickerDisplayName(p.ticker) }}</div>
             <div class="text-caption text-medium-emphasis">평균가 {{ p.avg_price.toLocaleString() }} {{ p.currency }}</div>
           </div>
           <span class="text-body-2 font-weight-bold">{{ p.quantity.toLocaleString() }}주</span>
