@@ -21,6 +21,7 @@ interface Transaction {
     ticker: string
     asset_type: string
     currency: string
+    account_name: string | null
   }
 }
 
@@ -117,7 +118,7 @@ let userId = ''
 async function buildQuery(from: number, to: number) {
   let q = supabase
     .from('transactions')
-    .select('*, portfolios(ticker, asset_type, currency)')
+    .select('*, portfolios(ticker, asset_type, currency, account_name)')
     .eq('user_id', userId)
     .neq('transaction_type', 'INITIAL')
     .order('transaction_date', { ascending: false })
@@ -332,6 +333,9 @@ const totalSell = computed(() => {
 })
 
 
+
+const truncateAccount = (name: string) =>
+  /[ㄱ-ㅎ가-힣]/.test(name) ? name.slice(0, 2) : name.slice(0, 4)
 
 const formatDate = (d: string) => {
   const date = new Date(d)
@@ -656,6 +660,7 @@ onUnmounted(() => {
                         <span class="tx-name">{{ getTickerDisplayName(item.portfolios?.ticker) }}</span>
                         <span v-if="getTickerDisplayName(item.portfolios?.ticker) !== item.portfolios?.ticker" class="tx-ticker flex-shrink-0">{{ item.portfolios?.ticker }}</span>
                         <span class="asset-badge flex-shrink-0" :style="`color: rgb(var(--v-theme-${assetTypeColor(item.portfolios?.asset_type)}))`">{{ item.portfolios?.asset_type }}</span>
+                        <span v-if="item.portfolios?.account_name && item.portfolios.account_name !== '미지정'" class="account-tag flex-shrink-0">{{ truncateAccount(item.portfolios.account_name) }}</span>
                         <span class="tx-type-badge flex-shrink-0" :class="item.transaction_type === 'BUY' ? 'badge-buy' : 'badge-sell'">{{ item.transaction_type === 'BUY' ? '매수' : '매도' }}</span>
                       </div>
                       <div class="d-flex align-center ga-1">
@@ -895,6 +900,16 @@ onUnmounted(() => {
   font-weight: 600;
   opacity: 0.8;
   flex-shrink: 0;
+}
+.account-tag {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 600;
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.1);
+  border-radius: 4px;
+  padding: 1px 5px;
+  vertical-align: middle;
 }
 .tx-type-badge {
   font-size: 9px;
