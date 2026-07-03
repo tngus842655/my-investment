@@ -110,10 +110,9 @@ const chartData = computed(() => {
   const pts = filteredData.value
   if (!pts.length) return null
 
-  // 목표 자산은 y축 최대값 계산에서 제외 (목표 달성률이 낮으면 실제 자산 막대가
-  // 눌려서 안 보이거나 클릭하기 어려워지는 문제 방지)
+  // Y축 최대값은 올해 목표 기준. 단, 실제 자산이 목표를 넘어서면 잘리지 않도록 그 값도 함께 반영
   const maxAsset = Math.max(...pts.map((p) => p.asset), 1)
-  const yMax = maxAsset * 1.25
+  const yMax = Math.max(thisYearTarget.value, maxAsset) * 1.08
   const barW = Math.max(4, PW / pts.length - 5)
 
   const toX = (i: number) => PAD.left + (i / pts.length) * PW + PW / pts.length / 2
@@ -133,16 +132,13 @@ const chartData = computed(() => {
     .map((p, i) => ({ x: toX(i), label: p.label }))
     .filter((_, i) => i % step === 0 || i === pts.length - 1)
 
-  // 올해 목표 기준선: 차트 범위 안이면 실제 위치에, 범위를 넘으면 상단에 화살표로 표시
-  const targetY = thisYearTarget.value > 0 && thisYearTarget.value <= yMax
-    ? toY(thisYearTarget.value)
-    : null
-  const targetAboveChart = thisYearTarget.value > yMax
+  // 올해 목표 기준선 (Y축 최대값 산정에 포함되므로 항상 차트 범위 안에 표시됨)
+  const targetY = thisYearTarget.value > 0 ? toY(thisYearTarget.value) : null
 
   // 최고 자산 달 인덱스
   const maxIdx = pts.reduce((mi, p, i) => (p.asset > pts[mi]!.asset ? i : mi), 0)
 
-  return { pts, barW, toX, toH, toY, yTicks, xLabels, targetY, targetAboveChart, maxIdx }
+  return { pts, barW, toX, toH, toY, yTicks, xLabels, targetY, maxIdx }
 })
 
 // 툴팁 + 선택된 월
@@ -344,7 +340,7 @@ function formatFull(v: number) {
               >{{ tick.label }}</text>
             </template>
 
-            <!-- 목표 자산 기준선 -->
+            <!-- 올해 목표 기준선 -->
             <template v-if="chartData.targetY !== null">
               <line
                 :x1="PAD.left" :y1="chartData.targetY"
@@ -356,13 +352,13 @@ function formatFull(v: number) {
                 font-size="8" fill="rgb(var(--v-theme-primary))"
               >올해 목표</text>
             </template>
-            <!-- 올해 목표가 현재 차트 범위 밖(훨씬 위)일 때 안내 -->
+            <!-- 전체 자산 (현재 평가 자산) -->
             <text
-              v-else-if="chartData.targetAboveChart"
+              v-if="currentAssetNow > 0"
               :x="VW - PAD.right" :y="PAD.top - 8"
               text-anchor="end" font-size="8"
-              fill="rgb(var(--v-theme-primary))"
-            >▲ 올해 목표 {{ formatShort(thisYearTarget) }}</text>
+              fill="rgba(var(--v-theme-on-surface), 0.5)"
+            >전체 자산 {{ formatShort(currentAssetNow) }}</text>
 
             <!-- 바 -->
             <g
