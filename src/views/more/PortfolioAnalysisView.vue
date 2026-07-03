@@ -162,20 +162,29 @@ const holdings = computed<Holding[]>(() => {
 
 const compareTickers = ref<string[]>([])
 const priceCache = ref<Record<string, number>>({})
-const priceLoading = ref<Record<string, boolean>>({})
+const pricesLoaded = ref(false)
+const loadingPrices = ref(false)
 
-const ensurePrice = async (ticker: string) => {
-  if (priceCache.value[ticker] !== undefined || priceLoading.value[ticker]) return
-  const holding = holdings.value.find((h) => h.ticker === ticker)
-  const row = portfolioRows.value.find((p) => p.ticker === ticker)
-  if (!holding || !row) return
-  priceLoading.value = { ...priceLoading.value, [ticker]: true }
+// 비교 탭 진입 시 보유 종목 전체 현재가를 한 번에 조회 (선택할 때마다 개별 호출하지 않음)
+const loadAllPrices = async (force = false) => {
+  if (loadingPrices.value) return
+  if (pricesLoaded.value && !force) return
+  loadingPrices.value = true
   try {
-    priceCache.value = { ...priceCache.value, [ticker]: await getStockPrice(row.ticker, row.asset_type, row.currency) }
-  } catch {
-    priceCache.value = { ...priceCache.value, [ticker]: 0 }
+    const targets = holdings.value
+    const results = await Promise.all(
+      targets.map((h) => {
+        const row = portfolioRows.value.find((p) => p.ticker === h.ticker)
+        if (!row) return Promise.resolve(0)
+        return getStockPrice(row.ticker, row.asset_type, row.currency).catch(() => 0)
+      }),
+    )
+    const next: Record<string, number> = {}
+    targets.forEach((h, i) => { next[h.ticker] = results[i] ?? 0 })
+    priceCache.value = next
+    pricesLoaded.value = true
   } finally {
-    priceLoading.value = { ...priceLoading.value, [ticker]: false }
+    loadingPrices.value = false
   }
 }
 
@@ -189,21 +198,19 @@ const toggleCompareTicker = (ticker: string) => {
     return
   }
   compareTickers.value = [...compareTickers.value, ticker]
-  ensurePrice(ticker)
 }
 
 interface CompareRow {
   ticker: string
   label: string
   color: string
-  costKrw: number
   evalKrw: number | null
   profitRate: number | null
-  loading: boolean
+  sharePct: number | null
 }
 
-const compareRows = computed<CompareRow[]>(() =>
-  compareTickers.value.map((ticker, i) => {
+const compareRows = computed<CompareRow[]>(() => {
+  const rows = compareTickers.value.map((ticker, i) => {
     const h = holdings.value.find((x) => x.ticker === ticker)!
     const price = priceCache.value[ticker]
     const hasPrice = price !== undefined && price > 0
@@ -219,15 +226,18 @@ const compareRows = computed<CompareRow[]>(() =>
       ticker,
       label: h.label,
       color: chart.value.palette[i % chart.value.palette.length]!,
-      costKrw: h.costKrw,
       evalKrw,
       profitRate,
-      loading: priceLoading.value[ticker] ?? false,
     }
-  }),
-)
+  })
 
-const maxCompareEvalKrw = computed(() => Math.max(...compareRows.value.map((r) => r.evalKrw ?? 0), 0))
+  // 선택한 종목들의 평가금액 합을 100%로 놓았을 때 각 종목의 비중
+  const total = rows.reduce((s, r) => s + (r.evalKrw ?? 0), 0)
+  return rows.map((r) => ({
+    ...r,
+    sharePct: r.evalKrw !== null && total > 0 ? (r.evalKrw / total) * 100 : null,
+  }))
+})
 </script>
 
 <template>
@@ -258,7 +268,7 @@ const maxCompareEvalKrw = computed(() => Math.max(...compareRows.value.map((r) =
       <div class="toggle-row mb-4">
         <button class="toggle-btn" :class="{ active: viewMode === 'type' }" @click="viewMode = 'type'">자산군별</button>
         <button class="toggle-btn" :class="{ active: viewMode === 'ticker' }" @click="viewMode = 'ticker'">종목별</button>
-        <button class="toggle-btn" :class="{ active: viewMode === 'compare' }" @click="viewMode = 'compare'">종목 비교</button>
+        <button class="toggle-btn" :class="{ active: viewMode === 'compare' }" @click="viewMode = 'compare'; loadAllPrices()">종목 비교</button>
       </div>
 
       <!-- 종목 비교 -->
@@ -266,7 +276,12 @@ const maxCompareEvalKrw = computed(() => Math.max(...compareRows.value.map((r) =
         <div class="compare-card mb-4">
           <div class="d-flex align-center justify-space-between mb-3">
             <div class="text-body-2 font-weight-medium">비교할 종목 선택</div>
-            <div class="text-caption text-medium-emphasis">{{ compareTickers.length }} / {{ 4 }}</div>
+            <div class="d-flex align-center ga-2">
+              <div class="text-caption text-medium-emphasis">{{ compareTickers.length }} / {{ COMPARE_MAX }}</div>
+              <v-btn icon size="x-small" variant="text" :loading="loadingPrices" @click="loadAllPrices(true)">
+                <v-icon size="16">mdi-refresh</v-icon>
+              </v-btn>
+            </div>
           </div>
           <div class="compare-chip-wrap">
             <button
@@ -299,16 +314,11 @@ const maxCompareEvalKrw = computed(() => Math.max(...compareRows.value.map((r) =
               <div class="d-flex align-center ga-2" style="min-width: 0">
                 <span class="compare-dot" :style="{ background: row.color }" />
                 <span class="compare-name">{{ row.label }}</span>
-                <v-chip v-if="row.evalKrw !== null && row.evalKrw === maxCompareEvalKrw" size="x-small" color="primary" variant="tonal">최고</v-chip>
               </div>
-              <span
-                v-if="row.profitRate !== null"
-                class="text-body-2 font-weight-bold"
-                :class="row.profitRate >= 0 ? 'text-success' : 'text-error'"
-              >{{ row.profitRate >= 0 ? '+' : '' }}{{ row.profitRate.toFixed(1) }}%</span>
+              <span v-if="row.sharePct !== null" class="text-body-1 font-weight-bold" :style="{ color: row.color }">{{ row.sharePct.toFixed(1) }}%</span>
             </div>
 
-            <template v-if="row.loading">
+            <template v-if="loadingPrices">
               <v-skeleton-loader type="text" width="140" />
             </template>
             <template v-else-if="row.evalKrw === null">
@@ -316,20 +326,22 @@ const maxCompareEvalKrw = computed(() => Math.max(...compareRows.value.map((r) =
             </template>
             <template v-else>
               <div class="d-flex align-center justify-space-between mb-1">
-                <span class="text-body-1 font-weight-bold">{{ formatShortMoney(row.evalKrw) }}원</span>
-                <span v-if="row.evalKrw !== maxCompareEvalKrw && maxCompareEvalKrw > 0" class="text-caption text-medium-emphasis">
-                  최고 대비 {{ (((row.evalKrw - maxCompareEvalKrw) / maxCompareEvalKrw) * 100).toFixed(1) }}%
-                </span>
+                <span class="text-body-2 text-medium-emphasis">{{ formatShortMoney(row.evalKrw) }}원</span>
+                <span
+                  v-if="row.profitRate !== null"
+                  class="text-caption font-weight-medium"
+                  :class="row.profitRate >= 0 ? 'text-success' : 'text-error'"
+                >{{ row.profitRate >= 0 ? '+' : '' }}{{ row.profitRate.toFixed(1) }}%</span>
               </div>
               <div class="compare-bar-wrap">
                 <div
                   class="compare-bar"
-                  :style="{ width: maxCompareEvalKrw > 0 ? (row.evalKrw / maxCompareEvalKrw * 100) + '%' : '0%', background: row.color }"
+                  :style="{ width: (row.sharePct ?? 0) + '%', background: row.color }"
                 />
               </div>
             </template>
           </div>
-          <div class="text-caption text-medium-emphasis text-center mt-3" style="opacity:0.6">실시간 현재가 기준 평가금액 · 수익률</div>
+          <div class="text-caption text-medium-emphasis text-center mt-3" style="opacity:0.6">실시간 현재가 기준, 선택한 종목 평가금액 합계를 100%로 한 비중</div>
         </div>
       </template>
 
