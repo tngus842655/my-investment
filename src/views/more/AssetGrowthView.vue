@@ -348,7 +348,7 @@ function formatFull(v: number) {
                 stroke="rgba(var(--v-theme-primary), 0.5)" stroke-width="1.5" stroke-dasharray="5,4"
               />
               <text
-                :x="VW - PAD.right + 2" :y="chartData.targetY + 4"
+                :x="PAD.left" :y="chartData.targetY - 4"
                 font-size="8" fill="rgb(var(--v-theme-primary))"
               >올해 목표</text>
             </template>
