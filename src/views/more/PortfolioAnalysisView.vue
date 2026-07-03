@@ -166,9 +166,8 @@ const pricesLoaded = ref(false)
 const loadingPrices = ref(false)
 
 // 비교 탭 진입 시 보유 종목 전체 현재가를 한 번에 조회 (선택할 때마다 개별 호출하지 않음)
-const loadAllPrices = async (force = false) => {
-  if (loadingPrices.value) return
-  if (pricesLoaded.value && !force) return
+const loadAllPrices = async () => {
+  if (loadingPrices.value || pricesLoaded.value) return
   loadingPrices.value = true
   try {
     const targets = holdings.value
@@ -276,12 +275,7 @@ const compareRows = computed<CompareRow[]>(() => {
         <div class="compare-card mb-4">
           <div class="d-flex align-center justify-space-between mb-3">
             <div class="text-body-2 font-weight-medium">비교할 종목 선택</div>
-            <div class="d-flex align-center ga-2">
-              <div class="text-caption text-medium-emphasis">{{ compareTickers.length }} / {{ COMPARE_MAX }}</div>
-              <v-btn icon size="x-small" variant="text" :loading="loadingPrices" @click="loadAllPrices(true)">
-                <v-icon size="16">mdi-refresh</v-icon>
-              </v-btn>
-            </div>
+            <div class="text-caption text-medium-emphasis">{{ compareTickers.length }} / {{ COMPARE_MAX }}</div>
           </div>
           <div class="compare-chip-wrap">
             <button
