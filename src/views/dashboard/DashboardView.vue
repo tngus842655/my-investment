@@ -387,7 +387,7 @@ onMounted(() => {
             class="mini-portfolio-item"
             :class="{ 'mt-3': i > 0 }"
           >
-            <div class="d-flex align-center ga-2 flex-1 min-w-0">
+            <div class="d-flex align-center ga-2 mini-info-row">
               <!-- 아이콘 -->
               <div class="mini-icon" :class="`bg-${assetTypeColor(item.asset_type)}`">
                 <v-icon size="14" color="white">
@@ -396,12 +396,12 @@ onMounted(() => {
               </div>
 
               <!-- 종목명 -->
-              <div class="flex-1 min-w-0">
+              <div class="mini-info-text">
                 <div class="mini-ticker">
                   <template v-if="item.asset_type === '현금'">보유현금</template>
                   <template v-else-if="getTickerLabel(item.ticker).showTicker">
                     {{ getTickerLabel(item.ticker).name }}
-                    <span class="mini-ticker-sub">{{ item.ticker }}</span>
+                    <span v-if="item.currency === 'USD'" class="mini-ticker-sub">{{ item.ticker }}</span>
                   </template>
                   <template v-else>{{ item.ticker }}</template>
                 </div>
@@ -562,6 +562,15 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.mini-info-row {
+  flex: 1;
+  min-width: 0;
+}
+.mini-info-text {
+  flex: 1;
+  min-width: 0;
 }
 
 .mini-icon {

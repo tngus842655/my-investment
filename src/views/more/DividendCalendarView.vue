@@ -61,10 +61,15 @@ const loadData = async () => {
     exchangeRate.value = rate
     portfolios.value = portRes.data ?? []
 
-    // 현금 제외, 배당 가능 종목만
-    const targets = portfolios.value.filter(
-      (p) => p.asset_type !== '현금' && p.asset_type !== '암호화폐'
-    )
+    // 현금 제외, 배당 가능 종목만. 계좌가 달라도 같은 종목이면 수량을 합산해 하나로 집계
+    const targetsByTicker = new Map<string, Portfolio>()
+    for (const p of portfolios.value) {
+      if (p.asset_type === '현금' || p.asset_type === '암호화폐') continue
+      const existing = targetsByTicker.get(p.ticker)
+      if (existing) existing.quantity += p.quantity
+      else targetsByTicker.set(p.ticker, { ...p })
+    }
+    const targets = [...targetsByTicker.values()]
     if (!targets.length) { loading.value = false; return }
 
     activeCacheKey.value = `dividend_cache_${targets.map((p) => p.ticker).sort().join(',')}`
@@ -341,9 +346,10 @@ function formatAmountPerShare(ev: CalendarEvent) {
 // 배당 없는 종목 목록
 const noDividendTickers = computed(() => {
   const withDividend = new Set(calendarEvents.value.map((e) => e.ticker))
-  return portfolios.value
+  const tickers = portfolios.value
     .filter((p) => p.asset_type !== '현금' && p.asset_type !== '암호화폐' && !withDividend.has(p.ticker))
     .map((p) => p.ticker)
+  return [...new Set(tickers)]
 })
 
 function formatKrw(v: number) {
@@ -480,9 +486,9 @@ const refreshData = async () => {
           >
             <div class="event-date">{{ ev.date.slice(5).replace('-', '.') }}</div>
             <div class="event-ticker">
-              <div class="d-flex align-center ga-1">
-                <span class="text-body-2 font-weight-medium">{{ getTickerDisplayName(ev.ticker) }}</span>
-                <v-chip v-if="ev.isNext" size="x-small" color="warning" variant="tonal">예정</v-chip>
+              <div class="d-flex align-center ga-1" style="min-width: 0">
+                <span class="text-body-2 font-weight-medium event-ticker-name">{{ getTickerDisplayName(ev.ticker) }}</span>
+                <v-chip v-if="ev.isNext" size="x-small" color="warning" variant="tonal" class="flex-shrink-0">예정</v-chip>
               </div>
             </div>
             <div class="text-right">
@@ -619,6 +625,12 @@ const refreshData = async () => {
 }
 .event-ticker {
   flex: 1;
+  min-width: 0;
+}
+.event-ticker-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   min-width: 0;
 }
 .notice-text {

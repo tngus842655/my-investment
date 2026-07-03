@@ -3,15 +3,17 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
+import { getStockPrice } from '@/services/market'
 import { getTickerDisplayName } from '@/utils/tickerNames'
 import { formatShortMoney } from '@/utils/numberFormat'
+import { showMessage } from '@/composables/useSnackbar'
 import { useDesignTokens } from '@/composables/useDesignTokens'
 
 const router = useRouter()
 const { chart } = useDesignTokens()
 
 const loading = ref(true)
-const viewMode = ref<'type' | 'ticker'>('type')
+const viewMode = ref<'type' | 'ticker' | 'compare'>('type')
 const hoveredKey = ref<string | null>(null)
 interface PortfolioRow {
   ticker: string
@@ -120,6 +122,121 @@ const loadData = async () => {
 }
 
 onMounted(loadData)
+
+// ── 종목 비교 ─────────────────────────────────────
+const COMPARE_MAX = 4
+
+interface Holding {
+  ticker: string
+  label: string
+  assetType: string
+  currency: 'KRW' | 'USD'
+  quantity: number
+  costKrw: number
+}
+
+// 계좌가 달라도 같은 종목이면 수량·원가를 합산해 하나로 집계 (현금 제외)
+const holdings = computed<Holding[]>(() => {
+  const map = new Map<string, { quantity: number; costNative: number; currency: 'KRW' | 'USD'; assetType: string }>()
+  for (const p of portfolioRows.value) {
+    if (p.asset_type === '현금') continue
+    const existing = map.get(p.ticker)
+    const costNative = p.avg_price * p.quantity
+    if (existing) {
+      existing.quantity += p.quantity
+      existing.costNative += costNative
+    } else {
+      map.set(p.ticker, { quantity: p.quantity, costNative, currency: p.currency, assetType: p.asset_type })
+    }
+  }
+  return [...map.entries()].map(([ticker, v]) => ({
+    ticker,
+    label: getTickerDisplayName(ticker),
+    assetType: v.assetType,
+    currency: v.currency,
+    quantity: v.quantity,
+    // 암호화폐+KRW는 avg_price가 사용자가 직접 입력한 KRW 원가라 변환이 필요 없음
+    costKrw: v.currency === 'USD' ? v.costNative * exchangeRate.value : v.costNative,
+  }))
+})
+
+const compareTickers = ref<string[]>([])
+const priceCache = ref<Record<string, number>>({})
+const pricesLoaded = ref(false)
+const loadingPrices = ref(false)
+
+// 비교 탭 진입 시 보유 종목 전체 현재가를 한 번에 조회 (선택할 때마다 개별 호출하지 않음)
+const loadAllPrices = async () => {
+  if (loadingPrices.value || pricesLoaded.value) return
+  loadingPrices.value = true
+  try {
+    const targets = holdings.value
+    const results = await Promise.all(
+      targets.map((h) => {
+        const row = portfolioRows.value.find((p) => p.ticker === h.ticker)
+        if (!row) return Promise.resolve(0)
+        return getStockPrice(row.ticker, row.asset_type, row.currency).catch(() => 0)
+      }),
+    )
+    const next: Record<string, number> = {}
+    targets.forEach((h, i) => { next[h.ticker] = results[i] ?? 0 })
+    priceCache.value = next
+    pricesLoaded.value = true
+  } finally {
+    loadingPrices.value = false
+  }
+}
+
+const toggleCompareTicker = (ticker: string) => {
+  if (compareTickers.value.includes(ticker)) {
+    compareTickers.value = compareTickers.value.filter((t) => t !== ticker)
+    return
+  }
+  if (compareTickers.value.length >= COMPARE_MAX) {
+    showMessage(`최대 ${COMPARE_MAX}개까지 선택할 수 있어요.`, 'error')
+    return
+  }
+  compareTickers.value = [...compareTickers.value, ticker]
+}
+
+interface CompareRow {
+  ticker: string
+  label: string
+  color: string
+  evalKrw: number | null
+  profitRate: number | null
+  sharePct: number | null
+}
+
+const compareRows = computed<CompareRow[]>(() => {
+  const rows = compareTickers.value.map((ticker, i) => {
+    const h = holdings.value.find((x) => x.ticker === ticker)!
+    const price = priceCache.value[ticker]
+    const hasPrice = price !== undefined && price > 0
+    // 암호화폐 + KRW: 시세 API가 USD(바이낸스)로 반환하므로 환율 곱해서 KRW 현재가로 변환
+    const isCryptoKrw = h.assetType === '암호화폐' && h.currency === 'KRW'
+    const priceInCurrency = hasPrice ? (isCryptoKrw ? price * exchangeRate.value : price) : null
+    const evaluationAmount = priceInCurrency !== null ? priceInCurrency * h.quantity : null
+    const evalKrw = evaluationAmount !== null
+      ? (h.currency === 'USD' && !isCryptoKrw ? evaluationAmount * exchangeRate.value : evaluationAmount)
+      : null
+    const profitRate = evalKrw !== null && h.costKrw > 0 ? ((evalKrw - h.costKrw) / h.costKrw) * 100 : null
+    return {
+      ticker,
+      label: h.label,
+      color: chart.value.palette[i % chart.value.palette.length]!,
+      evalKrw,
+      profitRate,
+    }
+  })
+
+  // 선택한 종목들의 평가금액 합을 100%로 놓았을 때 각 종목의 비중
+  const total = rows.reduce((s, r) => s + (r.evalKrw ?? 0), 0)
+  return rows.map((r) => ({
+    ...r,
+    sharePct: r.evalKrw !== null && total > 0 ? (r.evalKrw / total) * 100 : null,
+  }))
+})
 </script>
 
 <template>
@@ -150,70 +267,143 @@ onMounted(loadData)
       <div class="toggle-row mb-4">
         <button class="toggle-btn" :class="{ active: viewMode === 'type' }" @click="viewMode = 'type'">자산군별</button>
         <button class="toggle-btn" :class="{ active: viewMode === 'ticker' }" @click="viewMode = 'ticker'">종목별</button>
+        <button class="toggle-btn" :class="{ active: viewMode === 'compare' }" @click="viewMode = 'compare'; loadAllPrices()">종목 비교</button>
       </div>
 
-      <!-- 도넛 차트 카드 -->
-      <div class="chart-card mb-4">
-        <div class="chart-wrap">
-          <svg viewBox="0 0 240 240" class="donut-svg">
-            <!-- 배경 링 -->
-            <circle :cx="CX" :cy="CY" :r="(OR + IR) / 2" fill="none" stroke="rgba(128,128,128,0.08)" :stroke-width="OR - IR" />
-
-            <!-- 세그먼트 -->
-            <path
-              v-for="(seg, i) in segments"
-              :key="seg.key"
-              :d="seg.path"
-              :fill="seg.color"
-              :opacity="hoveredKey && hoveredKey !== seg.key ? 0.35 : 1"
-              class="seg-path"
-              :style="{ '--delay': `${i * 0.06}s`, transform: seg.key === hoveredKey ? 'scale(1.04)' : 'scale(1)' }"
-              @mouseenter="hoveredKey = seg.key"
-              @mouseleave="hoveredKey = null"
-              @touchstart.passive="hoveredKey = seg.key"
-              @touchend.passive="hoveredKey = null"
-            />
-
-            <!-- 중앙 텍스트 -->
-            <text x="120" y="108" text-anchor="middle" class="center-label">
-              {{ hovered ? hovered.label : '총 자산' }}
-            </text>
-            <text x="120" y="130" text-anchor="middle" class="center-value">
-              {{ hovered ? hovered.pct.toFixed(1) + '%' : formatShortMoney(totalKrw) }}
-            </text>
-            <text v-if="hovered" x="120" y="150" text-anchor="middle" class="center-sub">
-              {{ formatShortMoney(hovered.valueKrw) }}
-            </text>
-          </svg>
-        </div>
-      </div>
-
-      <!-- 범례 리스트 -->
-      <div class="legend-card">
-        <div
-          v-for="seg in segments"
-          :key="seg.key"
-          class="legend-row"
-          :class="{ 'legend-dimmed': hoveredKey && hoveredKey !== seg.key, 'legend-active': hoveredKey === seg.key }"
-          @mouseenter="hoveredKey = seg.key"
-          @mouseleave="hoveredKey = null"
-        >
-          <div class="legend-dot" :style="{ background: seg.color }" />
-          <div class="legend-info">
-            <div class="legend-name">{{ seg.label }}</div>
+      <!-- 종목 비교 -->
+      <template v-if="viewMode === 'compare'">
+        <div class="compare-card mb-4">
+          <div class="d-flex align-center justify-space-between mb-3">
+            <div class="text-body-2 font-weight-medium">비교할 종목 선택</div>
+            <div class="text-caption text-medium-emphasis">{{ compareTickers.length }} / {{ COMPARE_MAX }}</div>
           </div>
-          <div class="legend-right">
-            <span class="legend-pct" :style="{ color: seg.color }">{{ seg.pct.toFixed(1) }}%</span>
-            <span class="legend-val">{{ formatShortMoney(seg.valueKrw) }}</span>
-          </div>
-          <!-- 비중 바 -->
-          <div class="legend-bar-wrap">
-            <div class="legend-bar" :style="{ width: seg.pct + '%', background: seg.color }" />
+          <div class="compare-chip-wrap">
+            <button
+              v-for="h in holdings"
+              :key="h.ticker"
+              class="compare-chip"
+              :class="{ 'compare-chip-active': compareTickers.includes(h.ticker) }"
+              @click="toggleCompareTicker(h.ticker)"
+            >{{ h.label }}</button>
           </div>
         </div>
-      </div>
 
-      <div class="text-caption text-medium-emphasis text-center mt-3" style="opacity:0.6">취득가 기준 평가금액</div>
+        <div v-if="holdings.length === 0" class="empty-state">
+          <v-icon size="48" color="primary" class="mb-3" style="opacity:0.4">mdi-compare-horizontal</v-icon>
+          <div class="text-body-2 text-medium-emphasis">비교할 수 있는 보유 종목이 없어요</div>
+        </div>
+
+        <div v-else-if="compareRows.length < 2" class="empty-state">
+          <v-icon size="48" color="primary" class="mb-3" style="opacity:0.4">mdi-compare-horizontal</v-icon>
+          <div class="text-body-2 text-medium-emphasis">비교할 종목을 2개 이상 선택해주세요</div>
+        </div>
+
+        <div v-else class="compare-card">
+          <div
+            v-for="row in compareRows"
+            :key="row.ticker"
+            class="compare-row"
+          >
+            <div class="d-flex align-center justify-space-between mb-1">
+              <div class="d-flex align-center ga-2" style="min-width: 0">
+                <span class="compare-dot" :style="{ background: row.color }" />
+                <span class="compare-name">{{ row.label }}</span>
+              </div>
+              <span v-if="row.sharePct !== null" class="text-body-1 font-weight-bold" :style="{ color: row.color }">{{ row.sharePct.toFixed(1) }}%</span>
+            </div>
+
+            <template v-if="loadingPrices">
+              <v-skeleton-loader type="text" width="140" />
+            </template>
+            <template v-else-if="row.evalKrw === null">
+              <div class="text-caption text-medium-emphasis">현재가 조회 실패</div>
+            </template>
+            <template v-else>
+              <div class="mb-1">
+                <span class="text-body-2 text-medium-emphasis">{{ formatShortMoney(row.evalKrw) }}원</span>
+                <span
+                  v-if="row.profitRate !== null"
+                  class="font-weight-medium ml-1"
+                  style="font-size: 11px"
+                  :class="row.profitRate >= 0 ? 'text-success' : 'text-error'"
+                >({{ row.profitRate >= 0 ? '+' : '' }}{{ row.profitRate.toFixed(1) }}%)</span>
+              </div>
+              <div class="compare-bar-wrap">
+                <div
+                  class="compare-bar"
+                  :style="{ width: (row.sharePct ?? 0) + '%', background: row.color }"
+                />
+              </div>
+            </template>
+          </div>
+          <div class="text-caption text-medium-emphasis text-center mt-3" style="opacity:0.6">선택한 종목 평가금액 합계를 100%로 한 비중</div>
+        </div>
+      </template>
+
+      <template v-else>
+        <!-- 도넛 차트 카드 -->
+        <div class="chart-card mb-4">
+          <div class="chart-wrap">
+            <svg viewBox="0 0 240 240" class="donut-svg">
+              <!-- 배경 링 -->
+              <circle :cx="CX" :cy="CY" :r="(OR + IR) / 2" fill="none" stroke="rgba(128,128,128,0.08)" :stroke-width="OR - IR" />
+
+              <!-- 세그먼트 -->
+              <path
+                v-for="(seg, i) in segments"
+                :key="seg.key"
+                :d="seg.path"
+                :fill="seg.color"
+                :opacity="hoveredKey && hoveredKey !== seg.key ? 0.35 : 1"
+                class="seg-path"
+                :style="{ '--delay': `${i * 0.06}s`, transform: seg.key === hoveredKey ? 'scale(1.04)' : 'scale(1)' }"
+                @mouseenter="hoveredKey = seg.key"
+                @mouseleave="hoveredKey = null"
+                @touchstart.passive="hoveredKey = seg.key"
+                @touchend.passive="hoveredKey = null"
+              />
+
+              <!-- 중앙 텍스트 -->
+              <text x="120" y="108" text-anchor="middle" class="center-label">
+                {{ hovered ? hovered.label : '총 자산' }}
+              </text>
+              <text x="120" y="130" text-anchor="middle" class="center-value">
+                {{ hovered ? hovered.pct.toFixed(1) + '%' : formatShortMoney(totalKrw) }}
+              </text>
+              <text v-if="hovered" x="120" y="150" text-anchor="middle" class="center-sub">
+                {{ formatShortMoney(hovered.valueKrw) }}
+              </text>
+            </svg>
+          </div>
+        </div>
+
+        <!-- 범례 리스트 -->
+        <div class="legend-card">
+          <div
+            v-for="seg in segments"
+            :key="seg.key"
+            class="legend-row"
+            :class="{ 'legend-dimmed': hoveredKey && hoveredKey !== seg.key, 'legend-active': hoveredKey === seg.key }"
+            @mouseenter="hoveredKey = seg.key"
+            @mouseleave="hoveredKey = null"
+          >
+            <div class="legend-dot" :style="{ background: seg.color }" />
+            <div class="legend-info">
+              <div class="legend-name">{{ seg.label }}</div>
+            </div>
+            <div class="legend-right">
+              <span class="legend-pct" :style="{ color: seg.color }">{{ seg.pct.toFixed(1) }}%</span>
+              <span class="legend-val">{{ formatShortMoney(seg.valueKrw) }}</span>
+            </div>
+            <!-- 비중 바 -->
+            <div class="legend-bar-wrap">
+              <div class="legend-bar" :style="{ width: seg.pct + '%', background: seg.color }" />
+            </div>
+          </div>
+        </div>
+
+        <div class="text-caption text-medium-emphasis text-center mt-3" style="opacity:0.6">취득가 기준 평가금액</div>
+      </template>
     </template>
   </v-container>
 </template>
@@ -240,6 +430,66 @@ onMounted(loadData)
   background: rgb(var(--v-theme-primary));
   border-color: transparent;
   color: #fff;
+}
+
+.compare-card {
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.07);
+  border-radius: 20px;
+  padding: 16px;
+}
+.compare-chip-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.compare-chip {
+  padding: 7px 14px;
+  border-radius: 99px;
+  border: 1.5px solid rgba(var(--v-theme-on-surface), 0.12);
+  background: transparent;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.compare-chip-active {
+  background: rgb(var(--v-theme-primary));
+  border-color: transparent;
+  color: #fff;
+}
+.compare-row {
+  padding: 14px 0;
+}
+.compare-row + .compare-row {
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.06);
+}
+.compare-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.compare-name {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.compare-bar-wrap {
+  width: 100%;
+  height: 6px;
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.compare-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .chart-card {
