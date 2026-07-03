@@ -341,7 +341,7 @@ const compareRows = computed<CompareRow[]>(() => {
               </div>
             </template>
           </div>
-          <div class="text-caption text-medium-emphasis text-center mt-3" style="opacity:0.6">실시간 현재가 기준, 선택한 종목 평가금액 합계를 100%로 한 비중</div>
+          <div class="text-caption text-medium-emphasis text-center mt-3" style="opacity:0.6">선택한 종목 평가금액 합계를 100%로 한 비중</div>
         </div>
       </template>
 
