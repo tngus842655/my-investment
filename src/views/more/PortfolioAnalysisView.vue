@@ -329,7 +329,8 @@ const compareRows = computed<CompareRow[]>(() => {
                 <span class="text-body-2 text-medium-emphasis">{{ formatShortMoney(row.evalKrw) }}원</span>
                 <span
                   v-if="row.profitRate !== null"
-                  class="text-caption font-weight-medium ml-1"
+                  class="font-weight-medium ml-1"
+                  style="font-size: 11px"
                   :class="row.profitRate >= 0 ? 'text-success' : 'text-error'"
                 >({{ row.profitRate >= 0 ? '+' : '' }}{{ row.profitRate.toFixed(1) }}%)</span>
               </div>
