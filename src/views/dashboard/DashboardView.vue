@@ -401,7 +401,7 @@ onMounted(() => {
                   <template v-if="item.asset_type === '현금'">보유현금</template>
                   <template v-else-if="getTickerLabel(item.ticker).showTicker">
                     {{ getTickerLabel(item.ticker).name }}
-                    <span class="mini-ticker-sub">{{ item.ticker }}</span>
+                    <span v-if="item.currency === 'USD'" class="mini-ticker-sub">{{ item.ticker }}</span>
                   </template>
                   <template v-else>{{ item.ticker }}</template>
                 </div>
