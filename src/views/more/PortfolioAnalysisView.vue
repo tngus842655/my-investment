@@ -129,6 +129,7 @@ const COMPARE_MAX = 4
 interface Holding {
   ticker: string
   label: string
+  assetType: string
   currency: 'KRW' | 'USD'
   quantity: number
   costKrw: number
@@ -136,7 +137,7 @@ interface Holding {
 
 // 계좌가 달라도 같은 종목이면 수량·원가를 합산해 하나로 집계 (현금 제외)
 const holdings = computed<Holding[]>(() => {
-  const map = new Map<string, { quantity: number; costNative: number; currency: 'KRW' | 'USD' }>()
+  const map = new Map<string, { quantity: number; costNative: number; currency: 'KRW' | 'USD'; assetType: string }>()
   for (const p of portfolioRows.value) {
     if (p.asset_type === '현금') continue
     const existing = map.get(p.ticker)
@@ -145,14 +146,16 @@ const holdings = computed<Holding[]>(() => {
       existing.quantity += p.quantity
       existing.costNative += costNative
     } else {
-      map.set(p.ticker, { quantity: p.quantity, costNative, currency: p.currency })
+      map.set(p.ticker, { quantity: p.quantity, costNative, currency: p.currency, assetType: p.asset_type })
     }
   }
   return [...map.entries()].map(([ticker, v]) => ({
     ticker,
     label: getTickerDisplayName(ticker),
+    assetType: v.assetType,
     currency: v.currency,
     quantity: v.quantity,
+    // 암호화폐+KRW는 avg_price가 사용자가 직접 입력한 KRW 원가라 변환이 필요 없음
     costKrw: v.currency === 'USD' ? v.costNative * exchangeRate.value : v.costNative,
   }))
 })
@@ -204,8 +207,12 @@ const compareRows = computed<CompareRow[]>(() =>
     const h = holdings.value.find((x) => x.ticker === ticker)!
     const price = priceCache.value[ticker]
     const hasPrice = price !== undefined && price > 0
-    const evalKrw = hasPrice
-      ? (h.currency === 'USD' ? price * h.quantity * exchangeRate.value : price * h.quantity)
+    // 암호화폐 + KRW: 시세 API가 USD(바이낸스)로 반환하므로 환율 곱해서 KRW 현재가로 변환
+    const isCryptoKrw = h.assetType === '암호화폐' && h.currency === 'KRW'
+    const priceInCurrency = hasPrice ? (isCryptoKrw ? price * exchangeRate.value : price) : null
+    const evaluationAmount = priceInCurrency !== null ? priceInCurrency * h.quantity : null
+    const evalKrw = evaluationAmount !== null
+      ? (h.currency === 'USD' && !isCryptoKrw ? evaluationAmount * exchangeRate.value : evaluationAmount)
       : null
     const profitRate = evalKrw !== null && h.costKrw > 0 ? ((evalKrw - h.costKrw) / h.costKrw) * 100 : null
     return {
