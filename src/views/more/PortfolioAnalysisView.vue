@@ -462,10 +462,9 @@ const compareRows = computed<CompareRow[]>(() => {
 }
 .compare-row {
   padding: 14px 0;
-  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.06);
 }
-.compare-row:last-of-type {
-  border-bottom: none;
+.compare-row + .compare-row {
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.06);
 }
 .compare-dot {
   width: 10px;
