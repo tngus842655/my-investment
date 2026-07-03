@@ -325,13 +325,13 @@ const compareRows = computed<CompareRow[]>(() => {
               <div class="text-caption text-medium-emphasis">현재가 조회 실패</div>
             </template>
             <template v-else>
-              <div class="d-flex align-center justify-space-between mb-1">
+              <div class="mb-1">
                 <span class="text-body-2 text-medium-emphasis">{{ formatShortMoney(row.evalKrw) }}원</span>
                 <span
                   v-if="row.profitRate !== null"
-                  class="text-caption font-weight-medium"
+                  class="text-caption font-weight-medium ml-1"
                   :class="row.profitRate >= 0 ? 'text-success' : 'text-error'"
-                >{{ row.profitRate >= 0 ? '+' : '' }}{{ row.profitRate.toFixed(1) }}%</span>
+                >({{ row.profitRate >= 0 ? '+' : '' }}{{ row.profitRate.toFixed(1) }}%)</span>
               </div>
               <div class="compare-bar-wrap">
                 <div
