@@ -13,8 +13,10 @@ interface HistoryPoint {
 }
 
 const history = ref<HistoryPoint[]>([])
-const targetAsset = ref(0)
 const investmentPrincipal = ref(0)
+const currentAssetNow = ref(0)
+const monthlyInvestment = ref(0)
+const annualReturn = ref<number | null>(null)
 
 onMounted(async () => {
   try {
@@ -22,18 +24,34 @@ onMounted(async () => {
     if (!user) return
     const [histRes, goalRes, summaryRes] = await Promise.all([
       supabase.from('asset_history').select('recorded_at, current_asset').order('recorded_at', { ascending: true }),
-      supabase.from('investment_goals').select('target_asset').eq('user_id', user.id).maybeSingle(),
-      supabase.from('asset_summary').select('investment_principal').eq('user_id', user.id).maybeSingle(),
+      supabase.from('investment_goals').select('monthly_investment, annual_return').eq('user_id', user.id).maybeSingle(),
+      supabase.from('asset_summary').select('current_asset, investment_principal').eq('user_id', user.id).maybeSingle(),
     ])
     if (histRes.error) throw histRes.error
     history.value = histRes.data ?? []
-    targetAsset.value = goalRes.data?.target_asset ?? 0
+    monthlyInvestment.value = goalRes.data?.monthly_investment ?? 0
+    annualReturn.value = goalRes.data?.annual_return ?? null
+    currentAssetNow.value = summaryRes.data?.current_asset ?? 0
     investmentPrincipal.value = summaryRes.data?.investment_principal ?? 0
   } catch {
     showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
   } finally {
     loading.value = false
   }
+})
+
+// 올해 목표 (미래예측 화면과 동일한 방식: 현재 자산 + 월 투자금을 연말까지 복리 계산)
+const calcAsset = (C: number, M: number, r: number, n: number) => {
+  if (r === 0) return C + M * n
+  return C * Math.pow(1 + r, n) + (M * (Math.pow(1 + r, n) - 1)) / r
+}
+
+const thisYearTarget = computed(() => {
+  const now = new Date()
+  const monthsToYearEnd = 12 - (now.getMonth() + 1)
+  if (monthsToYearEnd <= 0) return currentAssetNow.value
+  const r = (annualReturn.value ?? 0) / 100 / 12
+  return Math.round(calcAsset(currentAssetNow.value, monthlyInvestment.value, r, monthsToYearEnd))
 })
 
 // 일별 데이터를 월별로 집계 (해당 월 마지막 기록값 사용)
@@ -115,11 +133,11 @@ const chartData = computed(() => {
     .map((p, i) => ({ x: toX(i), label: p.label }))
     .filter((_, i) => i % step === 0 || i === pts.length - 1)
 
-  // 목표 자산 기준선: 차트 범위 안이면 실제 위치에, 범위를 넘으면 상단에 화살표로 표시
-  const targetY = targetAsset.value > 0 && targetAsset.value <= yMax
-    ? toY(targetAsset.value)
+  // 올해 목표 기준선: 차트 범위 안이면 실제 위치에, 범위를 넘으면 상단에 화살표로 표시
+  const targetY = thisYearTarget.value > 0 && thisYearTarget.value <= yMax
+    ? toY(thisYearTarget.value)
     : null
-  const targetAboveChart = targetAsset.value > yMax
+  const targetAboveChart = thisYearTarget.value > yMax
 
   // 최고 자산 달 인덱스
   const maxIdx = pts.reduce((mi, p, i) => (p.asset > pts[mi]!.asset ? i : mi), 0)
@@ -336,15 +354,15 @@ function formatFull(v: number) {
               <text
                 :x="VW - PAD.right + 2" :y="chartData.targetY + 4"
                 font-size="8" fill="rgb(var(--v-theme-primary))"
-              >목표</text>
+              >올해 목표</text>
             </template>
-            <!-- 목표가 현재 차트 범위 밖(훨씬 위)일 때 안내 -->
+            <!-- 올해 목표가 현재 차트 범위 밖(훨씬 위)일 때 안내 -->
             <text
               v-else-if="chartData.targetAboveChart"
               :x="VW - PAD.right" :y="PAD.top - 8"
               text-anchor="end" font-size="8"
               fill="rgb(var(--v-theme-primary))"
-            >▲ 목표 {{ formatShort(targetAsset) }}</text>
+            >▲ 올해 목표 {{ formatShort(thisYearTarget) }}</text>
 
             <!-- 바 -->
             <g
