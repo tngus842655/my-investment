@@ -159,6 +159,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   flex: 1;
   padding-bottom: calc(84px + env(safe-area-inset-bottom));
   overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 
 .pull-indicator {
