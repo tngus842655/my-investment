@@ -851,20 +851,20 @@ onUnmounted(() => {
                   </div>
                   <div style="min-width: 0; overflow: hidden; display: flex; align-items: center; gap: 4px">
                     <template v-if="item.asset_type === '현금'">
-                      <span class="ticker-name font-weight-bold">{{
+                      <span class="ticker-name">{{
                         getTickerLabel(item.ticker).name
                       }}</span>
                       <span v-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
                     </template>
                     <template v-else-if="getTickerLabel(item.ticker).showTicker">
-                      <span class="ticker-name font-weight-bold">{{
+                      <span class="ticker-name">{{
                         getTickerLabel(item.ticker).name
                       }}</span>
                       <span v-if="item.currency === 'USD'" class="ticker-sub ml-1">{{ item.ticker }}</span>
                       <span v-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
                     </template>
                     <template v-else>
-                      <span class="ticker-name font-weight-bold">{{ item.ticker }}</span>
+                      <span class="ticker-name">{{ item.ticker }}</span>
                       <span v-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
                     </template>
                   </div>
@@ -882,7 +882,7 @@ onUnmounted(() => {
 
               <!-- 현금 카드 -->
               <template v-if="item.asset_type === '현금'">
-                <div class="text-body-2 font-weight-bold text-primary mt-1">
+                <div class="card-amount text-primary mt-1">
                   <template v-if="item.currency === 'USD'">
                     ${{ formatPrice(item.avg_price * item.quantity, 'USD') }}
                     <span class="compact-sep ml-1">·</span>
@@ -901,12 +901,12 @@ onUnmounted(() => {
                   <div style="min-width: 0; overflow: hidden">
                     <span class="compact-label">{{ item.quantity }}주</span>
                     <span class="compact-sep mx-1">·</span>
-                    <span class="text-body-2 font-weight-bold text-primary" style="white-space: nowrap">
+                    <span class="card-amount text-primary" style="white-space: nowrap">
                       {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원
                     </span>
                   </div>
                   <div
-                    class="text-body-2 font-weight-bold"
+                    class="card-amount"
                     :class="(item.profitAmountKrw ?? 0) >= 0 ? 'text-success' : 'text-error'"
                     style="flex-shrink: 0; white-space: nowrap"
                   >
@@ -988,8 +988,14 @@ onUnmounted(() => {
 }
 
 .ticker-name {
-  font-size: 0.875rem;
+  font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
+}
+
+.card-amount {
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .ticker-sub {
@@ -1040,9 +1046,6 @@ onUnmounted(() => {
   overflow: hidden;
   border-radius: 20px;
   transition: transform 0.2s ease;
-  /* will-change:transform인 자식(.swipe-card)과 같은 합성 레이어에서 클리핑되도록
-     강제 — 그렇지 않으면 라운드 코너에서 뒤쪽 스와이프 버튼이 살짝 비쳐 보임 */
-  transform: translateZ(0);
 }
 
 .swipe-hint {
