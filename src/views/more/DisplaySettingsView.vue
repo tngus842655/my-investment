@@ -36,8 +36,30 @@ const percentLabel = (v: number) => `${Math.round(v * 100)}%`
       </div>
     </v-card>
 
-    <div class="mt-3 text-medium-emphasis">
-      너무 크게 설정하면 일부 화면에서 텍스트가 겹치거나 잘려 보일 수 있어요.
+    <div class="tip-card mt-3">
+      <span class="tip-emoji">⚠️</span>
+      <span class="tip-body">너무 크게 설정하면 일부 화면에서 텍스트가 겹치거나 잘려 보일 수 있어요.</span>
     </div>
   </v-container>
 </template>
+
+<style scoped>
+.tip-card {
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(var(--v-theme-warning), 0.1) 0%, rgba(var(--v-theme-warning), 0.04) 100%);
+  border: 1px solid rgba(var(--v-theme-warning), 0.2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.tip-emoji {
+  font-size: 1rem;
+}
+.tip-body {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: rgba(var(--v-theme-on-surface), 0.75);
+}
+</style>
