@@ -440,6 +440,14 @@ const closeSwipe = () => {
   swipedId.value = null
 }
 
+// 열린 카드 자신을 클릭한 게 아니면(다른 카드·빈 영역·상단 버튼 등 어디든) 닫기
+const onContainerClick = (e: MouseEvent) => {
+  if (!swipedId.value) return
+  const swipedEl = document.querySelector(`.tx-card-wrap[data-id="${swipedId.value}"]`)
+  if (swipedEl?.contains(e.target as Node)) return
+  closeSwipe()
+}
+
 onMounted(async () => {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session?.user) return
@@ -473,7 +481,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <v-container class="pa-4 pa-sm-6" @click.self="closeSwipe">
+  <v-container class="pa-4 pa-sm-6" @click="onContainerClick">
     <!-- 헤더 -->
     <div class="d-flex justify-space-between align-center mb-5">
       <div class="d-flex align-center ga-2">
@@ -622,6 +630,7 @@ onUnmounted(() => {
             v-for="item in items"
             :key="item.id"
             class="tx-card-wrap mb-2"
+            :data-id="item.id"
             @click="swipedId && swipedId !== item.id ? closeSwipe() : undefined"
           >
             <!-- 스와이프 액션 -->
