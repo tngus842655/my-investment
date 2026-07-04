@@ -97,7 +97,7 @@ onMounted(async () => {
 }
 
 .notice-title {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 700;
   color: rgb(var(--v-theme-on-surface));
   white-space: nowrap;
@@ -107,7 +107,7 @@ onMounted(async () => {
 }
 
 .notice-date {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.45);
   white-space: nowrap;
   flex-shrink: 0;
@@ -115,7 +115,7 @@ onMounted(async () => {
 }
 
 .notice-content {
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.7;
   color: rgba(var(--v-theme-on-surface), 0.8);
   white-space: pre-wrap;

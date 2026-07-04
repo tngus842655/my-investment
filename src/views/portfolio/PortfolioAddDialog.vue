@@ -626,7 +626,7 @@ const reset = (closeDialog = true) => {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.55);
 }
@@ -668,11 +668,11 @@ const reset = (closeDialog = true) => {
   border: 1px solid rgba(var(--v-theme-primary), 0.15);
 }
 .total-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.55);
 }
 .total-value {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 700;
   color: rgb(var(--v-theme-on-surface));
 }

@@ -563,7 +563,7 @@ const refreshData = async () => {
 }
 .cal-weekday {
   text-align: center;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   padding: 4px 0;
   color: rgba(var(--v-theme-on-surface), 0.45);
@@ -589,7 +589,7 @@ const refreshData = async () => {
   background: rgba(var(--v-theme-primary), 0.15);
 }
 .cal-day-num {
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1;
 }
 .cal-cell.sunday .cal-day-num { color: rgb(var(--v-theme-error)); }
@@ -618,7 +618,7 @@ const refreshData = async () => {
   border-top: 1px solid rgba(var(--v-theme-on-surface), 0.06);
 }
 .event-date {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: rgba(var(--v-theme-on-surface), 0.55);
   width: 36px;
   flex-shrink: 0;

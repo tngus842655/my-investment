@@ -324,7 +324,7 @@ const compareRows = computed<CompareRow[]>(() => {
                 <span
                   v-if="row.profitRate !== null"
                   class="font-weight-medium ml-1"
-                  style="font-size: 11px"
+                  style="font-size: 0.6875rem"
                   :class="row.profitRate >= 0 ? 'text-success' : 'text-error'"
                 >({{ row.profitRate >= 0 ? '+' : '' }}{{ row.profitRate.toFixed(1) }}%)</span>
               </div>
@@ -421,7 +421,7 @@ const compareRows = computed<CompareRow[]>(() => {
   border: 1.5px solid rgba(var(--v-theme-on-surface), 0.1);
   background: transparent;
   color: rgba(var(--v-theme-on-surface), 0.5);
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -449,7 +449,7 @@ const compareRows = computed<CompareRow[]>(() => {
   border: 1.5px solid rgba(var(--v-theme-on-surface), 0.12);
   background: transparent;
   color: rgba(var(--v-theme-on-surface), 0.6);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -473,7 +473,7 @@ const compareRows = computed<CompareRow[]>(() => {
   flex-shrink: 0;
 }
 .compare-name {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -524,18 +524,18 @@ const compareRows = computed<CompareRow[]>(() => {
 }
 
 .center-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   fill: rgba(var(--v-theme-on-surface), 0.5);
   font-family: inherit;
 }
 .center-value {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 700;
   fill: rgb(var(--v-theme-on-surface));
   font-family: inherit;
 }
 .center-sub {
-  font-size: 12px;
+  font-size: 0.75rem;
   fill: rgba(var(--v-theme-on-surface), 0.55);
   font-family: inherit;
 }
@@ -573,7 +573,7 @@ const compareRows = computed<CompareRow[]>(() => {
   min-width: 0;
 }
 .legend-name {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -585,12 +585,12 @@ const compareRows = computed<CompareRow[]>(() => {
   align-items: flex-end;
 }
 .legend-pct {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 700;
   line-height: 1.2;
 }
 .legend-val {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 .legend-bar-wrap {

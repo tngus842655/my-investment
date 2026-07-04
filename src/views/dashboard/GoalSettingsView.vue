@@ -291,7 +291,7 @@ onMounted(loadData)
 
 <style scoped>
 .field-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   color: rgba(var(--v-theme-on-surface), 0.6);
 }
@@ -300,7 +300,7 @@ onMounted(loadData)
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.45);
 }
 
@@ -308,7 +308,7 @@ onMounted(loadData)
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgb(var(--v-theme-error));
 }
 </style>

@@ -272,7 +272,7 @@ const toggleExpand = (id: string) => {
 .back-btn:active { opacity: 0.6; }
 
 .section-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -288,7 +288,7 @@ const toggleExpand = (id: string) => {
 }
 
 .field-label {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: rgb(var(--v-theme-on-surface));
 }
@@ -302,7 +302,7 @@ const toggleExpand = (id: string) => {
   border: 1.5px solid rgba(var(--v-theme-on-surface), 0.15);
   background: transparent;
   color: rgba(var(--v-theme-on-surface), 0.5);
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -318,7 +318,7 @@ const toggleExpand = (id: string) => {
   border: none;
   outline: none;
   background: transparent;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: rgb(var(--v-theme-on-surface));
   caret-color: rgb(var(--v-theme-primary));
   resize: none;
@@ -327,7 +327,7 @@ const toggleExpand = (id: string) => {
 .plain-textarea { min-height: 100px; line-height: 1.65; display: block; }
 
 .char-count {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.35);
 }
 
@@ -338,7 +338,7 @@ const toggleExpand = (id: string) => {
   border-radius: 14px;
   background: rgb(var(--v-theme-primary));
   color: rgb(var(--v-theme-on-primary));
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 700;
   cursor: pointer;
   transition: opacity 0.15s;
@@ -370,12 +370,12 @@ const toggleExpand = (id: string) => {
 .cursor-pointer { cursor: pointer; }
 
 .date-text {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.45);
 }
 
 .title-text {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
 }

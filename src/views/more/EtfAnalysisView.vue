@@ -705,7 +705,7 @@ const aiData = computed(() => {
         <!-- 비교 모드 -->
         <template v-else>
           <div v-if="!aiData.tied" class="ai-winner-row d-flex align-center ga-2 mb-3 pa-3">
-            <span style="font-size:20px">🏆</span>
+            <span style="font-size:1.25rem">🏆</span>
             <div>
               <div class="text-caption text-medium-emphasis">추천 ETF</div>
               <div class="text-body-1 font-weight-bold">{{ aiData.winner }}</div>
@@ -744,12 +744,12 @@ const aiData = computed(() => {
   border: 1px solid rgba(var(--v-theme-primary), 0.2);
   border-radius: 12px;
   padding: 8px 12px;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.7);
   line-height: 1.5;
 }
 .section-title {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -776,7 +776,7 @@ const aiData = computed(() => {
 .col-header {
   min-width: 80px;
   padding-left: 12px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   text-align: right;
   color: rgba(var(--v-theme-on-surface), 0.8);
@@ -794,7 +794,7 @@ const aiData = computed(() => {
 }
 .trophy-slot {
   width: 18px;
-  font-size: 12px;
+  font-size: 0.75rem;
   flex-shrink: 0;
 }
 .ai-card {
@@ -811,7 +811,7 @@ const aiData = computed(() => {
   border-radius: 14px;
 }
 .fire-stars {
-  font-size: 18px;
+  font-size: 1.125rem;
   letter-spacing: 2px;
   color: var(--fp-warning);
 }

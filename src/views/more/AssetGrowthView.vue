@@ -497,7 +497,7 @@ function formatFull(v: number) {
   flex: 1;
   padding: 6px 0;
   border-radius: 10px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
   background: transparent;
@@ -548,21 +548,21 @@ function formatFull(v: number) {
   border-top: 1px solid rgba(var(--v-theme-on-surface), 0.06);
 }
 .month-label {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: rgba(var(--v-theme-on-surface), 0.6);
   width: 72px;
   flex-shrink: 0;
 }
 .month-asset {
   flex: 1;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   text-align: right;
   white-space: nowrap;
 }
 .month-change {
   width: 56px;
-  font-size: 12px;
+  font-size: 0.75rem;
   text-align: right;
   flex-shrink: 0;
   white-space: nowrap;

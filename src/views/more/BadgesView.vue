@@ -192,17 +192,17 @@ onMounted(loadData)
 }
 
 .progress-pct {
-  font-size: 36px;
+  font-size: 2.25rem;
   font-weight: 800;
   line-height: 1;
   color: rgb(var(--v-theme-primary));
 }
 .progress-pct-unit {
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 600;
 }
 .badge-count {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 700;
 }
 
@@ -236,7 +236,7 @@ onMounted(loadData)
   gap: 8px;
 }
 .next-badge-emoji {
-  font-size: 18px;
+  font-size: 1.125rem;
 }
 .asset-summary {
   display: flex;
@@ -284,7 +284,7 @@ onMounted(loadData)
   transition: box-shadow 0.3s ease;
 }
 .badge-emoji {
-  font-size: 36px;
+  font-size: 2.25rem;
   line-height: 1;
 }
 .lock-overlay {
@@ -298,18 +298,18 @@ onMounted(loadData)
 }
 
 .badge-label {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   margin-bottom: 4px;
 }
 .badge-desc {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
   margin-bottom: 6px;
   line-height: 1.4;
 }
 .badge-threshold {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.4);
 }

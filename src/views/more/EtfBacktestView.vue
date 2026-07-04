@@ -863,7 +863,7 @@ input[type='number'] { -moz-appearance: textfield; }
 
 /* ── 빠른 선택 ──────────────────────────────────── */
 .quick-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   color: rgba(var(--v-theme-on-surface), 0.4);
   letter-spacing: 0.04em;
@@ -871,7 +871,7 @@ input[type='number'] { -moz-appearance: textfield; }
 }
 
 .quick-btn {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   padding: 4px 12px;
   border-radius: 99px;
@@ -892,7 +892,7 @@ input[type='number'] { -moz-appearance: textfield; }
 
 /* ── 최근 조회 ──────────────────────────────────── */
 .recent-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   color: rgba(var(--v-theme-on-surface), 0.4);
   letter-spacing: 0.04em;
@@ -900,7 +900,7 @@ input[type='number'] { -moz-appearance: textfield; }
 }
 
 .recent-chip {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 99px;
@@ -915,7 +915,7 @@ input[type='number'] { -moz-appearance: textfield; }
 
 /* ── 기간 헤더 ──────────────────────────────────── */
 .period-badge {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
   text-align: right;
   line-height: 1.5;
@@ -924,7 +924,7 @@ input[type='number'] { -moz-appearance: textfield; }
 .period-duration {
   display: block;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgb(var(--v-theme-primary));
 }
 
@@ -942,32 +942,32 @@ input[type='number'] { -moz-appearance: textfield; }
   border: 1px solid rgba(var(--v-theme-warning), 0.25);
   border-radius: 12px;
   padding: 10px 12px;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.75);
   line-height: 1.5;
 }
 
 .krw-hint {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.45);
   margin-top: 2px;
 }
 
 
 .stat-krw {
-  font-size: 10px;
+  font-size: 0.625rem;
   color: rgba(var(--v-theme-on-surface), 0.4);
   margin-top: 2px;
 }
 
 .peak-hint {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.4);
   margin-top: 6px;
 }
 
 .highlight-value {
-  font-size: 26px;
+  font-size: 1.625rem;
   font-weight: 800;
   letter-spacing: -0.5px;
   line-height: 1.2;
@@ -981,24 +981,24 @@ input[type='number'] { -moz-appearance: textfield; }
 }
 
 .stat-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
   margin-bottom: 4px;
 }
 
 .stat-value {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 
 .stat-sub {
-  font-size: 10px;
+  font-size: 0.625rem;
   color: rgba(var(--v-theme-on-surface), 0.4);
   margin-top: 2px;
 }
 
 .mdd-date {
-  font-size: 10px;
+  font-size: 0.625rem;
   color: rgba(var(--v-theme-error), 0.7);
   margin-top: 2px;
 }
@@ -1014,7 +1014,7 @@ input[type='number'] { -moz-appearance: textfield; }
 }
 
 .cmp-ticker {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   text-align: center;
 }
@@ -1034,12 +1034,12 @@ input[type='number'] { -moz-appearance: textfield; }
 .cmp-row:last-child { border-bottom: none; }
 
 .cmp-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 
 .cmp-val {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   text-align: center;
   display: flex;
@@ -1054,13 +1054,13 @@ input[type='number'] { -moz-appearance: textfield; }
 .summary-text { flex: 1; }
 
 .summary-intro {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.6);
   margin-bottom: 6px;
 }
 
 .summary-body {
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.8;
   color: var(--fp-text);
 }
@@ -1072,7 +1072,7 @@ input[type='number'] { -moz-appearance: textfield; }
 
 /* ── 차트 모드 토글 ─────────────────────────────── */
 .mode-btn {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   padding: 3px 10px;
   border-radius: 99px;
@@ -1127,15 +1127,15 @@ input[type='number'] { -moz-appearance: textfield; }
   box-shadow: 0 2px 8px rgba(0,0,0,0.12);
 }
 
-.ct-date { font-size: 11px; font-weight: 700; color: var(--fp-text); margin-bottom: 5px; }
+.ct-date { font-size: 0.6875rem; font-weight: 700; color: var(--fp-text); margin-bottom: 5px; }
 .ct-row { display: flex; justify-content: space-between; gap: 8px; margin-top: 2px; }
-.ct-label { font-size: 11px; color: rgba(var(--v-theme-on-surface), 0.5); }
-.ct-val { font-size: 11px; font-weight: 600; color: var(--fp-text); }
+.ct-label { font-size: 0.6875rem; color: rgba(var(--v-theme-on-surface), 0.5); }
+.ct-val { font-size: 0.6875rem; font-weight: 600; color: var(--fp-text); }
 
 
 /* ── 연도별 테이블 ──────────────────────────────── */
 .toggle-btn {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   padding: 3px 10px;
   border-radius: 99px;
@@ -1145,7 +1145,7 @@ input[type='number'] { -moz-appearance: textfield; }
   cursor: pointer;
 }
 
-.yearly-table { font-size: 12px; }
+.yearly-table { font-size: 0.75rem; }
 
 .yearly-header {
   display: grid;
@@ -1153,7 +1153,7 @@ input[type='number'] { -moz-appearance: textfield; }
   gap: 4px;
   color: rgba(var(--v-theme-on-surface), 0.45);
   font-weight: 600;
-  font-size: 11px;
+  font-size: 0.6875rem;
   padding-bottom: 6px;
   border-bottom: 1px solid var(--fp-outline);
   margin-bottom: 4px;
@@ -1193,7 +1193,7 @@ input[type='number'] { -moz-appearance: textfield; }
   padding: 10px 16px;
   cursor: pointer;
   user-select: none;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: rgba(var(--v-theme-on-surface), 0.7);
   border-radius: 8px;
 }
@@ -1203,7 +1203,7 @@ input[type='number'] { -moz-appearance: textfield; }
 
 /* ── 차트 툴팁 원화 환산 ─────────────────────────── */
 .ct-krw {
-  font-size: 11px;
+  font-size: 0.6875rem;
   opacity: 0.65;
   margin-top: 1px;
 }
