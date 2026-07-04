@@ -1026,6 +1026,9 @@ onUnmounted(() => {
   /* 아래 .action-edit/.action-delete의 반경은 이 값보다 최소 4px 이상 커야 함
      (동일하면 서브픽셀 오차로 모서리에 스와이프 버튼 색이 비쳐 보임) */
   border-radius: 20px;
+  /* overflow:hidden만으로는 합성 레이어 경계에서 클리핑이 어긋나 모서리가
+     비쳐 보이는 경우가 있어 clip-path로 한 번 더 확실히 마스킹 */
+  clip-path: inset(0 round 20px);
   transition: transform 0.2s ease;
 }
 
@@ -1164,9 +1167,11 @@ onUnmounted(() => {
   will-change: transform;
   /* will-change로 별도 합성 레이어가 되면서 부모의 overflow:hidden 클리핑이
      라운드 코너에서 정확히 안 맞물려 뒤쪽 스와이프 버튼이 새어 보이는 문제 —
-     이 레이어 자신도 같은 반경으로 직접 클리핑하도록 함 */
+     이 레이어 자신도 같은 반경으로 직접 클리핑하도록 함. overflow:hidden도
+     합성 레이어 경계에서 어긋날 수 있어 clip-path로 이중 마스킹 */
   border-radius: 20px;
   overflow: hidden;
+  clip-path: inset(0 round 20px);
 }
 
 .asset-card {
