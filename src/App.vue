@@ -25,7 +25,6 @@ onMounted(() => {
 .app-bg {
   min-height: 100vh;
   min-height: 100dvh;
-  overscroll-behavior-y: none;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   /* transition은 theme.css에서 선언 */
