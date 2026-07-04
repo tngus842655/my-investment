@@ -20,6 +20,7 @@ const pullDistance = ref(0)
 const isPulling = ref(false)
 const isRefreshing = ref(false)
 let touchStartY = 0
+let hasVibratedAtThreshold = false
 
 // .app-content 자체는 내부적으로 스크롤되지 않는 경우가 많아
 // scrollTop 대신 실제 스크롤이 일어나는 window 기준으로 최상단 여부를 판단
@@ -31,6 +32,7 @@ const onPullTouchStart = (e: TouchEvent) => {
   if (!isAtTop()) return
   touchStartY = e.touches[0]?.clientY ?? 0
   isPulling.value = true
+  hasVibratedAtThreshold = false
 }
 
 const onPullTouchMove = (e: TouchEvent) => {
@@ -42,6 +44,15 @@ const onPullTouchMove = (e: TouchEvent) => {
   }
   const dy = (e.touches[0]?.clientY ?? 0) - touchStartY
   pullDistance.value = dy > 0 ? Math.min(dy * 0.5, MAX_PULL) : 0
+  // 당김 기준치를 넘는 순간 한 번만 짧게 진동 (iOS Safari는 Vibration API 미지원이라 무동작)
+  if (pullDistance.value >= PULL_THRESHOLD) {
+    if (!hasVibratedAtThreshold) {
+      hasVibratedAtThreshold = true
+      navigator.vibrate?.(15)
+    }
+  } else {
+    hasVibratedAtThreshold = false
+  }
 }
 
 const onPullTouchEnd = async () => {
