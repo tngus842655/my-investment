@@ -1023,8 +1023,6 @@ onUnmounted(() => {
 .portfolio-card-wrap {
   position: relative;
   overflow: hidden;
-  /* 아래 .action-edit/.action-delete의 반경은 이 값보다 최소 4px 이상 커야 함
-     (동일하면 서브픽셀 오차로 모서리에 스와이프 버튼 색이 비쳐 보임) */
   border-radius: 20px;
   transition: transform 0.2s ease;
 }
@@ -1122,10 +1120,12 @@ onUnmounted(() => {
 
 .swipe-actions {
   position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 128px;
+  /* 카드 클리핑 경계와 정확히 맞닿지 않도록 사방으로 여유를 두어, 서브픽셀
+     오차로 클리핑이 어긋나도 버튼 색이 아니라 배경만 살짝 보이게 함 */
+  right: 6px;
+  top: 6px;
+  bottom: 6px;
+  width: 116px;
   display: flex;
 }
 
@@ -1148,24 +1148,16 @@ onUnmounted(() => {
 }
 .action-edit {
   background: var(--fp-primary);
-  /* 래퍼(.portfolio-card-wrap)의 클리핑 반경(20px)과 정확히 같으면 서브픽셀
-     오차로 모서리가 비쳐 보일 수 있어 여유를 두고 더 크게 둥글림 */
-  border-radius: 24px 0 0 24px;
+  border-radius: 16px 0 0 16px;
 }
 .action-delete {
   background: var(--fp-error);
-  border-radius: 0 24px 24px 0;
+  border-radius: 0 16px 16px 0;
 }
 
 .swipe-card {
   position: relative;
   z-index: 1;
-  /* 분수 배율(fractional device pixel ratio)에서 overflow:hidden의 라운드
-     클리핑이 wrap과 미세하게 안 맞아 모서리에 뒤 버튼이 비쳐 보이는 문제 —
-     카드를 wrap보다 1px씩 더 크게 튀어나오게 해서 wrap의 클리핑이 최종
-     경계를 담당하도록 함(이중 클리핑 대신 단일 클리핑) */
-  width: calc(100% + 2px);
-  left: -1px;
   transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   will-change: transform;
   border-radius: 20px;
