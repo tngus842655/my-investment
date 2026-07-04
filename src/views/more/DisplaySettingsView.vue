@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useFontScale } from '@/composables/useFontScale'
+import { FONT_SCALE_DEFAULT } from '@/design'
 
 const router = useRouter()
 const { fontScale, min, max, setFontScale } = useFontScale()
 
 const percentLabel = (v: number) => `${Math.round(v * 100)}%`
+const resetFontScale = () => setFontScale(FONT_SCALE_DEFAULT)
 </script>
 
 <template>
@@ -20,7 +22,17 @@ const percentLabel = (v: number) => `${Math.round(v * 100)}%`
     <v-card class="glass-card pa-4">
       <div class="d-flex align-center justify-space-between mb-2">
         <div class="font-weight-medium">글자 크기</div>
-        <div class="font-weight-bold text-primary">{{ percentLabel(fontScale) }}</div>
+        <div class="d-flex align-center ga-2">
+          <div class="font-weight-bold text-primary">{{ percentLabel(fontScale) }}</div>
+          <button
+            v-if="fontScale !== FONT_SCALE_DEFAULT"
+            class="reset-btn"
+            @click="resetFontScale"
+          >
+            <v-icon size="14">mdi-restore</v-icon>
+            초기화
+          </button>
+        </div>
       </div>
       <v-slider
         :model-value="fontScale"
@@ -44,6 +56,23 @@ const percentLabel = (v: number) => `${Math.round(v * 100)}%`
 </template>
 
 <style scoped>
+.reset-btn {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border: none;
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  color: rgba(var(--v-theme-on-surface), 0.55);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.reset-btn:active {
+  opacity: 0.6;
+}
+
 .tip-card {
   border-radius: 16px;
   padding: 14px 16px;
