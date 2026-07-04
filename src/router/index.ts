@@ -21,6 +21,7 @@ import EtfBacktestView from '@/views/more/EtfBacktestView.vue'
 import FeedbackView from '@/views/more/FeedbackView.vue'
 import ReleaseNotesView from '@/views/more/ReleaseNotesView.vue'
 import ChangePasswordView from '@/views/more/ChangePasswordView.vue'
+import DisplaySettingsView from '@/views/more/DisplaySettingsView.vue'
 import AdminView from '@/views/admin/AdminView.vue'
 import AdminResetPasswordView from '@/views/admin/AdminResetPasswordView.vue'
 import AdminSignupLogView from '@/views/admin/AdminSignupLogView.vue'
@@ -201,6 +202,12 @@ const router = createRouter({
           name: 'changePassword',
           component: ChangePasswordView,
           meta: { label: '비밀번호 변경' },
+        },
+        {
+          path: 'display-settings',
+          name: 'displaySettings',
+          component: DisplaySettingsView,
+          meta: { label: '화면 설정' },
         },
         {
           path: 'release-notes',
