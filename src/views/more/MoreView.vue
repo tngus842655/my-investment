@@ -423,7 +423,7 @@ const currentThemeLabel = computed(() => {
 }
 
 .section-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -488,7 +488,7 @@ const currentThemeLabel = computed(() => {
 }
 
 .delete-account-btn {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.4);
   cursor: pointer;
   text-decoration: underline;
@@ -514,14 +514,14 @@ const currentThemeLabel = computed(() => {
 }
 
 .sheet-title {
-  font-size: 17px;
+  font-size: 1.0625rem;
   font-weight: 700;
   color: var(--fp-text);
   margin-bottom: 4px;
 }
 
 .sheet-desc {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--fp-text-secondary);
   margin-bottom: 20px;
 }
@@ -634,12 +634,12 @@ const currentThemeLabel = computed(() => {
 }
 
 .theme-emoji {
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1;
 }
 
 .theme-name {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--fp-text);
 }
