@@ -87,8 +87,9 @@ const loadPortfolios = async () => {
   loading.value = true
   try {
     const {
-      data: { user },
-    } = await supabase.auth.getUser()
+      data: { session },
+    } = await supabase.auth.getSession()
+    const user = session?.user
     if (!user) return
 
     const { data, error } = await supabase
@@ -500,11 +501,11 @@ const SORT_OPTIONS: { key: SortKey; label: string; emoji: string }[] = [
 const setSort = (key: SortKey) => {
   sortKey.value = key
   localStorage.setItem(SORT_STORAGE_KEY, key)
-  supabase.auth.getUser().then(({ data: { user } }) => {
-    if (!user) return
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (!session?.user) return
     supabase.from('investment_goals')
       .update({ portfolio_sort: key })
-      .eq('user_id', user.id)
+      .eq('user_id', session.user.id)
       .then()
   })
   closeSwipe()

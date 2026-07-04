@@ -268,8 +268,9 @@ const save = async () => {
   saving.value = true
   try {
     const {
-      data: { user },
-    } = await supabase.auth.getUser()
+      data: { session },
+    } = await supabase.auth.getSession()
+    const user = session?.user
     if (!user) {
       showMessage('로그인이 필요합니다.', 'error')
       return
