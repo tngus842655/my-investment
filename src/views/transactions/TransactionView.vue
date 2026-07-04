@@ -48,17 +48,13 @@ const yearOptions = ref<number[]>([])
 const monthOptions = ref<number[]>([])
 
 const loadAccountOptions = async () => {
-  const { data } = await supabase
-    .from('portfolios')
-    .select('id, account_name')
-    .eq('user_id', userId)
-  if (!data) return
-  const accounts = [...new Set(data.map((p) => p.account_name ?? '미지정'))]
+  const portfolios = await userDataStore.ensurePortfolios()
+  const accounts = [...new Set(portfolios.map((p) => p.account_name ?? '미지정'))]
   accountOptions.value = accounts.length > 1
     ? ['미지정', ...accounts.filter((a) => a !== '미지정').sort((a, b) => a.localeCompare(b, 'ko'))]
     : []
   // 초기에는 전체
-  accountPortfolioIds.value = data.map((p) => p.id)
+  accountPortfolioIds.value = portfolios.map((p) => p.id)
 }
 
 const loadYearOptions = async () => {
@@ -87,8 +83,12 @@ const loadMonthOptions = async (year: number) => {
 
 let skipMonthReset = false
 watch(selectedYear, (y) => {
-  if (skipMonthReset) skipMonthReset = false
-  else selectedMonth.value = null
+  if (skipMonthReset) {
+    // onMounted에서 이미 월 옵션을 조회한 직후 selectedYear를 설정하는 경우 — 재조회 불필요
+    skipMonthReset = false
+    return
+  }
+  selectedMonth.value = null
   if (y) loadMonthOptions(y)
   else monthOptions.value = []
 })
@@ -279,14 +279,10 @@ watch(parsedDateFilter, () => {
   loadTotals()
 })
 watch(selectedAccount, async (acc) => {
-  if (!acc) {
-    const { data } = await supabase.from('portfolios').select('id').eq('user_id', userId)
-    accountPortfolioIds.value = (data ?? []).map((p) => p.id)
-  } else {
-    const { data } = await supabase
-      .from('portfolios').select('id').eq('user_id', userId).eq('account_name', acc)
-    accountPortfolioIds.value = (data ?? []).map((p) => p.id)
-  }
+  const portfolios = await userDataStore.ensurePortfolios()
+  accountPortfolioIds.value = (
+    acc ? portfolios.filter((p) => (p.account_name ?? '미지정') === acc) : portfolios
+  ).map((p) => p.id)
   resetAndLoad()
   loadTotals()
 })
