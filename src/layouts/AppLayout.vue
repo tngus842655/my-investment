@@ -43,7 +43,8 @@ const onPullTouchMove = (e: TouchEvent) => {
   const dy = (e.touches[0]?.clientY ?? 0) - touchStartY
   if (dy > 0) {
     // 당기는 동안에만 네이티브 바운스 스크롤을 막아 커스텀 인디케이터와 겹치지 않게 함
-    e.preventDefault()
+    // (이미 스크롤이 진행 중이라 취소 불가능한 이벤트면 호출 자체를 건너뜀 — 콘솔 경고 방지)
+    if (e.cancelable) e.preventDefault()
     pullDistance.value = Math.min(dy * 0.5, MAX_PULL)
   } else {
     pullDistance.value = 0
