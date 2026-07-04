@@ -103,8 +103,8 @@ onMounted(loadData)
     <div class="d-flex align-center ga-2 mb-6">
       <v-btn icon="mdi-arrow-left" variant="text" size="small" class="mr-1" style="color: rgb(var(--v-theme-on-surface))" @click="router.back()" />
       <div>
-        <div class="text-h5 font-weight-bold">목표 달성 배지</div>
-        <div class="text-body-2 text-medium-emphasis">FIRE 달성률 구간별 업적</div>
+        <div class="font-weight-bold">목표 달성 배지</div>
+        <div class="text-medium-emphasis">FIRE 달성률 구간별 업적</div>
       </div>
     </div>
 
@@ -118,12 +118,12 @@ onMounted(loadData)
       <div class="progress-card mb-5">
         <div class="d-flex justify-space-between align-end mb-3">
           <div>
-            <div class="text-caption text-medium-emphasis mb-1">FIRE 달성률</div>
+            <div class="text-medium-emphasis mb-1">FIRE 달성률</div>
             <div class="progress-pct">{{ progressPct.toFixed(1) }}<span class="progress-pct-unit">%</span></div>
           </div>
           <div class="text-right">
-            <div class="text-caption text-medium-emphasis mb-1">배지 획득</div>
-            <div class="badge-count">{{ unlockedCount }} <span class="text-body-2 text-medium-emphasis">/ {{ BADGES.length }}</span></div>
+            <div class="text-medium-emphasis mb-1">배지 획득</div>
+            <div class="badge-count">{{ unlockedCount }} <span class="text-medium-emphasis">/ {{ BADGES.length }}</span></div>
           </div>
         </div>
 
@@ -137,22 +137,22 @@ onMounted(loadData)
         <!-- 다음 배지 힌트 -->
         <div v-if="nextBadge" class="next-badge-hint mt-3">
           <span class="next-badge-emoji">{{ nextBadge.emoji }}</span>
-          <span class="text-caption text-medium-emphasis">
+          <span class="text-medium-emphasis">
             <span class="font-weight-medium" style="color: rgb(var(--v-theme-on-surface))">{{ nextBadge.label }}</span>
             까지 {{ (nextBadge.threshold - progressPct).toFixed(1) }}% 남았습니다
           </span>
         </div>
         <div v-else class="next-badge-hint mt-3">
           <span>🎉</span>
-          <span class="text-caption font-weight-medium" style="color: rgb(var(--v-theme-primary))">모든 배지를 획득했습니다!</span>
+          <span class="font-weight-medium" style="color: rgb(var(--v-theme-primary))">모든 배지를 획득했습니다!</span>
         </div>
 
         <div class="asset-summary mt-3">
-          <span class="text-caption text-medium-emphasis">현재 자산</span>
-          <span class="text-body-2 font-weight-bold">{{ formatShortMoney(currentAsset) }}</span>
-          <span class="text-caption text-medium-emphasis mx-1">/</span>
-          <span class="text-caption text-medium-emphasis">목표</span>
-          <span class="text-body-2 font-weight-medium">{{ formatShortMoney(targetAsset) }}</span>
+          <span class="text-medium-emphasis">현재 자산</span>
+          <span class="font-weight-bold">{{ formatShortMoney(currentAsset) }}</span>
+          <span class="text-medium-emphasis mx-1">/</span>
+          <span class="text-medium-emphasis">목표</span>
+          <span class="font-weight-medium">{{ formatShortMoney(targetAsset) }}</span>
         </div>
       </div>
 
@@ -192,17 +192,17 @@ onMounted(loadData)
 }
 
 .progress-pct {
-  font-size: 36px;
+  font-size: 2.25rem;
   font-weight: 800;
   line-height: 1;
   color: rgb(var(--v-theme-primary));
 }
 .progress-pct-unit {
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 600;
 }
 .badge-count {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 700;
 }
 
@@ -236,7 +236,7 @@ onMounted(loadData)
   gap: 8px;
 }
 .next-badge-emoji {
-  font-size: 18px;
+  font-size: 1.125rem;
 }
 .asset-summary {
   display: flex;
@@ -284,7 +284,7 @@ onMounted(loadData)
   transition: box-shadow 0.3s ease;
 }
 .badge-emoji {
-  font-size: 36px;
+  font-size: 2.25rem;
   line-height: 1;
 }
 .lock-overlay {
@@ -298,18 +298,18 @@ onMounted(loadData)
 }
 
 .badge-label {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   margin-bottom: 4px;
 }
 .badge-desc {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
   margin-bottom: 6px;
   line-height: 1.4;
 }
 .badge-threshold {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.4);
 }

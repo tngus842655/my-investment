@@ -86,8 +86,8 @@ async function runScript(item: DataItem) {
         <v-icon size="20">mdi-arrow-left</v-icon>
       </button>
       <div>
-        <div class="text-h5 font-weight-bold">데이터 관리</div>
-        <div class="text-body-2 text-medium-emphasis">티커명 데이터 업데이트</div>
+        <div class="font-weight-bold">데이터 관리</div>
+        <div class="text-medium-emphasis">티커명 데이터 업데이트</div>
       </div>
     </div>
 
@@ -106,9 +106,9 @@ async function runScript(item: DataItem) {
     <div class="glass-card pa-4 mb-0">
       <div class="d-flex align-center ga-2 mb-1">
         <v-icon size="18" color="primary">mdi-flag-variant</v-icon>
-        <div class="text-body-2 font-weight-bold">미국 주식 티커 관리</div>
+        <div class="font-weight-bold">미국 주식 티커 관리</div>
       </div>
-      <div class="text-caption text-medium-emphasis mb-3">한글명을 직접 추가·수정·삭제합니다. tickerNames.us.ts 파일에 저장됩니다.</div>
+      <div class="text-medium-emphasis mb-3">한글명을 직접 추가·수정·삭제합니다. tickerNames.us.ts 파일에 저장됩니다.</div>
       <v-btn
         variant="tonal"
         color="primary"
@@ -125,12 +125,12 @@ async function runScript(item: DataItem) {
       <div v-for="item in items" :key="item.id" class="glass-card pa-4">
         <div class="d-flex align-center ga-2 mb-1">
           <v-icon size="18" color="primary">{{ item.icon }}</v-icon>
-          <div class="text-body-2 font-weight-bold">{{ item.title }}</div>
+          <div class="font-weight-bold">{{ item.title }}</div>
         </div>
-        <div class="text-caption text-medium-emphasis mb-1">{{ item.description }}</div>
+        <div class="text-medium-emphasis mb-1">{{ item.description }}</div>
         <div class="d-flex align-center ga-1 mb-3">
           <v-icon size="12" class="text-disabled">mdi-file-code-outline</v-icon>
-          <span class="text-caption text-disabled">{{ item.targetFile }}</span>
+          <span class="text-disabled">{{ item.targetFile }}</span>
         </div>
 
         <v-btn
@@ -187,7 +187,7 @@ async function runScript(item: DataItem) {
 }
 .log-text {
   font-family: 'Courier New', monospace;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgb(var(--v-theme-on-surface));
   white-space: pre-wrap;
   word-break: break-all;

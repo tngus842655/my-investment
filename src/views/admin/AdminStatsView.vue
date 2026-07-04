@@ -164,8 +164,8 @@ onMounted(async () => {
         <v-icon size="20">mdi-arrow-left</v-icon>
       </button>
       <div>
-        <div class="text-h5 font-weight-bold">통계</div>
-        <div class="text-body-2 text-medium-emphasis">가입 · 접속 현황</div>
+        <div class="font-weight-bold">통계</div>
+        <div class="text-medium-emphasis">가입 · 접속 현황</div>
       </div>
     </div>
 
@@ -190,7 +190,7 @@ onMounted(async () => {
       <!-- 신규 가입 추이 -->
       <div class="glass-card pa-4 mb-3">
         <div class="section-label mb-1">신규 가입 추이</div>
-        <div class="text-caption text-medium-emphasis mb-3">
+        <div class="text-medium-emphasis mb-3">
           기간 내 총 {{ signupByDay.reduce((s, d) => s + d.count, 0) }}명 가입
         </div>
         <div class="chart-wrap">
@@ -233,7 +233,7 @@ onMounted(async () => {
       <!-- 일별 접속 추이 -->
       <div class="glass-card pa-4 mb-3">
         <div class="section-label mb-1">일별 접속 추이</div>
-        <div class="text-caption text-medium-emphasis mb-3">
+        <div class="text-medium-emphasis mb-3">
           기간 내 총 {{ accessByDay.reduce((s, d) => s + d.count, 0) }}명 접속 (일별 유저 합산)
         </div>
         <div class="chart-wrap">
@@ -273,7 +273,7 @@ onMounted(async () => {
       <!-- 접속 TOP 10 -->
       <div class="glass-card pa-4">
         <div class="section-label mb-3">접속 TOP 10 (기간 내 접속 일수)</div>
-        <div v-if="accessRanking.length === 0" class="text-center py-6 text-medium-emphasis text-body-2">
+        <div v-if="accessRanking.length === 0" class="text-center py-6 text-medium-emphasis">
           데이터가 없습니다
         </div>
         <div v-for="(item, i) in accessRanking" :key="item.email">
@@ -301,17 +301,17 @@ onMounted(async () => {
   <!-- 날짜 클릭 팝업 -->
   <v-dialog :model-value="!!clickedDate" max-width="320" @update:model-value="clickedDate = null">
     <v-card rounded="xl" class="pa-2">
-      <v-card-title class="text-body-1 font-weight-bold pt-4 px-4">
+      <v-card-title class="font-weight-bold pt-4 px-4">
         {{ clickedDate }} · {{ clickedType === 'signup' ? '가입' : '접속' }}
       </v-card-title>
       <v-card-text class="px-4 pb-2">
-        <div v-if="clickedEmails.length === 0" class="text-body-2 text-medium-emphasis py-2">
+        <div v-if="clickedEmails.length === 0" class="text-medium-emphasis py-2">
           해당 날짜에 데이터가 없습니다
         </div>
         <div v-for="(email, i) in clickedEmails" :key="email">
           <div class="d-flex align-center ga-2 py-1">
             <v-icon size="13" color="primary">mdi-account-outline</v-icon>
-            <span style="font-size:13px; font-weight:600">{{ email }}</span>
+            <span style="font-size:0.8125rem; font-weight:600">{{ email }}</span>
           </div>
           <v-divider v-if="i < clickedEmails.length - 1" opacity="0.06" />
         </div>
@@ -342,7 +342,7 @@ onMounted(async () => {
 }
 
 .section-label {
-  font-size: 11px; font-weight: 700;
+  font-size: 0.6875rem; font-weight: 700;
   letter-spacing: 0.06em; text-transform: uppercase;
   color: rgba(var(--v-theme-on-surface), 0.4);
 }
@@ -354,7 +354,7 @@ onMounted(async () => {
 }
 .filter-btn {
   flex: 1; padding: 6px 0; border: none; border-radius: 9px;
-  font-size: 13px; font-weight: 500; cursor: pointer;
+  font-size: 0.8125rem; font-weight: 500; cursor: pointer;
   background: transparent; color: rgba(var(--v-theme-on-surface), 0.55);
   transition: background 0.18s, color 0.18s;
 }
@@ -367,7 +367,7 @@ onMounted(async () => {
 .chart-wrap { width: 100%; }
 .chart-svg { width: 100%; height: auto; display: block; }
 .chart-tick {
-  font-size: 8px;
+  font-size: 0.5rem;
   fill: rgba(128,128,128,0.7);
 }
 
@@ -376,13 +376,13 @@ onMounted(async () => {
   justify-content: space-between; gap: 8px;
 }
 .rank-num {
-  font-size: 12px; font-weight: 700;
+  font-size: 0.75rem; font-weight: 700;
   color: rgba(var(--v-theme-on-surface), 0.35);
   width: 18px; text-align: center; flex-shrink: 0;
 }
 .rank-top { color: rgb(var(--v-theme-primary)); }
 .rank-email {
-  font-size: 13px; font-weight: 500;
+  font-size: 0.8125rem; font-weight: 500;
   color: rgb(var(--v-theme-on-surface));
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
@@ -397,7 +397,7 @@ onMounted(async () => {
   transition: width 0.4s ease;
 }
 .rank-count {
-  font-size: 12px; font-weight: 600;
+  font-size: 0.75rem; font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
   min-width: 28px; text-align: right; flex-shrink: 0;
 }

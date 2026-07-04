@@ -3,7 +3,6 @@ import { useTheme } from 'vuetify'
 import {
   FP_THEME_MAP,
   spacing,
-  typography,
   radius,
   shadows,
   animation,
@@ -44,7 +43,6 @@ export const useDesignTokens = () => {
 
     // 고정값 토큰 — 모든 테마에서 동일
     spacing,
-    typography,
     radius,
     shadows,
     animation,

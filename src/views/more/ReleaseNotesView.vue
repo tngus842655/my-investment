@@ -15,6 +15,11 @@ const notes = [
       '스와이프로 연 수정/삭제 버튼이 아무 곳이나 눌러도 닫히도록 개선',
       '보유자산·거래내역 화면 스와이프 카드 모서리에 버튼 색이 비쳐 보이던 문제 수정',
       '보유자산 화면 카드 폰트와 하단 안내문구를 거래내역 화면과 통일',
+      '더보기 > 화면 설정 메뉴 신설 — 글자 크기를 75%~150%까지 조절 가능',
+      '당겨서 새로고침 시 짧은 진동 피드백 추가 (Android만 지원)',
+      '예측 화면 "연도별 예상자산 추이"에서 올해 목표를 퍼센트 대신 금액으로 표시',
+      '자산성장리포트 차트에 올해 목표 금액 표시, 안내 문구 개선',
+      '보유자산 요약 카드 레이아웃 개선 — 글자를 크게 설정해도 깨지지 않도록 보강',
     ],
   },
   {
@@ -90,21 +95,21 @@ const notes = [
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <div>
-        <div class="text-h5 font-weight-bold">개발자 노트</div>
-        <div class="text-body-2 text-medium-emphasis">업데이트 내역</div>
+        <div class="font-weight-bold">개발자 노트</div>
+        <div class="text-medium-emphasis">업데이트 내역</div>
       </div>
     </div>
 
     <div v-for="note in notes" :key="note.version" class="release-card glass-card pa-4 mb-3">
       <div class="d-flex align-center ga-2 mb-3">
         <v-chip size="small" color="primary" variant="tonal" class="font-weight-bold">{{ note.version }}</v-chip>
-        <span class="text-caption text-medium-emphasis">{{ note.date }}</span>
+        <span class="text-medium-emphasis">{{ note.date }}</span>
       </div>
       <div v-if="note.description?.length" class="note-desc mb-2">
-        <p v-for="(line, i) in note.description" :key="i" :class="i === 0 ? 'note-desc-title' : 'text-body-2'">{{ line }}</p>
+        <p v-for="(line, i) in note.description" :key="i" :class="i === 0 ? 'note-desc-title' : ''">{{ line }}</p>
       </div>
       <ul v-if="note.items.length" class="note-list">
-        <li v-for="(item, i) in note.items" :key="i" class="text-body-2">{{ item }}</li>
+        <li v-for="(item, i) in note.items" :key="i">{{ item }}</li>
       </ul>
     </div>
   </v-container>

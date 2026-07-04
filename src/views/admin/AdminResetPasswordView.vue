@@ -74,8 +74,8 @@ onMounted(async () => {
         <v-icon size="20">mdi-arrow-left</v-icon>
       </button>
       <div>
-        <div class="text-h5 font-weight-bold">비밀번호 재설정</div>
-        <div class="text-body-2 text-medium-emphasis">회원 임시 비밀번호 변경</div>
+        <div class="font-weight-bold">비밀번호 재설정</div>
+        <div class="text-medium-emphasis">회원 임시 비밀번호 변경</div>
       </div>
     </div>
 

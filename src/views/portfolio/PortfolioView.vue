@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { prefetchTickerLogos } from '@/services/tickerLogo'
 import { supabase } from '@/services/supabase'
@@ -12,6 +12,7 @@ import { getTickerLabel, isEtfTicker, getTickerDisplayName, TICKER_NAMES } from 
 import { evaluateItemKrw, simpleCostKrw } from '@/utils/portfolioMath'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
+import { useFontScale } from '@/composables/useFontScale'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
@@ -415,6 +416,7 @@ const formatKrw = (v: number) => Math.round(v).toLocaleString('ko-KR')
 const windowWidth = ref(window.innerWidth)
 const onResize = () => { windowWidth.value = window.innerWidth }
 const isNarrowScreen = computed(() => windowWidth.value < 420)
+const { fontScale } = useFontScale()
 
 const formatKrwShort = (v: number): string => {
   const abs = Math.abs(v)
@@ -464,6 +466,35 @@ const formatPercent = (v: number) => (v >= 0 ? '+' : '') + v.toFixed(2) + '%'
 const truncateAccount = (name: string) =>
   /[ㄱ-ㅎ가-힣]/.test(name) ? name.slice(0, 2) : name.slice(0, 4)
 const formatProfit = (v: number) => (v > 0 ? '+' : '') + formatKrw(v)
+
+// ── 요약 카드 라벨/값 실제 겹침 여부 측정 ──────────────────
+// 화면에 안 보이는 측정용 사본(항상 한 줄, 줄바꿈 없음)의 실제 너비가
+// 칸 너비를 넘는지 봐서, 정말 넘칠 것 같을 때만 라벨/값을 위아래로 쌓음
+const summaryMeasureRef = ref<HTMLElement | null>(null)
+const summaryStacked = ref(false)
+
+const checkSummaryOverflow = () => {
+  const el = summaryMeasureRef.value
+  if (!el) return
+  const rows = el.querySelectorAll<HTMLElement>('.summary-row--measure')
+  let overflow = false
+  rows.forEach((row) => {
+    if (row.scrollWidth > row.clientWidth + 1) overflow = true
+  })
+  summaryStacked.value = overflow
+}
+
+const summaryMeasureKey = computed(() =>
+  [
+    formatSummaryKrw(totalCostKrw.value),
+    formatSummaryProfit(totalProfitAmountKrw.value),
+    formatSummaryKrw(totalEvaluationAmountKrw.value),
+    formatPercent(totalProfitRate.value),
+    fontScale.value,
+  ].join('|'),
+)
+
+watch(summaryMeasureKey, () => nextTick(checkSummaryOverflow))
 const assetTypeColor = (type: string): string =>
   ({
     국내주식: 'blue',
@@ -555,17 +586,17 @@ onUnmounted(() => {
 <template>
   <v-container class="pa-4 pa-sm-6" @click="onContainerClick">
     <!-- 헤더 -->
-    <div class="d-flex justify-space-between align-center mb-5">
-      <div class="d-flex align-center ga-2">
+    <div class="asset-header d-flex justify-space-between align-center mb-5">
+      <div class="d-flex align-center ga-2" style="min-width: 0">
         <img src="/icons/icon-asset.png" class="header-icon" alt="자산" />
-        <div>
-          <div class="text-h5 font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">
+        <div style="min-width: 0">
+          <div class="font-weight-bold header-title" style="color: rgb(var(--v-theme-on-surface))">
             보유자산
           </div>
-          <div class="text-body-2 text-medium-emphasis">실시간 평가금액 기준</div>
+          <div class="text-medium-emphasis header-title">실시간 평가금액 기준</div>
         </div>
       </div>
-      <div class="d-flex ga-2 align-center">
+      <div class="d-flex ga-2 align-center" style="flex-shrink: 0">
         <v-chip v-if="isSavingOrder" size="small" color="primary" variant="tonal">
           저장 중...
         </v-chip>
@@ -597,8 +628,8 @@ onUnmounted(() => {
         <v-icon size="48" color="primary" class="mb-4" style="opacity: 0.4"
           >mdi-chart-line-variant</v-icon
         >
-        <div class="text-h6 font-weight-medium text-medium-emphasis">자산이 없습니다</div>
-        <div class="text-body-2 text-disabled mt-1">자산 추가 버튼으로 첫 자산을 등록하세요.</div>
+        <div class="font-weight-medium text-medium-emphasis">자산이 없습니다</div>
+        <div class="text-disabled mt-1">자산 추가 버튼으로 첫 자산을 등록하세요.</div>
         <v-btn
           color="primary"
           variant="tonal"
@@ -614,30 +645,46 @@ onUnmounted(() => {
 
     <template v-else>
       <!-- 총 요약 카드 -->
-      <div class="glass-card pa-4 mb-4">
+      <div class="glass-card pa-4 mb-4" style="position: relative">
         <div class="summary-grid">
-          <div class="summary-row">
-            <span class="text-caption text-medium-emphasis">매입금액</span>
-            <span class="text-caption font-weight-medium">{{ formatSummaryKrw(totalCostKrw) }}</span>
+          <div class="summary-row" :class="{ 'summary-row--stacked': summaryStacked }">
+            <span class="text-medium-emphasis">매입금액</span>
+            <span class="font-weight-medium">{{ formatSummaryKrw(totalCostKrw) }}</span>
           </div>
-          <div class="summary-row">
-            <span class="text-caption text-medium-emphasis">평가손익</span>
+          <div class="summary-row" :class="{ 'summary-row--stacked': summaryStacked }">
+            <span class="text-medium-emphasis">평가손익</span>
             <span
-              class="text-caption font-weight-medium"
+              class="font-weight-medium"
               :class="totalProfitAmountKrw >= 0 ? 'text-success' : 'text-error'"
             >{{ formatSummaryProfit(totalProfitAmountKrw) }}</span>
           </div>
-          <div class="summary-row">
-            <span class="text-caption text-medium-emphasis">평가금액</span>
-            <span class="text-caption font-weight-medium">{{ formatSummaryKrw(totalEvaluationAmountKrw) }}</span>
+          <div class="summary-row" :class="{ 'summary-row--stacked': summaryStacked }">
+            <span class="text-medium-emphasis">평가금액</span>
+            <span class="font-weight-medium">{{ formatSummaryKrw(totalEvaluationAmountKrw) }}</span>
           </div>
-          <div class="summary-row">
-            <span class="text-caption text-medium-emphasis">수익률(%)</span>
+          <div class="summary-row" :class="{ 'summary-row--stacked': summaryStacked }">
+            <span class="text-medium-emphasis">수익률</span>
             <span
-              class="text-caption font-weight-medium"
+              class="font-weight-medium"
               :class="totalProfitRate >= 0 ? 'text-success' : 'text-error'"
               >{{ formatPercent(totalProfitRate) }}</span
             >
+          </div>
+        </div>
+
+        <!-- 측정 전용 사본 — 화면에 안 보임, 실제로 넘치는지 측정만 함 -->
+        <div ref="summaryMeasureRef" class="summary-grid summary-grid--measure" aria-hidden="true">
+          <div class="summary-row summary-row--measure">
+            <span>매입금액</span><span>{{ formatSummaryKrw(totalCostKrw) }}</span>
+          </div>
+          <div class="summary-row summary-row--measure">
+            <span>평가손익</span><span>{{ formatSummaryProfit(totalProfitAmountKrw) }}</span>
+          </div>
+          <div class="summary-row summary-row--measure">
+            <span>평가금액</span><span>{{ formatSummaryKrw(totalEvaluationAmountKrw) }}</span>
+          </div>
+          <div class="summary-row summary-row--measure">
+            <span>수익률</span><span>{{ formatPercent(totalProfitRate) }}</span>
           </div>
         </div>
       </div>
@@ -661,7 +708,7 @@ onUnmounted(() => {
       <!-- 정렬 바 -->
       <div class="d-flex justify-space-between align-center mb-1">
         <div class="d-flex align-center ga-1">
-          <span style="font-size: 12px; color: rgba(var(--v-theme-on-surface), 0.4)">
+          <span style="font-size: 0.75rem; color: rgba(var(--v-theme-on-surface), 0.4)">
             총 {{ sortedPortfolios.length }}건
           </span>
           <v-menu location="bottom start">
@@ -671,19 +718,19 @@ onUnmounted(() => {
               >
             </template>
             <div class="glass-card pa-3" style="max-width: 240px">
-              <div class="text-caption font-weight-medium mb-2">자산군별 시세 갱신 안내</div>
+              <div class="font-weight-medium mb-2">자산군별 시세 갱신 안내</div>
               <div
                 v-for="info in PRICE_DELAY_INFO"
                 :key="info.label"
                 class="d-flex align-center justify-space-between mb-1"
-                style="font-size: 11px"
+                style="font-size: 0.6875rem"
               >
                 <span>{{ info.emoji }} {{ info.label }}</span>
                 <span class="text-disabled ml-2">{{ info.desc }}</span>
               </div>
               <div
                 class="d-flex align-center ga-1 mt-2 pt-2"
-                style="font-size: 11px; color: rgb(var(--v-theme-primary)); cursor: pointer; border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08)"
+                style="font-size: 0.6875rem; color: rgb(var(--v-theme-primary)); cursor: pointer; border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08)"
                 @click="goToTickerNameRequest"
               >
                 <v-icon size="12" color="primary">mdi-pencil-plus-outline</v-icon>
@@ -695,7 +742,7 @@ onUnmounted(() => {
         <div class="d-flex align-center ga-2">
           <span
             v-if="hasUSD && exchangeRate"
-            style="font-size: 10px; color: rgba(var(--v-theme-on-surface), 0.35)"
+            style="font-size: 0.625rem; color: rgba(var(--v-theme-on-surface), 0.35)"
           >
             적용환율 {{ Math.round(exchangeRate).toLocaleString() }}원 (전일 기준)
           </span>
@@ -715,7 +762,7 @@ onUnmounted(() => {
                 :color="sortKey === opt.key ? 'primary' : undefined"
                 @click="setSort(opt.key)"
               >
-                <v-list-item-title style="font-size: 13px">
+                <v-list-item-title style="font-size: 0.8125rem">
                   <span style="margin-right: 6px">{{ opt.emoji }}</span>{{ opt.label }}
                 </v-list-item-title>
               </v-list-item>
@@ -756,13 +803,7 @@ onUnmounted(() => {
           >
             <div
               class="glass-card asset-card pa-2"
-              :class="
-                item.asset_type === '현금'
-                  ? 'border-cash-left'
-                  : (item.profitAmountKrw ?? 0) >= 0
-                    ? 'border-success-left'
-                    : 'border-error-left'
-              "
+              :class="item.asset_type === '현금' ? 'border-cash-left' : (item.profitAmountKrw ?? 0) >= 0 ? 'border-success-left' : 'border-error-left'"
             >
               <!-- 상단: 종목명 + 수익률 + 드래그 핸들 -->
               <div class="d-flex justify-space-between align-center mb-1" style="gap: 6px">
@@ -786,15 +827,7 @@ onUnmounted(() => {
                   <!-- 로고 -->
                   <div
                     class="ticker-logo-wrap"
-                    :class="{
-                      'logo-bg-etf':
-                        (item.asset_type === 'ETF' || isEtfTicker(item.ticker)) &&
-                        !logoMap[item.ticker],
-                      'logo-bg-kr':
-                        item.currency === 'KRW' &&
-                        item.asset_type !== '현금' &&
-                        !isEtfTicker(item.ticker),
-                    }"
+                    :class="{ 'logo-bg-etf': (item.asset_type === 'ETF' || isEtfTicker(item.ticker)) && !logoMap[item.ticker], 'logo-bg-kr': item.currency === 'KRW' && item.asset_type !== '현금' && !isEtfTicker(item.ticker), }"
                   >
                     <img
                       v-if="item.asset_type === '현금' && item.ticker === 'CASH_USD'"
@@ -910,7 +943,7 @@ onUnmounted(() => {
       <v-card-text class="text-center text-medium-emphasis">
         <strong>{{ selectedPortfolio ? getTickerDisplayName(selectedPortfolio.ticker) : '' }}</strong
         >을(를) 삭제하시겠습니까?<br />
-        <span class="text-caption text-error">
+        <span class="text-error">
           <template v-if="selectedPortfolio?.asset_type !== '현금'">해당 자산의 거래내역도 모두 함께 삭제됩니다.<br /></template>이 작업은 되돌릴 수 없습니다.
         </span>
       </v-card-text>
@@ -924,6 +957,16 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.asset-header {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.header-title {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
 .header-icon {
   width: 32px;
   height: 32px;
@@ -955,7 +998,7 @@ onUnmounted(() => {
   background: rgba(var(--v-theme-warning), 0.1);
 }
 .logo-text {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 800;
   letter-spacing: -0.5px;
 }
@@ -967,25 +1010,28 @@ onUnmounted(() => {
 }
 
 .ticker-name {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .card-amount {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 
 .ticker-sub {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 400;
   color: rgba(var(--v-theme-on-surface), 0.45);
 }
 
 .account-tag {
   display: inline-block;
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 600;
   color: rgb(var(--v-theme-primary));
   background: rgba(var(--v-theme-primary), 0.1);
@@ -1001,21 +1047,21 @@ onUnmounted(() => {
   margin-top: 4px;
 }
 .compact-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   color: rgba(var(--v-theme-on-surface), 0.7);
 }
 .compact-sep {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.3);
 }
 .compact-arrow {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.35);
   margin: 0 1px;
 }
 .compact-fail {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.3);
 }
 
@@ -1023,14 +1069,12 @@ onUnmounted(() => {
 .portfolio-card-wrap {
   position: relative;
   overflow: hidden;
-  /* 아래 .action-edit/.action-delete의 반경은 이 값보다 최소 4px 이상 커야 함
-     (동일하면 서브픽셀 오차로 모서리에 스와이프 버튼 색이 비쳐 보임) */
   border-radius: 20px;
   transition: transform 0.2s ease;
 }
 
 .swipe-hint {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.35);
   text-align: center;
   margin: 0 0 8px;
@@ -1048,7 +1092,7 @@ onUnmounted(() => {
   border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
   background: none;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.5);
   transition: all 0.15s;
@@ -1069,7 +1113,7 @@ onUnmounted(() => {
   border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
   background: none;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.5);
   transition: all 0.15s;
@@ -1083,7 +1127,9 @@ onUnmounted(() => {
 
 .summary-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr): 글자 크기가 커져 내용이 칸보다 길어져도 넘치지 않고
+     칸 안에서 줄바꿈되도록 함 */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 6px 16px;
 }
 
@@ -1094,13 +1140,34 @@ onUnmounted(() => {
   gap: 8px;
   white-space: nowrap;
 }
+/* 실제로 넘칠 것 같을 때(summaryStacked)만 4칸 전부 동시에 이 모양으로 전환 —
+   칸마다 내용 길이에 따라 따로따로 줄바꿈되어 들쭉날쭉해지는 것을 방지 */
+.summary-row--stacked {
+  flex-direction: column;
+  align-items: flex-start;
+  white-space: normal;
+  gap: 2px;
+}
+
+/* 측정 전용 사본 — 실제 화면에는 안 보이지만 레이아웃은 그대로 차지해서
+   진짜 넘치는지(scrollWidth > clientWidth) 측정하는 데 사용 */
+.summary-grid--measure {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+.summary-row--measure {
+  white-space: nowrap;
+}
 .summary-amount-wrap {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
 }
 .summary-amount-sub {
-  font-size: 9px;
+  font-size: 0.5625rem;
   color: rgba(var(--v-theme-on-surface), 0.35);
   line-height: 1.3;
   margin-top: 1px;
@@ -1122,10 +1189,12 @@ onUnmounted(() => {
 
 .swipe-actions {
   position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 128px;
+  /* 카드 클리핑 경계와 정확히 맞닿지 않도록 사방으로 여유를 두어, 서브픽셀
+     오차로 클리핑이 어긋나도 버튼 색이 아니라 배경만 살짝 보이게 함 */
+  right: 6px;
+  top: 6px;
+  bottom: 6px;
+  width: 116px;
   display: flex;
 }
 
@@ -1138,7 +1207,7 @@ onUnmounted(() => {
   gap: 4px;
   border: none;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: #fff;
   transition: filter 0.15s;
@@ -1148,13 +1217,11 @@ onUnmounted(() => {
 }
 .action-edit {
   background: var(--fp-primary);
-  /* 래퍼(.portfolio-card-wrap)의 클리핑 반경(20px)과 정확히 같으면 서브픽셀
-     오차로 모서리가 비쳐 보일 수 있어 여유를 두고 더 크게 둥글림 */
-  border-radius: 24px 0 0 24px;
+  border-radius: 16px 0 0 16px;
 }
 .action-delete {
   background: var(--fp-error);
-  border-radius: 0 24px 24px 0;
+  border-radius: 0 16px 16px 0;
 }
 
 .swipe-card {
@@ -1162,9 +1229,6 @@ onUnmounted(() => {
   z-index: 1;
   transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   will-change: transform;
-  /* will-change로 별도 합성 레이어가 되면서 부모의 overflow:hidden 클리핑이
-     라운드 코너에서 정확히 안 맞물려 뒤쪽 스와이프 버튼이 새어 보이는 문제 —
-     이 레이어 자신도 같은 반경으로 직접 클리핑하도록 함 */
   border-radius: 20px;
   overflow: hidden;
 }

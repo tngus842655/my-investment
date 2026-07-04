@@ -157,8 +157,8 @@ const deleteFeedback = async () => {
         <v-icon size="20">mdi-arrow-left</v-icon>
       </button>
       <div>
-        <div class="text-h5 font-weight-bold">사용자 의견</div>
-        <div class="text-body-2 text-medium-emphasis">접수된 피드백 관리</div>
+        <div class="font-weight-bold">사용자 의견</div>
+        <div class="text-medium-emphasis">접수된 피드백 관리</div>
       </div>
     </div>
 
@@ -208,7 +208,7 @@ const deleteFeedback = async () => {
       <!-- 빈 상태 -->
       <div v-if="filtered.length === 0" class="glass-card pa-6 text-center text-medium-emphasis">
         <v-icon size="40" class="mb-2" style="opacity:0.3">mdi-inbox-outline</v-icon>
-        <div class="text-body-2">표시할 의견이 없습니다</div>
+        <div>표시할 의견이 없습니다</div>
       </div>
 
       <!-- 카드 목록 -->
@@ -250,12 +250,12 @@ const deleteFeedback = async () => {
           <template v-if="expandedId === f.id">
             <!-- 내용 -->
             <div class="content-box mb-3">
-              <div class="text-body-2" style="white-space:pre-wrap; line-height:1.7">{{ f.content }}</div>
+              <div style="white-space:pre-wrap; line-height:1.7">{{ f.content }}</div>
             </div>
 
             <!-- 관리자 답변 작성 -->
             <div class="answer-editor mb-3">
-              <div class="text-caption font-weight-bold mb-2" style="color: rgba(var(--v-theme-on-surface), 0.6)">
+              <div class="font-weight-bold mb-2" style="color: rgba(var(--v-theme-on-surface), 0.6)">
                 관리자 답변
               </div>
               <textarea
@@ -295,7 +295,7 @@ const deleteFeedback = async () => {
   <v-dialog v-model="deleteDialog" max-width="300">
     <v-card rounded="xl" class="glass-dialog">
       <v-card-title class="text-center pt-5 text-error">삭제 확인</v-card-title>
-      <v-card-text class="text-center text-body-2 text-medium-emphasis">
+      <v-card-text class="text-center text-medium-emphasis">
         이 의견을 삭제하시겠습니까?<br>복구할 수 없습니다.
       </v-card-text>
       <v-divider />
@@ -343,7 +343,7 @@ const deleteFeedback = async () => {
   border-radius: 99px;
   background: rgba(var(--v-theme-on-surface), 0.05);
   border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.7);
 }
@@ -371,7 +371,7 @@ const deleteFeedback = async () => {
   border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
   background: transparent;
   color: rgba(var(--v-theme-on-surface), 0.5);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
@@ -395,7 +395,7 @@ const deleteFeedback = async () => {
 }
 
 .date-text {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
@@ -413,7 +413,7 @@ const deleteFeedback = async () => {
 .delete-btn:active { opacity: 0.4; }
 
 .title-text {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
 }
@@ -421,7 +421,7 @@ const deleteFeedback = async () => {
 .cursor-pointer { cursor: pointer; }
 
 .email-text {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 
@@ -447,7 +447,7 @@ const deleteFeedback = async () => {
   padding: 8px 10px;
   background: rgb(var(--v-theme-surface));
   color: rgb(var(--v-theme-on-surface));
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.6;
   resize: none;
   outline: none;
@@ -461,7 +461,7 @@ const deleteFeedback = async () => {
   border: none;
   background: rgb(var(--v-theme-primary));
   color: rgb(var(--v-theme-on-primary));
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.15s;
@@ -476,7 +476,7 @@ const deleteFeedback = async () => {
   border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
   background: transparent;
   color: rgba(var(--v-theme-on-surface), 0.5);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;

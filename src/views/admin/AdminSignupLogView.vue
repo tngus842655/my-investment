@@ -277,8 +277,8 @@ onMounted(async () => {
         <v-icon size="20">mdi-arrow-left</v-icon>
       </button>
       <div>
-        <div class="text-h5 font-weight-bold">가입 이력</div>
-        <div class="text-body-2 text-medium-emphasis">전체 회원 가입 기록</div>
+        <div class="font-weight-bold">가입 이력</div>
+        <div class="text-medium-emphasis">전체 회원 가입 기록</div>
       </div>
     </div>
 
@@ -290,7 +290,7 @@ onMounted(async () => {
       <div class="glass-card pa-4">
         <div class="section-label mb-3">전체 가입 이력 ({{ logs.length }}건)</div>
 
-        <div v-if="logs.length === 0" class="text-center py-8 text-medium-emphasis text-body-2">
+        <div v-if="logs.length === 0" class="text-center py-8 text-medium-emphasis">
           아직 가입 이력이 없습니다
         </div>
 
@@ -323,10 +323,10 @@ onMounted(async () => {
 
   <v-dialog v-model="deleteDialog" max-width="320">
     <v-card rounded="xl" class="pa-2">
-      <v-card-title class="text-body-1 font-weight-bold pt-4 px-4">탈퇴 처리</v-card-title>
+      <v-card-title class="font-weight-bold pt-4 px-4">탈퇴 처리</v-card-title>
       <v-card-text class="px-4 pb-2">
-        <div class="text-body-2 text-medium-emphasis mb-1">아래 회원을 탈퇴 처리합니다.</div>
-        <div class="text-body-2 font-weight-bold mb-3">{{ deleteTarget?.email }}</div>
+        <div class="text-medium-emphasis mb-1">아래 회원을 탈퇴 처리합니다.</div>
+        <div class="font-weight-bold mb-3">{{ deleteTarget?.email }}</div>
         <v-text-field
           v-model="deletePassword"
           :type="deletePasswordVisible ? 'text' : 'password'"
@@ -340,8 +340,8 @@ onMounted(async () => {
           @click:append-inner="deletePasswordVisible = !deletePasswordVisible"
           @keyup.enter="executeDelete"
         />
-        <div v-if="deletePasswordError" class="text-caption text-error mt-1 ml-1">{{ deletePasswordError }}</div>
-        <div class="text-caption text-error mt-2">이 작업은 되돌릴 수 없습니다.</div>
+        <div v-if="deletePasswordError" class="text-error mt-1 ml-1">{{ deletePasswordError }}</div>
+        <div class="text-error mt-2">이 작업은 되돌릴 수 없습니다.</div>
       </v-card-text>
       <v-card-actions class="px-4 pb-4 ga-2">
         <v-btn variant="tonal" rounded="lg" block @click="deleteDialog = false">취소</v-btn>
@@ -352,14 +352,14 @@ onMounted(async () => {
 <!-- 보유 종목 다이얼로그 -->
 <v-dialog v-model="portfolioDialog" max-width="340">
   <v-card rounded="xl" class="pa-2">
-    <v-card-title class="text-body-1 font-weight-bold pt-4 px-4">보유 종목</v-card-title>
+    <v-card-title class="font-weight-bold pt-4 px-4">보유 종목</v-card-title>
     <v-card-text class="px-4 pb-2" style="max-height: 66vh; overflow-y: auto">
       <div v-for="(p, i) in detail?.portfolios" :key="`${p.ticker}-${i}`" :class="{ 'mt-2': i > 0 }">
-        <div class="text-body-2 font-weight-bold" style="line-height: 1.3">{{ getTickerDisplayName(p.ticker) }}</div>
+        <div class="font-weight-bold" style="line-height: 1.3">{{ getTickerDisplayName(p.ticker) }}</div>
         <div class="d-flex justify-space-between align-center mt-1" style="gap: 8px">
-          <span class="text-caption text-medium-emphasis">{{ p.quantity.toLocaleString() }}주</span>
+          <span class="text-medium-emphasis">{{ p.quantity.toLocaleString() }}주</span>
           <span
-            class="text-caption font-weight-bold"
+            class="font-weight-bold"
             style="flex-shrink: 0"
             :class="p.profitRate == null ? 'text-medium-emphasis' : p.profitRate >= 0 ? 'text-success' : 'text-error'"
           >
@@ -378,7 +378,7 @@ onMounted(async () => {
 <!-- 회원 상세 다이얼로그 -->
 <v-dialog v-model="detailDialog" max-width="360">
   <v-card rounded="xl" class="pa-2">
-    <v-card-title class="text-body-1 font-weight-bold pt-4 px-4">회원 상세</v-card-title>
+    <v-card-title class="font-weight-bold pt-4 px-4">회원 상세</v-card-title>
     <v-card-text class="px-4 pb-4">
       <div v-if="detailLoading" class="d-flex justify-center py-6">
         <v-progress-circular indeterminate color="primary" size="28" />
@@ -445,7 +445,7 @@ onMounted(async () => {
 }
 
 .section-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -453,12 +453,12 @@ onMounted(async () => {
 }
 
 .log-email {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
 }
 .log-meta {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.4);
   padding-left: 23px;
 }
@@ -483,7 +483,7 @@ onMounted(async () => {
 .del-btn:active { opacity: 1; }
 
 .detail-section-label {
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -497,12 +497,12 @@ onMounted(async () => {
   gap: 8px;
 }
 .detail-key {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
   flex-shrink: 0;
 }
 .detail-val {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
   text-align: right;

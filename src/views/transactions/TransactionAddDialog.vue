@@ -448,7 +448,7 @@ const reset = (closeDialog = true) => {
     <v-card rounded="xl" class="glass-dialog" style="overflow: hidden; display: flex; flex-direction: column; max-height: 90dvh">
       <!-- 컬러 헤더 -->
       <div class="dialog-header" :class="txType === 'BUY' ? 'header-buy' : 'header-sell'">
-        <div class="text-h6 font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">{{ isEditMode ? '거래 수정' : '거래 추가' }}</div>
+        <div class="font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">{{ isEditMode ? '거래 수정' : '거래 추가' }}</div>
         <div class="type-toggle mt-3">
           <button
             class="toggle-btn"
@@ -692,7 +692,7 @@ const reset = (closeDialog = true) => {
 }
 
 .header-eyebrow {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -713,7 +713,7 @@ const reset = (closeDialog = true) => {
   border-radius: 12px;
   border: 1.5px solid rgba(var(--v-theme-on-surface), 0.1);
   background: transparent;
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.45);
   cursor: pointer;
@@ -743,7 +743,7 @@ const reset = (closeDialog = true) => {
   border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
   background: none;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.5);
   transition: all 0.15s;
@@ -765,7 +765,7 @@ const reset = (closeDialog = true) => {
   padding: 14px;
 }
 .new-portfolio-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: rgb(var(--v-theme-primary));
   display: flex;
@@ -794,12 +794,12 @@ const reset = (closeDialog = true) => {
   border: 1px solid rgba(211, 47, 47, 0.18);
 }
 .total-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   color: rgba(var(--v-theme-on-surface), 0.55);
 }
 .total-value {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 700;
   color: rgb(var(--v-theme-on-surface));
 }

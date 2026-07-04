@@ -432,7 +432,7 @@ const reset = (closeDialog = true) => {
 <template>
   <v-dialog v-model="dialog" max-width="500">
     <v-card rounded="xl" class="glass-dialog">
-      <v-card-title class="text-h5 font-weight-bold pt-4 pb-2 px-4">
+      <v-card-title class="font-weight-bold pt-4 pb-2 px-4">
         {{ isEditMode ? '자산 수정' : '자산 추가' }}
       </v-card-title>
 
@@ -531,7 +531,7 @@ const reset = (closeDialog = true) => {
           <v-icon size="14" color="primary" class="mr-1 flex-shrink-0"
             >mdi-information-outline</v-icon
           >
-          <span class="text-caption">
+          <span>
             {{
               isEditMode
                 ? '앱에 최초 입력한 잔고입니다. 이후 거래 내역은 거래 메뉴에서 수정하세요.'
@@ -626,7 +626,7 @@ const reset = (closeDialog = true) => {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.55);
 }
@@ -668,11 +668,11 @@ const reset = (closeDialog = true) => {
   border: 1px solid rgba(var(--v-theme-primary), 0.15);
 }
 .total-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.55);
 }
 .total-value {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 700;
   color: rgb(var(--v-theme-on-surface));
 }

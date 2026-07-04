@@ -222,8 +222,8 @@ onMounted(loadData)
     <div class="d-flex align-center ga-2 mb-6">
       <v-btn icon="mdi-arrow-left" variant="text" size="small" class="mr-1" style="color: rgb(var(--v-theme-on-surface))" @click="router.back()" />
       <div>
-        <div class="text-h5 font-weight-bold">FIRE 시뮬레이터</div>
-        <div class="text-body-2 text-medium-emphasis">투자 조건 변경 시 달성일 비교</div>
+        <div class="font-weight-bold">FIRE 시뮬레이터</div>
+        <div class="text-medium-emphasis">투자 조건 변경 시 달성일 비교</div>
       </div>
     </div>
 
@@ -282,11 +282,11 @@ onMounted(loadData)
         <div class="d-flex ga-4 mb-3">
           <div class="d-flex align-center ga-2">
             <div class="legend-line base-line" />
-            <span class="text-caption text-medium-emphasis">기존 계획</span>
+            <span class="text-medium-emphasis">기존 계획</span>
           </div>
           <div class="d-flex align-center ga-2">
             <div class="legend-line sim-line" />
-            <span class="text-caption font-weight-medium">시뮬레이션</span>
+            <span class="font-weight-medium">시뮬레이션</span>
           </div>
         </div>
 
@@ -388,7 +388,7 @@ onMounted(loadData)
 }
 
 .section-title {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: rgba(var(--v-theme-on-surface), 0.6);
   text-transform: uppercase;
@@ -402,7 +402,7 @@ onMounted(loadData)
   border-radius: 20px;
   border: 1.5px solid rgba(var(--v-theme-on-surface), 0.12);
   background: transparent;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.6);
   cursor: pointer;
@@ -413,16 +413,16 @@ onMounted(loadData)
 }
 
 .slider-label {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
 }
 .slider-value {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 700;
   color: rgb(var(--v-theme-primary));
 }
 .slider-hint {
-  font-size: 10px;
+  font-size: 0.625rem;
   color: rgba(var(--v-theme-on-surface), 0.4);
 }
 .base-mark {
@@ -463,7 +463,7 @@ onMounted(loadData)
 
 .compare-badge {
   display: inline-block;
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   padding: 3px 8px;
@@ -480,22 +480,22 @@ onMounted(loadData)
 }
 
 .compare-date {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 700;
   line-height: 1.2;
 }
 .compare-duration {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
   margin-top: 2px;
 }
 .compare-na {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: rgba(var(--v-theme-on-surface), 0.4);
   font-weight: 600;
 }
 .compare-sub {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.45);
 }
 .primary-text {
@@ -514,7 +514,7 @@ onMounted(loadData)
   gap: 8px;
 }
 .diff-text {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 700;
 }
 .diff-text.faster {

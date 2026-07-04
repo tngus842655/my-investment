@@ -483,14 +483,14 @@ onUnmounted(() => {
 <template>
   <v-container class="pa-4 pa-sm-6" @click="onContainerClick">
     <!-- 헤더 -->
-    <div class="d-flex justify-space-between align-center mb-5">
-      <div class="d-flex align-center ga-2">
+    <div class="asset-header d-flex justify-space-between align-center mb-5">
+      <div class="d-flex align-center ga-2" style="min-width: 0">
         <img src="/icons/icon-record.png" class="header-icon" alt="기록" />
-        <div>
-          <div class="text-h5 font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">
+        <div style="min-width: 0">
+          <div class="font-weight-bold header-title" style="color: rgb(var(--v-theme-on-surface))">
             거래내역
           </div>
-          <div class="text-body-2 text-medium-emphasis">매수 / 매도 기록</div>
+          <div class="text-medium-emphasis header-title">매수 / 매도 기록</div>
         </div>
       </div>
       <v-btn
@@ -498,6 +498,7 @@ onUnmounted(() => {
         prepend-icon="mdi-plus"
         rounded="lg"
         elevation="0"
+        style="flex-shrink: 0"
         @click="addDialog = true"
       >
         거래 추가
@@ -529,7 +530,7 @@ onUnmounted(() => {
           <div class="stat-value">
             {{ formatStatAmount(totalBuy) }}<span class="stat-unit">원</span>
           </div>
-          <div class="text-caption text-disabled">
+          <div class="text-disabled">
             {{ totalsData.filter((t) => t.transaction_type === 'BUY').length }}건
           </div>
         </div>
@@ -541,7 +542,7 @@ onUnmounted(() => {
           <div class="stat-value">
             {{ formatStatAmount(totalSell) }}<span class="stat-unit">원</span>
           </div>
-          <div class="text-caption text-disabled">
+          <div class="text-disabled">
             {{ totalsData.filter((t) => t.transaction_type === 'SELL').length }}건
           </div>
         </div>
@@ -594,7 +595,7 @@ onUnmounted(() => {
           </button>
           <span v-if="hasUSD && usdToKrw" class="date-hint">적용환율 {{ Math.round(usdToKrw).toLocaleString() }}원 (전일 기준)</span>
         </div>
-        <span class="text-caption text-disabled flex-shrink-0 ml-auto">총 {{ totalsData.length }}건</span>
+        <span class="text-disabled flex-shrink-0 ml-auto">총 {{ totalsData.length }}건</span>
       </div>
 
       <!-- 빈 상태 -->
@@ -603,10 +604,10 @@ onUnmounted(() => {
           <v-icon size="48" color="primary" class="mb-4" style="opacity: 0.4"
             >mdi-swap-horizontal</v-icon
           >
-          <div class="text-h6 font-weight-medium text-medium-emphasis">
+          <div class="font-weight-medium text-medium-emphasis">
             {{ parsedDateFilter || filter !== 'ALL' ? '검색 결과가 없습니다' : '거래내역이 없습니다' }}
           </div>
-          <div class="text-body-2 text-disabled mt-1">
+          <div class="text-disabled mt-1">
             {{ parsedDateFilter || filter !== 'ALL' ? '다른 날짜나 필터를 선택해보세요.' : '거래 추가 버튼으로 첫 거래를 기록하세요.' }}
           </div>
           <v-btn
@@ -743,7 +744,7 @@ onUnmounted(() => {
       <v-card-text class="text-center text-medium-emphasis">
         <strong>{{ selectedTx?.portfolios?.ticker }}</strong>
         {{ selectedTx?.transaction_type === 'BUY' ? '매수' : '매도' }} 거래를 삭제하시겠습니까?<br />
-        <span class="text-caption">이 작업은 되돌릴 수 없습니다.</span>
+        <span>이 작업은 되돌릴 수 없습니다.</span>
       </v-card-text>
       <v-divider />
       <v-card-actions>
@@ -756,10 +757,20 @@ onUnmounted(() => {
 
 <style scoped>
 .swipe-hint {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.35);
   text-align: center;
   margin: 0 0 8px;
+}
+
+.asset-header {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.header-title {
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .header-icon {
@@ -771,7 +782,8 @@ onUnmounted(() => {
 
 .stat-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr): 글자 크기가 커져도 칸 밖으로 넘치지 않도록 함 */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
 }
 .stat-card {
@@ -781,17 +793,17 @@ onUnmounted(() => {
   padding: 14px 16px;
 }
 .stat-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 .stat-value {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 500;
   color: rgb(var(--v-theme-on-surface));
   line-height: 1.3;
 }
 .stat-unit {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 500;
   color: rgb(var(--v-theme-on-surface));
 }
@@ -807,7 +819,7 @@ onUnmounted(() => {
   border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
   background: none;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.5);
   transition: all 0.15s;
@@ -834,7 +846,7 @@ onUnmounted(() => {
   padding: 6px 0;
   border: none;
   border-radius: 9px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
   background: transparent;
@@ -850,7 +862,7 @@ onUnmounted(() => {
 }
 
 .month-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -888,14 +900,14 @@ onUnmounted(() => {
 }
 
 .date-label {
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 400;
   color: rgba(var(--v-theme-on-surface), 0.3);
   flex-shrink: 0;
 }
 
 .tx-name {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
   white-space: nowrap;
@@ -903,19 +915,19 @@ onUnmounted(() => {
   text-overflow: ellipsis;
 }
 .tx-ticker {
-  font-size: 10px;
+  font-size: 0.625rem;
   color: rgba(var(--v-theme-on-surface), 0.35);
   flex-shrink: 0;
 }
 .asset-badge {
-  font-size: 9px;
+  font-size: 0.5625rem;
   font-weight: 600;
   opacity: 0.8;
   flex-shrink: 0;
 }
 .account-tag {
   display: inline-block;
-  font-size: 9px;
+  font-size: 0.5625rem;
   font-weight: 600;
   color: rgb(var(--v-theme-primary));
   background: rgba(var(--v-theme-primary), 0.1);
@@ -924,7 +936,7 @@ onUnmounted(() => {
   vertical-align: middle;
 }
 .tx-type-badge {
-  font-size: 9px;
+  font-size: 0.5625rem;
   font-weight: 700;
   padding: 1px 5px;
   border-radius: 4px;
@@ -939,15 +951,15 @@ onUnmounted(() => {
   color: var(--fp-error);
 }
 .tx-detail {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 .tx-amount {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 .tx-amount-krw {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 .amount-minus {
@@ -976,16 +988,16 @@ onUnmounted(() => {
 .tx-card-wrap {
   position: relative;
   overflow: hidden;
-  /* 아래 .action-edit/.action-delete의 반경은 이 값보다 최소 4px 이상 커야 함
-     (동일하면 서브픽셀 오차로 모서리에 스와이프 버튼 색이 비쳐 보임) */
   border-radius: 16px;
 }
 .swipe-actions {
   position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 128px;
+  /* 카드 클리핑 경계와 정확히 맞닿지 않도록 사방으로 여유를 두어, 서브픽셀
+     오차로 클리핑이 어긋나도 버튼 색이 아니라 배경만 살짝 보이게 함 */
+  right: 6px;
+  top: 6px;
+  bottom: 6px;
+  width: 116px;
   display: flex;
 }
 .action-btn {
@@ -997,7 +1009,7 @@ onUnmounted(() => {
   gap: 4px;
   border: none;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: #fff;
   transition: filter 0.15s;
@@ -1007,20 +1019,17 @@ onUnmounted(() => {
 }
 .action-edit {
   background: var(--fp-primary);
-  border-radius: 20px 0 0 20px;
+  border-radius: 16px 0 0 16px;
 }
 .action-delete {
   background: var(--fp-error);
-  border-radius: 0 20px 20px 0;
+  border-radius: 0 16px 16px 0;
 }
 .swipe-card {
   position: relative;
   z-index: 1;
   transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   will-change: transform;
-  /* will-change로 별도 합성 레이어가 되면서 부모의 overflow:hidden 클리핑이
-     라운드 코너에서 정확히 안 맞물려 뒤쪽 스와이프 버튼이 새어 보이는 문제 —
-     이 레이어 자신도 같은 반경으로 직접 클리핑하도록 함 */
   border-radius: 16px;
   overflow: hidden;
 }
@@ -1045,7 +1054,7 @@ onUnmounted(() => {
   border-radius: 8px;
   background: transparent;
   color: rgb(var(--v-theme-on-surface));
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
   outline: none;
@@ -1061,7 +1070,7 @@ onUnmounted(() => {
   cursor: default;
 }
 .date-hint {
-  font-size: 10px;
+  font-size: 0.625rem;
   color: rgba(var(--v-theme-on-surface), 0.35);
   white-space: nowrap;
   padding: 0 4px;

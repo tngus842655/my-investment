@@ -182,10 +182,10 @@ onMounted(loadData)
       <div class="d-flex align-center mb-6">
         <v-btn v-if="isEditMode" icon="mdi-arrow-left" variant="text" size="small" class="mr-2" style="color: rgb(var(--v-theme-on-surface))" @click="cancel" />
         <div>
-          <div class="text-h5 font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">
+          <div class="font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">
             {{ isEditMode ? '목표 수정' : '투자 시작하기' }}
           </div>
-          <div class="text-body-2 text-medium-emphasis mt-1">
+          <div class="text-medium-emphasis mt-1">
             {{ isEditMode ? 'FIRE 목표와 투자 계획을 수정합니다' : '목표 자산과 투자 계획을 설정해주세요' }}
           </div>
         </div>
@@ -199,7 +199,7 @@ onMounted(loadData)
         </div>
         <v-text-field :model-value="targetAsset" @update:model-value="handleTargetAsset" placeholder="1,000,000,000" variant="outlined" density="comfortable" hide-details :class="['glass-field', targetBelowMinimum ? 'field-error' : '']" maxlength="14">
           <template #append-inner>
-            <span class="text-caption font-weight-bold" style="color: rgb(var(--v-theme-primary)); white-space: nowrap">
+            <span class="font-weight-bold" style="color: rgb(var(--v-theme-primary)); white-space: nowrap">
               {{ targetAsset ? targetAssetText : '원' }}
             </span>
           </template>
@@ -219,11 +219,11 @@ onMounted(loadData)
         <div class="field-label mb-3">
           <v-icon size="14" class="mr-1">mdi-cash-multiple</v-icon>
           월 투자금
-          <span class="text-caption text-disabled ml-1">(선택)</span>
+          <span class="text-disabled ml-1">(선택)</span>
         </div>
         <v-text-field :model-value="monthlyInvestment" @update:model-value="handleMonthlyInvestment" placeholder="3,000,000" variant="outlined" density="comfortable" hide-details class="glass-field" maxlength="13">
           <template #append-inner>
-            <span class="text-caption font-weight-bold" style="color: rgb(var(--v-theme-primary)); white-space: nowrap">
+            <span class="font-weight-bold" style="color: rgb(var(--v-theme-primary)); white-space: nowrap">
               {{ monthlyInvestment ? monthlyInvestmentText : '원' }}
             </span>
           </template>
@@ -242,15 +242,15 @@ onMounted(loadData)
           </v-chip>
         </div>
 
-        <div class="text-caption text-disabled mb-3">슬라이더를 움직이면 설정됩니다</div>
+        <div class="text-disabled mb-3">슬라이더를 움직이면 설정됩니다</div>
 
         <v-slider v-model="sliderValue" :min="3" :max="30" :step="0.5" color="primary" track-color="grey-lighten-3" thumb-label hide-details>
           <template #thumb-label="{ modelValue }">{{ modelValue }}%</template>
         </v-slider>
 
         <div class="d-flex justify-space-between mt-1">
-          <span class="text-caption text-disabled">3%</span>
-          <span class="text-caption text-disabled">30%</span>
+          <span class="text-disabled">3%</span>
+          <span class="text-disabled">30%</span>
         </div>
 
         <template v-if="estimatedPreview">
@@ -259,7 +259,7 @@ onMounted(loadData)
             <v-icon size="15" :color="estimatedPreview.tooLong ? 'warning' : 'amber-darken-2'">
               {{ estimatedPreview.tooLong ? 'mdi-alert-outline' : 'mdi-rocket-launch-outline' }}
             </v-icon>
-            <div class="text-caption text-medium-emphasis">
+            <div class="text-medium-emphasis">
               목표 달성까지 약
               <strong :style="{ color: estimatedPreview.tooLong ? 'rgb(var(--v-theme-warning))' : 'rgb(var(--v-theme-primary))' }">{{ estimatedPreview.durationStr }}</strong>
               →
@@ -269,11 +269,11 @@ onMounted(loadData)
           </div>
           <div v-if="estimatedPreview.tooLong" class="d-flex align-center ga-1 mt-2 ml-5">
             <v-icon size="12" color="warning">mdi-information-outline</v-icon>
-            <span class="text-caption" style="color: rgb(var(--v-theme-warning))">
+            <span style="color: rgb(var(--v-theme-warning))">
               목표 달성까지 50년 이상 — 월 투자금을 늘리거나 목표 자산을 줄이는 것을 권장합니다
             </span>
           </div>
-          <div v-else class="text-caption text-disabled mt-1 ml-5">현재 자산 미포함 · 복리 기준 단순 추정</div>
+          <div v-else class="text-disabled mt-1 ml-5">현재 자산 미포함 · 복리 기준 단순 추정</div>
         </template>
       </div>
 
@@ -291,7 +291,7 @@ onMounted(loadData)
 
 <style scoped>
 .field-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   color: rgba(var(--v-theme-on-surface), 0.6);
 }
@@ -300,7 +300,7 @@ onMounted(loadData)
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.45);
 }
 
@@ -308,7 +308,7 @@ onMounted(loadData)
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgb(var(--v-theme-error));
 }
 </style>

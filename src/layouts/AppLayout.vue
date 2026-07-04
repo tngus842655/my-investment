@@ -43,7 +43,8 @@ const onPullTouchMove = (e: TouchEvent) => {
   const dy = (e.touches[0]?.clientY ?? 0) - touchStartY
   if (dy > 0) {
     // 당기는 동안에만 네이티브 바운스 스크롤을 막아 커스텀 인디케이터와 겹치지 않게 함
-    e.preventDefault()
+    // (이미 스크롤이 진행 중이라 취소 불가능한 이벤트면 호출 자체를 건너뜀 — 콘솔 경고 방지)
+    if (e.cancelable) e.preventDefault()
     pullDistance.value = Math.min(dy * 0.5, MAX_PULL)
   } else {
     pullDistance.value = 0
@@ -268,7 +269,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
 }
 
 .bottom-nav-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   line-height: 1;
@@ -286,7 +287,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
 }
 
 .bottom-nav-desc {
-  font-size: 9px;
+  font-size: 0.5625rem;
   font-weight: 400;
   opacity: 0.6;
   line-height: 1;

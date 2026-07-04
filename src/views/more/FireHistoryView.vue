@@ -141,8 +141,8 @@ const onChartLeave = () => { tooltip.value = null }
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <div>
-        <div class="text-h5 font-weight-bold">FIRE 진행 기록</div>
-        <div class="text-body-2 text-medium-emphasis">목표 달성률 변화 히스토리</div>
+        <div class="font-weight-bold">FIRE 진행 기록</div>
+        <div class="text-medium-emphasis">목표 달성률 변화 히스토리</div>
       </div>
     </div>
 
@@ -153,29 +153,29 @@ const onChartLeave = () => { tooltip.value = null }
     <template v-else>
       <div v-if="history.length < 1" class="text-center py-12 text-medium-emphasis">
         <v-icon size="48" class="mb-3">mdi-chart-timeline-variant</v-icon>
-        <div class="text-body-2">아직 기록이 없어요.</div>
-        <div class="text-caption mt-1">내일부터 달성률 변화를 확인할 수 있어요.</div>
+        <div>아직 기록이 없어요.</div>
+        <div class="mt-1">내일부터 달성률 변화를 확인할 수 있어요.</div>
       </div>
 
       <template v-else>
         <!-- 요약 카드 -->
         <div class="d-flex ga-3 mb-4">
           <v-card rounded="xl" class="summary-card flex-1 pa-4 text-center">
-            <div class="text-caption text-medium-emphasis mb-1">현재 달성률</div>
-            <div class="text-h6 font-weight-bold text-primary">{{ lastPt?.progress_pct.toFixed(1) }}%</div>
+            <div class="text-medium-emphasis mb-1">현재 달성률</div>
+            <div class="font-weight-bold text-primary">{{ lastPt?.progress_pct.toFixed(1) }}%</div>
           </v-card>
           <v-card rounded="xl" class="summary-card flex-1 pa-4 text-center">
-            <div class="text-caption text-medium-emphasis mb-1">기간 변화</div>
+            <div class="text-medium-emphasis mb-1">기간 변화</div>
             <div
-              class="text-h6 font-weight-bold"
+              class="font-weight-bold"
               :class="(pctChange ?? 0) >= 0 ? 'text-success' : 'text-error'"
             >
               {{ (pctChange ?? 0) >= 0 ? '+' : '' }}{{ pctChange?.toFixed(1) }}%
             </div>
           </v-card>
           <v-card rounded="xl" class="summary-card flex-1 pa-4 text-center">
-            <div class="text-caption text-medium-emphasis mb-1">현재 자산</div>
-            <div class="text-h6 font-weight-bold">{{ formatAsset(currentAsset) }}</div>
+            <div class="text-medium-emphasis mb-1">현재 자산</div>
+            <div class="font-weight-bold">{{ formatAsset(currentAsset) }}</div>
           </v-card>
         </div>
 
@@ -194,7 +194,7 @@ const onChartLeave = () => { tooltip.value = null }
 
         <!-- 차트 -->
         <v-card rounded="xl" class="pa-4">
-          <div v-if="!chartData" class="text-center text-caption text-medium-emphasis py-6">
+          <div v-if="!chartData" class="text-center text-medium-emphasis py-6">
             데이터가 2일 이상 쌓이면 차트가 표시돼요.
           </div>
           <svg
@@ -272,7 +272,7 @@ const onChartLeave = () => { tooltip.value = null }
   flex: 1;
   padding: 6px 0;
   border-radius: 10px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
   background: transparent;

@@ -99,8 +99,8 @@ onMounted(async () => {
         <v-icon size="20">mdi-arrow-left</v-icon>
       </button>
       <div>
-        <div class="text-h5 font-weight-bold">관리자</div>
-        <div class="text-body-2 text-medium-emphasis">회원 현황 대시보드</div>
+        <div class="font-weight-bold">관리자</div>
+        <div class="text-medium-emphasis">회원 현황 대시보드</div>
       </div>
     </div>
 
@@ -224,31 +224,31 @@ onMounted(async () => {
   padding: 14px 16px;
 }
 .stat-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
   margin-bottom: 4px;
 }
 .stat-value {
-  font-size: 26px;
+  font-size: 1.625rem;
   font-weight: 700;
   color: rgb(var(--v-theme-on-surface));
   line-height: 1.1;
 }
 .stat-unit {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
   margin-left: 2px;
 }
 
 .section-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: rgba(var(--v-theme-on-surface), 0.4);
 }
 .today-label {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 700;
   color: rgba(var(--v-theme-on-surface), 0.6);
 }
@@ -261,11 +261,11 @@ onMounted(async () => {
   padding: 2px 0;
 }
 .extra-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 .extra-value {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
   text-align: right;

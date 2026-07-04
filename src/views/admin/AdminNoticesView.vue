@@ -134,8 +134,8 @@ const toggleExpand = (n: Notice) => {
         <v-icon size="20">mdi-arrow-left</v-icon>
       </button>
       <div>
-        <div class="text-h5 font-weight-bold">공지사항 관리</div>
-        <div class="text-body-2 text-medium-emphasis">전체 회원에게 노출되는 공지 작성</div>
+        <div class="font-weight-bold">공지사항 관리</div>
+        <div class="text-medium-emphasis">전체 회원에게 노출되는 공지 작성</div>
       </div>
     </div>
 
@@ -150,7 +150,7 @@ const toggleExpand = (n: Notice) => {
 
       <div v-if="notices.length === 0" class="glass-card pa-6 text-center text-medium-emphasis">
         <v-icon size="40" class="mb-2" style="opacity:0.3">mdi-bullhorn-outline</v-icon>
-        <div class="text-body-2">등록된 공지사항이 없습니다</div>
+        <div>등록된 공지사항이 없습니다</div>
       </div>
 
       <div v-else class="d-flex flex-column ga-3">
@@ -175,7 +175,7 @@ const toggleExpand = (n: Notice) => {
             >mdi-chevron-down</v-icon>
           </div>
           <div v-if="expandedId === n.id" class="content-box mt-2">
-            <div class="text-body-2" style="white-space:pre-wrap; line-height:1.7">{{ n.content }}</div>
+            <div style="white-space:pre-wrap; line-height:1.7">{{ n.content }}</div>
           </div>
         </div>
       </div>
@@ -185,7 +185,7 @@ const toggleExpand = (n: Notice) => {
   <!-- 작성/수정 다이얼로그 -->
   <v-dialog v-model="editDialog" max-width="420">
     <v-card rounded="xl" class="glass-dialog">
-      <v-card-title class="text-body-1 font-weight-bold pt-4 px-4">
+      <v-card-title class="font-weight-bold pt-4 px-4">
         {{ editTarget ? '공지사항 수정' : '새 공지 작성' }}
       </v-card-title>
       <v-card-text class="px-4 pb-2">
@@ -239,7 +239,7 @@ const toggleExpand = (n: Notice) => {
   <v-dialog v-model="deleteDialog" max-width="300">
     <v-card rounded="xl" class="glass-dialog">
       <v-card-title class="text-center pt-5 text-error">삭제 확인</v-card-title>
-      <v-card-text class="text-center text-body-2 text-medium-emphasis">
+      <v-card-text class="text-center text-medium-emphasis">
         이 공지사항을 삭제하시겠습니까?<br>복구할 수 없습니다.
       </v-card-text>
       <v-divider />
@@ -286,7 +286,7 @@ const toggleExpand = (n: Notice) => {
 }
 
 .date-text {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 
@@ -303,7 +303,7 @@ const toggleExpand = (n: Notice) => {
 .icon-btn:active { opacity: 0.4; }
 
 .title-text {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
 }
@@ -324,7 +324,7 @@ const toggleExpand = (n: Notice) => {
   padding: 8px 10px;
   background: rgb(var(--v-theme-surface));
   color: rgb(var(--v-theme-on-surface));
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.6;
   resize: none;
   outline: none;
@@ -339,12 +339,12 @@ const toggleExpand = (n: Notice) => {
   gap: 12px;
 }
 .toggle-row-label {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.8);
 }
 .toggle-row-sub {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.45);
   margin-top: 1px;
 }

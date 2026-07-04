@@ -212,7 +212,7 @@ onUnmounted(clearPullToRefresh)
           alt="FIREPATH"
         />
         <template v-else>
-          <div class="text-h6 font-weight-bold">FIREPATH</div>
+          <div class="font-weight-bold">FIREPATH</div>
         </template>
       </div>
       <button class="icon-btn" @click="router.push('/goalSettings')">
@@ -256,7 +256,7 @@ onUnmounted(clearPullToRefresh)
           <span v-if="hideAsset" class="asset-hidden">금액 숨김</span>
           <span v-else>{{ displayedCurrentAsset > 0 ? Math.round(displayedCurrentAsset).toLocaleString('ko-KR') + '원' : '-' }}</span>
         </div>
-        <div class="text-body-2 text-center" style="color: rgba(var(--v-theme-on-surface), 0.45)">
+        <div class="text-center" style="color: rgba(var(--v-theme-on-surface), 0.45)">
           <template v-if="displayedCurrentAsset > 0">
             목표 자산 <span v-if="hideAsset" class="asset-hidden-sm">금액 숨김</span><span v-else>{{ formatShortMoney(targetAsset) }}원</span>
           </template>
@@ -365,7 +365,7 @@ onUnmounted(clearPullToRefresh)
       <!-- 투자 현황 미니 리스트 -->
       <div class="glass-card pa-4">
         <div class="d-flex justify-space-between align-center mb-3">
-          <span class="field-label" style="font-size: 13px">투자 현황</span>
+          <span class="field-label" style="font-size: 0.8125rem">투자 현황</span>
           <span
             class="see-all"
             @click="router.push('/portfolio')"
@@ -378,7 +378,7 @@ onUnmounted(clearPullToRefresh)
         <template v-if="topPortfolios.length === 0">
           <div class="text-center py-6">
             <v-icon size="36" color="primary" style="opacity: 0.35" class="mb-2">mdi-chart-line-variant</v-icon>
-            <div class="text-caption text-medium-emphasis">보유 자산이 없습니다</div>
+            <div class="text-medium-emphasis">보유 자산이 없습니다</div>
           </div>
         </template>
 
@@ -430,7 +430,7 @@ onUnmounted(clearPullToRefresh)
     <v-card v-if="latestNotice" rounded="xl" class="glass-dialog">
       <v-card-title class="d-flex align-center ga-2 pt-5 px-5">
         <v-icon color="primary" size="20">mdi-bullhorn-outline</v-icon>
-        <span class="text-body-1 font-weight-bold">{{ latestNotice.title }}</span>
+        <span class="font-weight-bold">{{ latestNotice.title }}</span>
         <v-chip v-if="latestNotice.is_test" size="x-small" color="warning" variant="tonal">테스트</v-chip>
       </v-card-title>
       <v-card-text class="px-5 notice-popup-content">{{ latestNotice.content }}</v-card-text>
@@ -480,13 +480,13 @@ onUnmounted(clearPullToRefresh)
 
 
 .field-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   color: rgba(var(--v-theme-on-surface), 0.55);
 }
 
 .hero-amount {
-  font-size: 28px;
+  font-size: 1.75rem;
   line-height: 1.2;
   color: rgb(var(--v-theme-on-surface));
 }
@@ -502,18 +502,18 @@ onUnmounted(clearPullToRefresh)
   transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .donut-label {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 700;
 }
 
 /* FIRE 정보 */
 .fire-info { flex: 1; min-width: 0; }
 .fire-info-sub {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 .fire-info-main {
-  font-size: 17px;
+  font-size: 1.0625rem;
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
   white-space: nowrap;
@@ -521,7 +521,7 @@ onUnmounted(clearPullToRefresh)
   text-overflow: ellipsis;
 }
 .fire-info-date {
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 700;
   color: rgb(var(--v-theme-on-surface));
 }
@@ -533,26 +533,27 @@ onUnmounted(clearPullToRefresh)
 /* 스탯 */
 .stat-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr): 글자 크기가 커져도 칸 밖으로 넘치지 않도록 함 */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
 }
 .stat-card {
   padding: 16px;
 }
 .stat-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
   margin-bottom: 8px;
 }
 .stat-value {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
 }
 
 /* 투자 현황 미니 리스트 */
 .see-all {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgb(var(--v-theme-primary));
   cursor: pointer;
   display: flex;
@@ -594,7 +595,7 @@ onUnmounted(clearPullToRefresh)
 .bg-grey { background: #616161; }
 
 .mini-ticker {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
   white-space: nowrap;
@@ -602,13 +603,13 @@ onUnmounted(clearPullToRefresh)
   text-overflow: ellipsis;
 }
 .mini-ticker-sub {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 400;
   color: rgba(var(--v-theme-on-surface), 0.45);
   margin-left: 4px;
 }
 .mini-asset-type {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.45);
   margin-top: 1px;
   display: flex;
@@ -616,7 +617,7 @@ onUnmounted(clearPullToRefresh)
   gap: 4px;
 }
 .mini-account-tag {
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 600;
   color: rgb(var(--v-theme-primary));
   background: rgba(var(--v-theme-primary), 0.1);
@@ -624,7 +625,7 @@ onUnmounted(clearPullToRefresh)
   padding: 0 4px;
 }
 .mini-amount {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
   white-space: nowrap;
@@ -645,7 +646,7 @@ onUnmounted(clearPullToRefresh)
 .hide-toggle-btn:active { opacity: 0.6; }
 
 .asset-hidden {
-  font-size: 20px;
+  font-size: 1.25rem;
   color: rgba(var(--v-theme-on-surface), 0.35);
 }
 
@@ -659,7 +660,7 @@ onUnmounted(clearPullToRefresh)
   gap: 6px;
 }
 .cash-toggle-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.55);
 }

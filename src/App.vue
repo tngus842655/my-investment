@@ -4,12 +4,15 @@ import { RouterView } from 'vue-router'
 import { useTheme } from 'vuetify'
 import GlobalSnackbar from '@/components/common/GlobalSnackbar.vue'
 import { useAppTheme } from '@/composables/useAppTheme'
+import { useFontScale } from '@/composables/useFontScale'
 
 const theme = useTheme()
 const { initTheme } = useAppTheme()
+const { initFontScale } = useFontScale()
 
 onMounted(() => {
   initTheme()
+  initFontScale()
 })
 </script>
 

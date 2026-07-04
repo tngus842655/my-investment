@@ -105,8 +105,8 @@ onMounted(() => {
         <v-icon size="20">mdi-arrow-left</v-icon>
       </button>
       <div>
-        <div class="text-h5 font-weight-bold">미국 주식 티커 관리</div>
-        <div class="text-body-2 text-medium-emphasis">한글명 직접 추가·수정·삭제</div>
+        <div class="font-weight-bold">미국 주식 티커 관리</div>
+        <div class="text-medium-emphasis">한글명 직접 추가·수정·삭제</div>
       </div>
     </div>
 
@@ -208,7 +208,7 @@ onMounted(() => {
               <v-btn icon="mdi-delete-outline" size="small" variant="text" color="error" class="action-btn" @click="deleteTicker(item.ticker)" />
             </template>
           </div>
-          <div v-if="filteredTickers.length === 0" class="text-center text-medium-emphasis text-caption py-4">
+          <div v-if="filteredTickers.length === 0" class="text-center text-medium-emphasis py-4">
             검색 결과가 없습니다.
           </div>
         </div>
@@ -240,7 +240,7 @@ onMounted(() => {
 }
 
 .section-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -262,7 +262,7 @@ onMounted(() => {
 .ticker-row:last-child { border-bottom: none; }
 
 .ticker-code {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   font-family: 'Courier New', monospace;
   color: rgb(var(--v-theme-primary));
@@ -271,7 +271,7 @@ onMounted(() => {
 }
 
 .ticker-name {
-  font-size: 13px;
+  font-size: 0.8125rem;
   flex: 1;
   color: rgb(var(--v-theme-on-surface));
 }

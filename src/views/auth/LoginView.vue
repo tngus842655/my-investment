@@ -355,14 +355,14 @@ onUnmounted(() => {
 }
 
 .brand-title {
-  font-size: 28px;
+  font-size: 1.75rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   color: rgb(var(--v-theme-on-surface));
 }
 
 .brand-sub {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: rgba(var(--v-theme-on-surface), 0.4);
   letter-spacing: 0.02em;
 }
@@ -391,19 +391,19 @@ onUnmounted(() => {
 }
 
 .install-banner-title {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: rgb(var(--v-theme-on-surface));
 }
 
 .install-banner-desc {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.6);
   line-height: 1.5;
 }
 
 .forgot-link {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.45);
   cursor: pointer;
   text-decoration: underline;
@@ -423,20 +423,20 @@ onUnmounted(() => {
 }
 
 .forgot-title {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 700;
   color: rgb(var(--v-theme-on-surface));
 }
 
 .forgot-desc {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: rgba(var(--v-theme-on-surface), 0.55);
   line-height: 1.6;
 }
 
 .forgot-email {
   display: inline-block;
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: rgb(var(--v-theme-primary));
   text-decoration: none;
