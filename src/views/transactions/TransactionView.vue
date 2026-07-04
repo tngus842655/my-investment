@@ -705,7 +705,7 @@ onUnmounted(() => {
         <div v-if="loadingMore" class="text-center py-4">
           <v-progress-circular indeterminate size="24" color="primary" />
         </div>
-        <p class="swipe-hint">← 항목을 왼쪽으로 밀면 수정/삭제할 수 있어요</p>
+        <p class="swipe-hint">← 카드를 왼쪽으로 밀면 수정/삭제할 수 있어요</p>
       </template>
     </template>
   </v-container>
@@ -760,7 +760,7 @@ onUnmounted(() => {
   font-size: 11px;
   color: rgba(var(--v-theme-on-surface), 0.35);
   text-align: center;
-  margin: 4px 0 8px;
+  margin: 0 0 8px;
 }
 
 .header-icon {
