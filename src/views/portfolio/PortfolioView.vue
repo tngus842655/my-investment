@@ -1032,6 +1032,9 @@ onUnmounted(() => {
   overflow: hidden;
   border-radius: 20px;
   transition: transform 0.2s ease;
+  /* will-change:transform인 자식(.swipe-card)과 같은 합성 레이어에서 클리핑되도록
+     강제 — 그렇지 않으면 라운드 코너에서 뒤쪽 스와이프 버튼이 살짝 비쳐 보임 */
+  transform: translateZ(0);
 }
 
 .swipe-hint {
