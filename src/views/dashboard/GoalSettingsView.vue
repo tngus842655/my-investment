@@ -5,8 +5,10 @@ import { supabase } from '@/services/supabase'
 import { invalidateGoalCache } from '@/router'
 import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
+import { useUserDataStore } from '@/stores/userData'
 
 const router = useRouter()
+const userDataStore = useUserDataStore()
 
 const targetAsset = ref('')
 const monthlyInvestment = ref('')
@@ -84,23 +86,18 @@ const estimatedPreview = computed(() => {
 })
 
 const loadData = async () => {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return
+  const goal = await userDataStore.ensureGoals()
 
-  const { data } = await supabase.from('investment_goals').select('*').eq('user_id', user.id).maybeSingle()
-
-  if (!data) {
+  if (!goal) {
     annualReturn.value = 7
     initializing.value = false
     return
   }
 
   isEditMode.value = true
-  targetAsset.value = addComma(String(data.target_asset ?? ''))
-  monthlyInvestment.value = addComma(String(data.monthly_investment ?? ''))
-  annualReturn.value = Math.max(data.annual_return ?? 7, 3)
+  targetAsset.value = addComma(String(goal.target_asset ?? ''))
+  monthlyInvestment.value = addComma(String(goal.monthly_investment ?? ''))
+  annualReturn.value = Math.max(goal.annual_return ?? 7, 3)
   initializing.value = false
 }
 
@@ -150,6 +147,7 @@ const save = async () => {
     }
 
     invalidateGoalCache()
+    userDataStore.invalidateGoals()
     showMessage(isEditMode.value ? '목표 정보가 수정되었습니다.' : '투자 설정이 완료되었습니다.', 'success')
     router.push('/dashboard')
   } catch (error) {
@@ -164,7 +162,10 @@ const cancel = () => {
   if (isEditMode.value) {
     router.back()
   } else {
-    supabase.auth.signOut().then(() => router.replace('/'))
+    supabase.auth.signOut().then(() => {
+      userDataStore.reset()
+      router.replace('/')
+    })
   }
 }
 

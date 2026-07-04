@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { prefetchTickerLogos } from '@/services/tickerLogo'
 import { supabase } from '@/services/supabase'
@@ -9,8 +9,11 @@ import { showMessage } from '@/composables/useSnackbar'
 import { getStockPrice } from '@/services/market'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel, isEtfTicker, getTickerDisplayName, TICKER_NAMES } from '@/utils/tickerNames'
+import { useUserDataStore } from '@/stores/userData'
+import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
 
 const router = useRouter()
+const userDataStore = useUserDataStore()
 const loading = ref(false)
 
 interface PortfolioViewItem extends PortfolioAsset {
@@ -84,8 +87,9 @@ const loadPortfolios = async () => {
   loading.value = true
   try {
     const {
-      data: { user },
-    } = await supabase.auth.getUser()
+      data: { session },
+    } = await supabase.auth.getSession()
+    const user = session?.user
     if (!user) return
 
     const { data, error } = await supabase
@@ -100,6 +104,10 @@ const loadPortfolios = async () => {
     }
 
     const items = (data ?? []) as PortfolioAsset[]
+
+    // 다른 화면(대시보드 등)이 공유 스토어를 통해 최신 보유종목을 재사용하도록 캐시 갱신
+    userDataStore.portfolios = items
+    userDataStore.portfoliosLoaded = true
 
     const [rate, txResult, ...prices] = await Promise.all([
       fetchExchangeRate(),
@@ -204,6 +212,7 @@ const loadPortfolios = async () => {
       )
       .then(({ error }) => {
         if (error) console.warn('asset_summary 저장 실패:', error.message)
+        else userDataStore.invalidateAssetSummary()
       })
 
   } catch (error) {
@@ -311,6 +320,7 @@ const endDrag = async () => {
     for (let i = 0; i < portfolios.value.length; i++) {
       await supabase.from('portfolios').update({ sort_order: i }).eq('id', portfolios.value[i]!.id)
     }
+    userDataStore.invalidatePortfolios()
   } catch (error) {
     console.error(error)
     showMessage('순서 저장 중 오류가 발생했습니다.', 'error')
@@ -366,6 +376,14 @@ const onSwipeMouseUp = (e: MouseEvent, id: string) => {
 
 const closeSwipe = () => {
   swipedId.value = null
+}
+
+// 열린 카드 자신을 클릭한 게 아니면(다른 카드·빈 영역·상단 버튼 등 어디든) 닫기
+const onContainerClick = (e: MouseEvent) => {
+  if (!swipedId.value) return
+  const swipedEl = document.querySelector(`.portfolio-card-wrap[data-id="${swipedId.value}"]`)
+  if (swipedEl?.contains(e.target as Node)) return
+  closeSwipe()
 }
 
 // ── 다이얼로그 ────────────────────────────────────
@@ -475,14 +493,6 @@ const assetTypeColor = (type: string): string =>
     현금: 'green',
   })[type] ?? 'grey'
 
-const isRefreshing = ref(false)
-
-const refresh = async () => {
-  isRefreshing.value = true
-  await loadPortfolios()
-  isRefreshing.value = false
-}
-
 // ── 정렬 ─────────────────────────────────────────
 type SortKey = 'custom' | 'eval' | 'profit' | 'rate' | 'name'
 const SORT_STORAGE_KEY = 'firepath-portfolio-sort'
@@ -499,11 +509,11 @@ const SORT_OPTIONS: { key: SortKey; label: string; emoji: string }[] = [
 const setSort = (key: SortKey) => {
   sortKey.value = key
   localStorage.setItem(SORT_STORAGE_KEY, key)
-  supabase.auth.getUser().then(({ data: { user } }) => {
-    if (!user) return
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (!session?.user) return
     supabase.from('investment_goals')
       .update({ portfolio_sort: key })
-      .eq('user_id', user.id)
+      .eq('user_id', session.user.id)
       .then()
   })
   closeSwipe()
@@ -549,6 +559,7 @@ onMounted(async () => {
   window.addEventListener('touchmove', onDragMove, { passive: false })
   window.addEventListener('touchend', endDrag)
   window.addEventListener('resize', onResize)
+  useRegisterPullToRefresh(loadPortfolios)
 })
 onUnmounted(() => {
   dragCloneEl?.remove()
@@ -557,11 +568,12 @@ onUnmounted(() => {
   window.removeEventListener('touchmove', onDragMove)
   window.removeEventListener('touchend', endDrag)
   window.removeEventListener('resize', onResize)
+  clearPullToRefresh()
 })
 </script>
 
 <template>
-  <v-container class="pa-4 pa-sm-6" @click.self="closeSwipe">
+  <v-container class="pa-4 pa-sm-6" @click="onContainerClick">
     <!-- 헤더 -->
     <div class="d-flex justify-space-between align-center mb-5">
       <div class="d-flex align-center ga-2">
@@ -577,16 +589,6 @@ onUnmounted(() => {
         <v-chip v-if="isSavingOrder" size="small" color="primary" variant="tonal">
           저장 중...
         </v-chip>
-        <v-btn
-          icon="mdi-refresh"
-          variant="outlined"
-          size="small"
-          rounded="circle"
-          elevation="0"
-          :loading="isRefreshing"
-          style="border-color: rgba(var(--v-theme-on-surface), 0.15)"
-          @click="refresh"
-        />
         <v-btn
           color="primary"
           prepend-icon="mdi-plus"
@@ -849,20 +851,20 @@ onUnmounted(() => {
                   </div>
                   <div style="min-width: 0; overflow: hidden; display: flex; align-items: center; gap: 4px">
                     <template v-if="item.asset_type === '현금'">
-                      <span class="ticker-name font-weight-bold">{{
+                      <span class="ticker-name">{{
                         getTickerLabel(item.ticker).name
                       }}</span>
                       <span v-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
                     </template>
                     <template v-else-if="getTickerLabel(item.ticker).showTicker">
-                      <span class="ticker-name font-weight-bold">{{
+                      <span class="ticker-name">{{
                         getTickerLabel(item.ticker).name
                       }}</span>
                       <span v-if="item.currency === 'USD'" class="ticker-sub ml-1">{{ item.ticker }}</span>
                       <span v-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
                     </template>
                     <template v-else>
-                      <span class="ticker-name font-weight-bold">{{ item.ticker }}</span>
+                      <span class="ticker-name">{{ item.ticker }}</span>
                       <span v-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
                     </template>
                   </div>
@@ -880,7 +882,7 @@ onUnmounted(() => {
 
               <!-- 현금 카드 -->
               <template v-if="item.asset_type === '현금'">
-                <div class="text-body-2 font-weight-bold text-primary mt-1">
+                <div class="card-amount text-primary mt-1">
                   <template v-if="item.currency === 'USD'">
                     ${{ formatPrice(item.avg_price * item.quantity, 'USD') }}
                     <span class="compact-sep ml-1">·</span>
@@ -899,12 +901,12 @@ onUnmounted(() => {
                   <div style="min-width: 0; overflow: hidden">
                     <span class="compact-label">{{ item.quantity }}주</span>
                     <span class="compact-sep mx-1">·</span>
-                    <span class="text-body-2 font-weight-bold text-primary" style="white-space: nowrap">
+                    <span class="card-amount text-primary" style="white-space: nowrap">
                       {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원
                     </span>
                   </div>
                   <div
-                    class="text-body-2 font-weight-bold"
+                    class="card-amount"
                     :class="(item.profitAmountKrw ?? 0) >= 0 ? 'text-success' : 'text-error'"
                     style="flex-shrink: 0; white-space: nowrap"
                   >
@@ -986,8 +988,14 @@ onUnmounted(() => {
 }
 
 .ticker-name {
-  font-size: 0.875rem;
+  font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
+}
+
+.card-amount {
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .ticker-sub {
@@ -1159,11 +1167,13 @@ onUnmounted(() => {
 }
 .action-edit {
   background: var(--fp-primary);
-  border-radius: 20px 0 0 20px;
+  /* 래퍼(.portfolio-card-wrap)의 클리핑 반경(20px)과 정확히 같으면 서브픽셀
+     오차로 모서리가 비쳐 보일 수 있어 여유를 두고 더 크게 둥글림 */
+  border-radius: 24px 0 0 24px;
 }
 .action-delete {
   background: var(--fp-error);
-  border-radius: 0 20px 20px 0;
+  border-radius: 0 24px 24px 0;
 }
 
 .swipe-card {
@@ -1171,6 +1181,11 @@ onUnmounted(() => {
   z-index: 1;
   transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   will-change: transform;
+  /* will-change로 별도 합성 레이어가 되면서 부모의 overflow:hidden 클리핑이
+     라운드 코너에서 정확히 안 맞물려 뒤쪽 스와이프 버튼이 새어 보이는 문제 —
+     이 레이어 자신도 같은 반경으로 직접 클리핑하도록 함 */
+  border-radius: 20px;
+  overflow: hidden;
 }
 
 .asset-card {

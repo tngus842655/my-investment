@@ -4,7 +4,12 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerDisplayName } from '@/utils/tickerNames'
+import { recomputeAssetSummary } from '@/services/assetSummary'
+import { useUserDataStore } from '@/stores/userData'
+import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
 import TransactionAddDialog from './TransactionAddDialog.vue'
+
+const userDataStore = useUserDataStore()
 
 type TransactionType = 'BUY' | 'SELL' | 'INITIAL'
 type FilterType = 'ALL' | 'BUY' | 'SELL'
@@ -43,17 +48,13 @@ const yearOptions = ref<number[]>([])
 const monthOptions = ref<number[]>([])
 
 const loadAccountOptions = async () => {
-  const { data } = await supabase
-    .from('portfolios')
-    .select('id, account_name')
-    .eq('user_id', userId)
-  if (!data) return
-  const accounts = [...new Set(data.map((p) => p.account_name ?? '미지정'))]
+  const portfolios = await userDataStore.ensurePortfolios()
+  const accounts = [...new Set(portfolios.map((p) => p.account_name ?? '미지정'))]
   accountOptions.value = accounts.length > 1
     ? ['미지정', ...accounts.filter((a) => a !== '미지정').sort((a, b) => a.localeCompare(b, 'ko'))]
     : []
   // 초기에는 전체
-  accountPortfolioIds.value = data.map((p) => p.id)
+  accountPortfolioIds.value = portfolios.map((p) => p.id)
 }
 
 const loadYearOptions = async () => {
@@ -82,8 +83,12 @@ const loadMonthOptions = async (year: number) => {
 
 let skipMonthReset = false
 watch(selectedYear, (y) => {
-  if (skipMonthReset) skipMonthReset = false
-  else selectedMonth.value = null
+  if (skipMonthReset) {
+    // onMounted에서 이미 월 옵션을 조회한 직후 selectedYear를 설정하는 경우 — 재조회 불필요
+    skipMonthReset = false
+    return
+  }
+  selectedMonth.value = null
   if (y) loadMonthOptions(y)
   else monthOptions.value = []
 })
@@ -246,6 +251,10 @@ const deleteTx = async () => {
     selectedTx.value = null
     transactions.value = transactions.value.filter((t) => t.id !== deletedId)
     loadTotals()
+    // DB 트리거가 portfolios.quantity/avg_price를 재계산하므로 캐시 무효화
+    userDataStore.invalidatePortfolios()
+    // 대시보드 등에서 총자산이 바로 반영되도록 백그라운드로 재계산
+    recomputeAssetSummary(userId)
   } catch (e) {
     console.error(e)
     showMessage('삭제 중 오류가 발생했습니다.', 'error')
@@ -270,14 +279,10 @@ watch(parsedDateFilter, () => {
   loadTotals()
 })
 watch(selectedAccount, async (acc) => {
-  if (!acc) {
-    const { data } = await supabase.from('portfolios').select('id').eq('user_id', userId)
-    accountPortfolioIds.value = (data ?? []).map((p) => p.id)
-  } else {
-    const { data } = await supabase
-      .from('portfolios').select('id').eq('user_id', userId).eq('account_name', acc)
-    accountPortfolioIds.value = (data ?? []).map((p) => p.id)
-  }
+  const portfolios = await userDataStore.ensurePortfolios()
+  accountPortfolioIds.value = (
+    acc ? portfolios.filter((p) => (p.account_name ?? '미지정') === acc) : portfolios
+  ).map((p) => p.id)
   resetAndLoad()
   loadTotals()
 })
@@ -435,10 +440,18 @@ const closeSwipe = () => {
   swipedId.value = null
 }
 
+// 열린 카드 자신을 클릭한 게 아니면(다른 카드·빈 영역·상단 버튼 등 어디든) 닫기
+const onContainerClick = (e: MouseEvent) => {
+  if (!swipedId.value) return
+  const swipedEl = document.querySelector(`.tx-card-wrap[data-id="${swipedId.value}"]`)
+  if (swipedEl?.contains(e.target as Node)) return
+  closeSwipe()
+}
+
 onMounted(async () => {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
-  userId = user.id
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) return
+  userId = session.user.id
   await Promise.all([loadYearOptions(), loadAccountOptions()])
 
   // 최근 거래가 있는 연/월을 기본 필터로 선택 (가독성 개선 — 진입 시 전체 내역이 한번에 쏟아지지 않도록)
@@ -458,15 +471,17 @@ onMounted(async () => {
   usdToKrw.value = await getCachedExchangeRate()
   await nextTick()
   setupObserver()
+  useRegisterPullToRefresh(refresh)
 })
 
 onUnmounted(() => {
   observer?.disconnect()
+  clearPullToRefresh()
 })
 </script>
 
 <template>
-  <v-container class="pa-4 pa-sm-6" @click.self="closeSwipe">
+  <v-container class="pa-4 pa-sm-6" @click="onContainerClick">
     <!-- 헤더 -->
     <div class="d-flex justify-space-between align-center mb-5">
       <div class="d-flex align-center ga-2">
@@ -615,6 +630,7 @@ onUnmounted(() => {
             v-for="item in items"
             :key="item.id"
             class="tx-card-wrap mb-2"
+            :data-id="item.id"
             @click="swipedId && swipedId !== item.id ? closeSwipe() : undefined"
           >
             <!-- 스와이프 액션 -->
@@ -689,7 +705,7 @@ onUnmounted(() => {
         <div v-if="loadingMore" class="text-center py-4">
           <v-progress-circular indeterminate size="24" color="primary" />
         </div>
-        <p class="swipe-hint">← 항목을 왼쪽으로 밀면 수정/삭제할 수 있어요</p>
+        <p class="swipe-hint">← 카드를 왼쪽으로 밀면 수정/삭제할 수 있어요</p>
       </template>
     </template>
   </v-container>
@@ -744,7 +760,7 @@ onUnmounted(() => {
   font-size: 11px;
   color: rgba(var(--v-theme-on-surface), 0.35);
   text-align: center;
-  margin: 4px 0 8px;
+  margin: 0 0 8px;
 }
 
 .header-icon {
@@ -1001,6 +1017,11 @@ onUnmounted(() => {
   z-index: 1;
   transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   will-change: transform;
+  /* will-change로 별도 합성 레이어가 되면서 부모의 overflow:hidden 클리핑이
+     라운드 코너에서 정확히 안 맞물려 뒤쪽 스와이프 버튼이 새어 보이는 문제 —
+     이 레이어 자신도 같은 반경으로 직접 클리핑하도록 함 */
+  border-radius: 16px;
+  overflow: hidden;
 }
 
 

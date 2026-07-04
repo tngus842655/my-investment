@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { supabase } from '@/services/supabase'
 import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
+import { useUserDataStore } from '@/stores/userData'
 
 const router = useRouter()
+const userDataStore = useUserDataStore()
 const loading = ref(true)
 
 // ── 기준값 (DB 로드) ──────────────────────────────
@@ -193,18 +194,16 @@ const resetSim = () => {
 const loadData = async () => {
   loading.value = true
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const [goalResult, summaryResult] = await Promise.all([
-      supabase.from('investment_goals').select('*').eq('user_id', user.id).maybeSingle(),
-      supabase.from('asset_summary').select('current_asset').eq('user_id', user.id).maybeSingle(),
+    const [goal, summary] = await Promise.all([
+      userDataStore.ensureGoals(),
+      userDataStore.ensureAssetSummary(),
     ])
-    if (goalResult.data) {
-      baseMonthly.value = Math.round((goalResult.data.monthly_investment ?? 0) / 10000) * 10000
-      baseReturn.value = goalResult.data.annual_return ?? 5
-      targetAsset.value = goalResult.data.target_asset ?? 0
+    if (goal) {
+      baseMonthly.value = Math.round((goal.monthly_investment ?? 0) / 10000) * 10000
+      baseReturn.value = goal.annual_return ?? 5
+      targetAsset.value = goal.target_asset ?? 0
     }
-    currentAsset.value = summaryResult.data?.current_asset ?? 0
+    currentAsset.value = summary?.current_asset ?? 0
     simMonthly.value = baseMonthly.value
     simReturn.value = baseReturn.value
   } catch {

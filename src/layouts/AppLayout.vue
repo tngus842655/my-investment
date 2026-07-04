@@ -1,18 +1,72 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, provide } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { ADMIN_EMAIL } from '@/config/admin'
+import { activeRefreshHandler } from '@/composables/usePullToRefresh'
+import { feedbackBadgeKey } from '@/composables/useFeedbackBadge'
 
 const router = useRouter()
 const route = useRoute()
 const contentRef = ref<HTMLElement | null>(null)
+const isAdmin = ref(false)
 const unreadFeedbackCount = ref(0)
+provide(feedbackBadgeKey, { isAdmin, unreadFeedbackCount })
+
+// ── 아래로 당겨서 새로고침 ──────────────────────────
+const PULL_THRESHOLD = 64
+const MAX_PULL = 100
+const pullDistance = ref(0)
+const isPulling = ref(false)
+const isRefreshing = ref(false)
+let touchStartY = 0
+
+// .app-content 자체는 내부적으로 스크롤되지 않는 경우가 많아
+// scrollTop 대신 실제 스크롤이 일어나는 window 기준으로 최상단 여부를 판단
+const isAtTop = () =>
+  (contentRef.value?.scrollTop ?? 0) <= 0 && window.scrollY <= 0
+
+const onPullTouchStart = (e: TouchEvent) => {
+  if (!activeRefreshHandler.value || isRefreshing.value) return
+  if (!isAtTop()) return
+  touchStartY = e.touches[0]?.clientY ?? 0
+  isPulling.value = true
+}
+
+const onPullTouchMove = (e: TouchEvent) => {
+  if (!isPulling.value) return
+  if (!isAtTop()) {
+    isPulling.value = false
+    pullDistance.value = 0
+    return
+  }
+  const dy = (e.touches[0]?.clientY ?? 0) - touchStartY
+  pullDistance.value = dy > 0 ? Math.min(dy * 0.5, MAX_PULL) : 0
+}
+
+const onPullTouchEnd = async () => {
+  if (!isPulling.value) return
+  isPulling.value = false
+  if (pullDistance.value >= PULL_THRESHOLD && activeRefreshHandler.value) {
+    isRefreshing.value = true
+    pullDistance.value = PULL_THRESHOLD
+    try {
+      await activeRefreshHandler.value()
+    } finally {
+      isRefreshing.value = false
+      pullDistance.value = 0
+    }
+  } else {
+    pullDistance.value = 0
+  }
+}
 
 const fetchUnreadCount = async () => {
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) return
-  if (user.email === ADMIN_EMAIL) {
+  isAdmin.value = user.email === ADMIN_EMAIL
+  if (isAdmin.value) {
     const { count } = await supabase
       .from('feedback')
       .select('id', { count: 'exact', head: true })
@@ -51,7 +105,25 @@ const isActive = (tabRoute: string) => route.path === tabRoute
 
 <template>
   <div class="app-layout">
-    <main ref="contentRef" class="app-content">
+    <main
+      ref="contentRef"
+      class="app-content"
+      @touchstart.passive="onPullTouchStart"
+      @touchmove.passive="onPullTouchMove"
+      @touchend.passive="onPullTouchEnd"
+    >
+      <div
+        class="pull-indicator"
+        :style="{ height: pullDistance + 'px', opacity: pullDistance > 0 || isRefreshing ? 1 : 0 }"
+      >
+        <v-progress-circular v-if="isRefreshing" indeterminate size="20" width="2" color="primary" />
+        <v-icon
+          v-else
+          size="20"
+          color="primary"
+          :style="{ transform: `rotate(${Math.min(pullDistance / PULL_THRESHOLD, 1) * 180}deg)` }"
+        >mdi-arrow-down</v-icon>
+      </div>
       <RouterView />
     </main>
 
@@ -87,6 +159,14 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   flex: 1;
   padding-bottom: calc(84px + env(safe-area-inset-bottom));
   overflow-y: auto;
+}
+
+.pull-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: opacity 0.15s ease;
 }
 
 .bottom-nav {

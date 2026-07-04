@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { supabase } from '@/services/supabase'
 import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
+import { useUserDataStore } from '@/stores/userData'
+import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
 
 const router = useRouter()
+const userDataStore = useUserDataStore()
 const loading = ref(true)
 
 const targetAsset = ref(0)
@@ -338,23 +340,19 @@ const summaryRows = computed(() => {
 
 const visibleRows = computed(() => (showAllYears.value ? displayRows.value : summaryRows.value))
 
-const loadData = async () => {
+const loadData = async (force = false) => {
   loading.value = true
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return
-    const [goalResult, summaryResult] = await Promise.all([
-      supabase.from('investment_goals').select('*').eq('user_id', user.id).maybeSingle(),
-      supabase.from('asset_summary').select('current_asset').eq('user_id', user.id).maybeSingle(),
+    const [goal, summary] = await Promise.all([
+      userDataStore.ensureGoals(force),
+      userDataStore.ensureAssetSummary(force),
     ])
-    if (goalResult.data) {
-      targetAsset.value = goalResult.data.target_asset ?? 0
-      monthlyInvestment.value = goalResult.data.monthly_investment ?? 0
-      annualReturn.value = goalResult.data.annual_return ?? null
+    if (goal) {
+      targetAsset.value = goal.target_asset ?? 0
+      monthlyInvestment.value = goal.monthly_investment ?? 0
+      annualReturn.value = goal.annual_return ?? null
     }
-    currentAsset.value = summaryResult.data?.current_asset ?? 0
+    currentAsset.value = summary?.current_asset ?? 0
   } catch (e) {
     console.error(e)
     showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
@@ -363,7 +361,11 @@ const loadData = async () => {
   }
 }
 
-onMounted(loadData)
+onMounted(() => {
+  loadData()
+  useRegisterPullToRefresh(() => loadData(true))
+})
+onUnmounted(clearPullToRefresh)
 </script>
 
 <template>

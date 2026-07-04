@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { formatShortMoney } from '@/utils/numberFormat'
@@ -7,8 +7,11 @@ import { showMessage } from '@/composables/useSnackbar'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel } from '@/utils/tickerNames'
 import { useDesignTokens } from '@/composables/useDesignTokens'
+import { useUserDataStore } from '@/stores/userData'
+import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
 
 const router = useRouter()
+const userDataStore = useUserDataStore()
 const { themeId } = useDesignTokens()
 
 const LOGO_WIDE: Partial<Record<string, string>> = {
@@ -67,7 +70,7 @@ interface MiniPortfolio {
   currency: string
   quantity: number
   avg_price: number
-  account_name: string
+  account_name: string | null
   evaluationKrw: number
 }
 
@@ -128,9 +131,10 @@ const latestNotice = ref<{ id: string; title: string; content: string; is_test: 
 let lastSeenNoticeKey: string | null = null
 
 const checkLatestNotice = async () => {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
-  lastSeenNoticeKey = `${LAST_SEEN_NOTICE_KEY_PREFIX}-${user.id}`
+  // getSession()은 로컬 세션을 읽어올 뿐 네트워크 호출이 없음 (getUser()는 Auth 서버 재검증 왕복 발생)
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) return
+  lastSeenNoticeKey = `${LAST_SEEN_NOTICE_KEY_PREFIX}-${session.user.id}`
 
   const { data } = await supabase
     .from('notices')
@@ -150,35 +154,32 @@ const closeNoticeDialog = () => {
   noticeDialog.value = false
 }
 
-const loadDashboard = async () => {
+const loadDashboard = async (force = false) => {
   loading.value = true
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    const [goalResult, summaryResult, portfolioResult, cashResult, rate] = await Promise.all([
-      supabase.from('investment_goals').select('*').eq('user_id', user.id).maybeSingle(),
-      supabase.from('asset_summary').select('current_asset').eq('user_id', user.id).maybeSingle(),
-      supabase.from('portfolios').select('id,ticker,asset_type,currency,quantity,avg_price,account_name').eq('user_id', user.id).order('sort_order', { ascending: true }).limit(4),
-      supabase.from('portfolios').select('quantity,avg_price,currency').eq('user_id', user.id).eq('asset_type', '현금'),
+    const [goal, summary, portfolios, rate] = await Promise.all([
+      userDataStore.ensureGoals(force),
+      userDataStore.ensureAssetSummary(force),
+      userDataStore.ensurePortfolios(force),
       getCachedExchangeRate(),
     ])
 
-    if (goalResult.data) {
-      targetAsset.value = goalResult.data.target_asset ?? 0
-      monthlyInvestment.value = goalResult.data.monthly_investment ?? 0
-      annualReturn.value = goalResult.data.annual_return ?? null
+    if (goal) {
+      targetAsset.value = goal.target_asset ?? 0
+      monthlyInvestment.value = goal.monthly_investment ?? 0
+      annualReturn.value = goal.annual_return ?? null
     }
-    currentAsset.value = summaryResult.data?.current_asset ?? 0
+    currentAsset.value = summary?.current_asset ?? 0
 
+    const cashRows = portfolios.filter((p) => p.asset_type === '현금')
     cashTotalKrw.value = Math.round(
-      (cashResult.data ?? []).reduce((sum, c) => {
+      cashRows.reduce((sum, c) => {
         const amount = c.avg_price * c.quantity
         return sum + (c.currency === 'USD' ? amount * rate : amount)
       }, 0),
     )
 
-    topPortfolios.value = (portfolioResult.data ?? []).map((p) => {
+    topPortfolios.value = portfolios.slice(0, 4).map((p) => {
       const eval_ = p.avg_price * p.quantity
       const evalKrw = p.currency === 'USD' ? eval_ * rate : eval_
       return { ...p, evaluationKrw: Math.round(evalKrw) }
@@ -194,7 +195,9 @@ const loadDashboard = async () => {
 onMounted(() => {
   loadDashboard()
   checkLatestNotice()
+  useRegisterPullToRefresh(() => loadDashboard(true))
 })
+onUnmounted(clearPullToRefresh)
 </script>
 
 <template>

@@ -3,8 +3,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
+import { useUserDataStore } from '@/stores/userData'
 
 const router = useRouter()
+const userDataStore = useUserDataStore()
 const loading = ref(true)
 
 interface HistoryPoint {
@@ -20,19 +22,17 @@ const annualReturn = ref<number | null>(null)
 
 onMounted(async () => {
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const [histRes, goalRes, summaryRes] = await Promise.all([
+    const [histRes, goal, summary] = await Promise.all([
       supabase.from('asset_history').select('recorded_at, current_asset').order('recorded_at', { ascending: true }),
-      supabase.from('investment_goals').select('monthly_investment, annual_return').eq('user_id', user.id).maybeSingle(),
-      supabase.from('asset_summary').select('current_asset, investment_principal').eq('user_id', user.id).maybeSingle(),
+      userDataStore.ensureGoals(),
+      userDataStore.ensureAssetSummary(),
     ])
     if (histRes.error) throw histRes.error
     history.value = histRes.data ?? []
-    monthlyInvestment.value = goalRes.data?.monthly_investment ?? 0
-    annualReturn.value = goalRes.data?.annual_return ?? null
-    currentAssetNow.value = summaryRes.data?.current_asset ?? 0
-    investmentPrincipal.value = summaryRes.data?.investment_principal ?? 0
+    monthlyInvestment.value = goal?.monthly_investment ?? 0
+    annualReturn.value = goal?.annual_return ?? null
+    currentAssetNow.value = summary?.current_asset ?? 0
+    investmentPrincipal.value = summary?.investment_principal ?? 0
   } catch {
     showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
   } finally {
