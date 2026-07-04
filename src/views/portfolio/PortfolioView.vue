@@ -632,7 +632,7 @@ onUnmounted(() => {
             <span class="font-weight-medium">{{ formatSummaryKrw(totalEvaluationAmountKrw) }}</span>
           </div>
           <div class="summary-row">
-            <span class="text-medium-emphasis">수익률(%)</span>
+            <span class="text-medium-emphasis">수익률</span>
             <span
               class="font-weight-medium"
               :class="totalProfitRate >= 0 ? 'text-success' : 'text-error'"
