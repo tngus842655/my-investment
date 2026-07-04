@@ -18,3 +18,9 @@ export type { Animation }                      from './tokens/animation'
 
 // ─── Storage key ──────────────────────────────────────────────
 export const THEME_STORAGE_KEY = 'fp-theme'
+export const FONT_SCALE_STORAGE_KEY = 'fp-font-scale'
+
+// ─── 글자 크기 스케일 ────────────────────────────────────────
+export const FONT_SCALE_MIN = 0.75
+export const FONT_SCALE_MAX = 1.25
+export const FONT_SCALE_DEFAULT = 1
