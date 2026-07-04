@@ -350,7 +350,7 @@ function formatFull(v: number) {
               <text
                 :x="PAD.left" :y="chartData.targetY - 4"
                 font-size="8" fill="rgb(var(--v-theme-primary))"
-              >올해 목표</text>
+              >올해 목표 {{ formatShort(thisYearTarget) }}</text>
             </template>
             <!-- 전체 자산 (현재 평가 자산) -->
             <text
