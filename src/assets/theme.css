@@ -239,7 +239,7 @@ input, textarea {
 .v-tooltip .v-overlay__content {
   background: rgba(20, 20, 30, 0.92) !important;
   color: #fff !important;
-  font-size: 12px !important;
+  font-size: 0.75rem !important;
   line-height: 1.6 !important;
   max-width: 220px !important;
   padding: 8px 12px !important;
@@ -253,7 +253,7 @@ input, textarea {
 
 /* 레이블 */
 .fp-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.04em;
   color: var(--fp-text-secondary);
@@ -272,7 +272,7 @@ input, textarea {
   align-items: center;
   border-radius: var(--fp-radius-badge);
   padding: 2px 8px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   line-height: 1.6;
 }
@@ -347,7 +347,7 @@ input, textarea {
     padding: 10px 4px 8px !important;
   }
   .two-col .v-field {
-    font-size: 13px !important;
+    font-size: 0.8125rem !important;
   }
 }
 
