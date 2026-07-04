@@ -91,7 +91,6 @@
    커스텀 pull-to-refresh와 별개로 브라우저가 body/html을 통째로
    당겨서 상단에 배경색 없는 검은 영역이 노출되는 현상 방지 */
 html, body {
-  height: 100%;
   overscroll-behavior-y: none;
   background: #080f1e;
 }
