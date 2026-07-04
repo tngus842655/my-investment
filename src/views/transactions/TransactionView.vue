@@ -483,14 +483,14 @@ onUnmounted(() => {
 <template>
   <v-container class="pa-4 pa-sm-6" @click="onContainerClick">
     <!-- 헤더 -->
-    <div class="d-flex justify-space-between align-center mb-5">
-      <div class="d-flex align-center ga-2">
+    <div class="asset-header d-flex justify-space-between align-center mb-5">
+      <div class="d-flex align-center ga-2" style="min-width: 0">
         <img src="/icons/icon-record.png" class="header-icon" alt="기록" />
-        <div>
-          <div class="font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">
+        <div style="min-width: 0">
+          <div class="font-weight-bold header-title" style="color: rgb(var(--v-theme-on-surface))">
             거래내역
           </div>
-          <div class="text-medium-emphasis">매수 / 매도 기록</div>
+          <div class="text-medium-emphasis header-title">매수 / 매도 기록</div>
         </div>
       </div>
       <v-btn
@@ -498,6 +498,7 @@ onUnmounted(() => {
         prepend-icon="mdi-plus"
         rounded="lg"
         elevation="0"
+        style="flex-shrink: 0"
         @click="addDialog = true"
       >
         거래 추가
@@ -762,6 +763,16 @@ onUnmounted(() => {
   margin: 0 0 8px;
 }
 
+.asset-header {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.header-title {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
 .header-icon {
   width: 32px;
   height: 32px;
@@ -771,7 +782,8 @@ onUnmounted(() => {
 
 .stat-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr): 글자 크기가 커져도 칸 밖으로 넘치지 않도록 함 */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
 }
 .stat-card {

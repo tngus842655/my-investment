@@ -533,7 +533,8 @@ onUnmounted(clearPullToRefresh)
 /* 스탯 */
 .stat-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr): 글자 크기가 커져도 칸 밖으로 넘치지 않도록 함 */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
 }
 .stat-card {

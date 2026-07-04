@@ -555,17 +555,17 @@ onUnmounted(() => {
 <template>
   <v-container class="pa-4 pa-sm-6" @click="onContainerClick">
     <!-- 헤더 -->
-    <div class="d-flex justify-space-between align-center mb-5">
-      <div class="d-flex align-center ga-2">
+    <div class="asset-header d-flex justify-space-between align-center mb-5">
+      <div class="d-flex align-center ga-2" style="min-width: 0">
         <img src="/icons/icon-asset.png" class="header-icon" alt="자산" />
-        <div>
-          <div class="font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">
+        <div style="min-width: 0">
+          <div class="font-weight-bold header-title" style="color: rgb(var(--v-theme-on-surface))">
             보유자산
           </div>
-          <div class="text-medium-emphasis">실시간 평가금액 기준</div>
+          <div class="text-medium-emphasis header-title">실시간 평가금액 기준</div>
         </div>
       </div>
-      <div class="d-flex ga-2 align-center">
+      <div class="d-flex ga-2 align-center" style="flex-shrink: 0">
         <v-chip v-if="isSavingOrder" size="small" color="primary" variant="tonal">
           저장 중...
         </v-chip>
@@ -910,6 +910,16 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.asset-header {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.header-title {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
 .header-icon {
   width: 32px;
   height: 32px;
@@ -956,6 +966,9 @@ onUnmounted(() => {
   font-size: 0.8125rem;
   font-weight: 600;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .card-amount {
@@ -1067,16 +1080,18 @@ onUnmounted(() => {
 
 .summary-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr): 글자 크기가 커져 내용이 칸보다 길어져도 넘치지 않고
+     칸 안에서 줄바꿈되도록 함 */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 6px 16px;
 }
 
 .summary-row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  white-space: nowrap;
+  gap: 4px 8px;
 }
 .summary-amount-wrap {
   display: flex;
