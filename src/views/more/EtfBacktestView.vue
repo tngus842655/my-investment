@@ -415,8 +415,8 @@ const yearlyRows = computed(() =>
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <div class="flex-grow-1">
-        <div class="text-h6 font-weight-bold">ETF 백테스트</div>
-        <div class="d-flex align-center ga-1 text-caption text-medium-emphasis">
+        <div class="font-weight-bold">ETF 백테스트</div>
+        <div class="d-flex align-center ga-1 text-medium-emphasis">
           과거
           <v-tooltip :model-value="dcaOpen" :text="tooltips.dca" location="bottom" max-width="260">
             <template #activator="{ props }">
@@ -436,8 +436,8 @@ const yearlyRows = computed(() =>
         class="collapse-header"
         @click="inputCollapsed = !inputCollapsed"
       >
-        <div class="text-body-2 font-weight-bold">조회 조건</div>
-        <div class="d-flex align-center ga-2 text-caption text-medium-emphasis">
+        <div class="font-weight-bold">조회 조건</div>
+        <div class="d-flex align-center ga-2 text-medium-emphasis">
           <span>{{ tickerInput }}{{ compareInput ? ` vs ${compareInput}` : '' }}{{ startYm ? ` · ${startYm.slice(0, 4)}년~` : '' }}</span>
           <v-icon size="18">{{ inputCollapsed ? 'mdi-chevron-down' : 'mdi-chevron-up' }}</v-icon>
         </div>
@@ -505,7 +505,7 @@ const yearlyRows = computed(() =>
           @keyup.enter="run"
         >
           <template #append-inner>
-            <span class="text-caption text-medium-emphasis">
+            <span class="text-medium-emphasis">
               {{ result?.currency === 'KRW' ? '원' : 'USD' }}
             </span>
           </template>
@@ -558,7 +558,7 @@ const yearlyRows = computed(() =>
           백테스트 실행
         </v-btn>
       </div>
-      <div class="text-caption text-medium-emphasis mt-3">
+      <div class="text-medium-emphasis mt-3">
         * 해외 ETF/주식 전용 · 배당 재투자 포함 근사치 · 세금/수수료 미포함
       </div>
       </div><!-- /v-show -->
@@ -577,7 +577,7 @@ const yearlyRows = computed(() =>
 
       <!-- 기간 헤더 -->
       <div class="d-flex align-center justify-space-between mb-3 px-1">
-        <div class="text-body-2 font-weight-bold">
+        <div class="font-weight-bold">
           {{ result.name }} ({{ result.ticker }})
         </div>
         <div class="period-badge">
@@ -673,7 +673,7 @@ const yearlyRows = computed(() =>
 
       <!-- ETF 비교 테이블 -->
       <v-card v-if="compareResult && compareRows" class="glass-card pa-4 mb-4" rounded="xl">
-        <div class="text-body-2 font-weight-bold mb-3">ETF 비교</div>
+        <div class="font-weight-bold mb-3">ETF 비교</div>
         <div class="cmp-header">
           <span />
           <span class="cmp-ticker cmp-ticker--a">{{ result.ticker }}</span>
@@ -716,7 +716,7 @@ const yearlyRows = computed(() =>
       <!-- SVG 차트 -->
       <v-card class="glass-card pa-4 mb-4" rounded="xl">
         <div class="d-flex align-center justify-space-between mb-2">
-          <div class="text-body-2 font-weight-bold">누적 자산 추이</div>
+          <div class="font-weight-bold">누적 자산 추이</div>
         </div>
         <div class="d-flex ga-1 mb-3">
           <button class="mode-btn" :class="{ 'mode-btn--active': chartMode === 'amount' }" @click="chartMode = 'amount'">금액</button>
@@ -808,19 +808,19 @@ const yearlyRows = computed(() =>
           <div class="d-flex ga-4 mt-2 justify-center flex-wrap">
             <div class="d-flex align-center ga-1">
               <div class="legend-line legend-solid" />
-              <span class="text-caption text-medium-emphasis">{{ result.ticker }} 평가금액</span>
+              <span class="text-medium-emphasis">{{ result.ticker }} 평가금액</span>
             </div>
             <div v-if="compareResult" class="d-flex align-center ga-1">
               <div class="legend-line legend-cmp" />
-              <span class="text-caption text-medium-emphasis">{{ compareResult.ticker }} 평가금액</span>
+              <span class="text-medium-emphasis">{{ compareResult.ticker }} 평가금액</span>
             </div>
             <div v-if="chartMode === 'amount'" class="d-flex align-center ga-1">
               <div class="legend-line legend-dash" />
-              <span class="text-caption text-medium-emphasis">투자원금</span>
+              <span class="text-medium-emphasis">투자원금</span>
             </div>
             <div v-if="chartMode === 'rate'" class="d-flex align-center ga-1">
               <div class="legend-line legend-dash" />
-              <span class="text-caption text-medium-emphasis">0% 기준선</span>
+              <span class="text-medium-emphasis">0% 기준선</span>
             </div>
           </div>
         </template>
@@ -829,7 +829,7 @@ const yearlyRows = computed(() =>
       <!-- 연도별 테이블 -->
       <v-card class="glass-card pa-4" rounded="xl">
         <div class="d-flex align-center justify-space-between mb-3">
-          <div class="text-body-2 font-weight-bold">연도별 스냅샷 (연말 기준)</div>
+          <div class="font-weight-bold">연도별 스냅샷 (연말 기준)</div>
           <button v-if="allYearlyRows.length > 5" class="toggle-btn" @click="showRecentOnly = !showRecentOnly">
             {{ showRecentOnly ? '전체 보기' : '최근 5년' }}
           </button>

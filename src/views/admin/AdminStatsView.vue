@@ -164,8 +164,8 @@ onMounted(async () => {
         <v-icon size="20">mdi-arrow-left</v-icon>
       </button>
       <div>
-        <div class="text-h5 font-weight-bold">통계</div>
-        <div class="text-body-2 text-medium-emphasis">가입 · 접속 현황</div>
+        <div class="font-weight-bold">통계</div>
+        <div class="text-medium-emphasis">가입 · 접속 현황</div>
       </div>
     </div>
 
@@ -190,7 +190,7 @@ onMounted(async () => {
       <!-- 신규 가입 추이 -->
       <div class="glass-card pa-4 mb-3">
         <div class="section-label mb-1">신규 가입 추이</div>
-        <div class="text-caption text-medium-emphasis mb-3">
+        <div class="text-medium-emphasis mb-3">
           기간 내 총 {{ signupByDay.reduce((s, d) => s + d.count, 0) }}명 가입
         </div>
         <div class="chart-wrap">
@@ -233,7 +233,7 @@ onMounted(async () => {
       <!-- 일별 접속 추이 -->
       <div class="glass-card pa-4 mb-3">
         <div class="section-label mb-1">일별 접속 추이</div>
-        <div class="text-caption text-medium-emphasis mb-3">
+        <div class="text-medium-emphasis mb-3">
           기간 내 총 {{ accessByDay.reduce((s, d) => s + d.count, 0) }}명 접속 (일별 유저 합산)
         </div>
         <div class="chart-wrap">
@@ -273,7 +273,7 @@ onMounted(async () => {
       <!-- 접속 TOP 10 -->
       <div class="glass-card pa-4">
         <div class="section-label mb-3">접속 TOP 10 (기간 내 접속 일수)</div>
-        <div v-if="accessRanking.length === 0" class="text-center py-6 text-medium-emphasis text-body-2">
+        <div v-if="accessRanking.length === 0" class="text-center py-6 text-medium-emphasis">
           데이터가 없습니다
         </div>
         <div v-for="(item, i) in accessRanking" :key="item.email">
@@ -301,11 +301,11 @@ onMounted(async () => {
   <!-- 날짜 클릭 팝업 -->
   <v-dialog :model-value="!!clickedDate" max-width="320" @update:model-value="clickedDate = null">
     <v-card rounded="xl" class="pa-2">
-      <v-card-title class="text-body-1 font-weight-bold pt-4 px-4">
+      <v-card-title class="font-weight-bold pt-4 px-4">
         {{ clickedDate }} · {{ clickedType === 'signup' ? '가입' : '접속' }}
       </v-card-title>
       <v-card-text class="px-4 pb-2">
-        <div v-if="clickedEmails.length === 0" class="text-body-2 text-medium-emphasis py-2">
+        <div v-if="clickedEmails.length === 0" class="text-medium-emphasis py-2">
           해당 날짜에 데이터가 없습니다
         </div>
         <div v-for="(email, i) in clickedEmails" :key="email">

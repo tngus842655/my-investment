@@ -129,8 +129,8 @@ onMounted(async () => {
         <v-icon size="20">mdi-arrow-left</v-icon>
       </button>
       <div>
-        <div class="text-h5 font-weight-bold">회원 현황</div>
-        <div class="text-body-2 text-medium-emphasis">활동 및 투자 현황</div>
+        <div class="font-weight-bold">회원 현황</div>
+        <div class="text-medium-emphasis">활동 및 투자 현황</div>
       </div>
     </div>
 
@@ -216,7 +216,7 @@ onMounted(async () => {
       <!-- 인기 종목 TOP 10 -->
       <div class="glass-card pa-4">
         <div class="section-label mb-3">인기 보유 종목 TOP 10</div>
-        <div v-if="topTickers.length === 0" class="text-center py-6 text-medium-emphasis text-body-2">
+        <div v-if="topTickers.length === 0" class="text-center py-6 text-medium-emphasis">
           데이터가 없습니다
         </div>
         <div v-for="(item, i) in topTickers" :key="item.ticker">

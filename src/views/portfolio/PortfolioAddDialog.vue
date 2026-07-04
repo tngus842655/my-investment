@@ -432,7 +432,7 @@ const reset = (closeDialog = true) => {
 <template>
   <v-dialog v-model="dialog" max-width="500">
     <v-card rounded="xl" class="glass-dialog">
-      <v-card-title class="text-h5 font-weight-bold pt-4 pb-2 px-4">
+      <v-card-title class="font-weight-bold pt-4 pb-2 px-4">
         {{ isEditMode ? '자산 수정' : '자산 추가' }}
       </v-card-title>
 
@@ -531,7 +531,7 @@ const reset = (closeDialog = true) => {
           <v-icon size="14" color="primary" class="mr-1 flex-shrink-0"
             >mdi-information-outline</v-icon
           >
-          <span class="text-caption">
+          <span>
             {{
               isEditMode
                 ? '앱에 최초 입력한 잔고입니다. 이후 거래 내역은 거래 메뉴에서 수정하세요.'

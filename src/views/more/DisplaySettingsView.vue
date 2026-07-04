@@ -14,13 +14,13 @@ const percentLabel = (v: number) => `${Math.round(v * 100)}%`
       <v-btn icon variant="text" size="small" @click="router.back()">
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
-      <div class="text-h6 font-weight-bold">화면 설정</div>
+      <div class="font-weight-bold">화면 설정</div>
     </div>
 
     <v-card class="glass-card pa-4">
       <div class="d-flex align-center justify-space-between mb-2">
-        <div class="text-body-2 font-weight-medium">글자 크기</div>
-        <div class="text-body-2 font-weight-bold text-primary">{{ percentLabel(fontScale) }}</div>
+        <div class="font-weight-medium">글자 크기</div>
+        <div class="font-weight-bold text-primary">{{ percentLabel(fontScale) }}</div>
       </div>
       <v-slider
         :model-value="fontScale"
@@ -30,7 +30,7 @@ const percentLabel = (v: number) => `${Math.round(v * 100)}%`
         color="primary"
         @update:model-value="setFontScale"
       />
-      <div class="d-flex justify-space-between text-caption text-medium-emphasis">
+      <div class="d-flex justify-space-between text-medium-emphasis">
         <span>작게 ({{ percentLabel(min) }})</span>
         <span>크게 ({{ percentLabel(max) }})</span>
       </div>

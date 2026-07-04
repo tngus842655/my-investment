@@ -90,21 +90,21 @@ const notes = [
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <div>
-        <div class="text-h5 font-weight-bold">개발자 노트</div>
-        <div class="text-body-2 text-medium-emphasis">업데이트 내역</div>
+        <div class="font-weight-bold">개발자 노트</div>
+        <div class="text-medium-emphasis">업데이트 내역</div>
       </div>
     </div>
 
     <div v-for="note in notes" :key="note.version" class="release-card glass-card pa-4 mb-3">
       <div class="d-flex align-center ga-2 mb-3">
         <v-chip size="small" color="primary" variant="tonal" class="font-weight-bold">{{ note.version }}</v-chip>
-        <span class="text-caption text-medium-emphasis">{{ note.date }}</span>
+        <span class="text-medium-emphasis">{{ note.date }}</span>
       </div>
       <div v-if="note.description?.length" class="note-desc mb-2">
-        <p v-for="(line, i) in note.description" :key="i" :class="i === 0 ? 'note-desc-title' : 'text-body-2'">{{ line }}</p>
+        <p v-for="(line, i) in note.description" :key="i" :class="i === 0 ? 'note-desc-title' : ''">{{ line }}</p>
       </div>
       <ul v-if="note.items.length" class="note-list">
-        <li v-for="(item, i) in note.items" :key="i" class="text-body-2">{{ item }}</li>
+        <li v-for="(item, i) in note.items" :key="i">{{ item }}</li>
       </ul>
     </div>
   </v-container>

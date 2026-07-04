@@ -448,7 +448,7 @@ const reset = (closeDialog = true) => {
     <v-card rounded="xl" class="glass-dialog" style="overflow: hidden; display: flex; flex-direction: column; max-height: 90dvh">
       <!-- 컬러 헤더 -->
       <div class="dialog-header" :class="txType === 'BUY' ? 'header-buy' : 'header-sell'">
-        <div class="text-h6 font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">{{ isEditMode ? '거래 수정' : '거래 추가' }}</div>
+        <div class="font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">{{ isEditMode ? '거래 수정' : '거래 추가' }}</div>
         <div class="type-toggle mt-3">
           <button
             class="toggle-btn"

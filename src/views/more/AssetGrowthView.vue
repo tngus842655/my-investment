@@ -220,8 +220,8 @@ function formatFull(v: number) {
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <div>
-        <div class="text-h5 font-weight-bold">자산 성장 리포트</div>
-        <div class="text-body-2 text-medium-emphasis">월별 자산 증가 추이</div>
+        <div class="font-weight-bold">자산 성장 리포트</div>
+        <div class="text-medium-emphasis">월별 자산 증가 추이</div>
       </div>
     </div>
 
@@ -232,51 +232,51 @@ function formatFull(v: number) {
     <template v-else>
       <div v-if="monthlyData.length < 1" class="text-center py-12 text-medium-emphasis">
         <v-icon size="48" class="mb-3">mdi-chart-bar</v-icon>
-        <div class="text-body-2">아직 기록이 없어요.</div>
-        <div class="text-caption mt-1">자산 데이터가 쌓이면 월별 추이를 확인할 수 있어요.</div>
+        <div>아직 기록이 없어요.</div>
+        <div class="mt-1">자산 데이터가 쌓이면 월별 추이를 확인할 수 있어요.</div>
       </div>
 
       <template v-else>
         <!-- 요약 카드 4개 -->
         <div class="summary-grid mb-4">
           <v-card rounded="xl" class="summary-card pa-4 text-center">
-            <div class="text-caption text-medium-emphasis mb-1">현재 자산</div>
-            <div class="text-body-2 font-weight-bold text-primary">{{ formatShort(latestAsset) }}</div>
+            <div class="text-medium-emphasis mb-1">현재 자산</div>
+            <div class="font-weight-bold text-primary">{{ formatShort(latestAsset) }}</div>
           </v-card>
           <v-card rounded="xl" class="summary-card pa-4 text-center">
-            <div class="text-caption text-medium-emphasis mb-1">기간 증감</div>
+            <div class="text-medium-emphasis mb-1">기간 증감</div>
             <div
               v-if="totalGrowth"
-              class="text-body-2 font-weight-bold"
+              class="font-weight-bold"
               :class="totalGrowth.amount >= 0 ? 'text-success' : 'text-error'"
             >
               {{ totalGrowth.amount >= 0 ? '+' : '' }}{{ totalGrowth.pct.toFixed(1) }}%
             </div>
-            <div v-else class="text-body-2 font-weight-bold text-medium-emphasis">-</div>
+            <div v-else class="font-weight-bold text-medium-emphasis">-</div>
           </v-card>
           <v-card rounded="xl" class="summary-card pa-4 text-center">
-            <div class="text-caption text-medium-emphasis mb-1">월 평균 증가</div>
+            <div class="text-medium-emphasis mb-1">월 평균 증가</div>
             <div
-              class="text-body-2 font-weight-bold"
+              class="font-weight-bold"
               :class="avgMonthlyGrowth >= 0 ? 'text-success' : 'text-error'"
             >
               {{ avgMonthlyGrowth >= 0 ? '+' : '' }}{{ formatShort(avgMonthlyGrowth) }}
             </div>
           </v-card>
           <v-card rounded="xl" class="summary-card pa-4 text-center">
-            <div class="text-caption text-medium-emphasis mb-1">최고 증가월</div>
-            <div v-if="bestMonth" class="text-body-2 font-weight-bold text-success">
+            <div class="text-medium-emphasis mb-1">최고 증가월</div>
+            <div v-if="bestMonth" class="font-weight-bold text-success">
               {{ bestMonth.label }}
             </div>
-            <div v-else class="text-body-2 font-weight-bold text-medium-emphasis">-</div>
+            <div v-else class="font-weight-bold text-medium-emphasis">-</div>
           </v-card>
         </div>
 
         <!-- 원금 vs 수익 바 -->
         <v-card v-if="investmentPrincipal > 0" rounded="xl" class="pa-4 mb-4">
           <div class="d-flex justify-space-between align-center mb-2">
-            <div class="text-body-2 font-weight-medium">원금 vs 수익</div>
-            <div class="text-caption" :class="profitAmount >= 0 ? 'text-success' : 'text-error'">
+            <div class="font-weight-medium">원금 vs 수익</div>
+            <div :class="profitAmount >= 0 ? 'text-success' : 'text-error'">
               수익 {{ profitAmount >= 0 ? '+' : '' }}{{ formatShort(profitAmount) }}
             </div>
           </div>
@@ -294,11 +294,11 @@ function formatFull(v: number) {
           <div class="d-flex ga-3 mt-2">
             <div class="d-flex align-center ga-1">
               <span class="legend-dot principal" />
-              <span class="text-caption text-medium-emphasis">원금 {{ formatShort(investmentPrincipal) }}</span>
+              <span class="text-medium-emphasis">원금 {{ formatShort(investmentPrincipal) }}</span>
             </div>
             <div class="d-flex align-center ga-1">
               <span class="legend-dot profit" />
-              <span class="text-caption text-medium-emphasis">수익 {{ formatShort(Math.max(profitAmount, 0)) }}</span>
+              <span class="text-medium-emphasis">수익 {{ formatShort(Math.max(profitAmount, 0)) }}</span>
             </div>
           </div>
         </v-card>
@@ -318,7 +318,7 @@ function formatFull(v: number) {
 
         <!-- 바 차트 -->
         <v-card rounded="xl" class="pa-4 mb-4">
-          <div v-if="!chartData || filteredData.length < 1" class="text-center text-caption text-medium-emphasis py-6">
+          <div v-if="!chartData || filteredData.length < 1" class="text-center text-medium-emphasis py-6">
             데이터가 부족합니다.
           </div>
           <svg
@@ -430,11 +430,11 @@ function formatFull(v: number) {
               <v-btn icon size="x-small" variant="text" class="mr-1" @click="selectedMonth = null; tooltip = null">
                 <v-icon size="16">mdi-arrow-left</v-icon>
               </v-btn>
-              <div class="text-body-2 font-weight-medium">{{ selectedMonth }} 일별 상세</div>
+              <div class="font-weight-medium">{{ selectedMonth }} 일별 상세</div>
             </template>
-            <div v-else class="text-body-2 font-weight-medium">월별 상세</div>
+            <div v-else class="font-weight-medium">월별 상세</div>
             <v-spacer />
-            <div v-if="!selectedMonth" class="text-caption text-medium-emphasis">👆 막대를 눌러 일별 증감 보기</div>
+            <div v-if="!selectedMonth" class="text-medium-emphasis">👆 막대를 눌러 일별 증감 보기</div>
           </div>
 
           <!-- 월별 뷰 -->
@@ -458,7 +458,7 @@ function formatFull(v: number) {
 
           <!-- 일별 뷰 -->
           <template v-else>
-            <div v-if="!dailyDetail.length" class="text-center text-caption text-medium-emphasis py-4">
+            <div v-if="!dailyDetail.length" class="text-center text-medium-emphasis py-4">
               해당 월 데이터가 없습니다.
             </div>
             <div

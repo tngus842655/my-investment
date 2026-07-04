@@ -136,8 +136,8 @@ const toggleExpand = (id: string) => {
         <v-icon size="20">mdi-arrow-left</v-icon>
       </button>
       <div>
-        <div class="text-h5 font-weight-bold">의견 관리</div>
-        <div class="text-body-2 text-medium-emphasis">불편한 점이나 개선 아이디어를 보내주세요.</div>
+        <div class="font-weight-bold">의견 관리</div>
+        <div class="text-medium-emphasis">불편한 점이나 개선 아이디어를 보내주세요.</div>
       </div>
     </div>
 
@@ -204,7 +204,7 @@ const toggleExpand = (id: string) => {
 
     <div v-else-if="feedbacks.length === 0" class="empty-state">
       <v-icon size="36" style="opacity:0.25" class="mb-2">mdi-inbox-outline</v-icon>
-      <div class="text-body-2 text-medium-emphasis">작성한 의견이 없습니다.</div>
+      <div class="text-medium-emphasis">작성한 의견이 없습니다.</div>
     </div>
 
     <div v-else class="d-flex flex-column ga-3 pb-6">
@@ -238,17 +238,17 @@ const toggleExpand = (id: string) => {
 
         <!-- 작성 내용 (토글) -->
         <div v-if="expandedId === f.id" class="content-box mt-2">
-          <div class="text-caption text-medium-emphasis mb-1">작성 내용</div>
-          <div class="text-body-2" style="white-space:pre-wrap; line-height:1.7">{{ f.content }}</div>
+          <div class="text-medium-emphasis mb-1">작성 내용</div>
+          <div style="white-space:pre-wrap; line-height:1.7">{{ f.content }}</div>
         </div>
 
         <!-- 관리자 답변 (항상 노출) -->
         <div v-if="f.admin_comment" class="answer-box mt-3">
           <div class="d-flex align-center ga-1 mb-1">
             <v-icon size="14" color="primary">mdi-message-reply-outline</v-icon>
-            <span class="text-caption font-weight-bold text-primary">관리자 답변</span>
+            <span class="font-weight-bold text-primary">관리자 답변</span>
           </div>
-          <div class="text-body-2" style="white-space:pre-wrap; line-height:1.7">{{ f.admin_comment }}</div>
+          <div style="white-space:pre-wrap; line-height:1.7">{{ f.admin_comment }}</div>
         </div>
       </div>
     </div>

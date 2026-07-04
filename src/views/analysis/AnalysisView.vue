@@ -374,8 +374,8 @@ onUnmounted(clearPullToRefresh)
     <div class="d-flex align-center ga-2 mb-5">
       <img src="/icons/icon-predict.png" class="header-icon" alt="예측" />
       <div>
-        <div class="text-h6 font-weight-bold">미래 예측</div>
-        <div class="text-body-2 text-medium-emphasis">FIRE 달성까지의 여정</div>
+        <div class="font-weight-bold">미래 예측</div>
+        <div class="text-medium-emphasis">FIRE 달성까지의 여정</div>
       </div>
     </div>
 
@@ -389,8 +389,8 @@ onUnmounted(clearPullToRefresh)
       <!-- 설정 없음 -->
       <div class="glass-card py-12 text-center">
         <v-icon size="48" color="primary" style="opacity: 0.35" class="mb-4">mdi-chart-timeline-variant</v-icon>
-        <div class="text-h6 font-weight-medium text-medium-emphasis">설정이 필요합니다</div>
-        <div class="text-body-2 text-disabled mt-1 mb-6">목표 설정에서 월 투자금과 연평균 수익률을 입력해주세요</div>
+        <div class="font-weight-medium text-medium-emphasis">설정이 필요합니다</div>
+        <div class="text-disabled mt-1 mb-6">목표 설정에서 월 투자금과 연평균 수익률을 입력해주세요</div>
         <v-btn color="primary" variant="tonal" rounded="lg" @click="router.push('/goalSettings')"> 목표 설정하기 </v-btn>
       </div>
     </template>

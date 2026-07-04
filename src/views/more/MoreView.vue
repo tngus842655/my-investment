@@ -83,8 +83,8 @@ const currentThemeLabel = computed(() => {
     <div class="d-flex align-center ga-2 mb-6">
       <img src="/icons/icon-more.png" class="header-icon" alt="더보기" />
       <div>
-        <div class="text-h5 font-weight-bold">더보기</div>
-        <div class="text-body-2 text-medium-emphasis">설정 및 계정 관리</div>
+        <div class="font-weight-bold">더보기</div>
+        <div class="text-medium-emphasis">설정 및 계정 관리</div>
       </div>
     </div>
 
@@ -94,8 +94,8 @@ const currentThemeLabel = computed(() => {
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/goalSettings')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-target</v-icon></div>
         <div>
-          <div class="text-body-2 font-weight-medium">FIRE 목표 설정</div>
-          <div class="text-caption text-medium-emphasis">목표 자산·월 투자금·수익률 수정</div>
+          <div class="font-weight-medium">FIRE 목표 설정</div>
+          <div class="text-medium-emphasis">목표 자산·월 투자금·수익률 수정</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -104,8 +104,8 @@ const currentThemeLabel = computed(() => {
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/fire-simulator')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-chart-timeline-variant</v-icon></div>
         <div>
-          <div class="text-body-2 font-weight-medium">FIRE 시뮬레이터</div>
-          <div class="text-caption text-medium-emphasis">투자금·수익률 변경 시 달성일 비교</div>
+          <div class="font-weight-medium">FIRE 시뮬레이터</div>
+          <div class="text-medium-emphasis">투자금·수익률 변경 시 달성일 비교</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -114,8 +114,8 @@ const currentThemeLabel = computed(() => {
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/fire-history')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-flag-checkered</v-icon></div>
         <div>
-          <div class="text-body-2 font-weight-medium">FIRE 진행 기록</div>
-          <div class="text-caption text-medium-emphasis">목표 달성률 변화 히스토리</div>
+          <div class="font-weight-medium">FIRE 진행 기록</div>
+          <div class="text-medium-emphasis">목표 달성률 변화 히스토리</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -124,8 +124,8 @@ const currentThemeLabel = computed(() => {
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/badges')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-trophy-outline</v-icon></div>
         <div>
-          <div class="text-body-2 font-weight-medium">목표 달성 배지</div>
-          <div class="text-caption text-medium-emphasis">FIRE 달성률 구간별 업적</div>
+          <div class="font-weight-medium">목표 달성 배지</div>
+          <div class="text-medium-emphasis">FIRE 달성률 구간별 업적</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -138,8 +138,8 @@ const currentThemeLabel = computed(() => {
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/portfolio-analysis')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-chart-donut</v-icon></div>
         <div>
-          <div class="text-body-2 font-weight-medium">포트폴리오 분석</div>
-          <div class="text-caption text-medium-emphasis">종목별 비중 도넛 차트</div>
+          <div class="font-weight-medium">포트폴리오 분석</div>
+          <div class="text-medium-emphasis">종목별 비중 도넛 차트</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -148,8 +148,8 @@ const currentThemeLabel = computed(() => {
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/asset-growth')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-chart-bar</v-icon></div>
         <div>
-          <div class="text-body-2 font-weight-medium">자산 성장 리포트</div>
-          <div class="text-caption text-medium-emphasis">월별 자산 증가 추이</div>
+          <div class="font-weight-medium">자산 성장 리포트</div>
+          <div class="text-medium-emphasis">월별 자산 증가 추이</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -162,8 +162,8 @@ const currentThemeLabel = computed(() => {
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/etf-analysis')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-chart-box-outline</v-icon></div>
         <div>
-          <div class="text-body-2 font-weight-medium">ETF 분석&amp;비교</div>
-          <div class="text-caption text-medium-emphasis">CAGR · MDD · 변동성 · 배당률 · 운용보수</div>
+          <div class="font-weight-medium">ETF 분석&amp;비교</div>
+          <div class="text-medium-emphasis">CAGR · MDD · 변동성 · 배당률 · 운용보수</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -172,8 +172,8 @@ const currentThemeLabel = computed(() => {
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/etf-backtest')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-history</v-icon></div>
         <div>
-          <div class="text-body-2 font-weight-medium">ETF 백테스트</div>
-          <div class="text-caption text-medium-emphasis">과거 DCA 투자 수익률 시뮬레이션</div>
+          <div class="font-weight-medium">ETF 백테스트</div>
+          <div class="text-medium-emphasis">과거 DCA 투자 수익률 시뮬레이션</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -182,8 +182,8 @@ const currentThemeLabel = computed(() => {
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/dividend-calendar')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-calendar-month-outline</v-icon></div>
         <div>
-          <div class="text-body-2 font-weight-medium">배당 캘린더</div>
-          <div class="text-caption text-medium-emphasis">배당락일 · 지급일 일정 확인</div>
+          <div class="font-weight-medium">배당 캘린더</div>
+          <div class="text-medium-emphasis">배당락일 · 지급일 일정 확인</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -198,8 +198,8 @@ const currentThemeLabel = computed(() => {
           <v-icon size="18" color="primary">mdi-palette-outline</v-icon>
         </div>
         <div>
-          <div class="text-body-2 font-weight-medium">테마 선택</div>
-          <div class="text-caption text-medium-emphasis">현재: {{ currentThemeLabel }}</div>
+          <div class="font-weight-medium">테마 선택</div>
+          <div class="text-medium-emphasis">현재: {{ currentThemeLabel }}</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -210,8 +210,8 @@ const currentThemeLabel = computed(() => {
           <v-icon size="18" color="primary">mdi-cellphone-cog</v-icon>
         </div>
         <div>
-          <div class="text-body-2 font-weight-medium">화면 설정</div>
-          <div class="text-caption text-medium-emphasis">폰트 크기 등 화면 표시 설정</div>
+          <div class="font-weight-medium">화면 설정</div>
+          <div class="text-medium-emphasis">폰트 크기 등 화면 표시 설정</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -222,8 +222,8 @@ const currentThemeLabel = computed(() => {
           <v-icon size="18" color="primary">mdi-lock-reset</v-icon>
         </div>
         <div>
-          <div class="text-body-2 font-weight-medium">비밀번호 변경</div>
-          <div class="text-caption text-medium-emphasis">계정 비밀번호를 변경합니다</div>
+          <div class="font-weight-medium">비밀번호 변경</div>
+          <div class="text-medium-emphasis">계정 비밀번호를 변경합니다</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -236,8 +236,8 @@ const currentThemeLabel = computed(() => {
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/notices')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-bullhorn-outline</v-icon></div>
         <div>
-          <div class="text-body-2 font-weight-medium">공지사항</div>
-          <div class="text-caption text-medium-emphasis">서비스 관련 안내 및 공지를 확인하세요.</div>
+          <div class="font-weight-medium">공지사항</div>
+          <div class="text-medium-emphasis">서비스 관련 안내 및 공지를 확인하세요.</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -246,8 +246,8 @@ const currentThemeLabel = computed(() => {
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/feedback')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-message-text-outline</v-icon></div>
         <div>
-          <div class="text-body-2 font-weight-medium">의견 관리</div>
-          <div class="text-caption text-medium-emphasis">불편한 점이나 개선 아이디어를 보내주세요.</div>
+          <div class="font-weight-medium">의견 관리</div>
+          <div class="text-medium-emphasis">불편한 점이나 개선 아이디어를 보내주세요.</div>
         </div>
         <v-spacer />
         <span v-if="!isAdmin && unreadFeedbackCount > 0" class="unread-dot mr-2" />
@@ -257,8 +257,8 @@ const currentThemeLabel = computed(() => {
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/release-notes')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-notebook-edit-outline</v-icon></div>
         <div>
-          <div class="text-body-2 font-weight-medium">개발자 노트</div>
-          <div class="text-caption text-medium-emphasis">업데이트 내역을 확인하세요.</div>
+          <div class="font-weight-medium">개발자 노트</div>
+          <div class="text-medium-emphasis">업데이트 내역을 확인하세요.</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -272,8 +272,8 @@ const currentThemeLabel = computed(() => {
         <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/admin')">
           <div class="menu-icon"><v-icon size="18" color="primary">mdi-shield-crown-outline</v-icon></div>
           <div>
-            <div class="text-body-2 font-weight-medium">관리자 페이지</div>
-            <div class="text-caption text-medium-emphasis">회원 가입 이력 조회</div>
+            <div class="font-weight-medium">관리자 페이지</div>
+            <div class="text-medium-emphasis">회원 가입 이력 조회</div>
           </div>
           <v-spacer />
           <v-badge v-if="unreadFeedbackCount > 0" :content="unreadFeedbackCount" color="error" inline class="mr-1" />
@@ -290,7 +290,7 @@ const currentThemeLabel = computed(() => {
           <v-icon size="18" color="error">mdi-logout</v-icon>
         </div>
         <div>
-          <div class="text-body-2 font-weight-medium text-error">로그아웃</div>
+          <div class="font-weight-medium text-error">로그아웃</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -360,8 +360,8 @@ const currentThemeLabel = computed(() => {
       <v-card-title class="text-center pt-6 text-error">회원탈퇴</v-card-title>
       <v-card-text class="text-center">
         <v-icon color="error" size="40" class="mb-3">mdi-alert-circle-outline</v-icon>
-        <div class="text-body-2 mb-2 font-weight-medium">정말 탈퇴하시겠습니까?</div>
-        <div class="text-caption text-medium-emphasis">
+        <div class="mb-2 font-weight-medium">정말 탈퇴하시겠습니까?</div>
+        <div class="text-medium-emphasis">
           탈퇴 시 계정과 연결된 모든 데이터<br>
           (투자 목표, 포트폴리오, 거래 내역 등)가<br>
           <strong>영구적으로 삭제</strong>되며 복구할 수 없습니다.
@@ -380,7 +380,7 @@ const currentThemeLabel = computed(() => {
     <v-card rounded="xl" class="glass-dialog">
       <v-card-title class="text-center pt-6 text-error">최종 확인</v-card-title>
       <v-card-text>
-        <div class="text-caption text-medium-emphasis text-center mb-4">
+        <div class="text-medium-emphasis text-center mb-4">
           본인 확인을 위해 이메일 주소를 입력해주세요.
         </div>
         <v-text-field

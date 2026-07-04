@@ -212,7 +212,7 @@ onUnmounted(clearPullToRefresh)
           alt="FIREPATH"
         />
         <template v-else>
-          <div class="text-h6 font-weight-bold">FIREPATH</div>
+          <div class="font-weight-bold">FIREPATH</div>
         </template>
       </div>
       <button class="icon-btn" @click="router.push('/goalSettings')">
@@ -256,7 +256,7 @@ onUnmounted(clearPullToRefresh)
           <span v-if="hideAsset" class="asset-hidden">금액 숨김</span>
           <span v-else>{{ displayedCurrentAsset > 0 ? Math.round(displayedCurrentAsset).toLocaleString('ko-KR') + '원' : '-' }}</span>
         </div>
-        <div class="text-body-2 text-center" style="color: rgba(var(--v-theme-on-surface), 0.45)">
+        <div class="text-center" style="color: rgba(var(--v-theme-on-surface), 0.45)">
           <template v-if="displayedCurrentAsset > 0">
             목표 자산 <span v-if="hideAsset" class="asset-hidden-sm">금액 숨김</span><span v-else>{{ formatShortMoney(targetAsset) }}원</span>
           </template>
@@ -378,7 +378,7 @@ onUnmounted(clearPullToRefresh)
         <template v-if="topPortfolios.length === 0">
           <div class="text-center py-6">
             <v-icon size="36" color="primary" style="opacity: 0.35" class="mb-2">mdi-chart-line-variant</v-icon>
-            <div class="text-caption text-medium-emphasis">보유 자산이 없습니다</div>
+            <div class="text-medium-emphasis">보유 자산이 없습니다</div>
           </div>
         </template>
 
@@ -430,7 +430,7 @@ onUnmounted(clearPullToRefresh)
     <v-card v-if="latestNotice" rounded="xl" class="glass-dialog">
       <v-card-title class="d-flex align-center ga-2 pt-5 px-5">
         <v-icon color="primary" size="20">mdi-bullhorn-outline</v-icon>
-        <span class="text-body-1 font-weight-bold">{{ latestNotice.title }}</span>
+        <span class="font-weight-bold">{{ latestNotice.title }}</span>
         <v-chip v-if="latestNotice.is_test" size="x-small" color="warning" variant="tonal">테스트</v-chip>
       </v-card-title>
       <v-card-text class="px-5 notice-popup-content">{{ latestNotice.content }}</v-card-text>

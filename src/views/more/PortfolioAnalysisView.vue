@@ -244,8 +244,8 @@ const compareRows = computed<CompareRow[]>(() => {
     <!-- 헤더 -->
     <div class="d-flex align-center ga-2 mb-6">
       <v-btn icon="mdi-arrow-left" variant="text" size="small" class="mr-1" style="color: rgb(var(--v-theme-on-surface))" @click="router.back()" />      <div>
-        <div class="text-h5 font-weight-bold">포트폴리오 분석</div>
-        <div class="text-body-2 text-medium-emphasis">종목별 비중 분석</div>
+        <div class="font-weight-bold">포트폴리오 분석</div>
+        <div class="text-medium-emphasis">종목별 비중 분석</div>
       </div>
     </div>
 
@@ -257,8 +257,8 @@ const compareRows = computed<CompareRow[]>(() => {
     <template v-else-if="segments.length === 0">
       <div class="empty-state">
         <v-icon size="56" color="primary" class="mb-3" style="opacity:0.4">mdi-chart-donut</v-icon>
-        <div class="text-body-1 font-weight-medium mb-1">보유 자산이 없습니다</div>
-        <div class="text-body-2 text-medium-emphasis">포트폴리오에 자산을 추가해 보세요</div>
+        <div class="font-weight-medium mb-1">보유 자산이 없습니다</div>
+        <div class="text-medium-emphasis">포트폴리오에 자산을 추가해 보세요</div>
       </div>
     </template>
 
@@ -274,8 +274,8 @@ const compareRows = computed<CompareRow[]>(() => {
       <template v-if="viewMode === 'compare'">
         <div class="compare-card mb-4">
           <div class="d-flex align-center justify-space-between mb-3">
-            <div class="text-body-2 font-weight-medium">비교할 종목 선택</div>
-            <div class="text-caption text-medium-emphasis">{{ compareTickers.length }} / {{ COMPARE_MAX }}</div>
+            <div class="font-weight-medium">비교할 종목 선택</div>
+            <div class="text-medium-emphasis">{{ compareTickers.length }} / {{ COMPARE_MAX }}</div>
           </div>
           <div class="compare-chip-wrap">
             <button
@@ -290,12 +290,12 @@ const compareRows = computed<CompareRow[]>(() => {
 
         <div v-if="holdings.length === 0" class="empty-state">
           <v-icon size="48" color="primary" class="mb-3" style="opacity:0.4">mdi-compare-horizontal</v-icon>
-          <div class="text-body-2 text-medium-emphasis">비교할 수 있는 보유 종목이 없어요</div>
+          <div class="text-medium-emphasis">비교할 수 있는 보유 종목이 없어요</div>
         </div>
 
         <div v-else-if="compareRows.length < 2" class="empty-state">
           <v-icon size="48" color="primary" class="mb-3" style="opacity:0.4">mdi-compare-horizontal</v-icon>
-          <div class="text-body-2 text-medium-emphasis">비교할 종목을 2개 이상 선택해주세요</div>
+          <div class="text-medium-emphasis">비교할 종목을 2개 이상 선택해주세요</div>
         </div>
 
         <div v-else class="compare-card">
@@ -309,18 +309,18 @@ const compareRows = computed<CompareRow[]>(() => {
                 <span class="compare-dot" :style="{ background: row.color }" />
                 <span class="compare-name">{{ row.label }}</span>
               </div>
-              <span v-if="row.sharePct !== null" class="text-body-1 font-weight-bold" :style="{ color: row.color }">{{ row.sharePct.toFixed(1) }}%</span>
+              <span v-if="row.sharePct !== null" class="font-weight-bold" :style="{ color: row.color }">{{ row.sharePct.toFixed(1) }}%</span>
             </div>
 
             <template v-if="loadingPrices">
               <v-skeleton-loader type="text" width="140" />
             </template>
             <template v-else-if="row.evalKrw === null">
-              <div class="text-caption text-medium-emphasis">현재가 조회 실패</div>
+              <div class="text-medium-emphasis">현재가 조회 실패</div>
             </template>
             <template v-else>
               <div class="mb-1">
-                <span class="text-body-2 text-medium-emphasis">{{ formatShortMoney(row.evalKrw) }}원</span>
+                <span class="text-medium-emphasis">{{ formatShortMoney(row.evalKrw) }}원</span>
                 <span
                   v-if="row.profitRate !== null"
                   class="font-weight-medium ml-1"
@@ -336,7 +336,7 @@ const compareRows = computed<CompareRow[]>(() => {
               </div>
             </template>
           </div>
-          <div class="text-caption text-medium-emphasis text-center mt-3" style="opacity:0.6">선택한 종목 평가금액 합계를 100%로 한 비중</div>
+          <div class="text-medium-emphasis text-center mt-3" style="opacity:0.6">선택한 종목 평가금액 합계를 100%로 한 비중</div>
         </div>
       </template>
 
@@ -402,7 +402,7 @@ const compareRows = computed<CompareRow[]>(() => {
           </div>
         </div>
 
-        <div class="text-caption text-medium-emphasis text-center mt-3" style="opacity:0.6">취득가 기준 평가금액</div>
+        <div class="text-medium-emphasis text-center mt-3" style="opacity:0.6">취득가 기준 평가금액</div>
       </template>
     </template>
   </v-container>

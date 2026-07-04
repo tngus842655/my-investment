@@ -99,8 +99,8 @@ onMounted(async () => {
         <v-icon size="20">mdi-arrow-left</v-icon>
       </button>
       <div>
-        <div class="text-h5 font-weight-bold">관리자</div>
-        <div class="text-body-2 text-medium-emphasis">회원 현황 대시보드</div>
+        <div class="font-weight-bold">관리자</div>
+        <div class="text-medium-emphasis">회원 현황 대시보드</div>
       </div>
     </div>
 

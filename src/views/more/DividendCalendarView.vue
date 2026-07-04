@@ -376,8 +376,8 @@ const refreshData = async () => {
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <div>
-        <div class="text-h5 font-weight-bold">배당 캘린더</div>
-        <div class="text-body-2 text-medium-emphasis">보유 종목 배당락일 및 예상 배당금</div>
+        <div class="font-weight-bold">배당 캘린더</div>
+        <div class="text-medium-emphasis">보유 종목 배당락일 및 예상 배당금</div>
       </div>
       <v-spacer />
       <v-btn icon size="small" variant="text" :loading="loading" @click="refreshData">
@@ -393,28 +393,28 @@ const refreshData = async () => {
       <div v-if="!portfolios.filter(p => p.asset_type !== '현금' && p.asset_type !== '암호화폐').length"
         class="text-center py-12 text-medium-emphasis">
         <v-icon size="48" class="mb-3">mdi-calendar-blank</v-icon>
-        <div class="text-body-2">보유 종목이 없어요.</div>
-        <div class="text-caption mt-1">포트폴리오에 종목을 추가하면 배당 일정을 확인할 수 있어요.</div>
+        <div>보유 종목이 없어요.</div>
+        <div class="mt-1">포트폴리오에 종목을 추가하면 배당 일정을 확인할 수 있어요.</div>
       </div>
 
       <template v-else>
         <!-- 요약 카드 -->
         <div class="d-flex ga-3 mb-4">
           <v-card rounded="xl" class="summary-card flex-1 pa-4 text-center">
-            <div class="text-caption text-medium-emphasis mb-1">연간 예상 배당</div>
-            <div class="text-body-2 font-weight-bold text-primary">
+            <div class="text-medium-emphasis mb-1">연간 예상 배당</div>
+            <div class="font-weight-bold text-primary">
               {{ annualTotalKrw > 0 ? formatKrw(annualTotalKrw) : '-' }}
             </div>
           </v-card>
           <v-card rounded="xl" class="summary-card flex-1 pa-4 text-center">
-            <div class="text-caption text-medium-emphasis mb-1">이번 달 배당</div>
-            <div class="text-body-2 font-weight-bold" :class="monthTotalKrw > 0 ? 'text-success' : ''">
+            <div class="text-medium-emphasis mb-1">이번 달 배당</div>
+            <div class="font-weight-bold" :class="monthTotalKrw > 0 ? 'text-success' : ''">
               {{ monthTotalKrw > 0 ? formatKrw(monthTotalKrw) : '-' }}
             </div>
           </v-card>
           <v-card rounded="xl" class="summary-card flex-1 pa-4 text-center">
-            <div class="text-caption text-medium-emphasis mb-1">이번 달 지급</div>
-            <div class="text-body-2 font-weight-bold">
+            <div class="text-medium-emphasis mb-1">이번 달 지급</div>
+            <div class="font-weight-bold">
               {{ currentMonthEvents.length > 0 ? currentMonthEvents.length + '건' : '-' }}
             </div>
           </v-card>
@@ -425,7 +425,7 @@ const refreshData = async () => {
           <v-btn icon size="small" variant="text" @click="prevMonth">
             <v-icon>mdi-chevron-left</v-icon>
           </v-btn>
-          <div class="text-body-1 font-weight-bold">
+          <div class="font-weight-bold">
             {{ selectedYear }}.{{ String(selectedMonth).padStart(2, '0') }}
           </div>
           <v-btn icon size="small" variant="text" @click="nextMonth">
@@ -449,12 +449,7 @@ const refreshData = async () => {
               v-for="(cell, i) in calendarDays"
               :key="i"
               class="cal-cell"
-              :class="{
-                'has-event': cell.events.length > 0,
-                'selected': cell.day !== null && selectedDate === `${selectedYear}-${String(selectedMonth).padStart(2,'0')}-${String(cell.day).padStart(2,'0')}`,
-                'sunday': cell.day !== null && (i % 7 === 0),
-                'saturday': cell.day !== null && (i % 7 === 6),
-              }"
+              :class="{ 'has-event': cell.events.length > 0, 'selected': cell.day !== null && selectedDate === `${selectedYear}-${String(selectedMonth).padStart(2,'0')}-${String(cell.day).padStart(2,'0')}`, 'sunday': cell.day !== null && (i % 7 === 0), 'saturday': cell.day !== null && (i % 7 === 6), }"
               @click="onDayClick(cell.day, cell.events)"
             >
               <span v-if="cell.day" class="cal-day-num">{{ cell.day }}</span>
@@ -472,10 +467,10 @@ const refreshData = async () => {
 
         <!-- 이번 달 전체 일정 -->
         <v-card rounded="xl" class="pa-4 mb-4">
-          <div class="text-body-2 font-weight-medium mb-3">
+          <div class="font-weight-medium mb-3">
             {{ selectedYear }}.{{ String(selectedMonth).padStart(2, '0') }} 배당 일정
           </div>
-          <div v-if="!currentMonthEvents.length" class="text-center text-caption text-medium-emphasis py-4">
+          <div v-if="!currentMonthEvents.length" class="text-center text-medium-emphasis py-4">
             이번 달 배당 일정이 없어요.
           </div>
           <div
@@ -487,12 +482,12 @@ const refreshData = async () => {
             <div class="event-date">{{ ev.date.slice(5).replace('-', '.') }}</div>
             <div class="event-ticker">
               <div class="d-flex align-center ga-1" style="min-width: 0">
-                <span class="text-body-2 font-weight-medium event-ticker-name">{{ getTickerDisplayName(ev.ticker) }}</span>
+                <span class="font-weight-medium event-ticker-name">{{ getTickerDisplayName(ev.ticker) }}</span>
                 <v-chip v-if="ev.isNext" size="x-small" color="warning" variant="tonal" class="flex-shrink-0">예정</v-chip>
               </div>
             </div>
             <div class="text-right">
-              <div class="text-body-2 font-weight-bold" :class="ev.isNext ? 'text-warning' : 'text-primary'">
+              <div class="font-weight-bold" :class="ev.isNext ? 'text-warning' : 'text-primary'">
                 {{ ev.totalAmountKrw > 0 ? formatKrw(ev.totalAmountKrw) : '금액 미정' }}
               </div>
             </div>
@@ -500,11 +495,11 @@ const refreshData = async () => {
         </v-card>
 
         <!-- 배당 정보 없는 종목 안내 -->
-        <div v-if="noDividendTickers.length" class="text-caption text-medium-emphasis text-center">
+        <div v-if="noDividendTickers.length" class="text-medium-emphasis text-center">
           배당 정보 없음: {{ noDividendTickers.join(', ') }}
         </div>
 
-        <div class="notice-text text-caption text-medium-emphasis mt-2">
+        <div class="notice-text text-medium-emphasis mt-2">
           <div>* 배당락일은 과거 기반 예상치로 실제와 다를 수 있습니다.</div>
         </div>
       </template>
@@ -515,7 +510,7 @@ const refreshData = async () => {
   <v-bottom-sheet v-model="showSheet" :scrim="true">
     <v-card rounded="t-xl" class="pa-5">
       <div class="d-flex align-center ga-2 mb-4">
-        <div class="text-body-1 font-weight-bold">
+        <div class="font-weight-bold">
           {{ selectedDate?.replace(/-/g, '.') }} 배당락
         </div>
         <v-chip v-if="selectedDateEvents.some(e => e.isNext)" size="x-small" color="warning" variant="tonal">예정</v-chip>
@@ -532,16 +527,16 @@ const refreshData = async () => {
       >
         <div class="event-ticker">
           <div class="d-flex align-center ga-1">
-            <span class="text-body-2 font-weight-medium">{{ getTickerDisplayName(ev.ticker) }}</span>
+            <span class="font-weight-medium">{{ getTickerDisplayName(ev.ticker) }}</span>
             <v-chip v-if="ev.isNext" size="x-small" color="warning" variant="tonal">예정</v-chip>
           </div>
-          <div class="text-caption text-medium-emphasis">{{ ev.ticker }}</div>
+          <div class="text-medium-emphasis">{{ ev.ticker }}</div>
         </div>
         <div class="text-right">
-          <div class="text-body-2 font-weight-bold" :class="ev.isNext ? 'text-warning' : 'text-primary'">
+          <div class="font-weight-bold" :class="ev.isNext ? 'text-warning' : 'text-primary'">
             {{ ev.totalAmountKrw > 0 ? formatKrw(ev.totalAmountKrw) : '금액 미정' }}
           </div>
-          <div class="text-caption text-medium-emphasis">
+          <div class="text-medium-emphasis">
             {{ ev.currency === 'USD' ? '$' : '₩' }}{{ formatAmountPerShare(ev) }} × {{ ev.quantity }}주
           </div>
         </div>

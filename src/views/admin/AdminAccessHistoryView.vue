@@ -188,8 +188,8 @@ onMounted(async () => {
         <v-icon size="20">mdi-arrow-left</v-icon>
       </button>
       <div>
-        <div class="text-h5 font-weight-bold">이력 조회</div>
-        <div class="text-body-2 text-medium-emphasis">로그인 · 페이지 접속 기록</div>
+        <div class="font-weight-bold">이력 조회</div>
+        <div class="text-medium-emphasis">로그인 · 페이지 접속 기록</div>
       </div>
     </div>
 
@@ -284,7 +284,7 @@ onMounted(async () => {
           <div class="section-label mb-3">
             조회 결과 ({{ logs.length }}건{{ logs.length === 100 ? ', 최대 100건' : '' }})
           </div>
-          <div v-if="logs.length === 0" class="text-center py-8 text-medium-emphasis text-body-2">
+          <div v-if="logs.length === 0" class="text-center py-8 text-medium-emphasis">
             조회된 이력이 없습니다
           </div>
           <div v-for="(log, i) in logs" :key="log.id">

@@ -288,8 +288,8 @@ const aiData = computed(() => {
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <div>
-        <div class="text-h5 font-weight-bold">ETF 분석 & 비교</div>
-        <div class="text-body-2 text-medium-emphasis">CAGR · MDD · 변동성 · 배당률 · 운용보수</div>
+        <div class="font-weight-bold">ETF 분석 & 비교</div>
+        <div class="text-medium-emphasis">CAGR · MDD · 변동성 · 배당률 · 운용보수</div>
       </div>
     </div>
 
@@ -312,7 +312,7 @@ const aiData = computed(() => {
             @input="onInputA"
             @keyup.enter="fetchInfo"
           />
-          <div class="text-body-2 font-weight-bold text-medium-emphasis">vs</div>
+          <div class="font-weight-bold text-medium-emphasis">vs</div>
           <v-text-field
             v-model="inputB"
             label="비교 티커 (선택)"
@@ -344,7 +344,7 @@ const aiData = computed(() => {
       <template v-else>
         <!-- 기준 ETF -->
         <div class="d-flex align-center justify-space-between mb-1">
-          <div class="text-caption text-medium-emphasis">기준 ETF</div>
+          <div class="text-medium-emphasis">기준 ETF</div>
           <v-btn-toggle v-model="marketA" density="compact" rounded="lg" mandatory color="primary" variant="outlined">
             <v-btn value="overseas" size="x-small">해외</v-btn>
             <v-btn value="domestic" size="x-small">국내</v-btn>
@@ -394,12 +394,12 @@ const aiData = computed(() => {
 
         <!-- 구분선 -->
         <div class="d-flex align-center ga-2 mb-3">
-          <v-divider /><span class="text-caption text-medium-emphasis font-weight-bold">vs</span><v-divider />
+          <v-divider /><span class="text-medium-emphasis font-weight-bold">vs</span><v-divider />
         </div>
 
         <!-- 비교 ETF -->
         <div class="d-flex align-center justify-space-between mb-1">
-          <div class="text-caption text-medium-emphasis">비교 ETF <span style="opacity:0.5">(선택)</span></div>
+          <div class="text-medium-emphasis">비교 ETF <span style="opacity:0.5">(선택)</span></div>
           <v-btn-toggle v-model="marketB" density="compact" rounded="lg" mandatory color="primary" variant="outlined">
             <v-btn value="overseas" size="x-small">해외</v-btn>
             <v-btn value="domestic" size="x-small">국내</v-btn>
@@ -484,14 +484,14 @@ const aiData = computed(() => {
       <template v-else>
         <strong>{{ inputB.trim().toUpperCase() }}</strong> 티커를 찾을 수 없습니다.
       </template>
-      <div class="text-caption mt-1 opacity-80">미국 ETF(SPY, QQQ 등) 또는 국내 ETF 코드(069500 등)를 확인해주세요.</div>
+      <div class="mt-1 opacity-80">미국 ETF(SPY, QQQ 등) 또는 국내 ETF 코드(069500 등)를 확인해주세요.</div>
     </v-alert>
 
     <!-- 빈 상태 -->
     <div v-else-if="!dataA" class="text-center py-12 text-medium-emphasis">
       <v-icon size="48" class="mb-3">mdi-chart-box-outline</v-icon>
-      <div class="text-body-2">티커를 입력하고 분석 버튼을 눌러주세요.</div>
-      <div class="text-caption mt-1">미국 ETF(SPY, QQQ 등) 및 국내 ETF(069500 등) 지원</div>
+      <div>티커를 입력하고 분석 버튼을 눌러주세요.</div>
+      <div class="mt-1">미국 ETF(SPY, QQQ 등) 및 국내 ETF(069500 등) 지원</div>
     </div>
 
     <template v-else>
@@ -506,15 +506,15 @@ const aiData = computed(() => {
               >{{ tag.label }}</v-chip>
             </div>
             <div class="d-flex align-center ga-2 mt-1">
-              <div class="text-body-2 font-weight-bold">{{ info.ticker }}</div>
-              <div class="text-body-2 font-weight-bold text-primary">{{ fmt.price(info.currentPrice, info.currency) }}</div>
+              <div class="font-weight-bold">{{ info.ticker }}</div>
+              <div class="font-weight-bold text-primary">{{ fmt.price(info.currentPrice, info.currency) }}</div>
             </div>
-            <div class="text-caption text-medium-emphasis mt-0" style="line-height:1.3">
+            <div class="text-medium-emphasis mt-0" style="line-height:1.3">
               {{ getTickerDisplayName(info.ticker) !== info.ticker ? getTickerDisplayName(info.ticker) : (info.name ?? '') }}
             </div>
             <v-tooltip v-if="info.fundFamily" :text="info.fundFamily" location="bottom" open-on-click open-on-hover>
               <template #activator="{ props }">
-                <div v-bind="props" class="fund-family-label text-caption text-medium-emphasis mt-1">{{ info.fundFamily }}</div>
+                <div v-bind="props" class="fund-family-label text-medium-emphasis mt-1">{{ info.fundFamily }}</div>
               </template>
             </v-tooltip>
           </div>
@@ -530,14 +530,14 @@ const aiData = computed(() => {
         </div>
 
         <div class="metric-row d-flex align-center px-4 py-2">
-          <div class="metric-label text-caption">운용자산 (AUM)</div>
-          <div class="metric-val text-body-2 font-weight-medium text-right">{{ fmt.aum(dataA!.totalAssets, dataA!.currency) }}</div>
-          <div v-if="dataB" class="metric-val text-body-2 font-weight-medium text-right">{{ fmt.aum(dataB.totalAssets, dataB.currency) }}</div>
+          <div class="metric-label">운용자산 (AUM)</div>
+          <div class="metric-val font-weight-medium text-right">{{ fmt.aum(dataA!.totalAssets, dataA!.currency) }}</div>
+          <div v-if="dataB" class="metric-val font-weight-medium text-right">{{ fmt.aum(dataB.totalAssets, dataB.currency) }}</div>
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
-          <div class="metric-label text-caption">상장일</div>
-          <div class="metric-val text-body-2 font-weight-medium text-right">{{ fmt.date(dataA!.inceptionDate) }}</div>
-          <div v-if="dataB" class="metric-val text-body-2 font-weight-medium text-right">{{ fmt.date(dataB.inceptionDate) }}</div>
+          <div class="metric-label">상장일</div>
+          <div class="metric-val font-weight-medium text-right">{{ fmt.date(dataA!.inceptionDate) }}</div>
+          <div v-if="dataB" class="metric-val font-weight-medium text-right">{{ fmt.date(dataB.inceptionDate) }}</div>
         </div>
       </v-card>
 
@@ -558,7 +558,7 @@ const aiData = computed(() => {
         </div>
 
         <div class="metric-row d-flex align-center px-4 py-2">
-          <div class="metric-label text-caption d-flex align-center ga-1">
+          <div class="metric-label d-flex align-center ga-1">
             CAGR (연평균 수익률)
             <v-tooltip :text="tooltips.cagr" location="bottom" open-on-click>
               <template #activator="{ props }">
@@ -566,22 +566,22 @@ const aiData = computed(() => {
               </template>
             </v-tooltip>
           </div>
-          <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dispA?.cagr ?? null, dispB?.cagr ?? null, true, 'a')">
+          <div class="metric-val d-flex align-center justify-end ga-1" :class="cls(dispA?.cagr ?? null, dispB?.cagr ?? null, true, 'a')">
             {{ fmt.pct(dispA?.cagr ?? null) }}
           </div>
-          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dispA?.cagr ?? null, dispB?.cagr ?? null, true, 'b')">
+          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1" :class="cls(dispA?.cagr ?? null, dispB?.cagr ?? null, true, 'b')">
             {{ fmt.pct(dispB?.cagr ?? null) }}
           </div>
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
-          <div class="metric-label text-caption">52주 최고</div>
-          <div class="metric-val text-body-2 font-weight-medium text-right">{{ fmt.price(dataA!.week52High, dataA!.currency) }}</div>
-          <div v-if="dataB" class="metric-val text-body-2 font-weight-medium text-right">{{ fmt.price(dataB.week52High, dataB.currency) }}</div>
+          <div class="metric-label">52주 최고</div>
+          <div class="metric-val font-weight-medium text-right">{{ fmt.price(dataA!.week52High, dataA!.currency) }}</div>
+          <div v-if="dataB" class="metric-val font-weight-medium text-right">{{ fmt.price(dataB.week52High, dataB.currency) }}</div>
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
-          <div class="metric-label text-caption">52주 최저</div>
-          <div class="metric-val text-body-2 font-weight-medium text-right">{{ fmt.price(dataA!.week52Low, dataA!.currency) }}</div>
-          <div v-if="dataB" class="metric-val text-body-2 font-weight-medium text-right">{{ fmt.price(dataB.week52Low, dataB.currency) }}</div>
+          <div class="metric-label">52주 최저</div>
+          <div class="metric-val font-weight-medium text-right">{{ fmt.price(dataA!.week52Low, dataA!.currency) }}</div>
+          <div v-if="dataB" class="metric-val font-weight-medium text-right">{{ fmt.price(dataB.week52Low, dataB.currency) }}</div>
         </div>
       </v-card>
 
@@ -594,7 +594,7 @@ const aiData = computed(() => {
         </div>
 
         <div class="metric-row d-flex align-center px-4 py-2">
-          <div class="metric-label text-caption d-flex align-center ga-1">
+          <div class="metric-label d-flex align-center ga-1">
             MDD (최대 낙폭)
             <v-tooltip :text="tooltips.mdd" location="bottom" open-on-click>
               <template #activator="{ props }">
@@ -603,15 +603,15 @@ const aiData = computed(() => {
             </v-tooltip>
           </div>
           <!-- MDD는 음수값 → 0에 가까울수록(높을수록) 낙폭 적음 → higherIsBetter: true -->
-          <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dispA?.mdd ?? null, dispB?.mdd ?? null, true, 'a')">
+          <div class="metric-val d-flex align-center justify-end ga-1" :class="cls(dispA?.mdd ?? null, dispB?.mdd ?? null, true, 'a')">
             {{ fmt.pct(dispA?.mdd ?? null) }}
           </div>
-          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dispA?.mdd ?? null, dispB?.mdd ?? null, true, 'b')">
+          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1" :class="cls(dispA?.mdd ?? null, dispB?.mdd ?? null, true, 'b')">
             {{ fmt.pct(dispB?.mdd ?? null) }}
           </div>
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
-          <div class="metric-label text-caption d-flex align-center ga-1">
+          <div class="metric-label d-flex align-center ga-1">
             연간 변동성
             <v-tooltip :text="tooltips.volatility" location="bottom" open-on-click>
               <template #activator="{ props }">
@@ -619,15 +619,15 @@ const aiData = computed(() => {
               </template>
             </v-tooltip>
           </div>
-          <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dispA?.volatility ?? null, dispB?.volatility ?? null, false, 'a')">
+          <div class="metric-val d-flex align-center justify-end ga-1" :class="cls(dispA?.volatility ?? null, dispB?.volatility ?? null, false, 'a')">
             {{ fmt.pct(dispA?.volatility ?? null) }}
           </div>
-          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dispA?.volatility ?? null, dispB?.volatility ?? null, false, 'b')">
+          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1" :class="cls(dispA?.volatility ?? null, dispB?.volatility ?? null, false, 'b')">
             {{ fmt.pct(dispB?.volatility ?? null) }}
           </div>
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
-          <div class="metric-label text-caption d-flex align-center ga-1">
+          <div class="metric-label d-flex align-center ga-1">
             베타
             <v-tooltip :text="tooltips.beta" location="bottom" open-on-click>
               <template #activator="{ props }">
@@ -635,11 +635,11 @@ const aiData = computed(() => {
               </template>
             </v-tooltip>
           </div>
-          <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.beta, dataB?.beta ?? null, false, 'a')">
+          <div class="metric-val d-flex align-center justify-end ga-1" :class="cls(dataA!.beta, dataB?.beta ?? null, false, 'a')">
             
             {{ fmt.num(dataA!.beta) }}
           </div>
-          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.beta, dataB.beta, false, 'b')">
+          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1" :class="cls(dataA!.beta, dataB.beta, false, 'b')">
             
             {{ fmt.num(dataB.beta) }}
           </div>
@@ -655,7 +655,7 @@ const aiData = computed(() => {
         </div>
 
         <div class="metric-row d-flex align-center px-4 py-2">
-          <div class="metric-label text-caption d-flex align-center ga-1">
+          <div class="metric-label d-flex align-center ga-1">
             배당률
             <v-tooltip :text="tooltips.dividendYield" location="bottom" open-on-click>
               <template #activator="{ props }">
@@ -663,17 +663,17 @@ const aiData = computed(() => {
               </template>
             </v-tooltip>
           </div>
-          <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.dividendYield, dataB?.dividendYield ?? null, true, 'a')">
+          <div class="metric-val d-flex align-center justify-end ga-1" :class="cls(dataA!.dividendYield, dataB?.dividendYield ?? null, true, 'a')">
             
             {{ fmt.pct(dataA!.dividendYield) }}
           </div>
-          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.dividendYield, dataB.dividendYield, true, 'b')">
+          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1" :class="cls(dataA!.dividendYield, dataB.dividendYield, true, 'b')">
             
             {{ fmt.pct(dataB.dividendYield) }}
           </div>
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
-          <div class="metric-label text-caption d-flex align-center ga-1">
+          <div class="metric-label d-flex align-center ga-1">
             운용보수 (TER)
             <v-tooltip :text="tooltips.ter" location="bottom" open-on-click>
               <template #activator="{ props }">
@@ -681,11 +681,11 @@ const aiData = computed(() => {
               </template>
             </v-tooltip>
           </div>
-          <div class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.expenseRatio, dataB?.expenseRatio ?? null, false, 'a', 2)">
+          <div class="metric-val d-flex align-center justify-end ga-1" :class="cls(dataA!.expenseRatio, dataB?.expenseRatio ?? null, false, 'a', 2)">
             
             {{ dataA!.expenseRatio != null ? fmt.pct(dataA!.expenseRatio, 2) : '-' }}
           </div>
-          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1 text-body-2" :class="cls(dataA!.expenseRatio, dataB.expenseRatio, false, 'b', 2)">
+          <div v-if="dataB" class="metric-val d-flex align-center justify-end ga-1" :class="cls(dataA!.expenseRatio, dataB.expenseRatio, false, 'b', 2)">
             
             {{ dataB.expenseRatio != null ? fmt.pct(dataB.expenseRatio, 2) : '-' }}
           </div>
@@ -696,32 +696,32 @@ const aiData = computed(() => {
       <v-card v-if="aiData" rounded="xl" class="mb-4 ai-card pa-4">
         <div class="d-flex align-center ga-2 mb-3">
           <v-icon size="18" color="primary">mdi-creation</v-icon>
-          <div class="text-caption font-weight-bold" style="color: rgb(var(--v-theme-primary))">AI 종합 분석</div>
+          <div class="font-weight-bold" style="color: rgb(var(--v-theme-primary))">AI 종합 분석</div>
         </div>
 
         <!-- 단일 ETF -->
-        <div v-if="aiData.mode === 'single'" class="text-body-2" style="line-height:1.7">{{ aiData.summary }}</div>
+        <div v-if="aiData.mode === 'single'" style="line-height:1.7">{{ aiData.summary }}</div>
 
         <!-- 비교 모드 -->
         <template v-else>
           <div v-if="!aiData.tied" class="ai-winner-row d-flex align-center ga-2 mb-3 pa-3">
             <span style="font-size:1.25rem">🏆</span>
             <div>
-              <div class="text-caption text-medium-emphasis">추천 ETF</div>
-              <div class="text-body-1 font-weight-bold">{{ aiData.winner }}</div>
+              <div class="text-medium-emphasis">추천 ETF</div>
+              <div class="font-weight-bold">{{ aiData.winner }}</div>
             </div>
           </div>
 
           <div v-for="reason in aiData.reasons" :key="reason" class="d-flex align-center ga-2 mb-1">
             <v-icon size="15" color="success">mdi-check-circle-outline</v-icon>
-            <div class="text-body-2">{{ reason }}</div>
+            <div>{{ reason }}</div>
           </div>
 
-          <div class="text-body-2 text-medium-emphasis mt-3">{{ aiData.closing }}</div>
+          <div class="text-medium-emphasis mt-3">{{ aiData.closing }}</div>
         </template>
       </v-card>
 
-      <div class="text-caption text-medium-emphasis">
+      <div class="text-medium-emphasis">
         * Yahoo Finance 데이터 기반 · 투자 판단의 참고 자료로만 활용하세요.
       </div>
     </template>

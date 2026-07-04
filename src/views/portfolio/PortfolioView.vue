@@ -559,10 +559,10 @@ onUnmounted(() => {
       <div class="d-flex align-center ga-2">
         <img src="/icons/icon-asset.png" class="header-icon" alt="자산" />
         <div>
-          <div class="text-h5 font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">
+          <div class="font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">
             보유자산
           </div>
-          <div class="text-body-2 text-medium-emphasis">실시간 평가금액 기준</div>
+          <div class="text-medium-emphasis">실시간 평가금액 기준</div>
         </div>
       </div>
       <div class="d-flex ga-2 align-center">
@@ -597,8 +597,8 @@ onUnmounted(() => {
         <v-icon size="48" color="primary" class="mb-4" style="opacity: 0.4"
           >mdi-chart-line-variant</v-icon
         >
-        <div class="text-h6 font-weight-medium text-medium-emphasis">자산이 없습니다</div>
-        <div class="text-body-2 text-disabled mt-1">자산 추가 버튼으로 첫 자산을 등록하세요.</div>
+        <div class="font-weight-medium text-medium-emphasis">자산이 없습니다</div>
+        <div class="text-disabled mt-1">자산 추가 버튼으로 첫 자산을 등록하세요.</div>
         <v-btn
           color="primary"
           variant="tonal"
@@ -617,24 +617,24 @@ onUnmounted(() => {
       <div class="glass-card pa-4 mb-4">
         <div class="summary-grid">
           <div class="summary-row">
-            <span class="text-caption text-medium-emphasis">매입금액</span>
-            <span class="text-caption font-weight-medium">{{ formatSummaryKrw(totalCostKrw) }}</span>
+            <span class="text-medium-emphasis">매입금액</span>
+            <span class="font-weight-medium">{{ formatSummaryKrw(totalCostKrw) }}</span>
           </div>
           <div class="summary-row">
-            <span class="text-caption text-medium-emphasis">평가손익</span>
+            <span class="text-medium-emphasis">평가손익</span>
             <span
-              class="text-caption font-weight-medium"
+              class="font-weight-medium"
               :class="totalProfitAmountKrw >= 0 ? 'text-success' : 'text-error'"
             >{{ formatSummaryProfit(totalProfitAmountKrw) }}</span>
           </div>
           <div class="summary-row">
-            <span class="text-caption text-medium-emphasis">평가금액</span>
-            <span class="text-caption font-weight-medium">{{ formatSummaryKrw(totalEvaluationAmountKrw) }}</span>
+            <span class="text-medium-emphasis">평가금액</span>
+            <span class="font-weight-medium">{{ formatSummaryKrw(totalEvaluationAmountKrw) }}</span>
           </div>
           <div class="summary-row">
-            <span class="text-caption text-medium-emphasis">수익률(%)</span>
+            <span class="text-medium-emphasis">수익률(%)</span>
             <span
-              class="text-caption font-weight-medium"
+              class="font-weight-medium"
               :class="totalProfitRate >= 0 ? 'text-success' : 'text-error'"
               >{{ formatPercent(totalProfitRate) }}</span
             >
@@ -671,7 +671,7 @@ onUnmounted(() => {
               >
             </template>
             <div class="glass-card pa-3" style="max-width: 240px">
-              <div class="text-caption font-weight-medium mb-2">자산군별 시세 갱신 안내</div>
+              <div class="font-weight-medium mb-2">자산군별 시세 갱신 안내</div>
               <div
                 v-for="info in PRICE_DELAY_INFO"
                 :key="info.label"
@@ -756,13 +756,7 @@ onUnmounted(() => {
           >
             <div
               class="glass-card asset-card pa-2"
-              :class="
-                item.asset_type === '현금'
-                  ? 'border-cash-left'
-                  : (item.profitAmountKrw ?? 0) >= 0
-                    ? 'border-success-left'
-                    : 'border-error-left'
-              "
+              :class="item.asset_type === '현금' ? 'border-cash-left' : (item.profitAmountKrw ?? 0) >= 0 ? 'border-success-left' : 'border-error-left'"
             >
               <!-- 상단: 종목명 + 수익률 + 드래그 핸들 -->
               <div class="d-flex justify-space-between align-center mb-1" style="gap: 6px">
@@ -786,15 +780,7 @@ onUnmounted(() => {
                   <!-- 로고 -->
                   <div
                     class="ticker-logo-wrap"
-                    :class="{
-                      'logo-bg-etf':
-                        (item.asset_type === 'ETF' || isEtfTicker(item.ticker)) &&
-                        !logoMap[item.ticker],
-                      'logo-bg-kr':
-                        item.currency === 'KRW' &&
-                        item.asset_type !== '현금' &&
-                        !isEtfTicker(item.ticker),
-                    }"
+                    :class="{ 'logo-bg-etf': (item.asset_type === 'ETF' || isEtfTicker(item.ticker)) && !logoMap[item.ticker], 'logo-bg-kr': item.currency === 'KRW' && item.asset_type !== '현금' && !isEtfTicker(item.ticker), }"
                   >
                     <img
                       v-if="item.asset_type === '현금' && item.ticker === 'CASH_USD'"
@@ -910,7 +896,7 @@ onUnmounted(() => {
       <v-card-text class="text-center text-medium-emphasis">
         <strong>{{ selectedPortfolio ? getTickerDisplayName(selectedPortfolio.ticker) : '' }}</strong
         >을(를) 삭제하시겠습니까?<br />
-        <span class="text-caption text-error">
+        <span class="text-error">
           <template v-if="selectedPortfolio?.asset_type !== '현금'">해당 자산의 거래내역도 모두 함께 삭제됩니다.<br /></template>이 작업은 되돌릴 수 없습니다.
         </span>
       </v-card-text>

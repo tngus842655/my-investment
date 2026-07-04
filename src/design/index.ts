@@ -5,13 +5,11 @@ export { lightTheme, darkTheme, natureTheme, spaceTheme, goldTheme } from './the
 
 // ─── Tokens ──────────────────────────────────────────────────
 export { spacing }                             from './tokens/spacing'
-export { fontSize, fontWeight, typography }    from './tokens/typography'
 export { radius }                              from './tokens/radius'
 export { shadows }                             from './tokens/shadows'
 export { animation }                           from './tokens/animation'
 
 export type { Spacing }                        from './tokens/spacing'
-export type { FontSize, FontWeight, Typography } from './tokens/typography'
 export type { Radius }                         from './tokens/radius'
 export type { Shadows }                        from './tokens/shadows'
 export type { Animation }                      from './tokens/animation'

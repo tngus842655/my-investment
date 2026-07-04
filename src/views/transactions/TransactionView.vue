@@ -487,10 +487,10 @@ onUnmounted(() => {
       <div class="d-flex align-center ga-2">
         <img src="/icons/icon-record.png" class="header-icon" alt="기록" />
         <div>
-          <div class="text-h5 font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">
+          <div class="font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">
             거래내역
           </div>
-          <div class="text-body-2 text-medium-emphasis">매수 / 매도 기록</div>
+          <div class="text-medium-emphasis">매수 / 매도 기록</div>
         </div>
       </div>
       <v-btn
@@ -529,7 +529,7 @@ onUnmounted(() => {
           <div class="stat-value">
             {{ formatStatAmount(totalBuy) }}<span class="stat-unit">원</span>
           </div>
-          <div class="text-caption text-disabled">
+          <div class="text-disabled">
             {{ totalsData.filter((t) => t.transaction_type === 'BUY').length }}건
           </div>
         </div>
@@ -541,7 +541,7 @@ onUnmounted(() => {
           <div class="stat-value">
             {{ formatStatAmount(totalSell) }}<span class="stat-unit">원</span>
           </div>
-          <div class="text-caption text-disabled">
+          <div class="text-disabled">
             {{ totalsData.filter((t) => t.transaction_type === 'SELL').length }}건
           </div>
         </div>
@@ -594,7 +594,7 @@ onUnmounted(() => {
           </button>
           <span v-if="hasUSD && usdToKrw" class="date-hint">적용환율 {{ Math.round(usdToKrw).toLocaleString() }}원 (전일 기준)</span>
         </div>
-        <span class="text-caption text-disabled flex-shrink-0 ml-auto">총 {{ totalsData.length }}건</span>
+        <span class="text-disabled flex-shrink-0 ml-auto">총 {{ totalsData.length }}건</span>
       </div>
 
       <!-- 빈 상태 -->
@@ -603,10 +603,10 @@ onUnmounted(() => {
           <v-icon size="48" color="primary" class="mb-4" style="opacity: 0.4"
             >mdi-swap-horizontal</v-icon
           >
-          <div class="text-h6 font-weight-medium text-medium-emphasis">
+          <div class="font-weight-medium text-medium-emphasis">
             {{ parsedDateFilter || filter !== 'ALL' ? '검색 결과가 없습니다' : '거래내역이 없습니다' }}
           </div>
-          <div class="text-body-2 text-disabled mt-1">
+          <div class="text-disabled mt-1">
             {{ parsedDateFilter || filter !== 'ALL' ? '다른 날짜나 필터를 선택해보세요.' : '거래 추가 버튼으로 첫 거래를 기록하세요.' }}
           </div>
           <v-btn
@@ -743,7 +743,7 @@ onUnmounted(() => {
       <v-card-text class="text-center text-medium-emphasis">
         <strong>{{ selectedTx?.portfolios?.ticker }}</strong>
         {{ selectedTx?.transaction_type === 'BUY' ? '매수' : '매도' }} 거래를 삭제하시겠습니까?<br />
-        <span class="text-caption">이 작업은 되돌릴 수 없습니다.</span>
+        <span>이 작업은 되돌릴 수 없습니다.</span>
       </v-card-text>
       <v-divider />
       <v-card-actions>

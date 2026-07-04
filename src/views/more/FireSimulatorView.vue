@@ -222,8 +222,8 @@ onMounted(loadData)
     <div class="d-flex align-center ga-2 mb-6">
       <v-btn icon="mdi-arrow-left" variant="text" size="small" class="mr-1" style="color: rgb(var(--v-theme-on-surface))" @click="router.back()" />
       <div>
-        <div class="text-h5 font-weight-bold">FIRE 시뮬레이터</div>
-        <div class="text-body-2 text-medium-emphasis">투자 조건 변경 시 달성일 비교</div>
+        <div class="font-weight-bold">FIRE 시뮬레이터</div>
+        <div class="text-medium-emphasis">투자 조건 변경 시 달성일 비교</div>
       </div>
     </div>
 
@@ -282,11 +282,11 @@ onMounted(loadData)
         <div class="d-flex ga-4 mb-3">
           <div class="d-flex align-center ga-2">
             <div class="legend-line base-line" />
-            <span class="text-caption text-medium-emphasis">기존 계획</span>
+            <span class="text-medium-emphasis">기존 계획</span>
           </div>
           <div class="d-flex align-center ga-2">
             <div class="legend-line sim-line" />
-            <span class="text-caption font-weight-medium">시뮬레이션</span>
+            <span class="font-weight-medium">시뮬레이션</span>
           </div>
         </div>
 

@@ -70,7 +70,7 @@ const submit = async () => {
       <v-btn icon variant="text" size="small" @click="router.back()">
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
-      <div class="text-h6 font-weight-bold">비밀번호 변경</div>
+      <div class="font-weight-bold">비밀번호 변경</div>
     </div>
 
     <v-card class="glass-card pa-4 mb-4">
