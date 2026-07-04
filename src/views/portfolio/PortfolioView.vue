@@ -1164,11 +1164,13 @@ onUnmounted(() => {
 }
 .action-edit {
   background: var(--fp-primary);
-  border-radius: 20px 0 0 20px;
+  /* 래퍼(.portfolio-card-wrap)의 클리핑 반경(20px)과 정확히 같으면 서브픽셀
+     오차로 모서리가 비쳐 보일 수 있어 여유를 두고 더 크게 둥글림 */
+  border-radius: 24px 0 0 24px;
 }
 .action-delete {
   background: var(--fp-error);
-  border-radius: 0 20px 20px 0;
+  border-radius: 0 24px 24px 0;
 }
 
 .swipe-card {
