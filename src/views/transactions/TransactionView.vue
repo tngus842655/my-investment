@@ -441,9 +441,9 @@ const closeSwipe = () => {
 }
 
 onMounted(async () => {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
-  userId = user.id
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) return
+  userId = session.user.id
   await Promise.all([loadYearOptions(), loadAccountOptions()])
 
   // 최근 거래가 있는 연/월을 기본 필터로 선택 (가독성 개선 — 진입 시 전체 내역이 한번에 쏟아지지 않도록)
