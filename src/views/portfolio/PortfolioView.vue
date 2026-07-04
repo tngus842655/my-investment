@@ -1087,11 +1087,11 @@ onUnmounted(() => {
 }
 
 .summary-row {
+  /* 셀마다 따로 줄바꿈 여부가 갈리면 칸별로 들쭉날쭉해 보여서, 항상
+     라벨-값을 위아래로 고정 배치 (글자 크기와 무관하게 모든 칸이 동일한 모양) */
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 4px 8px;
+  flex-direction: column;
+  gap: 2px;
 }
 .summary-amount-wrap {
   display: flex;
