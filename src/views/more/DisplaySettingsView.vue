@@ -35,5 +35,9 @@ const percentLabel = (v: number) => `${Math.round(v * 100)}%`
         <span>크게 ({{ percentLabel(max) }})</span>
       </div>
     </v-card>
+
+    <div class="mt-3 text-medium-emphasis">
+      너무 크게 설정하면 일부 화면에서 텍스트가 겹치거나 잘려 보일 수 있어요.
+    </div>
   </v-container>
 </template>
