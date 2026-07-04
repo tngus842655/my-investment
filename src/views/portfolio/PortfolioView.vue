@@ -484,14 +484,6 @@ const assetTypeColor = (type: string): string =>
     현금: 'green',
   })[type] ?? 'grey'
 
-const isRefreshing = ref(false)
-
-const refresh = async () => {
-  isRefreshing.value = true
-  await loadPortfolios()
-  isRefreshing.value = false
-}
-
 // ── 정렬 ─────────────────────────────────────────
 type SortKey = 'custom' | 'eval' | 'profit' | 'rate' | 'name'
 const SORT_STORAGE_KEY = 'firepath-portfolio-sort'
@@ -558,7 +550,7 @@ onMounted(async () => {
   window.addEventListener('touchmove', onDragMove, { passive: false })
   window.addEventListener('touchend', endDrag)
   window.addEventListener('resize', onResize)
-  useRegisterPullToRefresh(refresh)
+  useRegisterPullToRefresh(loadPortfolios)
 })
 onUnmounted(() => {
   dragCloneEl?.remove()
@@ -588,16 +580,6 @@ onUnmounted(() => {
         <v-chip v-if="isSavingOrder" size="small" color="primary" variant="tonal">
           저장 중...
         </v-chip>
-        <v-btn
-          icon="mdi-refresh"
-          variant="outlined"
-          size="small"
-          rounded="circle"
-          elevation="0"
-          :loading="isRefreshing"
-          style="border-color: rgba(var(--v-theme-on-surface), 0.15)"
-          @click="refresh"
-        />
         <v-btn
           color="primary"
           prepend-icon="mdi-plus"
