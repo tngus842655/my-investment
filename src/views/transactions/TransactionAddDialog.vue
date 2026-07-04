@@ -6,6 +6,9 @@ import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerDisplayName, TICKER_NAMES } from '@/utils/tickerNames'
 import { KR_STOCK_NAMES, KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 import { getStockPrice } from '@/services/market'
+import { useUserDataStore } from '@/stores/userData'
+
+const userDataStore = useUserDataStore()
 
 const krStockItems = Object.entries({ ...KR_STOCK_NAMES, ...KR_ETF_NAMES }).map(([code, name]) => ({
   title: `${name} (${code})`,
@@ -405,6 +408,8 @@ const save = async () => {
       showMessage('거래내역이 등록되었습니다.', 'success')
     }
 
+    // 거래 추가/수정 시 DB 트리거가 portfolios.quantity/avg_price를 재계산하므로 캐시 무효화
+    userDataStore.invalidatePortfolios()
     emit('saved')
     reset()
   } catch (e) {

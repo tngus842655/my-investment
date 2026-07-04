@@ -9,8 +9,10 @@ import { showMessage } from '@/composables/useSnackbar'
 import { getStockPrice } from '@/services/market'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel, isEtfTicker, getTickerDisplayName, TICKER_NAMES } from '@/utils/tickerNames'
+import { useUserDataStore } from '@/stores/userData'
 
 const router = useRouter()
+const userDataStore = useUserDataStore()
 const loading = ref(false)
 
 interface PortfolioViewItem extends PortfolioAsset {
@@ -100,6 +102,10 @@ const loadPortfolios = async () => {
     }
 
     const items = (data ?? []) as PortfolioAsset[]
+
+    // 다른 화면(대시보드 등)이 공유 스토어를 통해 최신 보유종목을 재사용하도록 캐시 갱신
+    userDataStore.portfolios = items
+    userDataStore.portfoliosLoaded = true
 
     const [rate, txResult, ...prices] = await Promise.all([
       fetchExchangeRate(),
@@ -204,6 +210,7 @@ const loadPortfolios = async () => {
       )
       .then(({ error }) => {
         if (error) console.warn('asset_summary 저장 실패:', error.message)
+        else userDataStore.invalidateAssetSummary()
       })
 
   } catch (error) {
@@ -311,6 +318,7 @@ const endDrag = async () => {
     for (let i = 0; i < portfolios.value.length; i++) {
       await supabase.from('portfolios').update({ sort_order: i }).eq('id', portfolios.value[i]!.id)
     }
+    userDataStore.invalidatePortfolios()
   } catch (error) {
     console.error(error)
     showMessage('순서 저장 중 오류가 발생했습니다.', 'error')

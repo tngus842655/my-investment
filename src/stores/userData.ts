@@ -32,7 +32,7 @@ export interface Portfolio {
   asset_type: string
   quantity: number
   avg_price: number
-  currency: 'KRW' | 'USD'
+  currency: string
   account_name: string | null
   sort_order: number | null
   created_at: string

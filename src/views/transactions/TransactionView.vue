@@ -4,7 +4,10 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerDisplayName } from '@/utils/tickerNames'
+import { useUserDataStore } from '@/stores/userData'
 import TransactionAddDialog from './TransactionAddDialog.vue'
+
+const userDataStore = useUserDataStore()
 
 type TransactionType = 'BUY' | 'SELL' | 'INITIAL'
 type FilterType = 'ALL' | 'BUY' | 'SELL'
@@ -246,6 +249,8 @@ const deleteTx = async () => {
     selectedTx.value = null
     transactions.value = transactions.value.filter((t) => t.id !== deletedId)
     loadTotals()
+    // DB 트리거가 portfolios.quantity/avg_price를 재계산하므로 캐시 무효화
+    userDataStore.invalidatePortfolios()
   } catch (e) {
     console.error(e)
     showMessage('삭제 중 오류가 발생했습니다.', 'error')
