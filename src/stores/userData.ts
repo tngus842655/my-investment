@@ -51,7 +51,8 @@ export const useUserDataStore = defineStore('userData', {
   actions: {
     async ensureGoals(force = false) {
       if (this.goalsLoaded && !force) return this.goals
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       if (!user) return null
       const { data } = await supabase
         .from('investment_goals')
@@ -65,7 +66,8 @@ export const useUserDataStore = defineStore('userData', {
 
     async ensureAssetSummary(force = false) {
       if (this.assetSummaryLoaded && !force) return this.assetSummary
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       if (!user) return null
       const { data } = await supabase
         .from('asset_summary')
@@ -79,7 +81,8 @@ export const useUserDataStore = defineStore('userData', {
 
     async ensurePortfolios(force = false) {
       if (this.portfoliosLoaded && !force) return this.portfolios
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       if (!user) return []
       const { data } = await supabase
         .from('portfolios')
