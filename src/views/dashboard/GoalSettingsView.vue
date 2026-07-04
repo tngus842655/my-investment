@@ -5,8 +5,10 @@ import { supabase } from '@/services/supabase'
 import { invalidateGoalCache } from '@/router'
 import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
+import { useUserDataStore } from '@/stores/userData'
 
 const router = useRouter()
+const userDataStore = useUserDataStore()
 
 const targetAsset = ref('')
 const monthlyInvestment = ref('')
@@ -164,7 +166,10 @@ const cancel = () => {
   if (isEditMode.value) {
     router.back()
   } else {
-    supabase.auth.signOut().then(() => router.replace('/'))
+    supabase.auth.signOut().then(() => {
+      userDataStore.reset()
+      router.replace('/')
+    })
   }
 }
 

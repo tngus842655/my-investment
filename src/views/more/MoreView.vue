@@ -5,9 +5,11 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { useAppTheme } from '@/composables/useAppTheme'
 import { ADMIN_EMAIL } from '@/config/admin'
+import { useUserDataStore } from '@/stores/userData'
 
 const router = useRouter()
 const { currentThemeId, themes, setTheme } = useAppTheme()
+const userDataStore = useUserDataStore()
 const confirmDialog = ref(false)
 const themeSheet = ref(false)
 const isAdmin = ref(false)
@@ -59,6 +61,7 @@ const deleteAccount = async () => {
     const { error } = await supabase.rpc('delete_user_account')
     if (error) throw error
     await supabase.auth.signOut()
+    userDataStore.reset()
     showMessage('계정이 삭제되었습니다.', 'success')
     router.replace('/')
   } catch {
@@ -74,6 +77,7 @@ const logout = async () => {
     showMessage('로그아웃 중 오류가 발생했습니다.', 'error')
     return
   }
+  userDataStore.reset()
   router.replace('/')
 }
 
