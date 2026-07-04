@@ -286,7 +286,7 @@ const toggleExpand = (n: Notice) => {
 }
 
 .date-text {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 
@@ -303,7 +303,7 @@ const toggleExpand = (n: Notice) => {
 .icon-btn:active { opacity: 0.4; }
 
 .title-text {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
 }
@@ -324,7 +324,7 @@ const toggleExpand = (n: Notice) => {
   padding: 8px 10px;
   background: rgb(var(--v-theme-surface));
   color: rgb(var(--v-theme-on-surface));
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.6;
   resize: none;
   outline: none;
@@ -339,12 +339,12 @@ const toggleExpand = (n: Notice) => {
   gap: 12px;
 }
 .toggle-row-label {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.8);
 }
 .toggle-row-sub {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.45);
   margin-top: 1px;
 }

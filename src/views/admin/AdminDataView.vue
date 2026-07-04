@@ -187,7 +187,7 @@ async function runScript(item: DataItem) {
 }
 .log-text {
   font-family: 'Courier New', monospace;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgb(var(--v-theme-on-surface));
   white-space: pre-wrap;
   word-break: break-all;

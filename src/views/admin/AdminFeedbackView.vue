@@ -343,7 +343,7 @@ const deleteFeedback = async () => {
   border-radius: 99px;
   background: rgba(var(--v-theme-on-surface), 0.05);
   border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.7);
 }
@@ -371,7 +371,7 @@ const deleteFeedback = async () => {
   border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
   background: transparent;
   color: rgba(var(--v-theme-on-surface), 0.5);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
@@ -395,7 +395,7 @@ const deleteFeedback = async () => {
 }
 
 .date-text {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
@@ -413,7 +413,7 @@ const deleteFeedback = async () => {
 .delete-btn:active { opacity: 0.4; }
 
 .title-text {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
 }
@@ -421,7 +421,7 @@ const deleteFeedback = async () => {
 .cursor-pointer { cursor: pointer; }
 
 .email-text {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 
@@ -447,7 +447,7 @@ const deleteFeedback = async () => {
   padding: 8px 10px;
   background: rgb(var(--v-theme-surface));
   color: rgb(var(--v-theme-on-surface));
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.6;
   resize: none;
   outline: none;
@@ -461,7 +461,7 @@ const deleteFeedback = async () => {
   border: none;
   background: rgb(var(--v-theme-primary));
   color: rgb(var(--v-theme-on-primary));
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.15s;
@@ -476,7 +476,7 @@ const deleteFeedback = async () => {
   border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
   background: transparent;
   color: rgba(var(--v-theme-on-surface), 0.5);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;

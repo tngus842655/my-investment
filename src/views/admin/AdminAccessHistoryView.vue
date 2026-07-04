@@ -329,7 +329,7 @@ onMounted(async () => {
 }
 
 .section-label {
-  font-size: 11px; font-weight: 700;
+  font-size: 0.6875rem; font-weight: 700;
   letter-spacing: 0.06em; text-transform: uppercase;
   color: rgba(var(--v-theme-on-surface), 0.4);
 }
@@ -340,7 +340,7 @@ onMounted(async () => {
   justify-content: space-between;
 }
 .toggle-row-label {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: rgba(var(--v-theme-on-surface), 0.7);
 }
 .toggle-switch {
@@ -380,7 +380,7 @@ onMounted(async () => {
 }
 .tab-btn {
   flex: 1; padding: 7px 0; border: none; border-radius: 9px;
-  font-size: 12px; font-weight: 500; cursor: pointer;
+  font-size: 0.75rem; font-weight: 500; cursor: pointer;
   background: transparent; color: rgba(var(--v-theme-on-surface), 0.55);
   display: flex; align-items: center; justify-content: center;
   transition: background 0.18s, color 0.18s;
@@ -392,16 +392,16 @@ onMounted(async () => {
 }
 
 .log-email {
-  font-size: 13px; font-weight: 600;
+  font-size: 0.8125rem; font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
 }
 .log-page {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
   margin-top: 1px;
 }
 .log-date {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.4);
   white-space: nowrap; flex-shrink: 0;
 }

@@ -445,7 +445,7 @@ onMounted(async () => {
 }
 
 .section-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -453,12 +453,12 @@ onMounted(async () => {
 }
 
 .log-email {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
 }
 .log-meta {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.4);
   padding-left: 23px;
 }
@@ -483,7 +483,7 @@ onMounted(async () => {
 .del-btn:active { opacity: 1; }
 
 .detail-section-label {
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -497,12 +497,12 @@ onMounted(async () => {
   gap: 8px;
 }
 .detail-key {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
   flex-shrink: 0;
 }
 .detail-val {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
   text-align: right;

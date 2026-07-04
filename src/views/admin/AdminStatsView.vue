@@ -311,7 +311,7 @@ onMounted(async () => {
         <div v-for="(email, i) in clickedEmails" :key="email">
           <div class="d-flex align-center ga-2 py-1">
             <v-icon size="13" color="primary">mdi-account-outline</v-icon>
-            <span style="font-size:13px; font-weight:600">{{ email }}</span>
+            <span style="font-size:0.8125rem; font-weight:600">{{ email }}</span>
           </div>
           <v-divider v-if="i < clickedEmails.length - 1" opacity="0.06" />
         </div>
@@ -342,7 +342,7 @@ onMounted(async () => {
 }
 
 .section-label {
-  font-size: 11px; font-weight: 700;
+  font-size: 0.6875rem; font-weight: 700;
   letter-spacing: 0.06em; text-transform: uppercase;
   color: rgba(var(--v-theme-on-surface), 0.4);
 }
@@ -354,7 +354,7 @@ onMounted(async () => {
 }
 .filter-btn {
   flex: 1; padding: 6px 0; border: none; border-radius: 9px;
-  font-size: 13px; font-weight: 500; cursor: pointer;
+  font-size: 0.8125rem; font-weight: 500; cursor: pointer;
   background: transparent; color: rgba(var(--v-theme-on-surface), 0.55);
   transition: background 0.18s, color 0.18s;
 }
@@ -367,7 +367,7 @@ onMounted(async () => {
 .chart-wrap { width: 100%; }
 .chart-svg { width: 100%; height: auto; display: block; }
 .chart-tick {
-  font-size: 8px;
+  font-size: 0.5rem;
   fill: rgba(128,128,128,0.7);
 }
 
@@ -376,13 +376,13 @@ onMounted(async () => {
   justify-content: space-between; gap: 8px;
 }
 .rank-num {
-  font-size: 12px; font-weight: 700;
+  font-size: 0.75rem; font-weight: 700;
   color: rgba(var(--v-theme-on-surface), 0.35);
   width: 18px; text-align: center; flex-shrink: 0;
 }
 .rank-top { color: rgb(var(--v-theme-primary)); }
 .rank-email {
-  font-size: 13px; font-weight: 500;
+  font-size: 0.8125rem; font-weight: 500;
   color: rgb(var(--v-theme-on-surface));
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
@@ -397,7 +397,7 @@ onMounted(async () => {
   transition: width 0.4s ease;
 }
 .rank-count {
-  font-size: 12px; font-weight: 600;
+  font-size: 0.75rem; font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
   min-width: 28px; text-align: right; flex-shrink: 0;
 }
