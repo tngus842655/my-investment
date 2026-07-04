@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { prefetchTickerLogos } from '@/services/tickerLogo'
 import { supabase } from '@/services/supabase'
@@ -12,6 +12,7 @@ import { getTickerLabel, isEtfTicker, getTickerDisplayName, TICKER_NAMES } from 
 import { evaluateItemKrw, simpleCostKrw } from '@/utils/portfolioMath'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
+import { useFontScale } from '@/composables/useFontScale'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
@@ -412,9 +413,12 @@ const deletePortfolio = async () => {
 const formatKrw = (v: number) => Math.round(v).toLocaleString('ko-KR')
 
 // 화면 너비 감지 — 360px 미만(폴드 등 좁은 화면)이면 한글 축약
+// 글자 크기를 키운 경우도 같은 효과(실제 표시 가능 폭이 좁아짐)이므로 함께 반영해
+// 매입금액/평가손익/평가금액이 한 번에 모두 축약되어 줄바꿈 없이 통일되게 보이도록 함
 const windowWidth = ref(window.innerWidth)
 const onResize = () => { windowWidth.value = window.innerWidth }
-const isNarrowScreen = computed(() => windowWidth.value < 420)
+const { fontScale } = useFontScale()
+const isNarrowScreen = computed(() => windowWidth.value / fontScale.value < 420)
 
 const formatKrwShort = (v: number): string => {
   const abs = Math.abs(v)
@@ -616,22 +620,22 @@ onUnmounted(() => {
       <!-- 총 요약 카드 -->
       <div class="glass-card pa-4 mb-4">
         <div class="summary-grid">
-          <div class="summary-row">
+          <div class="summary-row" :class="{ 'summary-row--stacked': isNarrowScreen }">
             <span class="text-medium-emphasis">매입금액</span>
             <span class="font-weight-medium">{{ formatSummaryKrw(totalCostKrw) }}</span>
           </div>
-          <div class="summary-row">
+          <div class="summary-row" :class="{ 'summary-row--stacked': isNarrowScreen }">
             <span class="text-medium-emphasis">평가손익</span>
             <span
               class="font-weight-medium"
               :class="totalProfitAmountKrw >= 0 ? 'text-success' : 'text-error'"
             >{{ formatSummaryProfit(totalProfitAmountKrw) }}</span>
           </div>
-          <div class="summary-row">
+          <div class="summary-row" :class="{ 'summary-row--stacked': isNarrowScreen }">
             <span class="text-medium-emphasis">평가금액</span>
             <span class="font-weight-medium">{{ formatSummaryKrw(totalEvaluationAmountKrw) }}</span>
           </div>
-          <div class="summary-row">
+          <div class="summary-row" :class="{ 'summary-row--stacked': isNarrowScreen }">
             <span class="text-medium-emphasis">수익률</span>
             <span
               class="font-weight-medium"
@@ -1087,10 +1091,18 @@ onUnmounted(() => {
 }
 
 .summary-row {
-  /* 셀마다 따로 줄바꿈 여부가 갈리면 칸별로 들쭉날쭉해 보여서, 항상
-     라벨-값을 위아래로 고정 배치 (글자 크기와 무관하게 모든 칸이 동일한 모양) */
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+/* isNarrowScreen(좁은 화면 또는 글자 크기 확대)일 때 4칸 전부 동시에 이 모양으로
+   전환 — 칸마다 내용 길이에 따라 따로따로 줄바꿈되어 들쭉날쭉해지는 것을 방지 */
+.summary-row--stacked {
   flex-direction: column;
+  align-items: flex-start;
+  white-space: normal;
   gap: 2px;
 }
 .summary-amount-wrap {
