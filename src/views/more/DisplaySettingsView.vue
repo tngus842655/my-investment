@@ -19,18 +19,20 @@ const resetFontScale = () => setFontScale(FONT_SCALE_DEFAULT)
       <div class="font-weight-bold">화면 설정</div>
     </div>
 
-    <v-card class="glass-card pa-4" style="position: relative">
-      <button
-        v-if="fontScale !== FONT_SCALE_DEFAULT"
-        class="reset-btn"
-        @click="resetFontScale"
-      >
-        <v-icon size="14">mdi-restore</v-icon>
-        초기화
-      </button>
+    <v-card class="glass-card pa-4">
       <div class="d-flex align-center justify-space-between mb-2">
         <div class="font-weight-medium">글자 크기</div>
-        <div class="font-weight-bold text-primary">{{ percentLabel(fontScale) }}</div>
+        <div class="d-flex align-center ga-2">
+          <button
+            v-if="fontScale !== FONT_SCALE_DEFAULT"
+            class="reset-btn"
+            @click="resetFontScale"
+          >
+            <v-icon size="14">mdi-restore</v-icon>
+            초기화
+          </button>
+          <div class="font-weight-bold text-primary">{{ percentLabel(fontScale) }}</div>
+        </div>
       </div>
       <v-slider
         :model-value="fontScale"
@@ -55,19 +57,15 @@ const resetFontScale = () => setFontScale(FONT_SCALE_DEFAULT)
 
 <style scoped>
 .reset-btn {
-  position: absolute;
-  top: -10px;
-  right: 12px;
   display: flex;
   align-items: center;
   gap: 2px;
   border: none;
-  background: rgb(var(--v-theme-surface));
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  background: rgba(var(--v-theme-on-surface), 0.06);
   color: rgba(var(--v-theme-on-surface), 0.55);
   font-size: 0.6875rem;
   font-weight: 600;
-  padding: 4px 9px;
+  padding: 3px 8px;
   border-radius: 999px;
   cursor: pointer;
 }
