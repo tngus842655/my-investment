@@ -21,16 +21,21 @@ const isPulling = ref(false)
 const isRefreshing = ref(false)
 let touchStartY = 0
 
+// .app-content 자체는 내부적으로 스크롤되지 않는 경우가 많아
+// scrollTop 대신 실제 스크롤이 일어나는 window 기준으로 최상단 여부를 판단
+const isAtTop = () =>
+  (contentRef.value?.scrollTop ?? 0) <= 0 && window.scrollY <= 0
+
 const onPullTouchStart = (e: TouchEvent) => {
   if (!activeRefreshHandler.value || isRefreshing.value) return
-  if ((contentRef.value?.scrollTop ?? 0) > 0) return
+  if (!isAtTop()) return
   touchStartY = e.touches[0]?.clientY ?? 0
   isPulling.value = true
 }
 
 const onPullTouchMove = (e: TouchEvent) => {
   if (!isPulling.value) return
-  if ((contentRef.value?.scrollTop ?? 0) > 0) {
+  if (!isAtTop()) {
     isPulling.value = false
     pullDistance.value = 0
     return
@@ -154,7 +159,6 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   flex: 1;
   padding-bottom: calc(84px + env(safe-area-inset-bottom));
   overflow-y: auto;
-  overscroll-behavior-y: contain;
 }
 
 .pull-indicator {
