@@ -542,7 +542,7 @@ onUnmounted(clearPullToRefresh)
                   <span class="yearly-rate yearly-rate--active">{{ row.annualRate }}%</span>
                 </div>
                 <div class="yearly-sublabels">
-                  <span class="yearly-sublabel">올해 목표 {{ row.annualRate }}%</span>
+                  <span class="yearly-sublabel">올해 목표 {{ formatShortMoney(row.asset) }}원</span>
                   <span v-if="row.fireRate !== null" class="yearly-fire-rate"> 전체 FIRE {{ row.fireRate }}% </span>
                 </div>
               </template>
@@ -1027,7 +1027,8 @@ onUnmounted(clearPullToRefresh)
 }
 .yearly-sublabel {
   font-size: 10px;
-  color: rgba(var(--v-theme-on-surface), 0.4);
+  font-weight: 500;
+  color: rgba(var(--v-theme-on-surface), 0.6);
 }
 .yearly-fire-rate {
   font-size: 10px;
