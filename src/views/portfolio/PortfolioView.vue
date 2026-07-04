@@ -413,12 +413,10 @@ const deletePortfolio = async () => {
 const formatKrw = (v: number) => Math.round(v).toLocaleString('ko-KR')
 
 // 화면 너비 감지 — 360px 미만(폴드 등 좁은 화면)이면 한글 축약
-// 글자 크기를 키운 경우도 같은 효과(실제 표시 가능 폭이 좁아짐)이므로 함께 반영해
-// 매입금액/평가손익/평가금액이 한 번에 모두 축약되어 줄바꿈 없이 통일되게 보이도록 함
 const windowWidth = ref(window.innerWidth)
 const onResize = () => { windowWidth.value = window.innerWidth }
+const isNarrowScreen = computed(() => windowWidth.value < 420)
 const { fontScale } = useFontScale()
-const isNarrowScreen = computed(() => windowWidth.value / fontScale.value < 420)
 
 const formatKrwShort = (v: number): string => {
   const abs = Math.abs(v)
@@ -465,6 +463,35 @@ const formatPrice = (v: number, currency: string) => {
 }
 
 const formatPercent = (v: number) => (v >= 0 ? '+' : '') + v.toFixed(2) + '%'
+
+// ── 요약 카드 라벨/값 실제 겹침 여부 측정 ──────────────────
+// 화면에 안 보이는 측정용 사본(항상 한 줄, 줄바꿈 없음)의 실제 너비가
+// 칸 너비를 넘는지 봐서, 정말 넘칠 것 같을 때만 라벨/값을 위아래로 쌓음
+const summaryMeasureRef = ref<HTMLElement | null>(null)
+const summaryStacked = ref(false)
+
+const checkSummaryOverflow = () => {
+  const el = summaryMeasureRef.value
+  if (!el) return
+  const rows = el.querySelectorAll<HTMLElement>('.summary-row--measure')
+  let overflow = false
+  rows.forEach((row) => {
+    if (row.scrollWidth > row.clientWidth + 1) overflow = true
+  })
+  summaryStacked.value = overflow
+}
+
+const summaryMeasureKey = computed(() =>
+  [
+    formatSummaryKrw(totalCostKrw.value),
+    formatSummaryProfit(totalProfitAmountKrw.value),
+    formatSummaryKrw(totalEvaluationAmountKrw.value),
+    formatPercent(totalProfitRate.value),
+    fontScale.value,
+  ].join('|'),
+)
+
+watch(summaryMeasureKey, () => nextTick(checkSummaryOverflow))
 const truncateAccount = (name: string) =>
   /[ㄱ-ㅎ가-힣]/.test(name) ? name.slice(0, 2) : name.slice(0, 4)
 const formatProfit = (v: number) => (v > 0 ? '+' : '') + formatKrw(v)
@@ -618,30 +645,46 @@ onUnmounted(() => {
 
     <template v-else>
       <!-- 총 요약 카드 -->
-      <div class="glass-card pa-4 mb-4">
+      <div class="glass-card pa-4 mb-4" style="position: relative">
         <div class="summary-grid">
-          <div class="summary-row" :class="{ 'summary-row--stacked': isNarrowScreen }">
+          <div class="summary-row" :class="{ 'summary-row--stacked': summaryStacked }">
             <span class="text-medium-emphasis">매입금액</span>
             <span class="font-weight-medium">{{ formatSummaryKrw(totalCostKrw) }}</span>
           </div>
-          <div class="summary-row" :class="{ 'summary-row--stacked': isNarrowScreen }">
+          <div class="summary-row" :class="{ 'summary-row--stacked': summaryStacked }">
             <span class="text-medium-emphasis">평가손익</span>
             <span
               class="font-weight-medium"
               :class="totalProfitAmountKrw >= 0 ? 'text-success' : 'text-error'"
             >{{ formatSummaryProfit(totalProfitAmountKrw) }}</span>
           </div>
-          <div class="summary-row" :class="{ 'summary-row--stacked': isNarrowScreen }">
+          <div class="summary-row" :class="{ 'summary-row--stacked': summaryStacked }">
             <span class="text-medium-emphasis">평가금액</span>
             <span class="font-weight-medium">{{ formatSummaryKrw(totalEvaluationAmountKrw) }}</span>
           </div>
-          <div class="summary-row" :class="{ 'summary-row--stacked': isNarrowScreen }">
+          <div class="summary-row" :class="{ 'summary-row--stacked': summaryStacked }">
             <span class="text-medium-emphasis">수익률</span>
             <span
               class="font-weight-medium"
               :class="totalProfitRate >= 0 ? 'text-success' : 'text-error'"
               >{{ formatPercent(totalProfitRate) }}</span
             >
+          </div>
+        </div>
+
+        <!-- 측정 전용 사본 — 화면에 안 보임, 실제로 넘치는지 측정만 함 -->
+        <div ref="summaryMeasureRef" class="summary-grid summary-grid--measure" aria-hidden="true">
+          <div class="summary-row summary-row--measure">
+            <span>매입금액</span><span>{{ formatSummaryKrw(totalCostKrw) }}</span>
+          </div>
+          <div class="summary-row summary-row--measure">
+            <span>평가손익</span><span>{{ formatSummaryProfit(totalProfitAmountKrw) }}</span>
+          </div>
+          <div class="summary-row summary-row--measure">
+            <span>평가금액</span><span>{{ formatSummaryKrw(totalEvaluationAmountKrw) }}</span>
+          </div>
+          <div class="summary-row summary-row--measure">
+            <span>수익률</span><span>{{ formatPercent(totalProfitRate) }}</span>
           </div>
         </div>
       </div>
@@ -1097,13 +1140,26 @@ onUnmounted(() => {
   gap: 8px;
   white-space: nowrap;
 }
-/* isNarrowScreen(좁은 화면 또는 글자 크기 확대)일 때 4칸 전부 동시에 이 모양으로
-   전환 — 칸마다 내용 길이에 따라 따로따로 줄바꿈되어 들쭉날쭉해지는 것을 방지 */
+/* 실제로 넘칠 것 같을 때(summaryStacked)만 4칸 전부 동시에 이 모양으로 전환 —
+   칸마다 내용 길이에 따라 따로따로 줄바꿈되어 들쭉날쭉해지는 것을 방지 */
 .summary-row--stacked {
   flex-direction: column;
   align-items: flex-start;
   white-space: normal;
   gap: 2px;
+}
+
+/* 측정 전용 사본 — 실제 화면에는 안 보이지만 레이아웃은 그대로 차지해서
+   진짜 넘치는지(scrollWidth > clientWidth) 측정하는 데 사용 */
+.summary-grid--measure {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+.summary-row--measure {
+  white-space: nowrap;
 }
 .summary-amount-wrap {
   display: flex;
