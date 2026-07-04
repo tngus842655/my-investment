@@ -131,9 +131,10 @@ const latestNotice = ref<{ id: string; title: string; content: string; is_test: 
 let lastSeenNoticeKey: string | null = null
 
 const checkLatestNotice = async () => {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
-  lastSeenNoticeKey = `${LAST_SEEN_NOTICE_KEY_PREFIX}-${user.id}`
+  // getSession()은 로컬 세션을 읽어올 뿐 네트워크 호출이 없음 (getUser()는 Auth 서버 재검증 왕복 발생)
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) return
+  lastSeenNoticeKey = `${LAST_SEEN_NOTICE_KEY_PREFIX}-${session.user.id}`
 
   const { data } = await supabase
     .from('notices')
