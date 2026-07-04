@@ -1011,6 +1011,11 @@ onUnmounted(() => {
   z-index: 1;
   transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   will-change: transform;
+  /* will-change로 별도 합성 레이어가 되면서 부모의 overflow:hidden 클리핑이
+     라운드 코너에서 정확히 안 맞물려 뒤쪽 스와이프 버튼이 새어 보이는 문제 —
+     이 레이어 자신도 같은 반경으로 직접 클리핑하도록 함 */
+  border-radius: 16px;
+  overflow: hidden;
 }
 
 
