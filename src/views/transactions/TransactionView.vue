@@ -4,6 +4,7 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerDisplayName } from '@/utils/tickerNames'
+import { recomputeAssetSummary } from '@/services/assetSummary'
 import { useUserDataStore } from '@/stores/userData'
 import TransactionAddDialog from './TransactionAddDialog.vue'
 
@@ -251,6 +252,8 @@ const deleteTx = async () => {
     loadTotals()
     // DB 트리거가 portfolios.quantity/avg_price를 재계산하므로 캐시 무효화
     userDataStore.invalidatePortfolios()
+    // 대시보드 등에서 총자산이 바로 반영되도록 백그라운드로 재계산
+    recomputeAssetSummary(userId)
   } catch (e) {
     console.error(e)
     showMessage('삭제 중 오류가 발생했습니다.', 'error')

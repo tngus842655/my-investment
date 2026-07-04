@@ -6,6 +6,7 @@ import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerDisplayName, TICKER_NAMES } from '@/utils/tickerNames'
 import { KR_STOCK_NAMES, KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 import { getStockPrice } from '@/services/market'
+import { recomputeAssetSummary } from '@/services/assetSummary'
 import { useUserDataStore } from '@/stores/userData'
 
 const userDataStore = useUserDataStore()
@@ -410,6 +411,8 @@ const save = async () => {
 
     // 거래 추가/수정 시 DB 트리거가 portfolios.quantity/avg_price를 재계산하므로 캐시 무효화
     userDataStore.invalidatePortfolios()
+    // 대시보드 등에서 총자산이 바로 반영되도록 백그라운드로 재계산 (저장 완료를 기다리지 않음)
+    recomputeAssetSummary(user.id)
     emit('saved')
     reset()
   } catch (e) {
