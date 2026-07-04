@@ -3,8 +3,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
+import { useUserDataStore } from '@/stores/userData'
 
 const router = useRouter()
+const userDataStore = useUserDataStore()
 const loading = ref(true)
 
 interface HistoryPoint {
@@ -30,13 +32,13 @@ const tooltip = ref<{ x: number; y: number; pt: HistoryPoint } | null>(null)
 onMounted(async () => {
   try {
     await supabase.rpc('save_daily_asset_snapshot')
-    const [historyResult, summaryResult] = await Promise.all([
+    const [historyResult, summary] = await Promise.all([
       supabase.from('asset_history').select('recorded_at, current_asset, progress_pct').order('recorded_at', { ascending: true }),
-      supabase.from('asset_summary').select('current_asset').maybeSingle(),
+      userDataStore.ensureAssetSummary(),
     ])
     if (historyResult.error) throw historyResult.error
     history.value = historyResult.data ?? []
-    currentAsset.value = summaryResult.data?.current_asset ?? 0
+    currentAsset.value = summary?.current_asset ?? 0
   } catch {
     showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
   } finally {

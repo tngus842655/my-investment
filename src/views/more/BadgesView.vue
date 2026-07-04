@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { supabase } from '@/services/supabase'
 import { formatShortMoney } from '@/utils/numberFormat'
+import { useUserDataStore } from '@/stores/userData'
 
 const router = useRouter()
+const userDataStore = useUserDataStore()
 const loading = ref(true)
 const targetAsset = ref(0)
 const currentAsset = ref(0)
@@ -85,11 +86,9 @@ const nextBadge = computed(() => badgesWithState.value.find((b) => !b.unlocked) 
 const loadData = async () => {
   loading.value = true
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const [goalResult, summaryResult] = await Promise.all([supabase.from('investment_goals').select('target_asset').eq('user_id', user.id).maybeSingle(), supabase.from('asset_summary').select('current_asset').eq('user_id', user.id).maybeSingle()])
-    targetAsset.value = goalResult.data?.target_asset ?? 0
-    currentAsset.value = summaryResult.data?.current_asset ?? 0
+    const [goal, summary] = await Promise.all([userDataStore.ensureGoals(), userDataStore.ensureAssetSummary()])
+    targetAsset.value = goal?.target_asset ?? 0
+    currentAsset.value = summary?.current_asset ?? 0
   } finally {
     loading.value = false
   }
