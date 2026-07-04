@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { useUserDataStore } from '@/stores/userData'
+import { formatShortMoney } from '@/utils/numberFormat'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
@@ -350,15 +351,15 @@ function formatFull(v: number) {
               <text
                 :x="PAD.left" :y="chartData.targetY - 4"
                 font-size="8" fill="rgb(var(--v-theme-primary))"
-              >올해 목표</text>
+              >올해 목표 {{ formatShortMoney(thisYearTarget) }}</text>
             </template>
-            <!-- 전체 자산 (현재 평가 자산) -->
+            <!-- 현재 자산 (현재 평가 자산) -->
             <text
               v-if="currentAssetNow > 0"
               :x="VW - PAD.right" :y="PAD.top - 8"
               text-anchor="end" font-size="8"
               fill="rgba(var(--v-theme-on-surface), 0.5)"
-            >전체 자산 {{ formatShort(currentAssetNow) }}</text>
+            >현재 자산 {{ formatShortMoney(currentAssetNow) }}</text>
 
             <!-- 바 -->
             <g
@@ -433,7 +434,7 @@ function formatFull(v: number) {
             </template>
             <div v-else class="text-body-2 font-weight-medium">월별 상세</div>
             <v-spacer />
-            <div v-if="!selectedMonth" class="text-caption text-medium-emphasis">막대 클릭 시 일별 보기</div>
+            <div v-if="!selectedMonth" class="text-caption text-medium-emphasis">👆 막대를 눌러 일별 증감 보기</div>
           </div>
 
           <!-- 월별 뷰 -->
