@@ -2,8 +2,9 @@ import { supabase } from '@/services/supabase'
 import { getStockPrice } from '@/services/market'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { useUserDataStore } from '@/stores/userData'
+import { evaluateItemKrw, simpleCostKrw } from '@/utils/portfolioMath'
 
-// PortfolioView.vue의 평가금액 계산 로직과 동일한 공식을 사용한다.
+// PortfolioView.vue와 동일한 portfolioMath 공식을 사용한다 (src/utils/portfolioMath.ts).
 // 거래 추가/수정/삭제 직후에도 대시보드 등에서 총자산이 바로 반영되도록
 // 자산 탭을 열지 않고도 asset_summary를 재계산해서 저장한다.
 export const recomputeAssetSummary = async (userId: string): Promise<void> => {
@@ -30,18 +31,10 @@ export const recomputeAssetSummary = async (userId: string): Promise<void> => {
       if (item.asset_type === '현금') return
 
       const currentPrice = prices[i] && prices[i]! > 0 ? prices[i] : null
-      const isCryptoKrw = item.asset_type === '암호화폐' && item.currency === 'KRW'
-      const currentPriceInCurrency = currentPrice
-        ? (isCryptoKrw ? currentPrice * rate : currentPrice)
-        : null
-      const price = currentPriceInCurrency ?? item.avg_price
-      const evaluationAmount = price * item.quantity
-      const evaluationAmountKrw =
-        item.currency === 'USD' && !isCryptoKrw ? evaluationAmount * rate : evaluationAmount
+      const { evaluationAmountKrw } = evaluateItemKrw(item, currentPrice, rate)
 
       totalEval += evaluationAmountKrw
-      totalCost +=
-        item.currency === 'USD' ? item.avg_price * item.quantity * rate : item.avg_price * item.quantity
+      totalCost += simpleCostKrw(item, rate)
     })
 
     const { error: upsertError } = await supabase.from('asset_summary').upsert(

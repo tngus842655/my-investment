@@ -631,7 +631,6 @@ onUnmounted(() => {
             :key="item.id"
             class="tx-card-wrap mb-2"
             :data-id="item.id"
-            @click="swipedId && swipedId !== item.id ? closeSwipe() : undefined"
           >
             <!-- 스와이프 액션 -->
             <div class="swipe-actions">
@@ -977,6 +976,8 @@ onUnmounted(() => {
 .tx-card-wrap {
   position: relative;
   overflow: hidden;
+  /* 아래 .action-edit/.action-delete의 반경은 이 값보다 최소 4px 이상 커야 함
+     (동일하면 서브픽셀 오차로 모서리에 스와이프 버튼 색이 비쳐 보임) */
   border-radius: 16px;
 }
 .swipe-actions {

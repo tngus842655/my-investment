@@ -9,6 +9,7 @@ import { showMessage } from '@/composables/useSnackbar'
 import { getStockPrice } from '@/services/market'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel, isEtfTicker, getTickerDisplayName, TICKER_NAMES } from '@/utils/tickerNames'
+import { evaluateItemKrw, simpleCostKrw } from '@/utils/portfolioMath'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
 
@@ -147,27 +148,12 @@ const loadPortfolios = async () => {
       // 현금은 현재가 API 조회 불필요, avg_price 그대로 사용
       const currentPrice = isCash ? null : prices[i] && prices[i]! > 0 ? prices[i] : null
 
-      // 암호화폐 + KRW: Finnhub은 USD로 반환하므로 환율 곱해서 KRW 현재가로 변환
-      const isCryptoKrw = item.asset_type === '암호화폐' && item.currency === 'KRW'
-      const currentPriceInCurrency = currentPrice
-        ? isCryptoKrw
-          ? currentPrice * rate
-          : currentPrice
-        : null
-
-      const price = currentPriceInCurrency ?? item.avg_price
+      const { currentPriceInCurrency, evaluationAmount, evaluationAmountKrw } =
+        evaluateItemKrw(item, currentPrice, rate)
       const isPriceFallback = !isCash && currentPriceInCurrency === null
 
-      const evaluationAmount = price * item.quantity
-      const evaluationAmountKrw =
-        item.currency === 'USD' && !isCryptoKrw ? evaluationAmount * rate : evaluationAmount
-
       // 저장된 거래별 환율로 계산한 KRW 원가 (없으면 현재 환율 fallback)
-      const costKrw =
-        costKrwMap.get(item.id) ??
-        (item.currency === 'USD' && !isCryptoKrw
-          ? item.avg_price * item.quantity * rate
-          : item.avg_price * item.quantity)
+      const costKrw = costKrwMap.get(item.id) ?? simpleCostKrw(item, rate)
 
       // 현금은 손익 표시 안 함
       const profitAmountKrw = isPriceFallback || isCash ? 0 : evaluationAmountKrw - costKrw
@@ -192,13 +178,7 @@ const loadPortfolios = async () => {
       .reduce((sum, item) => sum + (item.evaluationAmountKrw ?? 0), 0)
     const totalCost = portfolios.value
       .filter((item) => item.asset_type !== '현금')
-      .reduce((sum, item) => {
-        const costKrw =
-          item.currency === 'USD'
-            ? item.avg_price * item.quantity * rate
-            : item.avg_price * item.quantity
-        return sum + costKrw
-      }, 0)
+      .reduce((sum, item) => sum + simpleCostKrw(item, rate), 0)
     const roundedEval = Math.round(totalEval)
     supabase
       .from('asset_summary')
@@ -752,7 +732,6 @@ onUnmounted(() => {
           class="portfolio-card-wrap mb-1"
           :data-id="item.id"
           :style="draggingId === item.id ? { opacity: '0', pointerEvents: 'none' } : {}"
-          @click="swipedId && swipedId !== item.id ? closeSwipe() : undefined"
         >
           <!-- 스와이프 액션 -->
           <div class="swipe-actions">
@@ -1044,6 +1023,8 @@ onUnmounted(() => {
 .portfolio-card-wrap {
   position: relative;
   overflow: hidden;
+  /* 아래 .action-edit/.action-delete의 반경은 이 값보다 최소 4px 이상 커야 함
+     (동일하면 서브픽셀 오차로 모서리에 스와이프 버튼 색이 비쳐 보임) */
   border-radius: 20px;
   transition: transform 0.2s ease;
 }
