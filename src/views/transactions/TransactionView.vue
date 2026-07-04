@@ -6,6 +6,7 @@ import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerDisplayName } from '@/utils/tickerNames'
 import { recomputeAssetSummary } from '@/services/assetSummary'
 import { useUserDataStore } from '@/stores/userData'
+import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
 import TransactionAddDialog from './TransactionAddDialog.vue'
 
 const userDataStore = useUserDataStore()
@@ -466,10 +467,12 @@ onMounted(async () => {
   usdToKrw.value = await getCachedExchangeRate()
   await nextTick()
   setupObserver()
+  useRegisterPullToRefresh(refresh)
 })
 
 onUnmounted(() => {
   observer?.disconnect()
+  clearPullToRefresh()
 })
 </script>
 

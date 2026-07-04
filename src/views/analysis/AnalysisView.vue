@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
 import { useUserDataStore } from '@/stores/userData'
+import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
@@ -339,12 +340,12 @@ const summaryRows = computed(() => {
 
 const visibleRows = computed(() => (showAllYears.value ? displayRows.value : summaryRows.value))
 
-const loadData = async () => {
+const loadData = async (force = false) => {
   loading.value = true
   try {
     const [goal, summary] = await Promise.all([
-      userDataStore.ensureGoals(),
-      userDataStore.ensureAssetSummary(),
+      userDataStore.ensureGoals(force),
+      userDataStore.ensureAssetSummary(force),
     ])
     if (goal) {
       targetAsset.value = goal.target_asset ?? 0
@@ -360,7 +361,11 @@ const loadData = async () => {
   }
 }
 
-onMounted(loadData)
+onMounted(() => {
+  loadData()
+  useRegisterPullToRefresh(() => loadData(true))
+})
+onUnmounted(clearPullToRefresh)
 </script>
 
 <template>

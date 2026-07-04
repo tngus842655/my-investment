@@ -10,6 +10,7 @@ import { getStockPrice } from '@/services/market'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel, isEtfTicker, getTickerDisplayName, TICKER_NAMES } from '@/utils/tickerNames'
 import { useUserDataStore } from '@/stores/userData'
+import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
@@ -557,6 +558,7 @@ onMounted(async () => {
   window.addEventListener('touchmove', onDragMove, { passive: false })
   window.addEventListener('touchend', endDrag)
   window.addEventListener('resize', onResize)
+  useRegisterPullToRefresh(refresh)
 })
 onUnmounted(() => {
   dragCloneEl?.remove()
@@ -565,6 +567,7 @@ onUnmounted(() => {
   window.removeEventListener('touchmove', onDragMove)
   window.removeEventListener('touchend', endDrag)
   window.removeEventListener('resize', onResize)
+  clearPullToRefresh()
 })
 </script>
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { formatShortMoney } from '@/utils/numberFormat'
@@ -8,6 +8,7 @@ import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel } from '@/utils/tickerNames'
 import { useDesignTokens } from '@/composables/useDesignTokens'
 import { useUserDataStore } from '@/stores/userData'
+import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
@@ -152,13 +153,13 @@ const closeNoticeDialog = () => {
   noticeDialog.value = false
 }
 
-const loadDashboard = async () => {
+const loadDashboard = async (force = false) => {
   loading.value = true
   try {
     const [goal, summary, portfolios, rate] = await Promise.all([
-      userDataStore.ensureGoals(),
-      userDataStore.ensureAssetSummary(),
-      userDataStore.ensurePortfolios(),
+      userDataStore.ensureGoals(force),
+      userDataStore.ensureAssetSummary(force),
+      userDataStore.ensurePortfolios(force),
       getCachedExchangeRate(),
     ])
 
@@ -193,7 +194,9 @@ const loadDashboard = async () => {
 onMounted(() => {
   loadDashboard()
   checkLatestNotice()
+  useRegisterPullToRefresh(() => loadDashboard(true))
 })
+onUnmounted(clearPullToRefresh)
 </script>
 
 <template>
