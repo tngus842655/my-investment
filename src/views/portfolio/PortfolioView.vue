@@ -463,6 +463,9 @@ const formatPrice = (v: number, currency: string) => {
 }
 
 const formatPercent = (v: number) => (v >= 0 ? '+' : '') + v.toFixed(2) + '%'
+const truncateAccount = (name: string) =>
+  /[ㄱ-ㅎ가-힣]/.test(name) ? name.slice(0, 2) : name.slice(0, 4)
+const formatProfit = (v: number) => (v > 0 ? '+' : '') + formatKrw(v)
 
 // ── 요약 카드 라벨/값 실제 겹침 여부 측정 ──────────────────
 // 화면에 안 보이는 측정용 사본(항상 한 줄, 줄바꿈 없음)의 실제 너비가
@@ -492,9 +495,6 @@ const summaryMeasureKey = computed(() =>
 )
 
 watch(summaryMeasureKey, () => nextTick(checkSummaryOverflow))
-const truncateAccount = (name: string) =>
-  /[ㄱ-ㅎ가-힣]/.test(name) ? name.slice(0, 2) : name.slice(0, 4)
-const formatProfit = (v: number) => (v > 0 ? '+' : '') + formatKrw(v)
 const assetTypeColor = (type: string): string =>
   ({
     국내주식: 'blue',
