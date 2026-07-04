@@ -661,7 +661,7 @@ onUnmounted(() => {
       <!-- 정렬 바 -->
       <div class="d-flex justify-space-between align-center mb-1">
         <div class="d-flex align-center ga-1">
-          <span style="font-size: 12px; color: rgba(var(--v-theme-on-surface), 0.4)">
+          <span style="font-size: 0.75rem; color: rgba(var(--v-theme-on-surface), 0.4)">
             총 {{ sortedPortfolios.length }}건
           </span>
           <v-menu location="bottom start">
@@ -676,14 +676,14 @@ onUnmounted(() => {
                 v-for="info in PRICE_DELAY_INFO"
                 :key="info.label"
                 class="d-flex align-center justify-space-between mb-1"
-                style="font-size: 11px"
+                style="font-size: 0.6875rem"
               >
                 <span>{{ info.emoji }} {{ info.label }}</span>
                 <span class="text-disabled ml-2">{{ info.desc }}</span>
               </div>
               <div
                 class="d-flex align-center ga-1 mt-2 pt-2"
-                style="font-size: 11px; color: rgb(var(--v-theme-primary)); cursor: pointer; border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08)"
+                style="font-size: 0.6875rem; color: rgb(var(--v-theme-primary)); cursor: pointer; border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08)"
                 @click="goToTickerNameRequest"
               >
                 <v-icon size="12" color="primary">mdi-pencil-plus-outline</v-icon>
@@ -695,7 +695,7 @@ onUnmounted(() => {
         <div class="d-flex align-center ga-2">
           <span
             v-if="hasUSD && exchangeRate"
-            style="font-size: 10px; color: rgba(var(--v-theme-on-surface), 0.35)"
+            style="font-size: 0.625rem; color: rgba(var(--v-theme-on-surface), 0.35)"
           >
             적용환율 {{ Math.round(exchangeRate).toLocaleString() }}원 (전일 기준)
           </span>
@@ -715,7 +715,7 @@ onUnmounted(() => {
                 :color="sortKey === opt.key ? 'primary' : undefined"
                 @click="setSort(opt.key)"
               >
-                <v-list-item-title style="font-size: 13px">
+                <v-list-item-title style="font-size: 0.8125rem">
                   <span style="margin-right: 6px">{{ opt.emoji }}</span>{{ opt.label }}
                 </v-list-item-title>
               </v-list-item>
@@ -955,7 +955,7 @@ onUnmounted(() => {
   background: rgba(var(--v-theme-warning), 0.1);
 }
 .logo-text {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 800;
   letter-spacing: -0.5px;
 }
@@ -967,25 +967,25 @@ onUnmounted(() => {
 }
 
 .ticker-name {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   white-space: nowrap;
 }
 
 .card-amount {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 
 .ticker-sub {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 400;
   color: rgba(var(--v-theme-on-surface), 0.45);
 }
 
 .account-tag {
   display: inline-block;
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 600;
   color: rgb(var(--v-theme-primary));
   background: rgba(var(--v-theme-primary), 0.1);
@@ -1001,21 +1001,21 @@ onUnmounted(() => {
   margin-top: 4px;
 }
 .compact-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   color: rgba(var(--v-theme-on-surface), 0.7);
 }
 .compact-sep {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.3);
 }
 .compact-arrow {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.35);
   margin: 0 1px;
 }
 .compact-fail {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.3);
 }
 
@@ -1030,7 +1030,7 @@ onUnmounted(() => {
 }
 
 .swipe-hint {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.35);
   text-align: center;
   margin: 0 0 8px;
@@ -1048,7 +1048,7 @@ onUnmounted(() => {
   border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
   background: none;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.5);
   transition: all 0.15s;
@@ -1069,7 +1069,7 @@ onUnmounted(() => {
   border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
   background: none;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.5);
   transition: all 0.15s;
@@ -1100,7 +1100,7 @@ onUnmounted(() => {
   align-items: flex-end;
 }
 .summary-amount-sub {
-  font-size: 9px;
+  font-size: 0.5625rem;
   color: rgba(var(--v-theme-on-surface), 0.35);
   line-height: 1.3;
   margin-top: 1px;
@@ -1138,7 +1138,7 @@ onUnmounted(() => {
   gap: 4px;
   border: none;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: #fff;
   transition: filter 0.15s;

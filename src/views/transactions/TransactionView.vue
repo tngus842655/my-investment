@@ -756,7 +756,7 @@ onUnmounted(() => {
 
 <style scoped>
 .swipe-hint {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.35);
   text-align: center;
   margin: 0 0 8px;
@@ -781,17 +781,17 @@ onUnmounted(() => {
   padding: 14px 16px;
 }
 .stat-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 .stat-value {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 500;
   color: rgb(var(--v-theme-on-surface));
   line-height: 1.3;
 }
 .stat-unit {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 500;
   color: rgb(var(--v-theme-on-surface));
 }
@@ -807,7 +807,7 @@ onUnmounted(() => {
   border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
   background: none;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.5);
   transition: all 0.15s;
@@ -834,7 +834,7 @@ onUnmounted(() => {
   padding: 6px 0;
   border: none;
   border-radius: 9px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
   background: transparent;
@@ -850,7 +850,7 @@ onUnmounted(() => {
 }
 
 .month-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -888,14 +888,14 @@ onUnmounted(() => {
 }
 
 .date-label {
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 400;
   color: rgba(var(--v-theme-on-surface), 0.3);
   flex-shrink: 0;
 }
 
 .tx-name {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
   white-space: nowrap;
@@ -903,19 +903,19 @@ onUnmounted(() => {
   text-overflow: ellipsis;
 }
 .tx-ticker {
-  font-size: 10px;
+  font-size: 0.625rem;
   color: rgba(var(--v-theme-on-surface), 0.35);
   flex-shrink: 0;
 }
 .asset-badge {
-  font-size: 9px;
+  font-size: 0.5625rem;
   font-weight: 600;
   opacity: 0.8;
   flex-shrink: 0;
 }
 .account-tag {
   display: inline-block;
-  font-size: 9px;
+  font-size: 0.5625rem;
   font-weight: 600;
   color: rgb(var(--v-theme-primary));
   background: rgba(var(--v-theme-primary), 0.1);
@@ -924,7 +924,7 @@ onUnmounted(() => {
   vertical-align: middle;
 }
 .tx-type-badge {
-  font-size: 9px;
+  font-size: 0.5625rem;
   font-weight: 700;
   padding: 1px 5px;
   border-radius: 4px;
@@ -939,15 +939,15 @@ onUnmounted(() => {
   color: var(--fp-error);
 }
 .tx-detail {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 .tx-amount {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 .tx-amount-krw {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 .amount-minus {
@@ -997,7 +997,7 @@ onUnmounted(() => {
   gap: 4px;
   border: none;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: #fff;
   transition: filter 0.15s;
@@ -1045,7 +1045,7 @@ onUnmounted(() => {
   border-radius: 8px;
   background: transparent;
   color: rgb(var(--v-theme-on-surface));
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
   outline: none;
@@ -1061,7 +1061,7 @@ onUnmounted(() => {
   cursor: default;
 }
 .date-hint {
-  font-size: 10px;
+  font-size: 0.625rem;
   color: rgba(var(--v-theme-on-surface), 0.35);
   white-space: nowrap;
   padding: 0 4px;
