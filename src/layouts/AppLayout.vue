@@ -41,7 +41,13 @@ const onPullTouchMove = (e: TouchEvent) => {
     return
   }
   const dy = (e.touches[0]?.clientY ?? 0) - touchStartY
-  pullDistance.value = dy > 0 ? Math.min(dy * 0.5, MAX_PULL) : 0
+  if (dy > 0) {
+    // 당기는 동안에만 네이티브 바운스 스크롤을 막아 커스텀 인디케이터와 겹치지 않게 함
+    e.preventDefault()
+    pullDistance.value = Math.min(dy * 0.5, MAX_PULL)
+  } else {
+    pullDistance.value = 0
+  }
 }
 
 const onPullTouchEnd = async () => {
@@ -50,6 +56,8 @@ const onPullTouchEnd = async () => {
   if (pullDistance.value >= PULL_THRESHOLD && activeRefreshHandler.value) {
     isRefreshing.value = true
     pullDistance.value = PULL_THRESHOLD
+    // 새로고침이 실제로 트리거되는 시점에 짧은 진동 (iOS Safari는 Vibration API 미지원이라 무동작)
+    navigator.vibrate?.(15)
     try {
       await activeRefreshHandler.value()
     } finally {
@@ -109,7 +117,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
       ref="contentRef"
       class="app-content"
       @touchstart.passive="onPullTouchStart"
-      @touchmove.passive="onPullTouchMove"
+      @touchmove="onPullTouchMove"
       @touchend.passive="onPullTouchEnd"
     >
       <div
@@ -159,7 +167,6 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   flex: 1;
   padding-bottom: calc(84px + env(safe-area-inset-bottom));
   overflow-y: auto;
-  overscroll-behavior-y: contain;
 }
 
 .pull-indicator {
