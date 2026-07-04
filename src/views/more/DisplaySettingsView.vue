@@ -26,7 +26,7 @@ const percentLabel = (v: number) => `${Math.round(v * 100)}%`
         :model-value="fontScale"
         :min="min"
         :max="max"
-        :step="0.05"
+        :step="0.01"
         color="primary"
         @update:model-value="setFontScale"
       />
