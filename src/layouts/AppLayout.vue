@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, provide } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { ADMIN_EMAIL } from '@/config/admin'
 import { activeRefreshHandler } from '@/composables/usePullToRefresh'
+import { feedbackBadgeKey } from '@/composables/useFeedbackBadge'
 
 const router = useRouter()
 const route = useRoute()
 const contentRef = ref<HTMLElement | null>(null)
+const isAdmin = ref(false)
 const unreadFeedbackCount = ref(0)
+provide(feedbackBadgeKey, { isAdmin, unreadFeedbackCount })
 
 // ── 아래로 당겨서 새로고침 ──────────────────────────
 const PULL_THRESHOLD = 64
@@ -54,9 +57,11 @@ const onPullTouchEnd = async () => {
 }
 
 const fetchUnreadCount = async () => {
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) return
-  if (user.email === ADMIN_EMAIL) {
+  isAdmin.value = user.email === ADMIN_EMAIL
+  if (isAdmin.value) {
     const { count } = await supabase
       .from('feedback')
       .select('id', { count: 'exact', head: true })

@@ -1,36 +1,22 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { useAppTheme } from '@/composables/useAppTheme'
-import { ADMIN_EMAIL } from '@/config/admin'
 import { useUserDataStore } from '@/stores/userData'
+import { feedbackBadgeKey } from '@/composables/useFeedbackBadge'
 
 const router = useRouter()
 const { currentThemeId, themes, setTheme } = useAppTheme()
 const userDataStore = useUserDataStore()
 const confirmDialog = ref(false)
 const themeSheet = ref(false)
-const isAdmin = ref(false)
-const newFeedbackCount = ref(0)
-const unreadFeedbackCount = ref(0)
 
-supabase.auth.getUser().then(async ({ data: { user } }) => {
-  if (!user) return
-  if (user.email === ADMIN_EMAIL) {
-    isAdmin.value = true
-    const { count } = await supabase.from('feedback').select('id', { count: 'exact', head: true }).eq('status', 'RECEIVED')
-    newFeedbackCount.value = count ?? 0
-  } else {
-    const { count } = await supabase
-      .from('feedback')
-      .select('id', { count: 'exact', head: true })
-      .eq('email', user.email ?? '')
-      .eq('is_read_by_user', false)
-    unreadFeedbackCount.value = count ?? 0
-  }
-})
+// AppLayout이 이미 조회한 값을 공유받아 중복 조회를 피함
+const feedbackBadge = inject(feedbackBadgeKey)
+const isAdmin = feedbackBadge?.isAdmin ?? ref(false)
+const unreadFeedbackCount = feedbackBadge?.unreadFeedbackCount ?? ref(0)
 
 // 회원탈퇴 상태
 const deleteStep = ref(0)
@@ -264,7 +250,7 @@ const currentThemeLabel = computed(() => {
           <div class="text-caption text-medium-emphasis">불편한 점이나 개선 아이디어를 보내주세요.</div>
         </div>
         <v-spacer />
-        <span v-if="unreadFeedbackCount > 0" class="unread-dot mr-2" />
+        <span v-if="!isAdmin && unreadFeedbackCount > 0" class="unread-dot mr-2" />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
@@ -290,7 +276,7 @@ const currentThemeLabel = computed(() => {
             <div class="text-caption text-medium-emphasis">회원 가입 이력 조회</div>
           </div>
           <v-spacer />
-          <v-badge v-if="newFeedbackCount > 0" :content="newFeedbackCount" color="error" inline class="mr-1" />
+          <v-badge v-if="unreadFeedbackCount > 0" :content="unreadFeedbackCount" color="error" inline class="mr-1" />
           <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
         </div>
       </div>
