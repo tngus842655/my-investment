@@ -23,8 +23,8 @@ onMounted(() => {
 
 <template>
   <v-container class="pa-4 pa-sm-6">
-    <div class="d-flex align-center ga-2 mb-6">
-      <button v-if="showBack" class="back-btn" @click="router.back()">
+    <div class="hub-header mb-6">
+      <button v-if="showBack" class="back-btn hub-header-back" @click="router.back()">
         <v-icon size="20">mdi-arrow-left</v-icon>
       </button>
       <img v-if="logoWide" :src="logoWide" class="header-logo-wide" alt="FIREPATH" />
@@ -58,6 +58,18 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.hub-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+}
+.hub-header-back {
+  position: absolute;
+  left: 0;
+}
+
 .back-btn {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
