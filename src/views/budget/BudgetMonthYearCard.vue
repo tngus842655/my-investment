@@ -51,7 +51,10 @@ const setThisMonth = () => {
 
 <style scoped>
 .month-year-card {
+  width: 328px;
+  max-width: 100%;
   overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
 }
 .date-picker-topbar {
   display: flex;
