@@ -143,6 +143,13 @@ npm run format     # Prettier 포맷
 - **시세 조회** (`src/services/market.ts`): Supabase Edge Function 두 개를 호출
   - `stock-price`: 주식/ETF 현재가 조회 (ticker, asset_type, currency 파라미터)
   - `exchange-rate`: 환율 조회 (from, to 파라미터)
+- **기타 Edge Functions**
+  - `etf-info` (`EtfAnalysisView.vue`): ETF 상세 정보 조회 (tickers 파라미터)
+  - `etf-backtest` (`EtfBacktestView.vue`): 적립식 백테스트 (ticker, monthly_amount, start_ym 파라미터)
+  - `etf-dividend` (`DividendCalendarView.vue`): 배당 캘린더 조회 (tickers: {ticker, currency}[] 파라미터)
+  - `admin-delete-user` (`AdminSignupLogView.vue`): 관리자용 사용자 강제 삭제 (fetch로 직접 호출)
+  - `admin-reset-password` (`AdminResetPasswordView.vue`): 관리자용 비밀번호 초기화 (fetch로 직접 호출)
+- **DB 트리거 / RPC / pg_cron**: `TABLE.md` 참고
 
 ### 환경 변수
 

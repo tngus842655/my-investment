@@ -2,6 +2,28 @@
 
 Supabase 테이블 스키마 정리. 모든 테이블은 `user_id → auth.users` FK를 가지며 user 삭제 시 CASCADE 된다. `public` 스키마의 모든 테이블은 RLS(rowsecurity)가 켜져 있다.
 
+### DB 트리거
+
+| 트리거명            | 테이블       | 시점  | 이벤트                | 함수                              |
+| -------------------- | ------------ | ----- | ---------------------- | ---------------------------------- |
+| trg_sync_portfolio    | transactions | AFTER | INSERT/UPDATE/DELETE   | sync_portfolio_from_transactions() |
+
+`sync_portfolio_from_transactions()`: transactions 변경 시 해당 portfolio_id의 `quantity`/`avg_price`를 BUY+INITIAL 합산, SELL 차감으로 재계산 (`supabase/migrations/20260624_02_fix_sync_portfolio_trigger.sql`).
+
+### RPC 함수 (프론트에서 `supabase.rpc()`로 호출)
+
+| 함수명                     | 호출 위치                    | 설명                                                             |
+| --------------------------- | ----------------------------- | ------------------------------------------------------------------ |
+| delete_user_account()       | MoreView.vue (회원탈퇴)       | SECURITY DEFINER. signup_log.deleted_at 기록 후 auth.users 삭제(CASCADE) |
+| record_signup(user_email)   | LoginView.vue (로그인/가입)   | SECURITY DEFINER. signup_log에 신규 insert 또는 탈퇴 이력 재활성화     |
+| save_daily_asset_snapshot() | FireHistoryView.vue, pg_cron  | asset_history에 당일 스냅샷 upsert (아래 pg_cron 항목 참고)          |
+
+### pg_cron
+
+| jobname             | schedule (UTC) | 설명                                      |
+| -------------------- | -------------- | ------------------------------------------- |
+| daily-asset-snapshot | `0 15 * * *`   | 매일 KST 00:00, save_daily_asset_snapshot() 실행 |
+
 #### investment_goals
 
 사용자별 1개 (user_id unique). FIRE 목표 설정.
