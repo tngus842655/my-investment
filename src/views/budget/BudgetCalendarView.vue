@@ -329,12 +329,6 @@ const onContainerClick = (e: MouseEvent) => {
       </v-btn>
     </div>
 
-    <v-btn-toggle v-model="subTab" mandatory rounded="lg" density="comfortable" class="mb-4 w-100">
-      <v-btn value="calendar" variant="tonal" class="flex-grow-1">캘린더</v-btn>
-      <v-btn value="daily" variant="tonal" class="flex-grow-1">일일</v-btn>
-      <v-btn value="monthly" variant="tonal" class="flex-grow-1">월별</v-btn>
-    </v-btn-toggle>
-
     <!-- 월/연도 이동 -->
     <div class="d-flex align-center justify-space-between mb-3">
       <v-btn
@@ -361,6 +355,12 @@ const onContainerClick = (e: MouseEvent) => {
         @click="subTab === 'monthly' ? monthlyYear += 1 : nextMonth()"
       />
     </div>
+
+    <v-btn-toggle v-model="subTab" mandatory rounded="lg" density="comfortable" class="mb-4 w-100">
+      <v-btn value="calendar" variant="tonal" class="flex-grow-1">캘린더</v-btn>
+      <v-btn value="daily" variant="tonal" class="flex-grow-1">일일</v-btn>
+      <v-btn value="monthly" variant="tonal" class="flex-grow-1">월별</v-btn>
+    </v-btn-toggle>
 
     <!-- 요약 -->
     <div class="glass-card pa-2 mb-3 d-flex justify-space-around text-center">
