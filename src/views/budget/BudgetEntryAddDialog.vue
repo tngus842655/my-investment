@@ -295,11 +295,13 @@ const save = async () => {
               :model-value="entryDate"
               label="날짜"
               readonly
+              autocomplete="off"
               prepend-inner-icon="mdi-calendar-outline"
               variant="outlined"
               density="compact"
               rounded="lg"
               class="mb-1"
+              @focus="(e: FocusEvent) => (e.target as HTMLElement).blur()"
             />
           </template>
           <BudgetDateCalendarCard v-model="entryDate" :open="dateMenu" @close="dateMenu = false" />
@@ -315,12 +317,14 @@ const save = async () => {
           rounded="lg"
           no-data-text="카테고리가 없습니다. 카테고리 관리에서 먼저 추가해주세요"
           class="mb-1"
+          autocomplete="off"
         />
 
         <v-text-field
           :model-value="amount"
           label="금액"
           inputmode="numeric"
+          autocomplete="off"
           prepend-inner-icon="mdi-currency-krw"
           variant="outlined"
           density="compact"
@@ -354,6 +358,7 @@ const save = async () => {
               rounded="lg"
               hide-details
               autofocus
+              autocomplete="off"
               @keyup.enter="addPaymentMethod"
             />
             <v-btn icon="mdi-check" size="small" variant="tonal" color="primary" @click="addPaymentMethod" />
@@ -370,6 +375,7 @@ const save = async () => {
           class="mb-1 mt-4"
           maxlength="30"
           counter
+          autocomplete="off"
         />
       </v-card-text>
 
