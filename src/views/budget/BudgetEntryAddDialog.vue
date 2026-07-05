@@ -4,6 +4,7 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import type { BudgetCategory, BudgetPaymentMethod, BudgetType } from '@/types/budget'
 import { DEFAULT_BUDGET_PAYMENT_METHODS } from '@/utils/budgetDefaultPaymentMethods'
+import BudgetFavoriteView from './BudgetFavoriteView.vue'
 
 const dialog = defineModel<boolean>()
 
@@ -36,9 +37,9 @@ const addingPaymentMethod = ref(false)
 const newPaymentMethodName = ref('')
 const memo = ref('')
 const entryDate = ref(new Date().toISOString().slice(0, 10))
-const saveAsFavorite = ref(false)
 const saving = ref(false)
 const favoritesMenu = ref(false)
+const favoriteManageDialog = ref(false)
 
 interface QuickItem {
   category_id: string
@@ -197,7 +198,11 @@ watch(dialog, async (open) => {
     memo.value = ''
     entryDate.value = props.defaultDate ?? new Date().toISOString().slice(0, 10)
   }
-  saveAsFavorite.value = false
+})
+
+watch(favoriteManageDialog, async (open) => {
+  if (open) return
+  await fetchQuickItems()
 })
 
 // 수입/지출 전환 시 카테고리 목록이 바뀌므로, 새 목록에 없는 선택은 초기화
@@ -232,19 +237,6 @@ const save = async () => {
       if (error) throw error
     }
 
-    if (saveAsFavorite.value) {
-      const { error: favError } = await supabase.from('budget_favorites').insert({
-        user_id: user.id,
-        category_id: categoryId.value,
-        type: entryType.value,
-        amount: removeComma(amount.value),
-        payment_method_id: paymentMethodId.value,
-        memo: memo.value.trim() || null,
-        sort_order: 0,
-      })
-      if (favError) throw favError
-    }
-
     showMessage(isEditMode.value ? '내역이 수정되었습니다.' : '내역이 등록되었습니다.', 'success')
     emit('saved')
     reset()
@@ -262,7 +254,7 @@ const save = async () => {
       <div class="dialog-header" :class="entryType === 'EXPENSE' ? 'header-sell' : 'header-buy'">
         <div class="d-flex align-center justify-space-between">
           <div class="font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">{{ isEditMode ? '내역 수정' : '내역 추가' }}</div>
-          <v-menu v-if="!isEditMode && favorites.length > 0" v-model="favoritesMenu" :close-on-content-click="false">
+          <v-menu v-if="!isEditMode" v-model="favoritesMenu" :close-on-content-click="false">
             <template #activator="{ props: menuProps }">
               <v-btn v-bind="menuProps" icon="mdi-star-outline" variant="text" size="small" />
             </template>
@@ -276,6 +268,15 @@ const save = async () => {
               >
                 <span>{{ categoryName(f.category_id) }}</span>
                 <span class="text-medium-emphasis">{{ formatAmount(f.amount) }}</span>
+              </button>
+              <div v-if="favorites.length === 0" class="favorites-menu-empty">즐겨찾기가 없습니다.</div>
+              <v-divider class="my-1" />
+              <button
+                class="favorites-menu-item favorites-menu-add"
+                @click="favoritesMenu = false; favoriteManageDialog = true"
+              >
+                <v-icon size="16">mdi-plus</v-icon>
+                <span>즐겨찾기 관리</span>
               </button>
             </v-card>
           </v-menu>
@@ -384,12 +385,6 @@ const save = async () => {
           class="mb-1"
         />
 
-        <v-checkbox
-          v-model="saveAsFavorite"
-          label="즐겨찾기로 저장"
-          density="compact"
-          hide-details
-        />
       </v-card-text>
 
       <v-divider />
@@ -407,6 +402,14 @@ const save = async () => {
         >{{ isEditMode ? '수정 저장' : '저장' }}</v-btn>
       </v-card-actions>
     </v-card>
+
+    <v-dialog v-model="favoriteManageDialog" max-width="480">
+      <v-card rounded="xl" class="pa-4">
+        <div class="font-weight-bold mb-4">즐겨찾기 관리</div>
+        <BudgetFavoriteView />
+        <v-btn block variant="text" class="mt-4" @click="favoriteManageDialog = false">닫기</v-btn>
+      </v-card>
+    </v-dialog>
   </v-dialog>
 </template>
 
@@ -514,6 +517,16 @@ const save = async () => {
 }
 .favorites-menu-item:active {
   background: rgba(var(--v-theme-on-surface), 0.05);
+}
+.favorites-menu-empty {
+  padding: 4px 14px 8px;
+  font-size: 0.75rem;
+  color: rgba(var(--v-theme-on-surface), 0.4);
+}
+.favorites-menu-add {
+  justify-content: flex-start;
+  gap: 6px;
+  color: rgb(var(--v-theme-primary));
 }
 
 .pm-chip-wrap {
