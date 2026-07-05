@@ -41,7 +41,7 @@ const saving = ref(false)
 const favoritesMenu = ref(false)
 const favoriteManageDialog = ref(false)
 const dateMenu = ref(false)
-const monthYearDialog = ref(false)
+const monthYearOpen = ref(false)
 const calendarMonth = ref(0)
 const calendarYear = ref(new Date().getFullYear())
 const monthNames = Array.from({ length: 12 }, (_, i) => `${i + 1}월`)
@@ -87,17 +87,18 @@ const setToday = () => {
 
 const selectMonth = (i: number) => {
   calendarMonth.value = i
-  monthYearDialog.value = false
+  monthYearOpen.value = false
 }
 
 const setThisMonth = () => {
   const today = new Date()
   calendarMonth.value = today.getMonth()
   calendarYear.value = today.getFullYear()
-  monthYearDialog.value = false
+  monthYearOpen.value = false
 }
 
 watch(dateMenu, (open) => {
+  monthYearOpen.value = false
   if (open) syncCalendarNav()
 })
 
@@ -363,7 +364,7 @@ const save = async () => {
               <button class="nav-arrow" @click="shiftMonth(-1)">
                 <v-icon size="20">mdi-chevron-left</v-icon>
               </button>
-              <button class="nav-label" @click="monthYearDialog = true">{{ calendarYear }}년 {{ calendarMonth + 1 }}월</button>
+              <button class="nav-label" @click="monthYearOpen = true">{{ calendarYear }}년 {{ calendarMonth + 1 }}월</button>
               <button class="nav-arrow" @click="shiftMonth(1)">
                 <v-icon size="20">mdi-chevron-right</v-icon>
               </button>
@@ -377,38 +378,36 @@ const save = async () => {
             >
               <template #controls />
             </v-date-picker>
-          </v-card>
-        </v-menu>
 
-        <v-dialog v-model="monthYearDialog" max-width="320">
-          <v-card rounded="lg" class="date-picker-card">
-            <div class="date-picker-topbar">
-              <span class="topbar-title">날짜</span>
-              <div class="d-flex align-center ga-1">
-                <button class="topbar-action" @click="setThisMonth">이번달</button>
-                <v-btn icon="mdi-close" variant="text" size="small" @click="monthYearDialog = false" />
+            <div v-if="monthYearOpen" class="month-year-overlay">
+              <div class="date-picker-topbar">
+                <span class="topbar-title">날짜</span>
+                <div class="d-flex align-center ga-1">
+                  <button class="topbar-action" @click="setThisMonth">이번달</button>
+                  <v-btn icon="mdi-close" variant="text" size="small" @click="monthYearOpen = false" />
+                </div>
+              </div>
+              <div class="date-nav-row">
+                <button class="nav-arrow" @click="calendarYear -= 1">
+                  <v-icon size="20">mdi-chevron-left</v-icon>
+                </button>
+                <span class="nav-label-static">{{ calendarYear }}년</span>
+                <button class="nav-arrow" @click="calendarYear += 1">
+                  <v-icon size="20">mdi-chevron-right</v-icon>
+                </button>
+              </div>
+              <div class="month-grid">
+                <button
+                  v-for="(name, i) in monthNames"
+                  :key="i"
+                  class="month-cell"
+                  :class="{ 'month-cell-active': calendarMonth === i }"
+                  @click="selectMonth(i)"
+                >{{ name }}</button>
               </div>
             </div>
-            <div class="date-nav-row">
-              <button class="nav-arrow" @click="calendarYear -= 1">
-                <v-icon size="20">mdi-chevron-left</v-icon>
-              </button>
-              <span class="nav-label-static">{{ calendarYear }}년</span>
-              <button class="nav-arrow" @click="calendarYear += 1">
-                <v-icon size="20">mdi-chevron-right</v-icon>
-              </button>
-            </div>
-            <div class="month-grid">
-              <button
-                v-for="(name, i) in monthNames"
-                :key="i"
-                class="month-cell"
-                :class="{ 'month-cell-active': calendarMonth === i }"
-                @click="selectMonth(i)"
-              >{{ name }}</button>
-            </div>
           </v-card>
-        </v-dialog>
+        </v-menu>
 
         <v-select
           v-model="categoryId"
@@ -616,7 +615,19 @@ const save = async () => {
 }
 
 .date-picker-card {
+  position: relative;
   overflow: hidden;
+}
+
+.month-year-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgb(var(--v-theme-surface));
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  z-index: 5;
 }
 .date-picker-topbar {
   display: flex;
