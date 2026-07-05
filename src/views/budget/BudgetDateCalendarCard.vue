@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import BudgetMonthYearCard from './BudgetMonthYearCard.vue'
 
 const props = defineProps<{
   open: boolean
@@ -14,7 +15,6 @@ const modelValue = defineModel<string>({ required: true })
 const monthYearOpen = ref(false)
 const calendarMonth = ref(0)
 const calendarYear = ref(new Date().getFullYear())
-const monthNames = Array.from({ length: 12 }, (_, i) => `${i + 1}월`)
 
 const toIsoDate = (v: Date) => {
   const y = v.getFullYear()
@@ -55,18 +55,6 @@ const setToday = () => {
   emit('close')
 }
 
-const selectMonth = (i: number) => {
-  calendarMonth.value = i
-  monthYearOpen.value = false
-}
-
-const setThisMonth = () => {
-  const today = new Date()
-  calendarMonth.value = today.getMonth()
-  calendarYear.value = today.getFullYear()
-  monthYearOpen.value = false
-}
-
 watch(() => props.open, (open) => {
   monthYearOpen.value = false
   if (open) syncCalendarNav()
@@ -102,31 +90,7 @@ watch(() => props.open, (open) => {
     </v-date-picker>
 
     <div v-if="monthYearOpen" class="month-year-overlay">
-      <div class="date-picker-topbar">
-        <span class="topbar-title">날짜</span>
-        <div class="d-flex align-center ga-1">
-          <button class="topbar-action" @click="setThisMonth">이번달</button>
-          <v-btn icon="mdi-close" variant="text" size="small" @click="monthYearOpen = false" />
-        </div>
-      </div>
-      <div class="date-nav-row">
-        <button class="nav-arrow" @click="calendarYear -= 1">
-          <v-icon size="20">mdi-chevron-left</v-icon>
-        </button>
-        <span class="nav-label-static">{{ calendarYear }}년</span>
-        <button class="nav-arrow" @click="calendarYear += 1">
-          <v-icon size="20">mdi-chevron-right</v-icon>
-        </button>
-      </div>
-      <div class="month-grid">
-        <button
-          v-for="(name, i) in monthNames"
-          :key="i"
-          class="month-cell"
-          :class="{ 'month-cell-active': calendarMonth === i }"
-          @click="selectMonth(i)"
-        >{{ name }}</button>
-      </div>
+      <BudgetMonthYearCard v-model:year="calendarYear" v-model:month="calendarMonth" @close="monthYearOpen = false" />
     </div>
   </v-card>
 </template>
@@ -142,8 +106,6 @@ watch(() => props.open, (open) => {
   top: 0;
   left: 0;
   right: 0;
-  background: rgb(var(--v-theme-surface));
-  border-radius: 0 0 16px 16px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
   z-index: 5;
 }
@@ -205,33 +167,5 @@ watch(() => props.open, (open) => {
   color: rgb(var(--v-theme-on-surface));
   cursor: pointer;
   padding: 4px 8px;
-}
-.nav-label-static {
-  font-weight: 700;
-  font-size: 0.9375rem;
-  color: rgb(var(--v-theme-on-surface));
-  min-width: 72px;
-  text-align: center;
-}
-
-.month-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-  padding: 12px 16px 20px;
-}
-.month-cell {
-  padding: 12px 0;
-  border: none;
-  border-radius: 10px;
-  background: none;
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: rgb(var(--v-theme-on-surface));
-  cursor: pointer;
-}
-.month-cell-active {
-  color: rgb(var(--v-theme-primary));
-  background: rgba(var(--v-theme-primary), 0.1);
 }
 </style>

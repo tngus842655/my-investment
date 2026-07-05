@@ -5,7 +5,7 @@ import { showMessage } from '@/composables/useSnackbar'
 import { formatCurrency } from '@/utils/numberFormat'
 import type { BudgetType } from '@/types/budget'
 import BudgetEntryAddDialog from './BudgetEntryAddDialog.vue'
-import BudgetDateCalendarCard from './BudgetDateCalendarCard.vue'
+import BudgetMonthYearCard from './BudgetMonthYearCard.vue'
 
 interface EntryRow {
   id: string
@@ -147,15 +147,13 @@ const isCurrentMonth = () => year.value === today.getFullYear() && month.value =
 const selectedDate = ref<string | null>(isCurrentMonth() ? pad2ForToday() : null)
 
 const dateMenuOpen = ref(false)
-const navDate = computed<string>({
-  get: () => selectedDate.value ?? `${year.value}-${pad2(month.value)}-01`,
-  set: (v) => {
-    const d = new Date(`${v}T00:00:00`)
-    year.value = d.getFullYear()
-    month.value = d.getMonth() + 1
-    selectedDate.value = v
-  },
+const monthIndex = computed<number>({
+  get: () => month.value - 1,
+  set: (v) => { month.value = v + 1 },
 })
+const syncSelectedDateForMonth = () => {
+  selectedDate.value = isCurrentMonth() ? pad2ForToday() : null
+}
 
 const selectDate = (cell: CalendarCell) => {
   if (!cell.inMonth) return
@@ -348,7 +346,11 @@ const onContainerClick = (e: MouseEvent) => {
         <template #activator="{ props: menuProps }">
           <button v-bind="menuProps" class="font-weight-bold nav-year-month-btn">{{ year }}년 {{ month }}월</button>
         </template>
-        <BudgetDateCalendarCard v-model="navDate" :open="dateMenuOpen" @close="dateMenuOpen = false" />
+        <BudgetMonthYearCard
+          v-model:year="year"
+          v-model:month="monthIndex"
+          @close="dateMenuOpen = false; syncSelectedDateForMonth()"
+        />
       </v-menu>
       <v-btn
         icon="mdi-chevron-right"
