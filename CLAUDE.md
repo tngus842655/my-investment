@@ -140,7 +140,7 @@ npm run format     # Prettier 포맷
 ### 백엔드 연동
 
 - **Supabase** (`src/services/supabase.ts`): 단일 클라이언트 인스턴스를 export하여 앱 전체에서 공유
-- **Edge Functions**: `stock-price`, `exchange-rate`, `etf-info`, `etf-backtest`, `etf-dividend`, `admin-delete-user`, `admin-reset-password` 총 7개. 상세 내용은 `EDGE_FUNCTIONS.md` 참고
+- **Edge Functions**: `stock-price`, `exchange-rate`, `etf-info`, `etf-backtest`, `etf-dividend`, `admin-delete-user`, `admin-reset-password` 총 7개. 상세 내용은 **EDGE_FUNCTIONS.md** 참고 (새 세션 시작 시 함께 읽을 것)
 - **DB 트리거 / RPC / pg_cron**: `TABLE.md` 참고
 
 ### 환경 변수
