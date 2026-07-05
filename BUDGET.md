@@ -38,7 +38,7 @@ Fire Path의 서브 기능으로 추가하는 가계부. 자산관리(기존 메
 - [x] 로그인 후 허브 자동 진입 흐름 — `src/utils/lastModule.ts`(localStorage `fp-last-module`)에 마지막으로 방문한 모듈을 라우터 `afterEach`에서 자동 기록(`AssetLayout`/`BudgetLayout` 부모 라우트에 `meta: { module: 'asset' | 'budget' }` 부여). 로그인 시 기록이 없으면 `/hub`, `asset`/`budget`이면 해당 모듈로 바로 이동. 허브 접근 버튼은 `MoreView`("다른 서비스" 섹션 "서비스 홈")와 `BudgetCalendarView` 헤더에 상시 노출
 - [x] 결제수단을 카테고리와 동일한 방식(FK)으로 전환: `budget_payment_methods` 테이블 신설, `budget_entries`/`budget_favorites.payment_method`(text) → `payment_method_id`(FK, `SET NULL`)로 변경. 기본값(현금/카드) 자동 시딩, 다이얼로그에서 칩 선택 + "+ 추가"로 즉석 등록 (`supabase/migrations/20260705_02_budget_payment_methods.sql`)
 - [x] 더보기 화면(`BudgetMoreView.vue`, `/budget/more`) + 검색(`BudgetSearchView.vue`, `/budget/search`) — 더보기에서 카테고리 관리/검색/공용 화면(공지사항·피드백·개발자노트·비밀번호변경·화면설정)·서비스 홈·로그아웃 제공. 공용 화면들은 `src/views/shared/`의 동일 컴포넌트를 `/budget/*` 경로로 재라우팅(뒤로가기가 `router.back()`이라 별도 수정 없이 재사용 가능했음). `BudgetLayout` 더보기 탭을 `/budget/more`로 정식 연결. 검색은 최근 500건 내에서 메모/카테고리명/결제수단명 클라이언트 필터링
-- [ ] 목록에서 내역 삭제 UI (캘린더/일일 화면에 스와이프 등 추가)
+- [x] 목록에서 내역 삭제 UI — `BudgetCalendarView`(일일 목록)와 `BudgetSearchView`(검색 결과)에 자산관리 거래내역과 동일한 좌측 스와이프(수정/삭제 버튼 노출) 방식 적용, 삭제 시 확인 다이얼로그 표시. 스와이프 로직은 프로젝트 관례대로 화면마다 복제(공용 컴포저블화 안 함)
 
 ## 관련 문서
 

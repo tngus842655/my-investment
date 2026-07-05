@@ -212,10 +212,87 @@ const onSaved = async () => {
   await fetchMonthEntries()
   await fetchYearEntries()
 }
+
+// ── 삭제 ──────────────────────────
+const deleteDialog = ref(false)
+const entryToDelete = ref<EntryRow | null>(null)
+
+const openDeleteDialog = (e: EntryRow) => {
+  swipedId.value = null
+  entryToDelete.value = e
+  deleteDialog.value = true
+}
+
+const deleteEntry = async () => {
+  if (!entryToDelete.value) return
+  const { error } = await supabase.from('budget_entries').delete().eq('id', entryToDelete.value.id)
+  if (error) {
+    showMessage('삭제 중 오류가 발생했습니다.', 'error')
+    return
+  }
+  deleteDialog.value = false
+  entryToDelete.value = null
+  showMessage('내역이 삭제되었습니다.', 'success')
+  await fetchMonthEntries()
+  await fetchYearEntries()
+}
+
+// ── 스와이프 (자산관리 거래내역과 동일한 방식) ──────────────────────────
+const swipedId = ref<string | null>(null)
+const SWIPE_THRESHOLD = 40
+const ACTION_WIDTH = 128
+const swipeTouchStartX = ref(0)
+const swipeTouchStartY = ref(0)
+const isDraggingSwipe = ref(false)
+const isVerticalScroll = ref(false)
+
+const onSwipeTouchStart = (e: TouchEvent) => {
+  swipeTouchStartX.value = e.touches[0]?.clientX ?? 0
+  swipeTouchStartY.value = e.touches[0]?.clientY ?? 0
+  isDraggingSwipe.value = true
+  isVerticalScroll.value = false
+}
+const onSwipeTouchMove = (e: TouchEvent) => {
+  if (!isDraggingSwipe.value || isVerticalScroll.value) return
+  const dx = Math.abs(swipeTouchStartX.value - (e.touches[0]?.clientX ?? 0))
+  const dy = Math.abs(swipeTouchStartY.value - (e.touches[0]?.clientY ?? 0))
+  if (dy > dx && dy > 5) isVerticalScroll.value = true
+}
+const onSwipeTouchEnd = (e: TouchEvent, id: string) => {
+  if (!isDraggingSwipe.value) return
+  isDraggingSwipe.value = false
+  if (isVerticalScroll.value) return
+  const dx = swipeTouchStartX.value - (e.changedTouches[0]?.clientX ?? 0)
+  if (dx > SWIPE_THRESHOLD) swipedId.value = id
+  else if (dx < -SWIPE_THRESHOLD / 2 && swipedId.value === id) swipedId.value = null
+}
+const onSwipeMouseDown = (e: MouseEvent) => {
+  swipeTouchStartX.value = e.clientX
+  swipeTouchStartY.value = e.clientY
+  isDraggingSwipe.value = true
+}
+const onSwipeMouseUp = (e: MouseEvent, id: string) => {
+  if (!isDraggingSwipe.value) return
+  isDraggingSwipe.value = false
+  const dx = swipeTouchStartX.value - e.clientX
+  const dy = Math.abs(swipeTouchStartY.value - e.clientY)
+  if (dy > 10 && dy > Math.abs(dx)) return
+  if (dx > SWIPE_THRESHOLD) swipedId.value = id
+  else if (dx < -SWIPE_THRESHOLD / 2 && swipedId.value === id) swipedId.value = null
+}
+const closeSwipe = () => {
+  swipedId.value = null
+}
+const onContainerClick = (e: MouseEvent) => {
+  if (!swipedId.value) return
+  const swipedEl = document.querySelector(`.entry-card-wrap[data-id="${swipedId.value}"]`)
+  if (swipedEl?.contains(e.target as Node)) return
+  closeSwipe()
+}
 </script>
 
 <template>
-  <v-container class="pa-4 pa-sm-6 pb-16">
+  <v-container class="pa-4 pa-sm-6 pb-16" @click="onContainerClick">
     <div class="d-flex align-center justify-space-between mb-4">
       <div class="font-weight-bold text-h6">가계부</div>
       <div class="d-flex align-center ga-1">
@@ -309,17 +386,40 @@ const onSaved = async () => {
           <div
             v-for="e in group.entries"
             :key="e.id"
-            class="daily-entry-row"
-            @click="openEditDialog(e)"
+            class="entry-card-wrap"
+            :data-id="e.id"
           >
-            <span class="daily-entry-icon">{{ e.budget_categories?.icon ?? '❓' }}</span>
-            <div class="daily-entry-info">
-              <div class="daily-entry-category">{{ e.memo || e.budget_categories?.name || '' }}</div>
-              <div class="daily-entry-sub">{{ e.budget_categories?.name }}<span v-if="e.budget_payment_methods?.name"> · {{ e.budget_payment_methods.name }}</span></div>
+            <!-- 스와이프 액션 -->
+            <div class="swipe-actions">
+              <button class="action-btn action-edit" @click.stop="openEditDialog(e)">
+                <v-icon size="18">mdi-pencil-outline</v-icon>
+                <span>수정</span>
+              </button>
+              <button class="action-btn action-delete" @click.stop="openDeleteDialog(e)">
+                <v-icon size="18">mdi-delete-outline</v-icon>
+                <span>삭제</span>
+              </button>
             </div>
-            <span :class="e.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ formatCurrency(e.amount) }}원</span>
+
+            <div
+              class="daily-entry-row swipe-card"
+              :style="swipedId === e.id ? `transform: translateX(-${ACTION_WIDTH}px)` : ''"
+              @touchstart.passive="onSwipeTouchStart"
+              @touchmove.passive="onSwipeTouchMove"
+              @touchend.passive="(ev) => onSwipeTouchEnd(ev, e.id)"
+              @mousedown="onSwipeMouseDown"
+              @mouseup="(ev) => onSwipeMouseUp(ev, e.id)"
+            >
+              <span class="daily-entry-icon">{{ e.budget_categories?.icon ?? '❓' }}</span>
+              <div class="daily-entry-info">
+                <div class="daily-entry-category">{{ e.memo || e.budget_categories?.name || '' }}</div>
+                <div class="daily-entry-sub">{{ e.budget_categories?.name }}<span v-if="e.budget_payment_methods?.name"> · {{ e.budget_payment_methods.name }}</span></div>
+              </div>
+              <span :class="e.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ formatCurrency(e.amount) }}원</span>
+            </div>
           </div>
         </div>
+        <p class="swipe-hint">← 항목을 왼쪽으로 밀면 수정/삭제할 수 있어요</p>
       </div>
 
       <!-- 월별 -->
@@ -342,6 +442,17 @@ const onSaved = async () => {
     />
 
     <BudgetEntryAddDialog v-model="dialog" :initial-data="dialogInitialData" @saved="onSaved" />
+
+    <v-dialog v-model="deleteDialog" max-width="320">
+      <v-card rounded="xl" class="glass-dialog">
+        <v-card-title class="text-center pt-6">내역 삭제</v-card-title>
+        <v-card-text class="text-center text-medium-emphasis">이 내역을 삭제하시겠습니까?</v-card-text>
+        <v-card-actions class="pa-4 pt-2">
+          <v-btn block variant="text" @click="deleteDialog = false">취소</v-btn>
+          <v-btn block color="error" @click="deleteEntry">삭제</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
@@ -409,12 +520,65 @@ const onSaved = async () => {
   line-height: 1.2;
 }
 
+.entry-card-wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.05);
+}
+.entry-card-wrap:first-child {
+  border-top: none;
+}
+.swipe-actions {
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  bottom: 2px;
+  width: 116px;
+  display: flex;
+}
+.action-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: #fff;
+  transition: filter 0.15s;
+}
+.action-btn:active { filter: brightness(0.9); }
+.action-edit {
+  background: var(--fp-primary);
+  border-radius: 10px 0 0 10px;
+}
+.action-delete {
+  background: var(--fp-error);
+  border-radius: 0 10px 10px 0;
+}
+.swipe-card {
+  position: relative;
+  z-index: 1;
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+  background: rgb(var(--v-theme-surface));
+}
+.swipe-hint {
+  font-size: 0.6875rem;
+  color: rgba(var(--v-theme-on-surface), 0.35);
+  text-align: center;
+  margin: 8px 0 0;
+}
+
 .daily-entry-row {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 8px 4px;
-  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.05);
   cursor: pointer;
 }
 .daily-entry-icon {
