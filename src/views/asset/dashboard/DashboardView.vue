@@ -6,22 +6,11 @@ import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel } from '@/utils/tickerNames'
-import { useDesignTokens } from '@/composables/useDesignTokens'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
-const { themeId } = useDesignTokens()
-
-const LOGO_WIDE: Partial<Record<string, string>> = {
-  light:  '/icons/wide/logo-wide-light.png',
-  dark:   '/icons/wide/logo-wide-dark.png',
-  gold:   '/icons/wide/logo-wide-gold.png',
-  nature: '/icons/wide/logo-wide-nature.png',
-  space:  '/icons/wide/logo-wide-space.png',
-}
-const logoWide = computed(() => LOGO_WIDE[themeId.value] ?? null)
 const loading = ref(true)
 const hideAsset = ref(localStorage.getItem('firepath-hide-asset') === 'true')
 
@@ -205,15 +194,8 @@ onUnmounted(clearPullToRefresh)
     <!-- 헤더 -->
     <div class="d-flex justify-space-between align-center mb-6">
       <div class="d-flex align-center ga-2">
-        <img
-          v-if="logoWide"
-          :src="logoWide"
-          class="header-logo-wide"
-          alt="FIREPATH"
-        />
-        <template v-else>
-          <div class="font-weight-bold">FIREPATH</div>
-        </template>
+        <img src="/icons/icon-home.png" class="header-icon" alt="홈" />
+        <div class="font-weight-bold text-h6">홈</div>
       </div>
       <div class="d-flex align-center ga-1">
         <button class="icon-btn" @click="router.push('/goalSettings')">
@@ -452,9 +434,9 @@ onUnmounted(clearPullToRefresh)
   height: 36px;
   object-fit: contain;
 }
-.header-logo-wide {
-  height: 40px;
-  width: auto;
+.header-icon {
+  width: 28px;
+  height: 28px;
   object-fit: contain;
 }
 
