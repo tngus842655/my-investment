@@ -107,6 +107,14 @@ const onFileChange = async (e: Event) => {
   if (!file) return
   resetResult()
   fileName.value = file.name
+
+  if (/\.xls$/i.test(file.name)) {
+    showMessage('예전 형식(.xls)은 지원하지 않습니다. 엑셀에서 "다른 이름으로 저장" → .xlsx로 저장 후 다시 시도해주세요.', 'error')
+    resetResult()
+    if (fileInput.value) fileInput.value.value = ''
+    return
+  }
+
   parsing.value = true
   try {
     const { default: ExcelJS } = await import('exceljs')
@@ -154,8 +162,9 @@ const onFileChange = async (e: Event) => {
     if (rows.length === 0) {
       showMessage('가져올 내역이 없습니다.', 'warning')
     }
-  } catch {
-    showMessage('엑셀 파일을 읽는 중 오류가 발생했습니다.', 'error')
+  } catch (err) {
+    console.error('엑셀 파싱 오류:', err)
+    showMessage('엑셀 파일을 읽는 중 오류가 발생했습니다. .xlsx 형식이 맞는지 확인해주세요.', 'error')
     resetResult()
   } finally {
     parsing.value = false
@@ -237,7 +246,8 @@ const doImport = async () => {
 
     showMessage(`${entries.length}건의 내역을 가져왔습니다.`, 'success')
     resetResult()
-  } catch {
+  } catch (err) {
+    console.error('가져오기 오류:', err)
     showMessage('가져오기 중 오류가 발생했습니다.', 'error')
   } finally {
     importing.value = false
