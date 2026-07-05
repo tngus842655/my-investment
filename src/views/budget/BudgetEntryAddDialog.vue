@@ -40,6 +40,19 @@ const entryDate = ref(new Date().toISOString().slice(0, 10))
 const saving = ref(false)
 const favoritesMenu = ref(false)
 const favoriteManageDialog = ref(false)
+const dateMenu = ref(false)
+
+const pickerDate = computed<Date>({
+  get: () => new Date(`${entryDate.value}T00:00:00`),
+  set: (v) => {
+    if (!v) return
+    const y = v.getFullYear()
+    const m = String(v.getMonth() + 1).padStart(2, '0')
+    const d = String(v.getDate()).padStart(2, '0')
+    entryDate.value = `${y}-${m}-${d}`
+    dateMenu.value = false
+  },
+})
 
 interface QuickItem {
   category_id: string
@@ -277,16 +290,22 @@ const save = async () => {
       </div>
 
       <v-card-text class="pt-2 pb-1" style="overflow-y: auto; flex: 1">
-        <v-text-field
-          v-model="entryDate"
-          label="날짜"
-          type="date"
-          prepend-inner-icon="mdi-calendar-outline"
-          variant="outlined"
-          density="compact"
-          rounded="lg"
-          class="mb-1"
-        />
+        <v-menu v-model="dateMenu" :close-on-content-click="false">
+          <template #activator="{ props: menuProps }">
+            <v-text-field
+              v-bind="menuProps"
+              :model-value="entryDate"
+              label="날짜"
+              readonly
+              prepend-inner-icon="mdi-calendar-outline"
+              variant="outlined"
+              density="compact"
+              rounded="lg"
+              class="mb-1"
+            />
+          </template>
+          <v-date-picker v-model="pickerDate" hide-header show-adjacent-months />
+        </v-menu>
 
         <v-select
           v-model="categoryId"
