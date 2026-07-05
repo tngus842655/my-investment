@@ -7,7 +7,8 @@
 Fire Path의 서브 기능으로 추가하는 가계부. 자산관리(기존 메인 기능)와 로그인 세션은 공유하지만, 기능·데이터·화면은 완전히 독립된 별개 모듈이다.
 
 - FIRE 목표 설정(`investment_goals`, `requiresGoal` 가드)과 무관하게 동작한다.
-- 진입은 `HubView`(`/hub`)에서 "자산관리"/"가계부" 중 선택하는 방식. 최초 로그인 시에만 자동 진입시키고, 이후엔 마지막 사용 모듈로 바로 이동 + 허브로 가는 버튼 상시 노출 예정 (아직 미구현, 아래 "현재 상태" 참고).
+- 진입은 `HubView`(`/hub`)에서 "자산관리"/"가계부" 중 선택하는 방식. 최초 로그인 시에만 자동 진입시키고, 이후엔 마지막 사용 모듈로 바로 이동 + 허브로 가는 버튼 상시 노출.
+- **가계부는 아직 정식 공개 전 — `BUDGET_PREVIEW_EMAILS`(`src/config/admin.ts`)에 등록된 이메일만 접근 가능.** 관리자 권한(`ADMIN_EMAILS`)과는 완전히 별개 목록이니 혼동하지 말 것. 허용되지 않은 계정은 `HubView`에서 가계부 카드가 "준비중" 배지와 함께 비활성화되고, `/budget` 이하 라우트는 `requiresBudgetPreview` 가드로 직접 URL 접근도 차단(→ `/hub` 리다이렉트).
 
 ## 네이밍 규칙
 
@@ -41,6 +42,22 @@ Fire Path의 서브 기능으로 추가하는 가계부. 자산관리(기존 메
 - [x] 목록에서 내역 삭제 UI — `BudgetCalendarView`(일일 목록)와 `BudgetSearchView`(검색 결과)에 자산관리 거래내역과 동일한 좌측 스와이프(수정/삭제 버튼 노출) 방식 적용, 삭제 시 확인 다이얼로그 표시. 스와이프 로직은 프로젝트 관례대로 화면마다 복제(공용 컴포저블화 안 함)
 - [x] 캘린더에서 날짜 선택 시 해당 날짜 내역 인라인 표시 + 그 날짜로 내역 추가 시 날짜 기본값 자동 설정 (`BudgetEntryAddDialog`의 `defaultDate` prop)
 - [x] 관리 화면 통합(`BudgetManageView.vue`, `/budget/manage`) — 더보기 메뉴 하나("관리")에서 카테고리/결제수단/즐겨찾기를 탭으로 전환. `BudgetCategoryView`/`BudgetPaymentMethodView`는 자체 헤더 없는 탭 콘텐츠로 전환, `BudgetFavoriteView` 신규 추가(즐겨찾기 목록 조회/추가/수정/삭제, 유형·카테고리·금액·결제수단·메모 입력). 기존 `/budget/categories`, `/budget/payment-methods` 개별 라우트는 제거
+- [x] 하단 탭·헤더 아이콘을 커스텀 PNG로 통일 — 캘린더(`icon-calendar.png`)/통계(`icon-stats.png`)/더보기(`icon-more.png`), 각 화면 우측 상단에 허브 이동 아이콘(`icon-hub.png`) 추가. 자산관리 대시보드도 동일 패턴으로 `icon-dashboard.png` + "대시보드" 제목/설명으로 교체(기존 `icon-home.png`·와이드 로고 방식 제거)
+- [x] **가계부 접근 제한**: `BUDGET_PREVIEW_EMAILS`/`isBudgetPreviewAllowed`(`src/config/admin.ts`) 신설, `HubView` 가계부 카드 비활성화 처리 + `/budget` 라우트에 `requiresBudgetPreview` 가드 추가. 별도로 관리자 판별도 `ADMIN_EMAIL` 단일 상수 → `ADMIN_EMAILS` 배열 + `isAdminEmail()` 헬퍼로 리팩터링(관리자 화면 전체 반영). 겸사겸사 관리자 비밀번호 재확인 로직이 하드코딩된 이메일로 로그인 시도하던 버그(`AdminSignupLogView`)도 수정
+- [x] 내역추가 다이얼로그(`BudgetEntryAddDialog.vue`) 개선
+  - "최근" 빠른입력 섹션 제거, 필드 순서를 날짜 → 카테고리 → 금액 → 결제수단 → 내용(메모 명칭 변경) 순으로 재배치
+  - 날짜 입력을 직접 타이핑 불가한 readonly 필드로 바꾸고, 클릭 시 커스텀 캘린더 팝업(`BudgetDateCalendarCard.vue`) 오픈 — 상단 "날짜/오늘/닫기" 바 + 요일 그리드, 상단 "YYYY년 M월" 클릭 시 년/월 전용 선택 오버레이(`BudgetMonthYearCard.vue`)로 전환. `BudgetMonthYearCard`는 `BudgetCalendarView`/`BudgetStatsView` 상단의 "YYYY년 M월" 클릭 팝업에도 그대로 재사용(달만 선택, 일자 없음)
+  - "즐겨찾기로 저장" 체크박스 제거 → 즐겨찾기 별 아이콘 메뉴 하단에 "즐겨찾기 관리" 항목 추가, 클릭 시 `BudgetFavoriteView`를 팝업으로 띄워 즐겨찾기 추가/수정/삭제
+  - 금액 최대 100억 제한(`amountRules`), 내용(메모) 30자 제한 + 카운터 추가
+- [x] 캘린더 화면(`BudgetCalendarView.vue`) 버그 수정 및 다듬기 — "월별" 블록이 `v-else`로 연결돼 있어 캘린더 탭에서 날짜 미선택 시 월별 통계가 잘못 노출되던 버그 수정(`v-else-if`로 명시), 상단 탭(캘린더/일일/월별)·통계 탭(수입/지출) 좌우 꽉 차게, 수입/지출/합계 요약 카드 및 날짜별 내역 카드 여백 축소, 통계 탭 순서를 수입→지출로 변경(기본 선택은 지출 유지)
+- [x] **카테고리 `icon` 컬럼 제거** (`supabase/migrations/20260705_03_budget_categories_drop_icon.sql`) — 카테고리는 `name` 하나로만 관리, 이모지 넣고 싶으면 이름에 직접 타이핑(예: "🍚 식비"). 기존 데이터는 `icon + name`을 합쳐서 마이그레이션. 카테고리 추가/수정 화면의 이모지 선택 그리드도 제거하고 순수 텍스트 입력으로 변경
+- [x] 엑셀 일괄 가져오기(`BudgetImportView.vue`, `/budget/import`, 더보기 메뉴에서 진입) — 날짜·자산(결제수단)·카테고리·내용·금액(원)·수입/지출 순서의 xlsx 파일을 업로드하면 파싱 미리보기(정상/오류 건수, 새로 생성될 카테고리·결제수단) 확인 후 일괄 등록. 없는 카테고리/결제수단은 자동 생성. 파싱 라이브러리는 처음 `exceljs`로 구현했으나 문서 속성(docProps/app.xml)에 특정 필드가 없는 파일(예: 구글 시트 내보내기)에서 파싱 자체가 죽는 버그가 있어 `read-excel-file`로 교체(번들 크기도 훨씬 작음, 동적 import 유지). 엑셀 날짜 셀은 UTC 자정 기준 Date로 오므로 반드시 UTC getter로 읽을 것(로컬 getter 쓰면 타임존에 따라 하루 밀리는 버그 발생했었음)
+- [x] 더보기 > "데이터 관리" 섹션 — 거래내역 초기화/즐겨찾기 초기화/전체 초기화(카테고리·결제수단 포함) 3개 메뉴, 각각 비밀번호 재확인 성공 시에만 삭제 진행. 전체 초기화는 `budget_entries.category_id`가 `ON DELETE RESTRICT`라 반드시 거래내역 → 즐겨찾기 → 카테고리 → 결제수단 순서로 삭제해야 함
+
+### `budget_entries` vs `budget_favorites` 개념 정리 (헷갈리기 쉬움)
+
+- `budget_entries`: 실제로 있었던 수입/지출 "기록"(`entry_date` 있음). 내역추가 저장, 엑셀 가져오기 모두 최종적으로 여기 저장됨. 캘린더/통계/검색은 전부 이 테이블만 조회.
+- `budget_favorites`: 거래 기록이 아니라 내역추가를 빠르게 채우기 위한 **입력 템플릿**(`entry_date` 없음). 클릭하면 폼에 값만 채워줄 뿐, 실제 저장은 사용자가 "저장" 버튼을 눌러야 `budget_entries`에 생성됨. 날짜가 없고 집계에 포함되면 안 되는 데이터라 의도적으로 테이블을 분리했다 — 합치면 "이건 기록/이건 템플릿" 구분용 플래그를 모든 조회 쿼리에 추가해야 해서 오히려 더 복잡해짐.
 
 ## 관련 문서
 
