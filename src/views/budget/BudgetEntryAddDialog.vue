@@ -49,7 +49,6 @@ interface QuickItem {
   memo: string | null
 }
 const favorites = ref<QuickItem[]>([])
-const recentItems = ref<QuickItem[]>([])
 
 const categoryOptions = computed(() =>
   categories.value
@@ -132,7 +131,7 @@ const addPaymentMethod = async () => {
   newPaymentMethodName.value = ''
 }
 
-const fetchQuickItems = async () => {
+const fetchFavorites = async () => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
 
@@ -142,24 +141,6 @@ const fetchQuickItems = async () => {
     .eq('user_id', user.id)
     .order('sort_order')
   favorites.value = favData ?? []
-
-  const { data: entryData } = await supabase
-    .from('budget_entries')
-    .select('category_id, type, amount, payment_method_id, memo')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(30)
-
-  const seen = new Set<string>()
-  const recents: QuickItem[] = []
-  for (const e of entryData ?? []) {
-    const key = `${e.category_id}-${e.amount}-${e.memo ?? ''}-${e.payment_method_id ?? ''}`
-    if (seen.has(key)) continue
-    seen.add(key)
-    recents.push(e)
-    if (recents.length >= 6) break
-  }
-  recentItems.value = recents
 }
 
 const applyQuickItem = (item: QuickItem) => {
@@ -178,7 +159,7 @@ watch(dialog, async (open) => {
   if (!open) return
   await fetchCategories()
   await fetchPaymentMethods()
-  await fetchQuickItems()
+  await fetchFavorites()
   addingPaymentMethod.value = false
   newPaymentMethodName.value = ''
   favoritesMenu.value = false
@@ -202,7 +183,7 @@ watch(dialog, async (open) => {
 
 watch(favoriteManageDialog, async (open) => {
   if (open) return
-  await fetchQuickItems()
+  await fetchFavorites()
 })
 
 // 수입/지출 전환 시 카테고리 목록이 바뀌므로, 새 목록에 없는 선택은 초기화
@@ -296,19 +277,16 @@ const save = async () => {
       </div>
 
       <v-card-text class="pt-2 pb-1" style="overflow-y: auto; flex: 1">
-        <div v-if="!isEditMode && recentItems.length > 0" class="mb-3">
-          <div class="quick-row">
-            <span class="quick-label">최근</span>
-            <div class="quick-chip-wrap">
-              <button
-                v-for="(r, i) in recentItems"
-                :key="'recent-' + i"
-                class="quick-chip"
-                @click="applyQuickItem(r)"
-              >{{ categoryName(r.category_id) }} {{ formatAmount(r.amount) }}</button>
-            </div>
-          </div>
-        </div>
+        <v-text-field
+          v-model="entryDate"
+          label="날짜"
+          type="date"
+          prepend-inner-icon="mdi-calendar-outline"
+          variant="outlined"
+          density="compact"
+          rounded="lg"
+          class="mb-1"
+        />
 
         <v-select
           v-model="categoryId"
@@ -366,25 +344,13 @@ const save = async () => {
 
         <v-text-field
           v-model="memo"
-          label="메모"
+          label="내용"
           prepend-inner-icon="mdi-note-outline"
           variant="outlined"
           density="compact"
           rounded="lg"
-          class="mb-1"
+          class="mb-1 mt-4"
         />
-
-        <v-text-field
-          v-model="entryDate"
-          label="날짜"
-          type="date"
-          prepend-inner-icon="mdi-calendar-outline"
-          variant="outlined"
-          density="compact"
-          rounded="lg"
-          class="mb-1"
-        />
-
       </v-card-text>
 
       <v-divider />
@@ -455,36 +421,6 @@ const save = async () => {
   background: rgba(var(--v-theme-error), 0.1);
   border-color: var(--fp-error);
   color: var(--fp-error);
-}
-
-.quick-row {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.quick-label {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: rgba(var(--v-theme-on-surface), 0.45);
-}
-.quick-chip-wrap {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.quick-chip {
-  padding: 4px 10px;
-  border-radius: 20px;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
-  background: none;
-  cursor: pointer;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: rgba(var(--v-theme-on-surface), 0.6);
-  transition: all 0.15s;
-}
-.quick-chip:active {
-  opacity: 0.7;
 }
 
 .favorites-menu-card {
