@@ -54,14 +54,6 @@ const newPaymentMethodNames = computed(() => {
 const cellToString = (v: unknown): string => {
   if (v == null) return ''
   if (v instanceof Date) return v.toISOString()
-  if (typeof v === 'object') {
-    const obj = v as Record<string, unknown>
-    if (typeof obj.text === 'string') return obj.text
-    if (Array.isArray(obj.richText)) {
-      return (obj.richText as { text: string }[]).map((t) => t.text).join('')
-    }
-    if ('result' in obj) return String(obj.result)
-  }
   return String(v)
 }
 
@@ -117,29 +109,23 @@ const onFileChange = async (e: Event) => {
 
   parsing.value = true
   try {
-    const { default: ExcelJS } = await import('exceljs')
-    const workbook = new ExcelJS.Workbook()
-    await workbook.xlsx.load(await file.arrayBuffer())
-    const sheet = workbook.worksheets[0]
-    if (!sheet) {
+    const { default: readXlsxFile } = await import('read-excel-file/browser')
+    const sheets = await readXlsxFile(file)
+    const data = sheets[0]?.data
+    if (!data) {
       showMessage('시트를 찾을 수 없습니다.', 'error')
       return
     }
 
     const rows: ParsedRow[] = []
-    sheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return // 헤더 행 skip
-
-      const dateRaw = row.getCell(1).value
-      const assetRaw = row.getCell(2).value
-      const categoryRaw = row.getCell(3).value
-      const memoRaw = row.getCell(4).value
-      const amountRaw = row.getCell(5).value
-      const typeRaw = row.getCell(6).value
+    for (let i = 1; i < data.length; i++) {
+      const rowNumber = i + 1
+      const cells = data[i] ?? []
+      const [dateRaw, assetRaw, categoryRaw, memoRaw, amountRaw, typeRaw] = cells
 
       // 완전히 빈 행은 건너뜀
       if (![dateRaw, assetRaw, categoryRaw, memoRaw, amountRaw, typeRaw].some((v) => v != null && cellToString(v).trim() !== '')) {
-        return
+        continue
       }
 
       const entryDate = parseDateCell(dateRaw)
@@ -156,7 +142,7 @@ const onFileChange = async (e: Event) => {
       else if (amount === null || amount <= 0) error = '금액을 확인해주세요'
 
       rows.push({ rowNumber, entryDate, paymentMethodName, categoryName, memo, amount, type, error })
-    })
+    }
 
     parsedRows.value = rows
     if (rows.length === 0) {
