@@ -7,7 +7,7 @@ const route = useRoute()
 const tabs = [
   { label: '캘린더', route: '/budget', icon: null, activeIcon: null, img: '/icons/icon-calendar.png' },
   { label: '통계', route: '/budget/stats', icon: null, activeIcon: null, img: '/icons/icon-stats.png' },
-  { label: '더보기', route: '/budget/more', icon: 'mdi-dots-horizontal', activeIcon: 'mdi-dots-horizontal', img: null },
+  { label: '더보기', route: '/budget/more', icon: null, activeIcon: null, img: '/icons/icon-more.png' },
 ]
 
 const isActive = (tabRoute: string) => route.path === tabRoute
