@@ -5,6 +5,7 @@ import { showMessage } from '@/composables/useSnackbar'
 import { formatCurrency } from '@/utils/numberFormat'
 import { useDesignTokens } from '@/composables/useDesignTokens'
 import type { BudgetType } from '@/types/budget'
+import BudgetMonthYearCard from './BudgetMonthYearCard.vue'
 
 const { chart } = useDesignTokens()
 
@@ -55,6 +56,12 @@ const prevMonth = () => {
 const nextMonth = () => {
   if (month.value === 12) { month.value = 1; year.value += 1 } else { month.value += 1 }
 }
+
+const dateMenuOpen = ref(false)
+const monthIndex = computed<number>({
+  get: () => month.value - 1,
+  set: (v) => { month.value = v + 1 },
+})
 
 const incomeTotal = computed(() =>
   entries.value.filter((e) => e.type === 'INCOME').reduce((s, e) => s + e.amount, 0),
@@ -145,13 +152,18 @@ const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.v
 
     <div class="d-flex align-center justify-space-between mb-3">
       <v-btn icon="mdi-chevron-left" variant="text" size="small" @click="prevMonth" />
-      <div class="font-weight-bold">{{ year }}년 {{ month }}월</div>
+      <v-menu v-model="dateMenuOpen" :close-on-content-click="false" location="bottom center">
+        <template #activator="{ props: menuProps }">
+          <button v-bind="menuProps" class="font-weight-bold nav-year-month-btn">{{ year }}년 {{ month }}월</button>
+        </template>
+        <BudgetMonthYearCard v-model:year="year" v-model:month="monthIndex" @close="dateMenuOpen = false" />
+      </v-menu>
       <v-btn icon="mdi-chevron-right" variant="text" size="small" @click="nextMonth" />
     </div>
 
-    <v-btn-toggle v-model="statType" mandatory rounded="lg" density="comfortable" class="mb-4">
-      <v-btn value="EXPENSE" variant="tonal">지출 {{ formatCurrency(expenseTotal) }}원</v-btn>
-      <v-btn value="INCOME" variant="tonal">수입 {{ formatCurrency(incomeTotal) }}원</v-btn>
+    <v-btn-toggle v-model="statType" mandatory rounded="lg" density="comfortable" class="mb-4 w-100">
+      <v-btn value="INCOME" variant="tonal" class="flex-grow-1">수입 {{ formatCurrency(incomeTotal) }}원</v-btn>
+      <v-btn value="EXPENSE" variant="tonal" class="flex-grow-1">지출 {{ formatCurrency(expenseTotal) }}원</v-btn>
     </v-btn-toggle>
 
     <div v-if="loading" class="d-flex justify-center py-8">
@@ -223,6 +235,15 @@ const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.v
   width: 28px;
   height: 28px;
   object-fit: contain;
+}
+
+.nav-year-month-btn {
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  padding: 4px 8px;
 }
 
 .chart-card {
