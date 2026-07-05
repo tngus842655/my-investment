@@ -80,9 +80,11 @@ watch(monthlyYear, fetchYearEntries)
 
 const prevMonth = () => {
   if (month.value === 1) { month.value = 12; year.value -= 1 } else { month.value -= 1 }
+  selectedDate.value = isCurrentMonth() ? pad2ForToday() : null
 }
 const nextMonth = () => {
   if (month.value === 12) { month.value = 1; year.value += 1 } else { month.value += 1 }
+  selectedDate.value = isCurrentMonth() ? pad2ForToday() : null
 }
 
 // ── 요약 (수입/지출/합계) ──────────────────────────
@@ -139,10 +141,24 @@ const calendarWeeks = computed(() => {
   return weeks
 })
 
-const goToDaily = (cell: CalendarCell) => {
+const pad2ForToday = () => `${today.getFullYear()}-${pad2(today.getMonth() + 1)}-${pad2(today.getDate())}`
+const isCurrentMonth = () => year.value === today.getFullYear() && month.value === today.getMonth() + 1
+const selectedDate = ref<string | null>(isCurrentMonth() ? pad2ForToday() : null)
+
+const selectDate = (cell: CalendarCell) => {
   if (!cell.inMonth) return
-  subTab.value = 'daily'
+  selectedDate.value = cell.dateStr
 }
+
+const selectedDateEntries = computed(() =>
+  selectedDate.value ? entries.value.filter((e) => e.entry_date === selectedDate.value) : [],
+)
+const selectedDateIncome = computed(() =>
+  selectedDateEntries.value.filter((e) => e.type === 'INCOME').reduce((s, e) => s + e.amount, 0),
+)
+const selectedDateExpense = computed(() =>
+  selectedDateEntries.value.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + e.amount, 0),
+)
 
 // ── 일일 내역 ──────────────────────────
 const dailyGroups = computed(() => {
@@ -357,13 +373,66 @@ const onContainerClick = (e: MouseEvent) => {
             v-for="(cell, ci) in week"
             :key="ci"
             class="calendar-cell"
-            :class="{ 'calendar-cell-dim': !cell.inMonth }"
-            @click="goToDaily(cell)"
+            :class="{ 'calendar-cell-dim': !cell.inMonth, 'calendar-cell-selected': cell.dateStr === selectedDate }"
+            @click="selectDate(cell)"
           >
             <span class="calendar-day">{{ cell.day }}</span>
             <span v-if="cell.income > 0" class="calendar-amount income-color">{{ formatCurrency(cell.income) }}</span>
             <span v-if="cell.expense > 0" class="calendar-amount expense-color">{{ formatCurrency(cell.expense) }}</span>
           </button>
+        </div>
+      </div>
+
+      <!-- 선택한 날짜 내역 -->
+      <div v-if="subTab === 'calendar' && selectedDate" class="mt-3">
+        <div class="d-flex align-center justify-space-between mb-2 px-1">
+          <div class="font-weight-bold">
+            {{ Number(selectedDate.slice(8, 10)) }}일
+            <span class="text-medium-emphasis" style="font-size: 0.75rem">{{ weekdayLabel(selectedDate) }}요일</span>
+          </div>
+          <div style="font-size: 0.8125rem">
+            <span v-if="selectedDateIncome > 0" class="income-color mr-2">{{ formatCurrency(selectedDateIncome) }}원</span>
+            <span v-if="selectedDateExpense > 0" class="expense-color">{{ formatCurrency(selectedDateExpense) }}원</span>
+          </div>
+        </div>
+
+        <div v-if="selectedDateEntries.length === 0" class="glass-card pa-4 text-center text-medium-emphasis">
+          내역이 없습니다.
+        </div>
+        <div v-else class="glass-card pa-3">
+          <div
+            v-for="e in selectedDateEntries"
+            :key="e.id"
+            class="entry-card-wrap"
+            :data-id="e.id"
+          >
+            <div class="swipe-actions">
+              <button class="action-btn action-edit" @click.stop="openEditDialog(e)">
+                <v-icon size="18">mdi-pencil-outline</v-icon>
+                <span>수정</span>
+              </button>
+              <button class="action-btn action-delete" @click.stop="openDeleteDialog(e)">
+                <v-icon size="18">mdi-delete-outline</v-icon>
+                <span>삭제</span>
+              </button>
+            </div>
+            <div
+              class="daily-entry-row swipe-card"
+              :style="swipedId === e.id ? `transform: translateX(-${ACTION_WIDTH}px)` : ''"
+              @touchstart.passive="onSwipeTouchStart"
+              @touchmove.passive="onSwipeTouchMove"
+              @touchend.passive="(ev) => onSwipeTouchEnd(ev, e.id)"
+              @mousedown="onSwipeMouseDown"
+              @mouseup="(ev) => onSwipeMouseUp(ev, e.id)"
+            >
+              <span class="daily-entry-icon">{{ e.budget_categories?.icon ?? '❓' }}</span>
+              <div class="daily-entry-info">
+                <div class="daily-entry-category">{{ e.memo || e.budget_categories?.name || '' }}</div>
+                <div class="daily-entry-sub">{{ e.budget_categories?.name }}<span v-if="e.budget_payment_methods?.name"> · {{ e.budget_payment_methods.name }}</span></div>
+              </div>
+              <span :class="e.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ formatCurrency(e.amount) }}원</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -509,6 +578,7 @@ const onContainerClick = (e: MouseEvent) => {
 .calendar-cell:active { background: rgba(var(--v-theme-on-surface), 0.05); }
 .calendar-cell-dim { opacity: 0.3; cursor: default; }
 .calendar-cell-dim:active { background: none; }
+.calendar-cell-selected { background: rgba(var(--v-theme-primary), 0.12); }
 
 .calendar-day {
   font-size: 0.75rem;
