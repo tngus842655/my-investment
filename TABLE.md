@@ -2,6 +2,18 @@
 
 Supabase 테이블 스키마 정리. 모든 테이블은 `user_id → auth.users` FK를 가지며 user 삭제 시 CASCADE 된다. `public` 스키마의 모든 테이블은 RLS(rowsecurity)가 켜져 있다.
 
+### RLS 정책 작성 주의사항
+
+RLS 정책에서 이메일로 관리자 체크할 때 `auth.users` 테이블 직접 조회는 권한 오류 발생:
+
+```sql
+-- ❌ 이렇게 하면 안 됨 (permission denied for table users)
+USING ((SELECT email FROM auth.users WHERE id = auth.uid()) = 'admin@email.com')
+
+-- ✅ 이렇게 해야 함 (JWT claims에서 직접 읽기)
+USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'email') = 'admin@email.com')
+```
+
 ### DB 트리거
 
 | 트리거명            | 테이블       | 시점  | 이벤트                | 함수                              |
