@@ -64,6 +64,16 @@ const logout = async () => {
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
+
+      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/budget/import')">
+        <div class="menu-icon"><v-icon size="18" color="primary">mdi-file-excel-outline</v-icon></div>
+        <div>
+          <div class="font-weight-medium">엑셀 가져오기</div>
+          <div class="text-medium-emphasis">엑셀 파일로 과거 내역 일괄 등록</div>
+        </div>
+        <v-spacer />
+        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
+      </div>
     </div>
 
     <div class="section-label mb-2">서비스</div>
