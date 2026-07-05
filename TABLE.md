@@ -1,6 +1,6 @@
 # TABLE.md
 
-Supabase 테이블 스키마 정리. 모든 테이블은 `user_id → auth.users` FK를 가지며 user 삭제 시 CASCADE 된다.
+Supabase 테이블 스키마 정리. 모든 테이블은 `user_id → auth.users` FK를 가지며 user 삭제 시 CASCADE 된다. `public` 스키마의 모든 테이블은 RLS(rowsecurity)가 켜져 있다.
 
 #### investment_goals
 
@@ -21,6 +21,16 @@ Supabase 테이블 스키마 정리. 모든 테이블은 `user_id → auth.users
 | created_at         | timestamptz |                                                                    |
 | updated_at         | timestamptz |                                                                    |
 
+**RLS 정책 (investment_goals 테이블):**
+
+| 정책명                       | 커맨드 | roles         | 설명                              |
+| ----------------------------- | ------ | ------------- | ---------------------------------- |
+| Users can view own goals      | SELECT | authenticated | 본인 데이터만 조회 (auth.uid() = user_id) |
+| Users can insert own goals    | INSERT | authenticated | 본인 데이터만 insert               |
+| Users can update own goals    | UPDATE | authenticated | 본인 데이터만 수정                 |
+| Users can delete own goals    | DELETE | authenticated | 본인 데이터만 삭제                 |
+| admin_read_all_goals          | SELECT | public        | 관리자(이메일 일치) 전체 조회      |
+
 #### asset_summary
 
 사용자별 1개 (user_id unique). 전체 자산 요약 (캐시성 데이터).
@@ -33,6 +43,16 @@ Supabase 테이블 스키마 정리. 모든 테이블은 `user_id → auth.users
 | investment_principal | int8        | 투자 원금 (KRW)         |
 | created_at           | timestamptz |                         |
 | updated_at           | timestamptz |                         |
+
+**RLS 정책 (asset_summary 테이블):**
+
+| 정책명                          | 커맨드 | roles         | 설명                              |
+| -------------------------------- | ------ | ------------- | ---------------------------------- |
+| Users can view own goals         | SELECT | authenticated | 본인 데이터만 조회                 |
+| Users can insert own goals       | INSERT | authenticated | 본인 데이터만 insert               |
+| Users can update own goals       | UPDATE | authenticated | 본인 데이터만 수정                 |
+| Users can delete own goals       | DELETE | authenticated | 본인 데이터만 삭제                 |
+| admin_read_all_asset_summary     | SELECT | public        | 관리자(이메일 일치) 전체 조회      |
 
 #### portfolios
 
@@ -50,6 +70,16 @@ Supabase 테이블 스키마 정리. 모든 테이블은 `user_id → auth.users
 | sort_order | int8          | 정렬 순서 (nullable)         |
 | created_at | timestamptz   |                              |
 | updated_at | timestamptz   |                              |
+
+**RLS 정책 (portfolios 테이블):**
+
+| 정책명                     | 커맨드 | roles         | 설명                              |
+| ---------------------------- | ------ | ------------- | ---------------------------------- |
+| Users can view own goals     | SELECT | authenticated | 본인 데이터만 조회                 |
+| Users can insert own goals   | INSERT | authenticated | 본인 데이터만 insert               |
+| Users can update own goals   | UPDATE | authenticated | 본인 데이터만 수정                 |
+| Users can delete own goals   | DELETE | authenticated | 본인 데이터만 삭제                 |
+| admin_read_all_portfolios    | SELECT | public        | 관리자(이메일 일치) 전체 조회      |
 
 #### asset_history
 
@@ -84,6 +114,12 @@ BEGIN
 END;
 ```
 
+**RLS 정책 (asset_history 테이블):** 다른 테이블과 달리 관리자 전용 조회 정책이 별도로 없고, 아래 정책 하나(`ALL`)로 본인 데이터 CRUD만 허용한다.
+
+| 정책명            | 커맨드 | roles  | 설명                              |
+| ------------------ | ------ | ------ | ---------------------------------- |
+| 본인 데이터만 접근 | ALL    | public | auth.uid() = user_id인 행만 접근 가능 |
+
 #### transactions
 
 종목별 매수/매도 거래 내역. portfolio_id → portfolios CASCADE.
@@ -103,6 +139,16 @@ END;
 
 **transaction_type = 'INITIAL' 의미:** 이미 보유 중이던 종목을 포트폴리오에 처음 등록할 때 입력하는 초기 잔고. 종목당 최대 1개만 존재(등록/수정 다이얼로그에서 upsert, 값 비우면 삭제). 자산·평단가 계산 로직(`sync_portfolio_trigger`, `PortfolioView.vue`)에서는 `BUY`와 동일하게 합산되지만, `TransactionView.vue`(거래 내역 화면)에서는 `.neq('transaction_type', 'INITIAL')`로 항상 제외되어 사용자에게 노출되지 않는다.
 
+**RLS 정책 (transactions 테이블):**
+
+| 정책명                        | 커맨드 | roles         | 설명                              |
+| -------------------------------- | ------ | ------------- | ---------------------------------- |
+| Users can view own goals         | SELECT | authenticated | 본인 데이터만 조회                 |
+| Users can insert own goals       | INSERT | authenticated | 본인 데이터만 insert               |
+| Users can update own goals       | UPDATE | authenticated | 본인 데이터만 수정                 |
+| Users can delete own goals       | DELETE | authenticated | 본인 데이터만 삭제                 |
+| admin_read_all_transactions      | SELECT | public        | 관리자(이메일 일치) 전체 조회      |
+
 #### login_log
 
 로그인 이력 기록. RLS 적용 (관리자만 조회).
@@ -113,6 +159,13 @@ END;
 | user_id  | uuid        | FK → auth.users |
 | email    | text        | 로그인 이메일   |
 | login_at | timestamptz | 로그인 시각     |
+
+**RLS 정책 (login_log 테이블):**
+
+| 정책명                    | 커맨드 | roles         | 설명                            |
+| --------------------------- | ------ | ------------- | -------------------------------- |
+| login_log: 본인 insert      | INSERT | authenticated | 로그인한 사용자가 본인 기록만 insert 가능 |
+| login_log: 관리자 select    | SELECT | authenticated | 관리자만 전체 조회 가능          |
 
 #### access_log
 
@@ -143,6 +196,14 @@ END;
 | email        | text        | 가입 이메일 (unique) |
 | signed_up_at | timestamptz | 최초 가입 시각       |
 | deleted_at   | timestamptz | 탈퇴 시각 (nullable) |
+
+**RLS 정책 (signup_log 테이블):**
+
+| 정책명            | 커맨드 | roles  | 설명                                              |
+| ------------------ | ------ | ------ | -------------------------------------------------- |
+| insert_on_signup   | INSERT | public | 로그인 전(회원가입 시점)에도 누구나 insert 가능 (with check: true) |
+| select_for_admin   | SELECT | public | 관리자(이메일 일치)만 조회 가능                     |
+| update_for_admin   | UPDATE | public | 관리자(이메일 일치)만 수정 가능 (재가입 시 deleted_at 초기화 등) |
 
 #### feedback
 
