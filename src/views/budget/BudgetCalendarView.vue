@@ -361,7 +361,7 @@ const onContainerClick = (e: MouseEvent) => {
     </div>
 
     <!-- 요약 -->
-    <div class="glass-card pa-4 mb-4 d-flex justify-space-around text-center">
+    <div class="glass-card pa-2 mb-3 d-flex justify-space-around text-center">
       <div>
         <div class="summary-label">수입</div>
         <div class="summary-value income-color">{{ formatCurrency(summaryIncome) }}</div>
@@ -510,7 +510,7 @@ const onContainerClick = (e: MouseEvent) => {
       </div>
 
       <!-- 월별 -->
-      <div v-else class="glass-card pa-3">
+      <div v-else-if="subTab === 'monthly'" class="glass-card pa-3">
         <div v-for="row in monthlyRows" :key="row.month" class="monthly-row">
           <span class="font-weight-medium">{{ row.month }}월</span>
           <span class="income-color">{{ formatCurrency(row.income) }}원</span>
@@ -573,7 +573,7 @@ const onContainerClick = (e: MouseEvent) => {
 .summary-label {
   font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 .summary-value {
   font-weight: 700;
