@@ -69,7 +69,9 @@ const parseDateCell = (v: unknown): string | null => {
   const s = cellToString(v)
   const m = s.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/)
   if (!m) return null
-  const [, y, mo, d] = m
+  const y = m[1]!
+  const mo = m[2]!
+  const d = m[3]!
   return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`
 }
 
