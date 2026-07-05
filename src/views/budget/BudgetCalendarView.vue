@@ -5,6 +5,7 @@ import { showMessage } from '@/composables/useSnackbar'
 import { formatCurrency } from '@/utils/numberFormat'
 import type { BudgetType } from '@/types/budget'
 import BudgetEntryAddDialog from './BudgetEntryAddDialog.vue'
+import BudgetMonthYearCard from './BudgetMonthYearCard.vue'
 
 interface EntryRow {
   id: string
@@ -14,7 +15,7 @@ interface EntryRow {
   payment_method_id: string | null
   memo: string | null
   entry_date: string
-  budget_categories: { name: string; icon: string } | null
+  budget_categories: { name: string } | null
   budget_payment_methods: { name: string } | null
 }
 
@@ -39,7 +40,7 @@ const fetchMonthEntries = async () => {
   const end = `${year.value}-${pad2(month.value)}-${pad2(new Date(year.value, month.value, 0).getDate())}`
   const { data, error } = await supabase
     .from('budget_entries')
-    .select('id, type, category_id, amount, payment_method_id, memo, entry_date, budget_categories(name, icon), budget_payment_methods(name)')
+    .select('id, type, category_id, amount, payment_method_id, memo, entry_date, budget_categories(name), budget_payment_methods(name)')
     .eq('user_id', user.id)
     .gte('entry_date', start)
     .lte('entry_date', end)
@@ -59,7 +60,7 @@ const fetchYearEntries = async () => {
   const end = `${monthlyYear.value}-12-31`
   const { data, error } = await supabase
     .from('budget_entries')
-    .select('id, type, category_id, amount, payment_method_id, memo, entry_date, budget_categories(name, icon), budget_payment_methods(name)')
+    .select('id, type, category_id, amount, payment_method_id, memo, entry_date, budget_categories(name), budget_payment_methods(name)')
     .eq('user_id', user.id)
     .gte('entry_date', start)
     .lte('entry_date', end)
@@ -144,6 +145,15 @@ const calendarWeeks = computed(() => {
 const pad2ForToday = () => `${today.getFullYear()}-${pad2(today.getMonth() + 1)}-${pad2(today.getDate())}`
 const isCurrentMonth = () => year.value === today.getFullYear() && month.value === today.getMonth() + 1
 const selectedDate = ref<string | null>(isCurrentMonth() ? pad2ForToday() : null)
+
+const dateMenuOpen = ref(false)
+const monthIndex = computed<number>({
+  get: () => month.value - 1,
+  set: (v) => { month.value = v + 1 },
+})
+const syncSelectedDateForMonth = () => {
+  selectedDate.value = isCurrentMonth() ? pad2ForToday() : null
+}
 
 const selectDate = (cell: CalendarCell) => {
   if (!cell.inMonth) return
@@ -310,15 +320,17 @@ const onContainerClick = (e: MouseEvent) => {
 <template>
   <v-container class="pa-4 pa-sm-6 pb-16" @click="onContainerClick">
     <div class="d-flex align-center justify-space-between mb-4">
-      <div class="font-weight-bold text-h6">가계부</div>
-      <v-btn icon="mdi-view-grid-outline" variant="text" size="small" to="/hub" />
+      <div class="d-flex align-center ga-2">
+        <img src="/icons/icon-calendar.png" class="header-icon" alt="가계부" />
+        <div>
+          <div class="font-weight-bold text-h6">가계부</div>
+          <div class="text-medium-emphasis">수입·지출 내역 관리</div>
+        </div>
+      </div>
+      <v-btn icon variant="text" size="small" to="/hub">
+        <img src="/icons/icon-hub.png" class="header-icon" alt="허브" />
+      </v-btn>
     </div>
-
-    <v-btn-toggle v-model="subTab" mandatory rounded="lg" density="comfortable" class="mb-4">
-      <v-btn value="calendar" variant="tonal">캘린더</v-btn>
-      <v-btn value="daily" variant="tonal">일일</v-btn>
-      <v-btn value="monthly" variant="tonal">월별</v-btn>
-    </v-btn-toggle>
 
     <!-- 월/연도 이동 -->
     <div class="d-flex align-center justify-space-between mb-3">
@@ -328,9 +340,17 @@ const onContainerClick = (e: MouseEvent) => {
         size="small"
         @click="subTab === 'monthly' ? monthlyYear -= 1 : prevMonth()"
       />
-      <div class="font-weight-bold">
-        {{ subTab === 'monthly' ? `${monthlyYear}년` : `${year}년 ${month}월` }}
-      </div>
+      <div v-if="subTab === 'monthly'" class="font-weight-bold">{{ monthlyYear }}년</div>
+      <v-menu v-else v-model="dateMenuOpen" :close-on-content-click="false" location="bottom center">
+        <template #activator="{ props: menuProps }">
+          <button v-bind="menuProps" class="font-weight-bold nav-year-month-btn">{{ year }}년 {{ month }}월</button>
+        </template>
+        <BudgetMonthYearCard
+          v-model:year="year"
+          v-model:month="monthIndex"
+          @close="dateMenuOpen = false; syncSelectedDateForMonth()"
+        />
+      </v-menu>
       <v-btn
         icon="mdi-chevron-right"
         variant="text"
@@ -339,8 +359,14 @@ const onContainerClick = (e: MouseEvent) => {
       />
     </div>
 
+    <v-btn-toggle v-model="subTab" mandatory rounded="lg" density="comfortable" class="mb-4 w-100">
+      <v-btn value="calendar" variant="tonal" class="flex-grow-1">캘린더</v-btn>
+      <v-btn value="daily" variant="tonal" class="flex-grow-1">일일</v-btn>
+      <v-btn value="monthly" variant="tonal" class="flex-grow-1">월별</v-btn>
+    </v-btn-toggle>
+
     <!-- 요약 -->
-    <div class="glass-card pa-4 mb-4 d-flex justify-space-around text-center">
+    <div class="glass-card pa-2 mb-3 d-flex justify-space-around text-center">
       <div>
         <div class="summary-label">수입</div>
         <div class="summary-value income-color">{{ formatCurrency(summaryIncome) }}</div>
@@ -396,7 +422,7 @@ const onContainerClick = (e: MouseEvent) => {
         <div v-if="selectedDateEntries.length === 0" class="glass-card pa-4 text-center text-medium-emphasis">
           내역이 없습니다.
         </div>
-        <div v-else class="glass-card pa-3">
+        <div v-else class="glass-card pa-2">
           <div
             v-for="e in selectedDateEntries"
             :key="e.id"
@@ -422,7 +448,6 @@ const onContainerClick = (e: MouseEvent) => {
               @mousedown="onSwipeMouseDown"
               @mouseup="(ev) => onSwipeMouseUp(ev, e.id)"
             >
-              <span class="daily-entry-icon">{{ e.budget_categories?.icon ?? '❓' }}</span>
               <div class="daily-entry-info">
                 <div class="daily-entry-category">{{ e.memo || e.budget_categories?.name || '' }}</div>
                 <div class="daily-entry-sub">{{ e.budget_categories?.name }}<span v-if="e.budget_payment_methods?.name"> · {{ e.budget_payment_methods.name }}</span></div>
@@ -438,8 +463,8 @@ const onContainerClick = (e: MouseEvent) => {
         <div v-if="dailyGroups.length === 0" class="text-center text-medium-emphasis py-8">
           이번 달 내역이 없습니다.
         </div>
-        <div v-for="group in dailyGroups" :key="group.date" class="glass-card pa-3 mb-2">
-          <div class="d-flex align-center justify-space-between mb-2">
+        <div v-for="group in dailyGroups" :key="group.date" class="glass-card pa-2 mb-2">
+          <div class="d-flex align-center justify-space-between mb-1">
             <div class="font-weight-bold">
               {{ Number(group.date.slice(8, 10)) }}일
               <span class="text-medium-emphasis" style="font-size: 0.75rem">{{ weekdayLabel(group.date) }}요일</span>
@@ -476,7 +501,6 @@ const onContainerClick = (e: MouseEvent) => {
               @mousedown="onSwipeMouseDown"
               @mouseup="(ev) => onSwipeMouseUp(ev, e.id)"
             >
-              <span class="daily-entry-icon">{{ e.budget_categories?.icon ?? '❓' }}</span>
               <div class="daily-entry-info">
                 <div class="daily-entry-category">{{ e.memo || e.budget_categories?.name || '' }}</div>
                 <div class="daily-entry-sub">{{ e.budget_categories?.name }}<span v-if="e.budget_payment_methods?.name"> · {{ e.budget_payment_methods.name }}</span></div>
@@ -489,7 +513,7 @@ const onContainerClick = (e: MouseEvent) => {
       </div>
 
       <!-- 월별 -->
-      <div v-else class="glass-card pa-3">
+      <div v-else-if="subTab === 'monthly'" class="glass-card pa-3">
         <div v-for="row in monthlyRows" :key="row.month" class="monthly-row">
           <span class="font-weight-medium">{{ row.month }}월</span>
           <span class="income-color">{{ formatCurrency(row.income) }}원</span>
@@ -528,6 +552,21 @@ const onContainerClick = (e: MouseEvent) => {
 </template>
 
 <style scoped>
+.header-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.nav-year-month-btn {
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
 .glass-card {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
@@ -537,7 +576,7 @@ const onContainerClick = (e: MouseEvent) => {
 .summary-label {
   font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 .summary-value {
   font-weight: 700;
@@ -649,15 +688,9 @@ const onContainerClick = (e: MouseEvent) => {
 .daily-entry-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 4px;
+  gap: 8px;
+  padding: 6px 4px;
   cursor: pointer;
-}
-.daily-entry-icon {
-  font-size: 1.25rem;
-  width: 28px;
-  text-align: center;
-  flex-shrink: 0;
 }
 .daily-entry-info {
   flex: 1;
@@ -666,10 +699,12 @@ const onContainerClick = (e: MouseEvent) => {
 .daily-entry-category {
   font-size: 0.8125rem;
   font-weight: 600;
+  line-height: 1.2;
 }
 .daily-entry-sub {
   font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.45);
+  line-height: 1.2;
 }
 
 .monthly-row {

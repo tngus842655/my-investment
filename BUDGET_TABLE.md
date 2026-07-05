@@ -2,19 +2,18 @@
 
 가계부(budget) 모듈 Supabase 테이블 스키마. 네이밍 규칙 등 전체 맥락은 **BUDGET.md** 참고.
 
-마이그레이션: `supabase/migrations/20260705_01_budget_tables.sql`, `20260705_02_budget_payment_methods.sql`. 모두 KRW 전용(통화 구분 없음), `type`은 Postgres enum 대신 `text + CHECK`로 단순화. `public` 스키마 관례대로 RLS 적용.
+마이그레이션: `supabase/migrations/20260705_01_budget_tables.sql`, `20260705_02_budget_payment_methods.sql`, `20260705_03_budget_categories_drop_icon.sql`. 모두 KRW 전용(통화 구분 없음), `type`은 Postgres enum 대신 `text + CHECK`로 단순화. `public` 스키마 관례대로 RLS 적용.
 
 #### budget_categories
 
-수입/지출 카테고리. 사용자가 직접 추가·수정·삭제 가능. 최초 가계부 진입 시(카테고리 0개일 때) 기본 세트가 자동 시딩된다 (`src/utils/budgetDefaultCategories.ts`).
+수입/지출 카테고리. 사용자가 직접 추가·수정·삭제 가능. 최초 가계부 진입 시(카테고리 0개일 때) 기본 세트가 자동 시딩된다 (`src/utils/budgetDefaultCategories.ts`). 아이콘은 별도 컬럼 없이 `name`에 이모지를 포함해서 자유 텍스트로 입력한다 (예: "🍚 식비").
 
 | 컬럼명     | 타입        | 설명                    |
 | ---------- | ----------- | ----------------------- |
 | id         | uuid        | PK                      |
 | user_id    | uuid        | FK → auth.users         |
 | type       | text        | INCOME \| EXPENSE       |
-| name       | text        | 카테고리명              |
-| icon       | text        | 이모지                  |
+| name       | text        | 카테고리명 (이모지 포함 가능) |
 | sort_order | int8        | 정렬 순서               |
 | created_at | timestamptz |                         |
 | updated_at | timestamptz |                         |

@@ -2,7 +2,7 @@
 import { ref, watch, nextTick, provide } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '@/services/supabase'
-import { ADMIN_EMAIL } from '@/config/admin'
+import { isAdminEmail } from '@/config/admin'
 import { activeRefreshHandler } from '@/composables/usePullToRefresh'
 import { feedbackBadgeKey } from '@/composables/useFeedbackBadge'
 
@@ -74,7 +74,7 @@ const fetchUnreadCount = async () => {
   const { data: { session } } = await supabase.auth.getSession()
   const user = session?.user
   if (!user) return
-  isAdmin.value = user.email === ADMIN_EMAIL
+  isAdmin.value = isAdminEmail(user.email)
   if (isAdmin.value) {
     const { count } = await supabase
       .from('feedback')
@@ -102,7 +102,7 @@ watch(() => route.path, async () => {
 })
 
 const tabs = [
-  { label: '홈', desc: '대시보드', icon: null, activeIcon: null, route: '/dashboard', img: '/icons/icon-home.png' },
+  { label: '홈', desc: '대시보드', icon: null, activeIcon: null, route: '/dashboard', img: '/icons/icon-dashboard.png' },
   { label: '자산', desc: '보유 자산 한눈에', icon: null, activeIcon: null, route: '/portfolio', img: '/icons/icon-asset.png' },
   { label: '기록', desc: '매매 내역 관리', icon: null, activeIcon: null, route: '/transactions', img: '/icons/icon-record.png' },
   { label: '예측', desc: '목표 달성 시점', icon: null, activeIcon: null, route: '/analysis', img: '/icons/icon-predict.png' },

@@ -22,7 +22,7 @@ const paymentMethods = ref<BudgetPaymentMethod[]>([])
 
 const categoryName = (id: string) => {
   const c = categories.value.find((c) => c.id === id)
-  return c ? `${c.icon} ${c.name}` : '(삭제된 카테고리)'
+  return c ? c.name : '(삭제된 카테고리)'
 }
 const paymentMethodName = (id: string | null) => paymentMethods.value.find((p) => p.id === id)?.name ?? null
 
@@ -68,7 +68,7 @@ const categoryOptions = computed(() =>
   categories.value
     .filter((c) => c.type === formType.value)
     .sort((a, b) => a.sort_order - b.sort_order)
-    .map((c) => ({ title: `${c.icon} ${c.name}`, value: c.id })),
+    .map((c) => ({ title: c.name, value: c.id })),
 )
 const paymentMethodOptions = computed(() =>
   paymentMethods.value.map((p) => ({ title: p.name, value: p.id })),

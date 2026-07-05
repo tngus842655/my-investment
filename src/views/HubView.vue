@@ -1,14 +1,40 @@
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useDesignTokens } from '@/composables/useDesignTokens'
+import { supabase } from '@/services/supabase'
+import { isBudgetPreviewAllowed } from '@/config/admin'
 
 const router = useRouter()
+const { themeId } = useDesignTokens()
+
+const canAccessBudget = ref(false)
+
+const LOGO_WIDE: Partial<Record<string, string>> = {
+  light: '/icons/wide/logo-wide-light.png',
+  dark: '/icons/wide/logo-wide-dark.png',
+  gold: '/icons/wide/logo-wide-gold.png',
+  nature: '/icons/wide/logo-wide-nature.png',
+  space: '/icons/wide/logo-wide-space.png',
+}
+const logoWide = computed(() => LOGO_WIDE[themeId.value] ?? null)
+
+const showBack = ref(false)
+onMounted(async () => {
+  showBack.value = window.history.state?.back != null && window.history.state.back !== '/'
+  const { data: { user } } = await supabase.auth.getUser()
+  canAccessBudget.value = isBudgetPreviewAllowed(user?.email)
+})
 </script>
 
 <template>
   <v-container class="pa-4 pa-sm-6">
-    <div class="mb-6">
-      <div class="font-weight-bold text-h6">Fire Path</div>
-      <div class="text-medium-emphasis">이용할 서비스를 선택하세요</div>
+    <div class="hub-header mb-6">
+      <button v-if="showBack" class="back-btn hub-header-back" @click="router.back()">
+        <v-icon size="20">mdi-arrow-left</v-icon>
+      </button>
+      <img v-if="logoWide" :src="logoWide" class="header-logo-wide" alt="FIREPATH" />
+      <div v-else class="font-weight-bold text-h6">Fire Path</div>
     </div>
 
     <div class="d-flex flex-column ga-3">
@@ -22,20 +48,62 @@ const router = useRouter()
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
-      <div class="hub-card glass-card pa-5 d-flex align-center ga-3" @click="router.push('/budget')">
+      <div
+        class="hub-card glass-card pa-5 d-flex align-center ga-3"
+        :class="{ 'hub-card-disabled': !canAccessBudget }"
+        @click="canAccessBudget && router.push('/budget')"
+      >
         <div class="hub-icon"><v-icon size="24" color="primary">mdi-notebook-outline</v-icon></div>
         <div>
-          <div class="font-weight-medium">가계부</div>
+          <div class="d-flex align-center ga-2">
+            <div class="font-weight-medium">가계부</div>
+            <div v-if="!canAccessBudget" class="coming-soon-badge">준비중</div>
+          </div>
           <div class="text-medium-emphasis">수입·지출 기록 관리</div>
         </div>
         <v-spacer />
-        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
+        <v-icon v-if="canAccessBudget" size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
     </div>
   </v-container>
 </template>
 
 <style scoped>
+.hub-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+}
+.hub-header-back {
+  position: absolute;
+  left: 0;
+}
+
+.back-btn {
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+.back-btn:active {
+  opacity: 0.6;
+}
+
+.header-logo-wide {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+
 .glass-card {
   background: var(--fp-surface);
   border: 1px solid var(--fp-outline);
@@ -44,6 +112,20 @@ const router = useRouter()
 
 .hub-card {
   cursor: pointer;
+}
+
+.hub-card-disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.coming-soon-badge {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+  background: rgba(var(--v-theme-on-surface), 0.08);
+  border-radius: 6px;
+  padding: 2px 6px;
 }
 
 .hub-icon {

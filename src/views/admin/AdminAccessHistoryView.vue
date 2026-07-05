@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
-import { ADMIN_EMAIL } from '@/config/admin'
+import { isAdminEmail } from '@/config/admin'
 
 const router = useRouter()
 const loading = ref(false)
@@ -73,7 +73,7 @@ const search = async () => {
 
       const { data } = await query
       logs.value = ((data ?? []) as { id: string; email: string; login_at: string }[])
-        .filter(l => l.email !== ADMIN_EMAIL)
+        .filter(l => !isAdminEmail(l.email))
         .map(l => ({ id: l.id, email: l.email, timestamp: l.login_at }))
     } else if (activeTab.value === 'access') {
       let query = supabase
@@ -172,7 +172,7 @@ const pageLabel = (page: string) => PAGE_LABELS[page] ?? page
 
 onMounted(async () => {
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user || user.email !== ADMIN_EMAIL) {
+  if (!user || !isAdminEmail(user.email)) {
     router.replace('/dashboard')
     return
   }

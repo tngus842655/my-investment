@@ -15,7 +15,7 @@ interface EntryRow {
   payment_method_id: string | null
   memo: string | null
   entry_date: string
-  budget_categories: { name: string; icon: string } | null
+  budget_categories: { name: string } | null
   budget_payment_methods: { name: string } | null
 }
 
@@ -30,7 +30,7 @@ const fetchEntries = async () => {
   loading.value = true
   const { data, error } = await supabase
     .from('budget_entries')
-    .select('id, type, category_id, amount, payment_method_id, memo, entry_date, budget_categories(name, icon), budget_payment_methods(name)')
+    .select('id, type, category_id, amount, payment_method_id, memo, entry_date, budget_categories(name), budget_payment_methods(name)')
     .eq('user_id', user.id)
     .order('entry_date', { ascending: false })
     .limit(500)
@@ -216,7 +216,6 @@ const onContainerClick = (e: MouseEvent) => {
           @mousedown="onSwipeMouseDown"
           @mouseup="(ev) => onSwipeMouseUp(ev, e.id)"
         >
-          <span class="result-icon">{{ e.budget_categories?.icon ?? '❓' }}</span>
           <div class="result-info">
             <div class="result-title">{{ e.memo || e.budget_categories?.name || '' }}</div>
             <div class="result-sub">
@@ -329,12 +328,6 @@ const onContainerClick = (e: MouseEvent) => {
   gap: 10px;
   padding: 8px 4px;
   cursor: pointer;
-}
-.result-icon {
-  font-size: 1.25rem;
-  width: 28px;
-  text-align: center;
-  flex-shrink: 0;
 }
 .result-info {
   flex: 1;

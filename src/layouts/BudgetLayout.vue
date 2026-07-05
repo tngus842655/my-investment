@@ -5,9 +5,9 @@ const router = useRouter()
 const route = useRoute()
 
 const tabs = [
-  { label: '캘린더', route: '/budget', icon: 'mdi-calendar-outline', activeIcon: 'mdi-calendar' },
-  { label: '통계', route: '/budget/stats', icon: 'mdi-chart-pie-outline', activeIcon: 'mdi-chart-pie' },
-  { label: '더보기', route: '/budget/more', icon: 'mdi-dots-horizontal', activeIcon: 'mdi-dots-horizontal' },
+  { label: '캘린더', route: '/budget', icon: null, activeIcon: null, img: '/icons/icon-calendar.png' },
+  { label: '통계', route: '/budget/stats', icon: null, activeIcon: null, img: '/icons/icon-stats.png' },
+  { label: '더보기', route: '/budget/more', icon: null, activeIcon: null, img: '/icons/icon-more.png' },
 ]
 
 const isActive = (tabRoute: string) => route.path === tabRoute
@@ -27,7 +27,8 @@ const isActive = (tabRoute: string) => route.path === tabRoute
         :class="{ active: isActive(tab.route) }"
         @click="router.push(tab.route)"
       >
-        <v-icon size="26">{{ isActive(tab.route) ? tab.activeIcon : tab.icon }}</v-icon>
+        <img v-if="tab.img" :src="tab.img" class="tab-png-icon" :class="{ 'tab-png-active': isActive(tab.route) }" :alt="tab.label" />
+        <v-icon v-else size="26">{{ isActive(tab.route) ? tab.activeIcon : tab.icon }}</v-icon>
         <span class="bottom-nav-label">{{ tab.label }}</span>
       </button>
     </nav>
@@ -80,6 +81,18 @@ const isActive = (tabRoute: string) => route.path === tabRoute
 
 .bottom-nav-item.active {
   color: rgb(var(--v-theme-primary));
+}
+
+.tab-png-icon {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  opacity: 0.35;
+  transition: opacity 0.15s ease;
+}
+
+.tab-png-active {
+  opacity: 1;
 }
 
 .bottom-nav-label {

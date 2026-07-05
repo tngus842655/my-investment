@@ -3,6 +3,7 @@ import BudgetLayout from '@/layouts/BudgetLayout.vue'
 import BudgetCalendarView from '@/views/budget/BudgetCalendarView.vue'
 import BudgetStatsView from '@/views/budget/BudgetStatsView.vue'
 import BudgetManageView from '@/views/budget/BudgetManageView.vue'
+import BudgetImportView from '@/views/budget/BudgetImportView.vue'
 import BudgetMoreView from '@/views/budget/BudgetMoreView.vue'
 import BudgetSearchView from '@/views/budget/BudgetSearchView.vue'
 import ChangePasswordView from '@/views/shared/ChangePasswordView.vue'
@@ -15,7 +16,7 @@ const budgetRoutes: RouteRecordRaw[] = [
   {
     path: '/budget',
     component: BudgetLayout,
-    meta: { requiresAuth: true, module: 'budget' },
+    meta: { requiresAuth: true, module: 'budget', requiresBudgetPreview: true },
     children: [
       {
         path: '',
@@ -46,6 +47,12 @@ const budgetRoutes: RouteRecordRaw[] = [
         name: 'budgetManage',
         component: BudgetManageView,
         meta: { label: '관리' },
+      },
+      {
+        path: 'import',
+        name: 'budgetImport',
+        component: BudgetImportView,
+        meta: { label: '엑셀 가져오기' },
       },
       {
         path: 'change-password',

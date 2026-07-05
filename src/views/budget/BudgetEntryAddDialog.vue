@@ -4,6 +4,8 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import type { BudgetCategory, BudgetPaymentMethod, BudgetType } from '@/types/budget'
 import { DEFAULT_BUDGET_PAYMENT_METHODS } from '@/utils/budgetDefaultPaymentMethods'
+import BudgetFavoriteView from './BudgetFavoriteView.vue'
+import BudgetDateCalendarCard from './BudgetDateCalendarCard.vue'
 
 const dialog = defineModel<boolean>()
 
@@ -36,9 +38,10 @@ const addingPaymentMethod = ref(false)
 const newPaymentMethodName = ref('')
 const memo = ref('')
 const entryDate = ref(new Date().toISOString().slice(0, 10))
-const saveAsFavorite = ref(false)
 const saving = ref(false)
 const favoritesMenu = ref(false)
+const favoriteManageDialog = ref(false)
+const dateMenu = ref(false)
 
 interface QuickItem {
   category_id: string
@@ -48,13 +51,12 @@ interface QuickItem {
   memo: string | null
 }
 const favorites = ref<QuickItem[]>([])
-const recentItems = ref<QuickItem[]>([])
 
 const categoryOptions = computed(() =>
   categories.value
     .filter((c) => c.type === entryType.value)
     .sort((a, b) => a.sort_order - b.sort_order)
-    .map((c) => ({ title: `${c.icon} ${c.name}`, value: c.id })),
+    .map((c) => ({ title: c.name, value: c.id })),
 )
 
 const addComma = (v: string) => {
@@ -67,11 +69,20 @@ const handleAmount = (v: string) => {
 }
 const formatAmount = (v: number) => `${addComma(String(v))}원`
 
-const canSave = computed(() => !!categoryId.value && removeComma(amount.value) > 0)
+const MAX_AMOUNT = 10_000_000_000
+
+const canSave = computed(() =>
+  !!categoryId.value && removeComma(amount.value) > 0 && removeComma(amount.value) <= MAX_AMOUNT,
+)
+
+const amountRules = [
+  (v: string) => removeComma(v) > 0 || '금액을 입력해주세요',
+  (v: string) => removeComma(v) <= MAX_AMOUNT || '최대 100억원까지 입력 가능합니다',
+]
 
 const categoryName = (id: string) => {
   const c = categories.value.find((c) => c.id === id)
-  return c ? `${c.icon} ${c.name}` : ''
+  return c ? c.name : ''
 }
 
 const fetchCategories = async () => {
@@ -131,7 +142,7 @@ const addPaymentMethod = async () => {
   newPaymentMethodName.value = ''
 }
 
-const fetchQuickItems = async () => {
+const fetchFavorites = async () => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
 
@@ -141,24 +152,6 @@ const fetchQuickItems = async () => {
     .eq('user_id', user.id)
     .order('sort_order')
   favorites.value = favData ?? []
-
-  const { data: entryData } = await supabase
-    .from('budget_entries')
-    .select('category_id, type, amount, payment_method_id, memo')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(30)
-
-  const seen = new Set<string>()
-  const recents: QuickItem[] = []
-  for (const e of entryData ?? []) {
-    const key = `${e.category_id}-${e.amount}-${e.memo ?? ''}-${e.payment_method_id ?? ''}`
-    if (seen.has(key)) continue
-    seen.add(key)
-    recents.push(e)
-    if (recents.length >= 6) break
-  }
-  recentItems.value = recents
 }
 
 const applyQuickItem = (item: QuickItem) => {
@@ -177,7 +170,7 @@ watch(dialog, async (open) => {
   if (!open) return
   await fetchCategories()
   await fetchPaymentMethods()
-  await fetchQuickItems()
+  await fetchFavorites()
   addingPaymentMethod.value = false
   newPaymentMethodName.value = ''
   favoritesMenu.value = false
@@ -197,7 +190,11 @@ watch(dialog, async (open) => {
     memo.value = ''
     entryDate.value = props.defaultDate ?? new Date().toISOString().slice(0, 10)
   }
-  saveAsFavorite.value = false
+})
+
+watch(favoriteManageDialog, async (open) => {
+  if (open) return
+  await fetchFavorites()
 })
 
 // 수입/지출 전환 시 카테고리 목록이 바뀌므로, 새 목록에 없는 선택은 초기화
@@ -232,19 +229,6 @@ const save = async () => {
       if (error) throw error
     }
 
-    if (saveAsFavorite.value) {
-      const { error: favError } = await supabase.from('budget_favorites').insert({
-        user_id: user.id,
-        category_id: categoryId.value,
-        type: entryType.value,
-        amount: removeComma(amount.value),
-        payment_method_id: paymentMethodId.value,
-        memo: memo.value.trim() || null,
-        sort_order: 0,
-      })
-      if (favError) throw favError
-    }
-
     showMessage(isEditMode.value ? '내역이 수정되었습니다.' : '내역이 등록되었습니다.', 'success')
     emit('saved')
     reset()
@@ -262,7 +246,7 @@ const save = async () => {
       <div class="dialog-header" :class="entryType === 'EXPENSE' ? 'header-sell' : 'header-buy'">
         <div class="d-flex align-center justify-space-between">
           <div class="font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">{{ isEditMode ? '내역 수정' : '내역 추가' }}</div>
-          <v-menu v-if="!isEditMode && favorites.length > 0" v-model="favoritesMenu" :close-on-content-click="false">
+          <v-menu v-if="!isEditMode" v-model="favoritesMenu" :close-on-content-click="false">
             <template #activator="{ props: menuProps }">
               <v-btn v-bind="menuProps" icon="mdi-star-outline" variant="text" size="small" />
             </template>
@@ -276,6 +260,15 @@ const save = async () => {
               >
                 <span>{{ categoryName(f.category_id) }}</span>
                 <span class="text-medium-emphasis">{{ formatAmount(f.amount) }}</span>
+              </button>
+              <div v-if="favorites.length === 0" class="favorites-menu-empty">즐겨찾기가 없습니다.</div>
+              <v-divider class="my-1" />
+              <button
+                class="favorites-menu-item favorites-menu-add"
+                @click="favoritesMenu = false; favoriteManageDialog = true"
+              >
+                <v-icon size="16">mdi-plus</v-icon>
+                <span>즐겨찾기 관리</span>
               </button>
             </v-card>
           </v-menu>
@@ -295,19 +288,22 @@ const save = async () => {
       </div>
 
       <v-card-text class="pt-2 pb-1" style="overflow-y: auto; flex: 1">
-        <div v-if="!isEditMode && recentItems.length > 0" class="mb-3">
-          <div class="quick-row">
-            <span class="quick-label">최근</span>
-            <div class="quick-chip-wrap">
-              <button
-                v-for="(r, i) in recentItems"
-                :key="'recent-' + i"
-                class="quick-chip"
-                @click="applyQuickItem(r)"
-              >{{ categoryName(r.category_id) }} {{ formatAmount(r.amount) }}</button>
-            </div>
-          </div>
-        </div>
+        <v-menu v-model="dateMenu" :close-on-content-click="false">
+          <template #activator="{ props: menuProps }">
+            <v-text-field
+              v-bind="menuProps"
+              :model-value="entryDate"
+              label="날짜"
+              readonly
+              prepend-inner-icon="mdi-calendar-outline"
+              variant="outlined"
+              density="compact"
+              rounded="lg"
+              class="mb-1"
+            />
+          </template>
+          <BudgetDateCalendarCard v-model="entryDate" :open="dateMenu" @close="dateMenu = false" />
+        </v-menu>
 
         <v-select
           v-model="categoryId"
@@ -330,6 +326,7 @@ const save = async () => {
           density="compact"
           rounded="lg"
           class="mb-1"
+          :rules="amountRules"
           @update:model-value="handleAmount"
         />
 
@@ -365,30 +362,14 @@ const save = async () => {
 
         <v-text-field
           v-model="memo"
-          label="메모"
+          label="내용"
           prepend-inner-icon="mdi-note-outline"
           variant="outlined"
           density="compact"
           rounded="lg"
-          class="mb-1"
-        />
-
-        <v-text-field
-          v-model="entryDate"
-          label="날짜"
-          type="date"
-          prepend-inner-icon="mdi-calendar-outline"
-          variant="outlined"
-          density="compact"
-          rounded="lg"
-          class="mb-1"
-        />
-
-        <v-checkbox
-          v-model="saveAsFavorite"
-          label="즐겨찾기로 저장"
-          density="compact"
-          hide-details
+          class="mb-1 mt-4"
+          maxlength="30"
+          counter
         />
       </v-card-text>
 
@@ -407,6 +388,14 @@ const save = async () => {
         >{{ isEditMode ? '수정 저장' : '저장' }}</v-btn>
       </v-card-actions>
     </v-card>
+
+    <v-dialog v-model="favoriteManageDialog" max-width="480">
+      <v-card rounded="xl" class="pa-4">
+        <div class="font-weight-bold mb-4">즐겨찾기 관리</div>
+        <BudgetFavoriteView />
+        <v-btn block variant="text" class="mt-4" @click="favoriteManageDialog = false">닫기</v-btn>
+      </v-card>
+    </v-dialog>
   </v-dialog>
 </template>
 
@@ -454,36 +443,6 @@ const save = async () => {
   color: var(--fp-error);
 }
 
-.quick-row {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.quick-label {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: rgba(var(--v-theme-on-surface), 0.45);
-}
-.quick-chip-wrap {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.quick-chip {
-  padding: 4px 10px;
-  border-radius: 20px;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
-  background: none;
-  cursor: pointer;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: rgba(var(--v-theme-on-surface), 0.6);
-  transition: all 0.15s;
-}
-.quick-chip:active {
-  opacity: 0.7;
-}
-
 .favorites-menu-card {
   min-width: 220px;
   max-width: 280px;
@@ -515,6 +474,16 @@ const save = async () => {
 .favorites-menu-item:active {
   background: rgba(var(--v-theme-on-surface), 0.05);
 }
+.favorites-menu-empty {
+  padding: 4px 14px 8px;
+  font-size: 0.75rem;
+  color: rgba(var(--v-theme-on-surface), 0.4);
+}
+.favorites-menu-add {
+  justify-content: flex-start;
+  gap: 6px;
+  color: rgb(var(--v-theme-primary));
+}
 
 .pm-chip-wrap {
   display: flex;
@@ -543,4 +512,5 @@ const save = async () => {
   gap: 2px;
   border-style: dashed;
 }
+
 </style>

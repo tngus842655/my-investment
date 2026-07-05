@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
-import { ADMIN_EMAIL } from '@/config/admin'
+import { isAdminEmail } from '@/config/admin'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerDisplayName } from '@/utils/tickerNames'
 import { getStockPrice } from '@/services/market'
@@ -182,8 +182,9 @@ const executeDelete = async () => {
   deleteLoading.value = true
   try {
     // 관리자 비밀번호 검증
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
     const { error: authError } = await supabase.auth.signInWithPassword({
-      email: ADMIN_EMAIL,
+      email: currentUser?.email ?? '',
       password: deletePassword.value,
     })
     if (authError) {
@@ -256,7 +257,7 @@ const formatDateShort = (iso: string) => {
 
 onMounted(async () => {
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user || user.email !== ADMIN_EMAIL) {
+  if (!user || !isAdminEmail(user.email)) {
     router.replace('/dashboard')
     return
   }
