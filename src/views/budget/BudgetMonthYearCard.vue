@@ -55,6 +55,7 @@ const setThisMonth = () => {
   max-width: 100%;
   overflow: hidden;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  background: var(--fp-surface) !important;
 }
 .date-picker-topbar {
   display: flex;
