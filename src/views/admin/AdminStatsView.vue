@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
-import { ADMIN_EMAIL } from '@/config/admin'
+import { isAdminEmail } from '@/config/admin'
 const router = useRouter()
 const loading = ref(true)
 const isAdmin = ref(false)
@@ -138,7 +138,7 @@ const openDatePopup = (date: string, type: 'signup' | 'access') => {
 
 onMounted(async () => {
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user || user.email !== ADMIN_EMAIL) {
+  if (!user || !isAdminEmail(user.email)) {
     router.replace('/dashboard')
     return
   }
@@ -151,8 +151,8 @@ onMounted(async () => {
     supabase.from('signup_log').select('email, signed_up_at').gte('signed_up_at', since.toISOString()),
     supabase.from('access_log').select('email, accessed_at').gte('accessed_at', since.toISOString()),
   ])
-  signupRows.value = (signupRes.data ?? []).filter(r => r.email !== ADMIN_EMAIL)
-  accessRows.value = (accessRes.data ?? []).filter(r => r.email !== ADMIN_EMAIL)
+  signupRows.value = (signupRes.data ?? []).filter(r => !isAdminEmail(r.email))
+  accessRows.value = (accessRes.data ?? []).filter(r => !isAdminEmail(r.email))
   loading.value = false
 })
 </script>

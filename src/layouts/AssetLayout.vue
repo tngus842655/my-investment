@@ -2,7 +2,7 @@
 import { ref, watch, nextTick, provide } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '@/services/supabase'
-import { ADMIN_EMAIL } from '@/config/admin'
+import { isAdminEmail } from '@/config/admin'
 import { activeRefreshHandler } from '@/composables/usePullToRefresh'
 import { feedbackBadgeKey } from '@/composables/useFeedbackBadge'
 
@@ -74,7 +74,7 @@ const fetchUnreadCount = async () => {
   const { data: { session } } = await supabase.auth.getSession()
   const user = session?.user
   if (!user) return
-  isAdmin.value = user.email === ADMIN_EMAIL
+  isAdmin.value = isAdminEmail(user.email)
   if (isAdmin.value) {
     const { count } = await supabase
       .from('feedback')

@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { supabase } from '@/services/supabase'
-import { ADMIN_EMAIL } from '@/config/admin'
+import { isAdminEmail } from '@/config/admin'
 import { setLastModule } from '@/utils/lastModule'
 import budgetRoutes from './budget.routes'
 
@@ -261,8 +261,8 @@ router.beforeEach(async (to) => {
     return '/'
   }
 
-  if (to.meta.requiresAdmin && session?.user.email !== ADMIN_EMAIL) {
-    return '/dashboard'
+  if (to.meta.requiresAdmin && !isAdminEmail(session?.user.email)) {
+    return to.path.startsWith('/budget') ? '/hub' : '/dashboard'
   }
 
   if (to.meta.requiresGoal && session) {
@@ -281,7 +281,7 @@ router.beforeEach(async (to) => {
   }
 
   // 인증된 일반 유저 페이지 접속 로그 (관리자 및 로그인 페이지 제외)
-  if (session && session.user.email !== ADMIN_EMAIL && to.meta.requiresAuth) {
+  if (session && !isAdminEmail(session.user.email) && to.meta.requiresAuth) {
     logAccess(session.user.id, session.user.email ?? '', to.path)
   }
 

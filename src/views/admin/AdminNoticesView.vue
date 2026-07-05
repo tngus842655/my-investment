@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
-import { ADMIN_EMAIL } from '@/config/admin'
+import { isAdminEmail } from '@/config/admin'
 import { showMessage } from '@/composables/useSnackbar'
 
 const router = useRouter()
@@ -51,7 +51,7 @@ const loadNotices = async () => {
 
 onMounted(async () => {
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user || user.email !== ADMIN_EMAIL) {
+  if (!user || !isAdminEmail(user.email)) {
     router.replace('/dashboard')
     return
   }

@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
-import { ADMIN_EMAIL } from '@/config/admin'
+import { isAdminEmail } from '@/config/admin'
 const router = useRouter()
 const loading = ref(true)
 const isAdmin = ref(false)
@@ -57,7 +57,7 @@ const executeResetPassword = async () => {
 
 onMounted(async () => {
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user || user.email !== ADMIN_EMAIL) {
+  if (!user || !isAdminEmail(user.email)) {
     router.replace('/dashboard')
     return
   }
