@@ -137,3 +137,7 @@ VITE_SUPABASE_ANON_KEY=
 ### 상태관리
 
 Pinia를 사용하나 현재 `src/stores/counter.ts`는 템플릿 코드(미사용). 실제 앱 상태는 대부분 컴포넌트 로컬 또는 composable에서 관리된다.
+
+## 7. 가계부(budget) 모듈
+
+자산관리와 로그인만 공유하고 기능·데이터·화면은 독립된 서브 모듈. 진입은 `HubView`(`/hub`)에서 선택. 상세 내용, 네이밍 규칙, 현재 구현 상태는 **BUDGET.md** 참고 (새 세션 시작 시 함께 읽을 것). 테이블 스키마는 **BUDGET_TABLE.md** 참고.

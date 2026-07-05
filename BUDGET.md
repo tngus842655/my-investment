@@ -1,0 +1,37 @@
+# BUDGET.md
+
+가계부(budget) 모듈 관련 문서. CLAUDE.md의 가계부 버전 — 새 세션 시작 시 함께 읽을 것.
+
+## 개요
+
+Fire Path의 서브 기능으로 추가하는 가계부. 자산관리(기존 메인 기능)와 로그인 세션은 공유하지만, 기능·데이터·화면은 완전히 독립된 별개 모듈이다.
+
+- FIRE 목표 설정(`investment_goals`, `requiresGoal` 가드)과 무관하게 동작한다.
+- 진입은 `HubView`(`/hub`)에서 "자산관리"/"가계부" 중 선택하는 방식. 최초 로그인 시에만 자동 진입시키고, 이후엔 마지막 사용 모듈로 바로 이동 + 허브로 가는 버튼 상시 노출 예정 (아직 미구현, 아래 "현재 상태" 참고).
+
+## 네이밍 규칙
+
+기존 자산관리 코드/테이블과 섞이지 않도록 `budget` 접두사로 통일한다.
+
+| 구분 | 규칙 | 예시 |
+| --- | --- | --- |
+| 화면 폴더 | `src/views/budget/` | `src/views/budget/BudgetDashboardView.vue` |
+| 라우터 | `src/router/budget.routes.ts`에 모아서 `index.ts`에 merge | `/budget`, `/budget/entries` |
+| DB 테이블 | `budget_` 접두사 | `budget_categories`, `budget_entries` |
+| 상태관리/서비스/타입 | 기존 프로젝트 관례(폴더 분리 없이 파일명 접두사)를 따름 | `src/stores/budgetData.ts` |
+
+기존 `transactions`(매수/매도) 테이블과 이름이 겹치지 않도록 가계부 거래 내역은 `budget_entries`로 명명한다.
+
+## 현재 상태 (구조만 정의된 단계)
+
+- [x] `src/views/asset/`, `src/views/shared/` 분리 — 자산관리 전용 화면과 여러 모듈에서 재사용 가능한 공용 화면(계정설정/피드백/공지사항 등) 구분
+- [x] `src/views/HubView.vue` — 자산관리/가계부 선택 화면, `/hub` 라우트로 등록 (`requiresAuth`만 적용, `requiresGoal` 없음)
+- [x] `src/views/budget/`, `src/router/budget.routes.ts` — 빈 스텁만 생성
+- [ ] 로그인 후 허브로 자동 진입시키는 흐름 (최초 1회 vs 마지막 사용 모듈 기억) — 미구현
+- [ ] 가계부 기능 목록 확정 (수입/지출 카테고리, 반복거래, 예산 설정 등)
+- [ ] `budget_*` 테이블 스키마 설계 — 확정되면 **BUDGET_TABLE.md**에 기록
+
+## 관련 문서
+
+- **BUDGET_TABLE.md**: 가계부 테이블 스키마 (아직 테이블 없음)
+- **TABLE.md**: 자산관리 테이블 스키마 (참고용, 가계부와는 무관)
