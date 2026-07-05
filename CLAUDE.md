@@ -1,73 +1,73 @@
 # CLAUDE.md
 
-Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+흔한 LLM 코딩 실수를 줄이기 위한 행동 지침. 프로젝트별 지침과 함께 적용할 것.
 
-**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+**트레이드오프:** 이 지침은 속도보다 신중함에 무게를 둔다. 사소한 작업에는 상황에 맞게 판단할 것.
 
-## 1. Think Before Coding
+## 1. 코딩 전에 먼저 생각하기
 
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
+**추측하지 말 것. 혼란을 숨기지 말 것. 트레이드오프를 드러낼 것.**
 
-Before implementing:
+구현하기 전에:
 
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them - don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
+- 가정을 명시적으로 밝힐 것. 확신이 없으면 물어볼 것.
+- 여러 해석이 가능하면 모두 제시할 것 - 임의로 하나를 고르지 말 것.
+- 더 단순한 방법이 있으면 그렇게 말할 것. 필요하면 반박할 것.
+- 불명확한 부분이 있으면 멈출 것. 무엇이 헷갈리는지 명확히 밝히고 물어볼 것.
 
-## 2. Simplicity First
+## 2. 단순함을 우선할 것
 
-**Minimum code that solves the problem. Nothing speculative.**
+**문제를 해결하는 최소한의 코드만. 추측성 코드는 금지.**
 
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
-- If you write 200 lines and it could be 50, rewrite it.
+- 요청받지 않은 기능은 추가하지 말 것.
+- 한 번만 쓰이는 코드에 추상화를 만들지 말 것.
+- 요청받지 않은 "유연성"이나 "설정 가능성"을 넣지 말 것.
+- 발생할 수 없는 상황에 대한 에러 처리를 하지 말 것.
+- 200줄을 썼는데 50줄로 줄일 수 있다면 다시 쓸 것.
 
-Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+스스로에게 물어볼 것: "시니어 엔지니어가 보면 과하게 복잡하다고 할까?" 그렇다면 단순화할 것.
 
-## 3. Surgical Changes
+## 3. 필요한 부분만 수정할 것
 
-**Touch only what you must. Clean up only your own mess.**
+**꼭 건드려야 하는 것만 건드릴 것. 자기가 어지른 것만 치울 것.**
 
-When editing existing code:
+기존 코드를 수정할 때:
 
-- Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it - don't delete it.
+- 주변 코드, 주석, 포맷팅을 "개선"하지 말 것.
+- 문제 없는 코드를 리팩토링하지 말 것.
+- 마음에 안 들어도 기존 스타일을 따를 것.
+- 관련 없는 죽은 코드를 발견하면 언급만 하고 삭제하지는 말 것.
 
-When your changes create orphans:
+변경으로 인해 사용되지 않게 된 코드가 생기면:
 
-- Remove imports/variables/functions that YOUR changes made unused.
-- Don't remove pre-existing dead code unless asked.
+- 내 변경으로 인해 쓸모없어진 import/변수/함수는 제거할 것.
+- 원래부터 있던 죽은 코드는 요청받지 않는 한 제거하지 말 것.
 
-The test: Every changed line should trace directly to the user's request.
+기준: 변경한 모든 줄은 사용자의 요청과 직접 연결되어야 한다.
 
-## 4. Goal-Driven Execution
+## 4. 목표 지향적으로 실행할 것
 
-**Define success criteria. Loop until verified.**
+**성공 기준을 정의할 것. 검증될 때까지 반복할 것.**
 
-Transform tasks into verifiable goals:
+작업을 검증 가능한 목표로 바꿀 것:
 
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
+- "검증 추가" → "잘못된 입력에 대한 테스트를 작성하고, 통과시킨다"
+- "버그 수정" → "버그를 재현하는 테스트를 작성하고, 통과시킨다"
+- "X 리팩토링" → "리팩토링 전후로 테스트가 통과하는지 확인한다"
 
-For multi-step tasks, state a brief plan:
+여러 단계로 이뤄진 작업은 간단한 계획을 먼저 밝힐 것:
 
 ```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
+1. [단계] → 검증: [확인 방법]
+2. [단계] → 검증: [확인 방법]
+3. [단계] → 검증: [확인 방법]
 ```
 
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+성공 기준이 명확하면 독립적으로 반복 작업할 수 있다. 기준이 모호하면("일단 되게만 해줘") 계속 확인이 필요해진다.
 
 ---
 
-**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+**이 지침들이 잘 작동하고 있다는 신호:** diff에 불필요한 변경이 줄어들고, 과도한 복잡화로 인한 재작업이 줄어들고, 실수가 생긴 후가 아니라 구현하기 전에 명확화 질문이 나온다.
 
 ## 0. 코딩 완료 후 필수 체크
 
