@@ -311,10 +311,7 @@ const onContainerClick = (e: MouseEvent) => {
   <v-container class="pa-4 pa-sm-6 pb-16" @click="onContainerClick">
     <div class="d-flex align-center justify-space-between mb-4">
       <div class="font-weight-bold text-h6">가계부</div>
-      <div class="d-flex align-center ga-1">
-        <v-btn icon="mdi-view-grid-outline" variant="text" size="small" to="/hub" />
-        <v-btn icon="mdi-shape-outline" variant="text" size="small" to="/budget/categories" />
-      </div>
+      <v-btn icon="mdi-view-grid-outline" variant="text" size="small" to="/hub" />
     </div>
 
     <v-btn-toggle v-model="subTab" mandatory rounded="lg" density="comfortable" class="mb-4">

@@ -38,6 +38,7 @@ const memo = ref('')
 const entryDate = ref(new Date().toISOString().slice(0, 10))
 const saveAsFavorite = ref(false)
 const saving = ref(false)
+const favoritesMenu = ref(false)
 
 interface QuickItem {
   category_id: string
@@ -179,6 +180,7 @@ watch(dialog, async (open) => {
   await fetchQuickItems()
   addingPaymentMethod.value = false
   newPaymentMethodName.value = ''
+  favoritesMenu.value = false
 
   if (props.initialData) {
     entryType.value = props.initialData.type
@@ -258,7 +260,26 @@ const save = async () => {
   <v-dialog v-model="dialog" max-width="480">
     <v-card rounded="xl" class="glass-dialog" style="overflow: hidden; display: flex; flex-direction: column; max-height: 90dvh">
       <div class="dialog-header" :class="entryType === 'EXPENSE' ? 'header-sell' : 'header-buy'">
-        <div class="font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">{{ isEditMode ? '내역 수정' : '내역 추가' }}</div>
+        <div class="d-flex align-center justify-space-between">
+          <div class="font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">{{ isEditMode ? '내역 수정' : '내역 추가' }}</div>
+          <v-menu v-if="!isEditMode && favorites.length > 0" v-model="favoritesMenu" :close-on-content-click="false">
+            <template #activator="{ props: menuProps }">
+              <v-btn v-bind="menuProps" icon="mdi-star-outline" variant="text" size="small" />
+            </template>
+            <v-card rounded="lg" class="favorites-menu-card">
+              <div class="favorites-menu-title">즐겨찾기</div>
+              <button
+                v-for="(f, i) in favorites"
+                :key="'fav-' + i"
+                class="favorites-menu-item"
+                @click="applyQuickItem(f); favoritesMenu = false"
+              >
+                <span>{{ categoryName(f.category_id) }}</span>
+                <span class="text-medium-emphasis">{{ formatAmount(f.amount) }}</span>
+              </button>
+            </v-card>
+          </v-menu>
+        </div>
         <div class="type-toggle mt-3">
           <button
             class="toggle-btn"
@@ -274,19 +295,8 @@ const save = async () => {
       </div>
 
       <v-card-text class="pt-2 pb-1" style="overflow-y: auto; flex: 1">
-        <div v-if="!isEditMode && (favorites.length > 0 || recentItems.length > 0)" class="mb-3">
-          <div v-if="favorites.length > 0" class="quick-row mb-2">
-            <span class="quick-label">⭐ 즐겨찾기</span>
-            <div class="quick-chip-wrap">
-              <button
-                v-for="(f, i) in favorites"
-                :key="'fav-' + i"
-                class="quick-chip"
-                @click="applyQuickItem(f)"
-              >{{ categoryName(f.category_id) }} {{ formatAmount(f.amount) }}</button>
-            </div>
-          </div>
-          <div v-if="recentItems.length > 0" class="quick-row">
+        <div v-if="!isEditMode && recentItems.length > 0" class="mb-3">
+          <div class="quick-row">
             <span class="quick-label">최근</span>
             <div class="quick-chip-wrap">
               <button
@@ -472,6 +482,38 @@ const save = async () => {
 }
 .quick-chip:active {
   opacity: 0.7;
+}
+
+.favorites-menu-card {
+  min-width: 220px;
+  max-width: 280px;
+  padding: 8px 0;
+  background: var(--fp-surface);
+  border: 1px solid var(--fp-outline);
+}
+.favorites-menu-title {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+  padding: 4px 14px 6px;
+}
+.favorites-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+  text-align: left;
+}
+.favorites-menu-item:active {
+  background: rgba(var(--v-theme-on-surface), 0.05);
 }
 
 .pm-chip-wrap {
