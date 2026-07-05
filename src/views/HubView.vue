@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { showMessage } from '@/composables/useSnackbar'
 
 const router = useRouter()
-
-const openBudget = () => {
-  showMessage('가계부 기능은 준비 중입니다.', 'info')
-}
 </script>
 
 <template>
@@ -27,11 +22,11 @@ const openBudget = () => {
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
-      <div class="hub-card glass-card pa-5 d-flex align-center ga-3" @click="openBudget">
+      <div class="hub-card glass-card pa-5 d-flex align-center ga-3" @click="router.push('/budget')">
         <div class="hub-icon"><v-icon size="24" color="primary">mdi-notebook-outline</v-icon></div>
         <div>
           <div class="font-weight-medium">가계부</div>
-          <div class="text-medium-emphasis">준비 중</div>
+          <div class="text-medium-emphasis">수입·지출 기록 관리</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>

@@ -32,9 +32,12 @@ Fire Path의 서브 기능으로 추가하는 가계부. 자산관리(기존 메
 - [x] `budget_categories`/`budget_entries`/`budget_favorites` 테이블 생성 (`supabase/migrations/20260705_01_budget_tables.sql`) — 상세는 **BUDGET_TABLE.md**
 - [x] 카테고리 관리 화면(`BudgetCategoryView.vue`, `/budget/categories`) + 기본 카테고리 자동 시딩
 - [x] 내역 추가/수정 다이얼로그(`BudgetEntryAddDialog.vue`) — 수입/지출 토글, 카테고리/금액/결제수단/메모/날짜, 즐겨찾기·최근사용 칩 원클릭 채우기, "즐겨찾기로 저장" 체크박스. 삭제는 다이얼로그가 아니라 목록 화면(스와이프 카드 등, 캘린더/일일 화면 구현 시)에서 처리 예정 — 자산관리 거래내역과 동일한 패턴
+- [x] 캘린더 화면(`BudgetCalendarView.vue`, `/budget`) — 캘린더/일일/월별 서브탭(내부 `v-btn-toggle`), 월·연도 이동, 수입/지출/합계 요약, FAB로 내역 추가, 항목 클릭 시 수정 다이얼로그. 삭제 UI는 아직 없음(추후 스와이프 등으로 추가 예정)
+- [x] 통계 화면(`BudgetStatsView.vue`, `/budget/stats`) — 카테고리별 도넛 차트 + 범례(자산관리 `PortfolioAnalysisView`와 동일한 SVG 방식 재사용), 수입/지출 토글, 월 이동
+- [x] `BudgetLayout` 하단 탭 실연결: 캘린더/통계/더보기(더보기는 임시로 `/budget/categories`를 가리킴 — 6단계에서 실제 더보기 화면으로 교체 예정). `HubView`의 "가계부" 카드도 `/budget`로 연결(더 이상 "준비 중" 아님)
 - [ ] 로그인 후 허브로 자동 진입시키는 흐름 (최초 1회 vs 마지막 사용 모듈 기억) — 미구현
-- [ ] 캘린더/통계 화면
 - [ ] 더보기 화면 + 검색
+- [ ] 목록에서 내역 삭제 UI (캘린더/일일 화면에 스와이프 등 추가)
 
 ## 관련 문서
 

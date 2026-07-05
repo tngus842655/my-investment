@@ -4,9 +4,11 @@ import { useRouter, useRoute } from 'vue-router'
 const router = useRouter()
 const route = useRoute()
 
-// TODO: 가계부 화면 구성 확정되면 실제 탭으로 교체
+// TODO: 더보기 화면(6단계) 완성되면 세 번째 탭을 /budget/more로 교체
 const tabs = [
-  { label: '홈', route: '/budget', icon: 'mdi-home-outline', activeIcon: 'mdi-home' },
+  { label: '캘린더', route: '/budget', icon: 'mdi-calendar-outline', activeIcon: 'mdi-calendar' },
+  { label: '통계', route: '/budget/stats', icon: 'mdi-chart-pie-outline', activeIcon: 'mdi-chart-pie' },
+  { label: '더보기', route: '/budget/categories', icon: 'mdi-dots-horizontal', activeIcon: 'mdi-dots-horizontal' },
 ]
 
 const isActive = (tabRoute: string) => route.path === tabRoute
