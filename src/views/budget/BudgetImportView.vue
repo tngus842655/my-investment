@@ -59,9 +59,11 @@ const cellToString = (v: unknown): string => {
 
 const parseDateCell = (v: unknown): string | null => {
   if (v instanceof Date && !Number.isNaN(v.getTime())) {
-    const y = v.getFullYear()
-    const m = String(v.getMonth() + 1).padStart(2, '0')
-    const d = String(v.getDate()).padStart(2, '0')
+    // read-excel-file은 엑셀 날짜를 UTC 자정 기준으로 반환하므로,
+    // 로컬 타임존 getter를 쓰면 지역에 따라 날짜가 하루씩 밀릴 수 있어 UTC getter 사용
+    const y = v.getUTCFullYear()
+    const m = String(v.getUTCMonth() + 1).padStart(2, '0')
+    const d = String(v.getUTCDate()).padStart(2, '0')
     return `${y}-${m}-${d}`
   }
   const s = cellToString(v)
