@@ -628,7 +628,7 @@ const save = async () => {
 }
 .topbar-title {
   font-weight: 700;
-  font-size: 0.9375rem;
+  font-size: 1.4rem;
 }
 .topbar-action {
   padding: 4px 10px;
@@ -636,11 +636,18 @@ const save = async () => {
   background: none;
   color: inherit;
   font-weight: 700;
-  font-size: 0.8125rem;
+  font-size: 1.2rem;
   cursor: pointer;
 }
 .date-picker-topbar .v-btn {
   color: inherit;
+}
+.date-picker-topbar :deep(.v-icon) {
+  font-size: 1.75rem;
+}
+
+.date-picker-card :deep(.v-date-picker-controls) {
+  display: none;
 }
 
 .date-nav-row {
@@ -648,7 +655,7 @@ const save = async () => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 0 2px;
+  padding: 4px 0 0;
 }
 .nav-arrow {
   display: flex;
