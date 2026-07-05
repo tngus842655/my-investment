@@ -5,7 +5,6 @@ export interface BudgetCategory {
   user_id: string
   type: BudgetType
   name: string
-  icon: string
   sort_order: number
   created_at: string
   updated_at: string

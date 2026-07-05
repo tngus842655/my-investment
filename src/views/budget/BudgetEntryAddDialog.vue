@@ -56,7 +56,7 @@ const categoryOptions = computed(() =>
   categories.value
     .filter((c) => c.type === entryType.value)
     .sort((a, b) => a.sort_order - b.sort_order)
-    .map((c) => ({ title: `${c.icon} ${c.name}`, value: c.id })),
+    .map((c) => ({ title: c.name, value: c.id })),
 )
 
 const addComma = (v: string) => {
@@ -82,7 +82,7 @@ const amountRules = [
 
 const categoryName = (id: string) => {
   const c = categories.value.find((c) => c.id === id)
-  return c ? `${c.icon} ${c.name}` : ''
+  return c ? c.name : ''
 }
 
 const fetchCategories = async () => {

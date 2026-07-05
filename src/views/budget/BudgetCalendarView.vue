@@ -15,7 +15,7 @@ interface EntryRow {
   payment_method_id: string | null
   memo: string | null
   entry_date: string
-  budget_categories: { name: string; icon: string } | null
+  budget_categories: { name: string } | null
   budget_payment_methods: { name: string } | null
 }
 
@@ -40,7 +40,7 @@ const fetchMonthEntries = async () => {
   const end = `${year.value}-${pad2(month.value)}-${pad2(new Date(year.value, month.value, 0).getDate())}`
   const { data, error } = await supabase
     .from('budget_entries')
-    .select('id, type, category_id, amount, payment_method_id, memo, entry_date, budget_categories(name, icon), budget_payment_methods(name)')
+    .select('id, type, category_id, amount, payment_method_id, memo, entry_date, budget_categories(name), budget_payment_methods(name)')
     .eq('user_id', user.id)
     .gte('entry_date', start)
     .lte('entry_date', end)
@@ -60,7 +60,7 @@ const fetchYearEntries = async () => {
   const end = `${monthlyYear.value}-12-31`
   const { data, error } = await supabase
     .from('budget_entries')
-    .select('id, type, category_id, amount, payment_method_id, memo, entry_date, budget_categories(name, icon), budget_payment_methods(name)')
+    .select('id, type, category_id, amount, payment_method_id, memo, entry_date, budget_categories(name), budget_payment_methods(name)')
     .eq('user_id', user.id)
     .gte('entry_date', start)
     .lte('entry_date', end)
@@ -448,7 +448,6 @@ const onContainerClick = (e: MouseEvent) => {
               @mousedown="onSwipeMouseDown"
               @mouseup="(ev) => onSwipeMouseUp(ev, e.id)"
             >
-              <span class="daily-entry-icon">{{ e.budget_categories?.icon ?? '❓' }}</span>
               <div class="daily-entry-info">
                 <div class="daily-entry-category">{{ e.memo || e.budget_categories?.name || '' }}</div>
                 <div class="daily-entry-sub">{{ e.budget_categories?.name }}<span v-if="e.budget_payment_methods?.name"> · {{ e.budget_payment_methods.name }}</span></div>
@@ -502,7 +501,6 @@ const onContainerClick = (e: MouseEvent) => {
               @mousedown="onSwipeMouseDown"
               @mouseup="(ev) => onSwipeMouseUp(ev, e.id)"
             >
-              <span class="daily-entry-icon">{{ e.budget_categories?.icon ?? '❓' }}</span>
               <div class="daily-entry-info">
                 <div class="daily-entry-category">{{ e.memo || e.budget_categories?.name || '' }}</div>
                 <div class="daily-entry-sub">{{ e.budget_categories?.name }}<span v-if="e.budget_payment_methods?.name"> · {{ e.budget_payment_methods.name }}</span></div>
@@ -693,12 +691,6 @@ const onContainerClick = (e: MouseEvent) => {
   gap: 8px;
   padding: 6px 4px;
   cursor: pointer;
-}
-.daily-entry-icon {
-  font-size: 1.125rem;
-  width: 24px;
-  text-align: center;
-  flex-shrink: 0;
 }
 .daily-entry-info {
   flex: 1;

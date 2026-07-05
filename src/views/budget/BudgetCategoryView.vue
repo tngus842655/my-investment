@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import type { BudgetCategory, BudgetType } from '@/types/budget'
-import { DEFAULT_BUDGET_CATEGORIES, BUDGET_CATEGORY_ICON_CHOICES } from '@/utils/budgetDefaultCategories'
+import { DEFAULT_BUDGET_CATEGORIES } from '@/utils/budgetDefaultCategories'
 
 const loading = ref(true)
 const categories = ref<BudgetCategory[]>([])
@@ -38,7 +38,6 @@ const fetchCategories = async () => {
       user_id: seedUser.id,
       type: c.type,
       name: c.name,
-      icon: c.icon,
       sort_order: i,
     }))
     const { error: seedError } = await supabase.from('budget_categories').insert(rows)
@@ -69,7 +68,6 @@ const dialog = ref(false)
 const editingId = ref<string | null>(null)
 const formType = ref<BudgetType>('EXPENSE')
 const formName = ref('')
-const formIcon = ref(BUDGET_CATEGORY_ICON_CHOICES[0])
 const saving = ref(false)
 
 const isEditMode = computed(() => !!editingId.value)
@@ -78,7 +76,6 @@ const openAddDialog = () => {
   editingId.value = null
   formType.value = selectedType.value
   formName.value = ''
-  formIcon.value = BUDGET_CATEGORY_ICON_CHOICES[0]!
   dialog.value = true
 }
 
@@ -86,7 +83,6 @@ const openEditDialog = (c: BudgetCategory) => {
   editingId.value = c.id
   formType.value = c.type
   formName.value = c.name
-  formIcon.value = c.icon
   dialog.value = true
 }
 
@@ -106,7 +102,7 @@ const saveCategory = async () => {
     if (isEditMode.value) {
       const { error } = await supabase
         .from('budget_categories')
-        .update({ name, icon: formIcon.value })
+        .update({ name })
         .eq('id', editingId.value)
       if (error) throw error
       showMessage('카테고리가 수정되었습니다.', 'success')
@@ -118,7 +114,6 @@ const saveCategory = async () => {
         user_id: user.id,
         type: formType.value,
         name,
-        icon: formIcon.value,
         sort_order: sortOrder,
       })
       if (error) throw error
@@ -162,7 +157,6 @@ const deleteCategory = async (c: BudgetCategory) => {
     <div v-else class="glass-card pa-4">
       <div class="list-scroll">
         <div v-for="c in filteredCategories" :key="c.id" class="row-item">
-          <span class="row-icon">{{ c.icon }}</span>
           <span class="row-name">{{ c.name }}</span>
           <v-btn icon="mdi-pencil-outline" size="small" variant="text" class="action-btn" @click="openEditDialog(c)" />
           <v-btn icon="mdi-delete-outline" size="small" variant="text" color="error" class="action-btn" @click="deleteCategory(c)" />
@@ -189,6 +183,7 @@ const deleteCategory = async (c: BudgetCategory) => {
         <v-text-field
           v-model="formName"
           label="카테고리 이름"
+          placeholder="예: 🍚 식비"
           density="compact"
           variant="outlined"
           rounded="lg"
@@ -197,19 +192,6 @@ const deleteCategory = async (c: BudgetCategory) => {
           autofocus
           @keyup.enter="saveCategory"
         />
-
-        <div class="text-medium-emphasis mb-2" style="font-size: 0.8125rem">아이콘 선택</div>
-        <div class="icon-grid mb-4">
-          <button
-            v-for="icon in BUDGET_CATEGORY_ICON_CHOICES"
-            :key="icon"
-            class="icon-choice"
-            :class="{ selected: formIcon === icon }"
-            @click="formIcon = icon"
-          >
-            {{ icon }}
-          </button>
-        </div>
 
         <div class="d-flex ga-2">
           <v-btn variant="text" class="flex-1" @click="closeDialog">취소</v-btn>
@@ -241,13 +223,6 @@ const deleteCategory = async (c: BudgetCategory) => {
 }
 .row-item:last-child { border-bottom: none; }
 
-.row-icon {
-  font-size: 1.25rem;
-  width: 28px;
-  text-align: center;
-  flex-shrink: 0;
-}
-
 .row-name {
   font-size: 0.875rem;
   flex: 1;
@@ -256,29 +231,6 @@ const deleteCategory = async (c: BudgetCategory) => {
 
 .action-btn {
   flex-shrink: 0;
-}
-
-.icon-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
-}
-
-.icon-choice {
-  aspect-ratio: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.125rem;
-  border-radius: 10px;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
-  background: none;
-  cursor: pointer;
-}
-
-.icon-choice.selected {
-  border-color: rgb(var(--v-theme-primary));
-  background: rgba(var(--v-theme-primary), 0.12);
 }
 
 .flex-1 {

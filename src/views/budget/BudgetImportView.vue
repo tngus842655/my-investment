@@ -4,7 +4,6 @@ import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { formatCurrency } from '@/utils/numberFormat'
-import { DEFAULT_BUDGET_CATEGORIES } from '@/utils/budgetDefaultCategories'
 import type { BudgetType, BudgetCategory, BudgetPaymentMethod } from '@/types/budget'
 
 const router = useRouter()
@@ -192,9 +191,8 @@ const doImport = async () => {
     )
     if (missingCategories.length > 0) {
       const rows = missingCategories.map((n) => {
-        const preset = DEFAULT_BUDGET_CATEGORIES.find((d) => d.type === n.type && d.name === n.name)
         const sortOrder = categoryTypeCounts[n.type]++
-        return { user_id: user.id, type: n.type, name: n.name, icon: preset?.icon ?? '🧾', sort_order: sortOrder }
+        return { user_id: user.id, type: n.type, name: n.name, sort_order: sortOrder }
       })
       const { data: inserted, error } = await supabase.from('budget_categories').insert(rows).select()
       if (error) throw error

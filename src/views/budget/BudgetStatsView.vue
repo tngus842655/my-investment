@@ -13,7 +13,7 @@ interface EntryRow {
   type: BudgetType
   category_id: string
   amount: number
-  budget_categories: { name: string; icon: string } | null
+  budget_categories: { name: string } | null
 }
 
 const today = new Date()
@@ -35,7 +35,7 @@ const fetchEntries = async () => {
   const end = `${year.value}-${pad2(month.value)}-${pad2(new Date(year.value, month.value, 0).getDate())}`
   const { data, error } = await supabase
     .from('budget_entries')
-    .select('type, category_id, amount, budget_categories(name, icon)')
+    .select('type, category_id, amount, budget_categories(name)')
     .eq('user_id', user.id)
     .gte('entry_date', start)
     .lte('entry_date', end)
@@ -97,7 +97,6 @@ function buildPath(start: number, end: number): string {
 interface Seg {
   key: string
   label: string
-  icon: string
   value: number
   pct: number
   color: string
@@ -105,13 +104,13 @@ interface Seg {
 }
 
 const segments = computed<Seg[]>(() => {
-  const map = new Map<string, { label: string; icon: string; value: number }>()
+  const map = new Map<string, { label: string; value: number }>()
   for (const e of entries.value) {
     if (e.type !== statType.value) continue
     const key = e.category_id
     const existing = map.get(key)
     if (existing) existing.value += e.amount
-    else map.set(key, { label: e.budget_categories?.name ?? '기타', icon: e.budget_categories?.icon ?? '❓', value: e.amount })
+    else map.set(key, { label: e.budget_categories?.name ?? '기타', value: e.amount })
   }
 
   const total = [...map.values()].reduce((s, v) => s + v.value, 0)
@@ -128,7 +127,6 @@ const segments = computed<Seg[]>(() => {
     const seg: Seg = {
       key,
       label: val.label,
-      icon: val.icon,
       value: val.value,
       pct,
       color: palette[i % palette.length]!,
@@ -221,7 +219,6 @@ const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.v
           @mouseenter="hoveredKey = seg.key"
           @mouseleave="hoveredKey = null"
         >
-          <span class="legend-icon">{{ seg.icon }}</span>
           <div class="legend-info">
             <div class="legend-name">{{ seg.label }}</div>
             <div class="legend-bar-wrap">
@@ -316,12 +313,6 @@ const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.v
 .legend-dimmed { opacity: 0.3; }
 .legend-active { background: rgba(var(--v-theme-on-surface), 0.03); }
 
-.legend-icon {
-  font-size: 1.125rem;
-  width: 24px;
-  text-align: center;
-  flex-shrink: 0;
-}
 .legend-info {
   flex: 1;
   min-width: 0;

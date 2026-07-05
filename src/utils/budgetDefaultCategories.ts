@@ -1,32 +1,18 @@
 import type { BudgetType } from '@/types/budget'
 
 // 최초 가계부 진입 시 한 번 시딩되는 기본 카테고리
-export const DEFAULT_BUDGET_CATEGORIES: { type: BudgetType; name: string; icon: string }[] = [
-  { type: 'EXPENSE', name: '식비', icon: '🍚' },
-  { type: 'EXPENSE', name: '교통', icon: '🚗' },
-  { type: 'EXPENSE', name: '건강', icon: '💊' },
-  { type: 'EXPENSE', name: '패션', icon: '👗' },
-  { type: 'EXPENSE', name: '생활', icon: '🛋️' },
-  { type: 'EXPENSE', name: '통신', icon: '📱' },
-  { type: 'EXPENSE', name: '보험', icon: '🛡️' },
-  { type: 'EXPENSE', name: '적금', icon: '💰' },
-  { type: 'EXPENSE', name: '기타', icon: '🧾' },
-  { type: 'INCOME', name: '월급', icon: '💵' },
-  { type: 'INCOME', name: '용돈', icon: '🎁' },
-  { type: 'INCOME', name: '부수입', icon: '💼' },
-  { type: 'INCOME', name: '기타', icon: '🧾' },
-]
-
-// 자주 쓰는 카테고리 아이콘 선택지 (추가/수정 다이얼로그에서 사용)
-export const BUDGET_CATEGORY_ICON_CHOICES = [
-  '🍚', '🍔', '🍕', '🍜', '☕', '🍺', '🍿',
-  '🚗', '🚌', '🚕', '🚇', '⛽', '🚴', '✈️', '🧳',
-  '💊', '🏥', '🏋️', '🧴', '💇', '💄',
-  '👗', '🧥', '✂️',
-  '🏠', '🛋️', '🛠️', '⚡',
-  '📱', '💻', '🎮', '📚', '🎓', '🎬', '🎵', '🎉', '🎂',
-  '🛡️', '💰', '💳', '🏦', '📈',
-  '🎁', '🧧', '👶', '🐶',
-  '🛒', '🧾',
-  '💵', '💼',
+export const DEFAULT_BUDGET_CATEGORIES: { type: BudgetType; name: string }[] = [
+  { type: 'EXPENSE', name: '🍚 식비' },
+  { type: 'EXPENSE', name: '🚗 교통' },
+  { type: 'EXPENSE', name: '💊 건강' },
+  { type: 'EXPENSE', name: '👗 패션' },
+  { type: 'EXPENSE', name: '🛋️ 생활' },
+  { type: 'EXPENSE', name: '📱 통신' },
+  { type: 'EXPENSE', name: '🛡️ 보험' },
+  { type: 'EXPENSE', name: '💰 적금' },
+  { type: 'EXPENSE', name: '🧾 기타' },
+  { type: 'INCOME', name: '💵 월급' },
+  { type: 'INCOME', name: '🎁 용돈' },
+  { type: 'INCOME', name: '💼 부수입' },
+  { type: 'INCOME', name: '🧾 기타' },
 ]
