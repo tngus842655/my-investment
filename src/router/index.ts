@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { isAdminEmail, isBudgetPreviewAllowed } from '@/config/admin'
-import { setLastModule } from '@/utils/lastModule'
+import { setLastModule, getLastModule } from '@/utils/lastModule'
 import budgetRoutes from './budget.routes'
 
 import LoginView from '@/views/auth/LoginView.vue'
@@ -239,6 +239,9 @@ const router = createRouter({
 // 세션 내 목표 설정 여부 캐시 (재조회 방지)
 let goalCheckedUserId: string | null = null
 
+// 앱 최초 진입(홈 화면 아이콘 등으로 PWA start_url 진입) 여부 — 최초 1회만 마지막 모듈로 리다이렉트
+let isInitialNavigation = true
+
 // 페이지별 마지막 접속 기록 캐시 (1시간 내 중복 방지)
 const lastAccessedAt: Record<string, number> = {}
 const ACCESS_LOG_INTERVAL_MS = 60 * 60 * 1000 // 1시간
@@ -255,6 +258,14 @@ router.beforeEach(async (to) => {
   const {
     data: { session },
   } = await supabase.auth.getSession()
+
+  if (isInitialNavigation) {
+    isInitialNavigation = false
+    if (to.path === '/dashboard' && session) {
+      const lastModule = getLastModule()
+      if (lastModule === 'budget') return '/budget'
+    }
+  }
 
   if (to.meta.requiresAuth && !session) {
     goalCheckedUserId = null
