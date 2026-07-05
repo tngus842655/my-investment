@@ -2,7 +2,8 @@
 import { ref, computed, watch } from 'vue'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
-import type { BudgetCategory, BudgetType } from '@/types/budget'
+import type { BudgetCategory, BudgetPaymentMethod, BudgetType } from '@/types/budget'
+import { DEFAULT_BUDGET_PAYMENT_METHODS } from '@/utils/budgetDefaultPaymentMethods'
 
 const dialog = defineModel<boolean>()
 
@@ -12,7 +13,7 @@ const props = defineProps<{
     type: BudgetType
     category_id: string
     amount: number
-    payment_method: string | null
+    payment_method_id: string | null
     memo: string | null
     entry_date: string
   } | null
@@ -28,7 +29,10 @@ const entryType = ref<BudgetType>('EXPENSE')
 const categories = ref<BudgetCategory[]>([])
 const categoryId = ref<string | null>(null)
 const amount = ref('')
-const paymentMethod = ref('')
+const paymentMethods = ref<BudgetPaymentMethod[]>([])
+const paymentMethodId = ref<string | null>(null)
+const addingPaymentMethod = ref(false)
+const newPaymentMethodName = ref('')
 const memo = ref('')
 const entryDate = ref(new Date().toISOString().slice(0, 10))
 const saveAsFavorite = ref(false)
@@ -38,12 +42,11 @@ interface QuickItem {
   category_id: string
   type: BudgetType
   amount: number
-  payment_method: string | null
+  payment_method_id: string | null
   memo: string | null
 }
 const favorites = ref<QuickItem[]>([])
 const recentItems = ref<QuickItem[]>([])
-const paymentMethodSuggestions = ref<string[]>([])
 
 const categoryOptions = computed(() =>
   categories.value
@@ -80,20 +83,66 @@ const fetchCategories = async () => {
   categories.value = data ?? []
 }
 
+const fetchPaymentMethods = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  const { data } = await supabase
+    .from('budget_payment_methods')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('sort_order')
+
+  if ((data ?? []).length === 0) {
+    const rows = DEFAULT_BUDGET_PAYMENT_METHODS.map((name, i) => ({ user_id: user.id, name, sort_order: i }))
+    const { error: seedError } = await supabase.from('budget_payment_methods').insert(rows)
+    if (seedError) return
+    const { data: seeded } = await supabase
+      .from('budget_payment_methods')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('sort_order')
+    paymentMethods.value = seeded ?? []
+    return
+  }
+
+  paymentMethods.value = data ?? []
+}
+
+const addPaymentMethod = async () => {
+  const name = newPaymentMethodName.value.trim()
+  if (!name) return
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const { data, error } = await supabase
+    .from('budget_payment_methods')
+    .insert({ user_id: user.id, name, sort_order: paymentMethods.value.length })
+    .select()
+    .single()
+  if (error) {
+    showMessage('결제수단 추가에 실패했습니다.', 'error')
+    return
+  }
+  paymentMethods.value.push(data)
+  paymentMethodId.value = data.id
+  addingPaymentMethod.value = false
+  newPaymentMethodName.value = ''
+}
+
 const fetchQuickItems = async () => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
 
   const { data: favData } = await supabase
     .from('budget_favorites')
-    .select('category_id, type, amount, payment_method, memo')
+    .select('category_id, type, amount, payment_method_id, memo')
     .eq('user_id', user.id)
     .order('sort_order')
   favorites.value = favData ?? []
 
   const { data: entryData } = await supabase
     .from('budget_entries')
-    .select('category_id, type, amount, payment_method, memo')
+    .select('category_id, type, amount, payment_method_id, memo')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(30)
@@ -101,25 +150,20 @@ const fetchQuickItems = async () => {
   const seen = new Set<string>()
   const recents: QuickItem[] = []
   for (const e of entryData ?? []) {
-    const key = `${e.category_id}-${e.amount}-${e.memo ?? ''}-${e.payment_method ?? ''}`
+    const key = `${e.category_id}-${e.amount}-${e.memo ?? ''}-${e.payment_method_id ?? ''}`
     if (seen.has(key)) continue
     seen.add(key)
     recents.push(e)
     if (recents.length >= 6) break
   }
   recentItems.value = recents
-
-  const methods = [...new Set(
-    (entryData ?? []).map((e) => e.payment_method).filter((v): v is string => !!v),
-  )]
-  paymentMethodSuggestions.value = methods.slice(0, 10)
 }
 
 const applyQuickItem = (item: QuickItem) => {
   entryType.value = item.type
   categoryId.value = item.category_id
   amount.value = addComma(String(item.amount))
-  paymentMethod.value = item.payment_method ?? ''
+  paymentMethodId.value = item.payment_method_id
   memo.value = item.memo ?? ''
 }
 
@@ -130,20 +174,23 @@ const reset = () => {
 watch(dialog, async (open) => {
   if (!open) return
   await fetchCategories()
+  await fetchPaymentMethods()
   await fetchQuickItems()
+  addingPaymentMethod.value = false
+  newPaymentMethodName.value = ''
 
   if (props.initialData) {
     entryType.value = props.initialData.type
     categoryId.value = props.initialData.category_id
     amount.value = addComma(String(props.initialData.amount))
-    paymentMethod.value = props.initialData.payment_method ?? ''
+    paymentMethodId.value = props.initialData.payment_method_id
     memo.value = props.initialData.memo ?? ''
     entryDate.value = props.initialData.entry_date
   } else {
     entryType.value = 'EXPENSE'
     categoryId.value = null
     amount.value = ''
-    paymentMethod.value = ''
+    paymentMethodId.value = null
     memo.value = ''
     entryDate.value = new Date().toISOString().slice(0, 10)
   }
@@ -169,7 +216,7 @@ const save = async () => {
       category_id: categoryId.value,
       type: entryType.value,
       amount: removeComma(amount.value),
-      payment_method: paymentMethod.value.trim() || null,
+      payment_method_id: paymentMethodId.value,
       memo: memo.value.trim() || null,
       entry_date: entryDate.value,
     }
@@ -188,7 +235,7 @@ const save = async () => {
         category_id: categoryId.value,
         type: entryType.value,
         amount: removeComma(amount.value),
-        payment_method: paymentMethod.value.trim() || null,
+        payment_method_id: paymentMethodId.value,
         memo: memo.value.trim() || null,
         sort_order: 0,
       })
@@ -275,17 +322,35 @@ const save = async () => {
           @update:model-value="handleAmount"
         />
 
-        <v-combobox
-          v-model="paymentMethod"
-          :items="paymentMethodSuggestions"
-          label="결제수단"
-          placeholder="현금, 카드 등"
-          prepend-inner-icon="mdi-credit-card-outline"
-          variant="outlined"
-          density="compact"
-          rounded="lg"
-          class="mb-1"
-        />
+        <div class="text-medium-emphasis mb-1" style="font-size: 0.75rem">결제수단</div>
+        <div class="pm-chip-wrap mb-1">
+          <button
+            v-for="pm in paymentMethods"
+            :key="pm.id"
+            class="pm-chip"
+            :class="{ 'pm-chip-selected': paymentMethodId === pm.id }"
+            @click="paymentMethodId = paymentMethodId === pm.id ? null : pm.id"
+          >{{ pm.name }}</button>
+          <button class="pm-chip pm-chip-add" @click="addingPaymentMethod = !addingPaymentMethod">
+            <v-icon size="14">mdi-plus</v-icon> 추가
+          </button>
+        </div>
+        <v-expand-transition>
+          <div v-if="addingPaymentMethod" class="d-flex ga-2 mb-1">
+            <v-text-field
+              v-model="newPaymentMethodName"
+              label="새 결제수단"
+              placeholder="예: 계좌이체"
+              density="compact"
+              variant="outlined"
+              rounded="lg"
+              hide-details
+              autofocus
+              @keyup.enter="addPaymentMethod"
+            />
+            <v-btn icon="mdi-check" size="small" variant="tonal" color="primary" @click="addPaymentMethod" />
+          </div>
+        </v-expand-transition>
 
         <v-text-field
           v-model="memo"
@@ -406,5 +471,33 @@ const save = async () => {
 }
 .quick-chip:active {
   opacity: 0.7;
+}
+
+.pm-chip-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pm-chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
+  background: none;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+  transition: all 0.15s;
+}
+.pm-chip-selected {
+  border-color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.1);
+}
+.pm-chip-add {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-style: dashed;
 }
 </style>

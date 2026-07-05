@@ -11,10 +11,11 @@ interface EntryRow {
   type: BudgetType
   category_id: string
   amount: number
-  payment_method: string | null
+  payment_method_id: string | null
   memo: string | null
   entry_date: string
   budget_categories: { name: string; icon: string } | null
+  budget_payment_methods: { name: string } | null
 }
 
 const today = new Date()
@@ -38,7 +39,7 @@ const fetchMonthEntries = async () => {
   const end = `${year.value}-${pad2(month.value)}-${pad2(new Date(year.value, month.value, 0).getDate())}`
   const { data, error } = await supabase
     .from('budget_entries')
-    .select('id, type, category_id, amount, payment_method, memo, entry_date, budget_categories(name, icon)')
+    .select('id, type, category_id, amount, payment_method_id, memo, entry_date, budget_categories(name, icon), budget_payment_methods(name)')
     .eq('user_id', user.id)
     .gte('entry_date', start)
     .lte('entry_date', end)
@@ -58,7 +59,7 @@ const fetchYearEntries = async () => {
   const end = `${monthlyYear.value}-12-31`
   const { data, error } = await supabase
     .from('budget_entries')
-    .select('id, type, category_id, amount, payment_method, memo, entry_date, budget_categories(name, icon)')
+    .select('id, type, category_id, amount, payment_method_id, memo, entry_date, budget_categories(name, icon), budget_payment_methods(name)')
     .eq('user_id', user.id)
     .gte('entry_date', start)
     .lte('entry_date', end)
@@ -200,7 +201,7 @@ const dialogInitialData = computed(() =>
         type: editingEntry.value.type,
         category_id: editingEntry.value.category_id,
         amount: editingEntry.value.amount,
-        payment_method: editingEntry.value.payment_method,
+        payment_method_id: editingEntry.value.payment_method_id,
         memo: editingEntry.value.memo,
         entry_date: editingEntry.value.entry_date,
       }
@@ -311,7 +312,7 @@ const onSaved = async () => {
             <span class="daily-entry-icon">{{ e.budget_categories?.icon ?? '❓' }}</span>
             <div class="daily-entry-info">
               <div class="daily-entry-category">{{ e.memo || e.budget_categories?.name || '' }}</div>
-              <div class="daily-entry-sub">{{ e.budget_categories?.name }}<span v-if="e.payment_method"> · {{ e.payment_method }}</span></div>
+              <div class="daily-entry-sub">{{ e.budget_categories?.name }}<span v-if="e.budget_payment_methods?.name"> · {{ e.budget_payment_methods.name }}</span></div>
             </div>
             <span :class="e.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ formatCurrency(e.amount) }}원</span>
           </div>

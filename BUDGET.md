@@ -36,6 +36,7 @@ Fire Path의 서브 기능으로 추가하는 가계부. 자산관리(기존 메
 - [x] 통계 화면(`BudgetStatsView.vue`, `/budget/stats`) — 카테고리별 도넛 차트 + 범례(자산관리 `PortfolioAnalysisView`와 동일한 SVG 방식 재사용), 수입/지출 토글, 월 이동
 - [x] `BudgetLayout` 하단 탭 실연결: 캘린더/통계/더보기(더보기는 임시로 `/budget/categories`를 가리킴 — 6단계에서 실제 더보기 화면으로 교체 예정). `HubView`의 "가계부" 카드도 `/budget`로 연결(더 이상 "준비 중" 아님)
 - [ ] 로그인 후 허브로 자동 진입시키는 흐름 (최초 1회 vs 마지막 사용 모듈 기억) — 미구현
+- [x] 결제수단을 카테고리와 동일한 방식(FK)으로 전환: `budget_payment_methods` 테이블 신설, `budget_entries`/`budget_favorites.payment_method`(text) → `payment_method_id`(FK, `SET NULL`)로 변경. 기본값(현금/카드) 자동 시딩, 다이얼로그에서 칩 선택 + "+ 추가"로 즉석 등록 (`supabase/migrations/20260705_02_budget_payment_methods.sql`)
 - [ ] 더보기 화면 + 검색
 - [ ] 목록에서 내역 삭제 UI (캘린더/일일 화면에 스와이프 등 추가)
 
