@@ -17,6 +17,7 @@ const props = defineProps<{
     memo: string | null
     entry_date: string
   } | null
+  defaultDate?: string
 }>()
 
 const emit = defineEmits<{
@@ -192,7 +193,7 @@ watch(dialog, async (open) => {
     amount.value = ''
     paymentMethodId.value = null
     memo.value = ''
-    entryDate.value = new Date().toISOString().slice(0, 10)
+    entryDate.value = props.defaultDate ?? new Date().toISOString().slice(0, 10)
   }
   saveAsFavorite.value = false
 })

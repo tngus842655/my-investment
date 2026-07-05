@@ -510,7 +510,12 @@ const onContainerClick = (e: MouseEvent) => {
       @click="openAddDialog"
     />
 
-    <BudgetEntryAddDialog v-model="dialog" :initial-data="dialogInitialData" @saved="onSaved" />
+    <BudgetEntryAddDialog
+      v-model="dialog"
+      :initial-data="dialogInitialData"
+      :default-date="selectedDate ?? undefined"
+      @saved="onSaved"
+    />
 
     <v-dialog v-model="deleteDialog" max-width="320">
       <v-card rounded="xl" class="glass-dialog">
