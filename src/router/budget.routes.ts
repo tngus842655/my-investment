@@ -8,7 +8,7 @@ const budgetRoutes: RouteRecordRaw[] = [
   {
     path: '/budget',
     component: BudgetLayout,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, module: 'budget' },
     children: [
       {
         path: '',

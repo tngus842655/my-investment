@@ -218,7 +218,10 @@ const onSaved = async () => {
   <v-container class="pa-4 pa-sm-6 pb-16">
     <div class="d-flex align-center justify-space-between mb-4">
       <div class="font-weight-bold text-h6">가계부</div>
-      <v-btn icon="mdi-shape-outline" variant="text" size="small" to="/budget/categories" />
+      <div class="d-flex align-center ga-1">
+        <v-btn icon="mdi-view-grid-outline" variant="text" size="small" to="/hub" />
+        <v-btn icon="mdi-shape-outline" variant="text" size="small" to="/budget/categories" />
+      </div>
     </div>
 
     <v-btn-toggle v-model="subTab" mandatory rounded="lg" density="comfortable" class="mb-4">

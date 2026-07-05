@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { ADMIN_EMAIL } from '@/config/admin'
+import { setLastModule } from '@/utils/lastModule'
 import budgetRoutes from './budget.routes'
 
 import LoginView from '@/views/auth/LoginView.vue'
@@ -120,7 +121,7 @@ const router = createRouter({
     {
       path: '/',
       component: AssetLayout,
-      meta: { requiresAuth: true, requiresGoal: true },
+      meta: { requiresAuth: true, requiresGoal: true, module: 'asset' },
       children: [
         {
           path: 'dashboard',
@@ -285,6 +286,12 @@ router.beforeEach(async (to) => {
   }
 
   return true
+})
+
+// 마지막으로 사용한 모듈(자산관리/가계부) 기록 — 다음 로그인 시 자동 진입에 사용
+router.afterEach((to) => {
+  const module = to.meta.module
+  if (module === 'asset' || module === 'budget') setLastModule(module)
 })
 
 // 목표 설정 저장 후 캐시 갱신용 export
