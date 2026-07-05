@@ -1,0 +1,90 @@
+<script setup lang="ts">
+import { useRouter, useRoute } from 'vue-router'
+
+const router = useRouter()
+const route = useRoute()
+
+// TODO: 가계부 화면 구성 확정되면 실제 탭으로 교체
+const tabs = [
+  { label: '홈', route: '/budget', icon: 'mdi-home-outline', activeIcon: 'mdi-home' },
+]
+
+const isActive = (tabRoute: string) => route.path === tabRoute
+</script>
+
+<template>
+  <div class="budget-layout">
+    <main class="budget-content">
+      <RouterView />
+    </main>
+
+    <nav class="bottom-nav">
+      <button
+        v-for="tab in tabs"
+        :key="tab.route"
+        class="bottom-nav-item"
+        :class="{ active: isActive(tab.route) }"
+        @click="router.push(tab.route)"
+      >
+        <v-icon size="26">{{ isActive(tab.route) ? tab.activeIcon : tab.icon }}</v-icon>
+        <span class="bottom-nav-label">{{ tab.label }}</span>
+      </button>
+    </nav>
+  </div>
+</template>
+
+<style scoped>
+.budget-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.budget-content {
+  flex: 1;
+  padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(76px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  display: flex;
+  align-items: stretch;
+  background: rgb(var(--v-theme-surface));
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.06);
+  z-index: 100;
+  backdrop-filter: blur(12px);
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(var(--v-theme-on-surface), 0.35);
+  transition: color 0.15s ease;
+  padding: 10px 4px 6px;
+}
+
+.bottom-nav-item.active {
+  color: rgb(var(--v-theme-primary));
+}
+
+.bottom-nav-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+</style>

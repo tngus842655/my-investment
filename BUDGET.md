@@ -27,6 +27,7 @@ Fire Path의 서브 기능으로 추가하는 가계부. 자산관리(기존 메
 - [x] `src/views/asset/`, `src/views/shared/` 분리 — 자산관리 전용 화면과 여러 모듈에서 재사용 가능한 공용 화면(계정설정/피드백/공지사항 등) 구분
 - [x] `src/views/HubView.vue` — 자산관리/가계부 선택 화면, `/hub` 라우트로 등록 (`requiresAuth`만 적용, `requiresGoal` 없음)
 - [x] `src/views/budget/`, `src/router/budget.routes.ts` — 빈 스텁만 생성
+- [x] `src/layouts/AppLayout.vue` → `AssetLayout.vue` 리네이밍 + `src/layouts/BudgetLayout.vue` 뼈대 생성 (탭 구성은 화면 확정 후 채울 것). 아직 라우터에 연결 안 됨
 - [ ] 로그인 후 허브로 자동 진입시키는 흐름 (최초 1회 vs 마지막 사용 모듈 기억) — 미구현
 - [ ] 가계부 기능 목록 확정 (수입/지출 카테고리, 반복거래, 예산 설정 등)
 - [ ] `budget_*` 테이블 스키마 설계 — 확정되면 **BUDGET_TABLE.md**에 기록

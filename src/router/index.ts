@@ -6,7 +6,7 @@ import budgetRoutes from './budget.routes'
 import LoginView from '@/views/auth/LoginView.vue'
 import HubView from '@/views/HubView.vue'
 import GoalSettingsView from '@/views/asset/dashboard/GoalSettingsView.vue'
-import AppLayout from '@/layouts/AppLayout.vue'
+import AssetLayout from '@/layouts/AssetLayout.vue'
 import DashboardView from '@/views/asset/dashboard/DashboardView.vue'
 import PortfolioView from '@/views/asset/portfolio/PortfolioView.vue'
 import TransactionView from '@/views/asset/transactions/TransactionView.vue'
@@ -119,7 +119,7 @@ const router = createRouter({
     },
     {
       path: '/',
-      component: AppLayout,
+      component: AssetLayout,
       meta: { requiresAuth: true, requiresGoal: true },
       children: [
         {

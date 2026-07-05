@@ -13,7 +13,7 @@ const userDataStore = useUserDataStore()
 const confirmDialog = ref(false)
 const themeSheet = ref(false)
 
-// AppLayout이 이미 조회한 값을 공유받아 중복 조회를 피함
+// AssetLayout이 이미 조회한 값을 공유받아 중복 조회를 피함
 const feedbackBadge = inject(feedbackBadgeKey)
 const isAdmin = feedbackBadge?.isAdmin ?? ref(false)
 const unreadFeedbackCount = feedbackBadge?.unreadFeedbackCount ?? ref(0)
