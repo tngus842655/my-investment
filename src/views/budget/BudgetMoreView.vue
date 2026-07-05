@@ -64,6 +64,16 @@ const logout = async () => {
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
+
+      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/budget/payment-methods')">
+        <div class="menu-icon"><v-icon size="18" color="primary">mdi-credit-card-outline</v-icon></div>
+        <div>
+          <div class="font-weight-medium">결제수단 관리</div>
+          <div class="text-medium-emphasis">결제수단 추가·수정·삭제</div>
+        </div>
+        <v-spacer />
+        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
+      </div>
     </div>
 
     <div class="section-label mb-2">서비스</div>
