@@ -1,27 +1,30 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { ADMIN_EMAIL } from '@/config/admin'
+import { setLastModule } from '@/utils/lastModule'
+import budgetRoutes from './budget.routes'
 
 import LoginView from '@/views/auth/LoginView.vue'
-import GoalSettingsView from '@/views/dashboard/GoalSettingsView.vue'
-import AppLayout from '@/layouts/AppLayout.vue'
-import DashboardView from '@/views/dashboard/DashboardView.vue'
-import PortfolioView from '@/views/portfolio/PortfolioView.vue'
-import TransactionView from '@/views/transactions/TransactionView.vue'
-import AnalysisView from '@/views/analysis/AnalysisView.vue'
-import MoreView from '@/views/more/MoreView.vue'
-import PortfolioAnalysisView from '@/views/more/PortfolioAnalysisView.vue'
-import BadgesView from '@/views/more/BadgesView.vue'
-import FireSimulatorView from '@/views/more/FireSimulatorView.vue'
-import FireHistoryView from '@/views/more/FireHistoryView.vue'
-import AssetGrowthView from '@/views/more/AssetGrowthView.vue'
-import DividendCalendarView from '@/views/more/DividendCalendarView.vue'
-import EtfAnalysisView from '@/views/more/EtfAnalysisView.vue'
-import EtfBacktestView from '@/views/more/EtfBacktestView.vue'
-import FeedbackView from '@/views/more/FeedbackView.vue'
-import ReleaseNotesView from '@/views/more/ReleaseNotesView.vue'
-import ChangePasswordView from '@/views/more/ChangePasswordView.vue'
-import DisplaySettingsView from '@/views/more/DisplaySettingsView.vue'
+import HubView from '@/views/HubView.vue'
+import GoalSettingsView from '@/views/asset/dashboard/GoalSettingsView.vue'
+import AssetLayout from '@/layouts/AssetLayout.vue'
+import DashboardView from '@/views/asset/dashboard/DashboardView.vue'
+import PortfolioView from '@/views/asset/portfolio/PortfolioView.vue'
+import TransactionView from '@/views/asset/transactions/TransactionView.vue'
+import AnalysisView from '@/views/asset/analysis/AnalysisView.vue'
+import MoreView from '@/views/asset/more/MoreView.vue'
+import PortfolioAnalysisView from '@/views/asset/more/PortfolioAnalysisView.vue'
+import BadgesView from '@/views/asset/more/BadgesView.vue'
+import FireSimulatorView from '@/views/asset/more/FireSimulatorView.vue'
+import FireHistoryView from '@/views/asset/more/FireHistoryView.vue'
+import AssetGrowthView from '@/views/asset/more/AssetGrowthView.vue'
+import DividendCalendarView from '@/views/asset/more/DividendCalendarView.vue'
+import EtfAnalysisView from '@/views/asset/more/EtfAnalysisView.vue'
+import EtfBacktestView from '@/views/asset/more/EtfBacktestView.vue'
+import FeedbackView from '@/views/shared/FeedbackView.vue'
+import ReleaseNotesView from '@/views/shared/ReleaseNotesView.vue'
+import ChangePasswordView from '@/views/shared/ChangePasswordView.vue'
+import DisplaySettingsView from '@/views/shared/DisplaySettingsView.vue'
 import AdminView from '@/views/admin/AdminView.vue'
 import AdminResetPasswordView from '@/views/admin/AdminResetPasswordView.vue'
 import AdminSignupLogView from '@/views/admin/AdminSignupLogView.vue'
@@ -32,7 +35,7 @@ import AdminTickerView from '@/views/admin/AdminTickerView.vue'
 import AdminFeedbackView from '@/views/admin/AdminFeedbackView.vue'
 import AdminAccessHistoryView from '@/views/admin/AdminAccessHistoryView.vue'
 import AdminNoticesView from '@/views/admin/AdminNoticesView.vue'
-import NoticesView from '@/views/more/NoticesView.vue'
+import NoticesView from '@/views/shared/NoticesView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -42,6 +45,13 @@ const router = createRouter({
       name: 'login',
       component: LoginView,
     },
+    {
+      path: '/hub',
+      name: 'hub',
+      component: HubView,
+      meta: { requiresAuth: true, label: '허브' },
+    },
+    ...budgetRoutes,
     {
       path: '/admin',
       name: 'admin',
@@ -110,8 +120,8 @@ const router = createRouter({
     },
     {
       path: '/',
-      component: AppLayout,
-      meta: { requiresAuth: true, requiresGoal: true },
+      component: AssetLayout,
+      meta: { requiresAuth: true, requiresGoal: true, module: 'asset' },
       children: [
         {
           path: 'dashboard',
@@ -276,6 +286,12 @@ router.beforeEach(async (to) => {
   }
 
   return true
+})
+
+// 마지막으로 사용한 모듈(자산관리/가계부) 기록 — 다음 로그인 시 자동 진입에 사용
+router.afterEach((to) => {
+  const module = to.meta.module
+  if (module === 'asset' || module === 'budget') setLastModule(module)
 })
 
 // 목표 설정 저장 후 캐시 갱신용 export

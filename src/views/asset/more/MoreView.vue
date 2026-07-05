@@ -13,7 +13,7 @@ const userDataStore = useUserDataStore()
 const confirmDialog = ref(false)
 const themeSheet = ref(false)
 
-// AppLayout이 이미 조회한 값을 공유받아 중복 조회를 피함
+// AssetLayout이 이미 조회한 값을 공유받아 중복 조회를 피함
 const feedbackBadge = inject(feedbackBadgeKey)
 const isAdmin = feedbackBadge?.isAdmin ?? ref(false)
 const unreadFeedbackCount = feedbackBadge?.unreadFeedbackCount ?? ref(0)
@@ -85,6 +85,20 @@ const currentThemeLabel = computed(() => {
       <div>
         <div class="font-weight-bold">더보기</div>
         <div class="text-medium-emphasis">설정 및 계정 관리</div>
+      </div>
+    </div>
+
+    <!-- 다른 서비스 -->
+    <div class="section-label mb-2">다른 서비스</div>
+    <div class="d-flex flex-column ga-2 mb-5">
+      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/hub')">
+        <div class="menu-icon"><v-icon size="18" color="primary">mdi-view-grid-outline</v-icon></div>
+        <div>
+          <div class="font-weight-medium">서비스 홈</div>
+          <div class="text-medium-emphasis">자산관리·가계부 전환</div>
+        </div>
+        <v-spacer />
+        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
     </div>
 

@@ -5,6 +5,7 @@ import { supabase } from '@/services/supabase'
 import { getErrorMessage } from '@/utils/errorMessage'
 import { showMessage } from '@/composables/useSnackbar'
 import { useDesignTokens } from '@/composables/useDesignTokens'
+import { getLastModule } from '@/utils/lastModule'
 
 const router = useRouter()
 const { themeId } = useDesignTokens()
@@ -93,8 +94,18 @@ const signIn = async () => {
     if (user) { supabase.from('login_log').insert({ user_id: user.id, email: user.email }).then(() => {}) }
     if (!user) return
 
-    const { data: goal } = await supabase.from('investment_goals').select('id').eq('user_id', user.id).maybeSingle()
+    const lastModule = getLastModule()
 
+    if (lastModule === 'budget') {
+      router.push('/budget')
+      return
+    }
+    if (lastModule === null) {
+      router.push('/hub')
+      return
+    }
+
+    const { data: goal } = await supabase.from('investment_goals').select('id').eq('user_id', user.id).maybeSingle()
     if (!goal) { router.push('/goalSettings'); return }
     router.push('/dashboard')
   } finally {
