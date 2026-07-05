@@ -342,7 +342,7 @@ const onContainerClick = (e: MouseEvent) => {
         @click="subTab === 'monthly' ? monthlyYear -= 1 : prevMonth()"
       />
       <div v-if="subTab === 'monthly'" class="font-weight-bold">{{ monthlyYear }}년</div>
-      <v-menu v-else v-model="dateMenuOpen" :close-on-content-click="false">
+      <v-dialog v-else v-model="dateMenuOpen" max-width="360">
         <template #activator="{ props: menuProps }">
           <button v-bind="menuProps" class="font-weight-bold nav-year-month-btn">{{ year }}년 {{ month }}월</button>
         </template>
@@ -351,7 +351,7 @@ const onContainerClick = (e: MouseEvent) => {
           v-model:month="monthIndex"
           @close="dateMenuOpen = false; syncSelectedDateForMonth()"
         />
-      </v-menu>
+      </v-dialog>
       <v-btn
         icon="mdi-chevron-right"
         variant="text"
