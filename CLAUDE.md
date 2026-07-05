@@ -248,13 +248,15 @@ END;
 | id               | uuid                  | PK              |
 | user_id          | uuid                  | FK → auth.users |
 | portfolio_id     | uuid                  | FK → portfolios |
-| transaction_type | transaction_type_enum | BUY \| SELL     |
+| transaction_type | transaction_type_enum | BUY \| SELL \| INITIAL |
 | quantity         | numeric               | 거래 수량       |
 | unit_price       | numeric               | 거래 단가       |
 | transaction_date | date                  | 거래일          |
 | memo             | text                  | 메모 (nullable) |
 | created_at       | timestamptz           |                 |
 | updated_at       | timestamptz           |                 |
+
+**transaction_type = 'INITIAL' 의미:** 이미 보유 중이던 종목을 포트폴리오에 처음 등록할 때 입력하는 초기 잔고. 종목당 최대 1개만 존재(등록/수정 다이얼로그에서 upsert, 값 비우면 삭제). 자산·평단가 계산 로직(`sync_portfolio_trigger`, `PortfolioView.vue`)에서는 `BUY`와 동일하게 합산되지만, `TransactionView.vue`(거래 내역 화면)에서는 `.neq('transaction_type', 'INITIAL')`로 항상 제외되어 사용자에게 노출되지 않는다.
 
 #### login_log
 
