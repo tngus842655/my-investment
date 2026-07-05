@@ -269,6 +269,25 @@ END;
 | email    | text        | 로그인 이메일   |
 | login_at | timestamptz | 로그인 시각     |
 
+#### access_log
+
+페이지 접근 이력 기록. RLS 적용.
+
+| 컬럼명      | 타입        | 설명            |
+| ----------- | ----------- | --------------- |
+| id          | uuid        | PK              |
+| user_id     | uuid        | FK → auth.users |
+| email       | text        | 접근자 이메일   |
+| page        | text        | 접근 페이지     |
+| accessed_at | timestamptz | 접근 시각       |
+
+**RLS 정책 (access_log 테이블):**
+
+| 정책명                   | 커맨드 | 설명                            |
+| ------------------------ | ------ | -------------------------------- |
+| access_log: 관리자 select | SELECT | 관리자만 전체 조회 가능          |
+| access_log: 본인 insert   | INSERT | 로그인한 사용자가 본인 기록만 insert 가능 (`auth.uid() = user_id`) |
+
 #### signup_log
 
 회원가입 이력 기록. RLS 적용 (관리자만 조회). 재가입 시 `deleted_at` 초기화로 재활성화 처리.
