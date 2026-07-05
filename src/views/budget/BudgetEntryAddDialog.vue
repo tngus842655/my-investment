@@ -241,7 +241,7 @@ const save = async () => {
 </script>
 
 <template>
-  <v-dialog v-model="dialog" max-width="480">
+  <v-dialog v-model="dialog" max-width="480" transition="fade-transition">
     <v-card rounded="xl" class="glass-dialog" style="overflow: hidden; display: flex; flex-direction: column; max-height: 90dvh">
       <div class="dialog-header" :class="entryType === 'EXPENSE' ? 'header-sell' : 'header-buy'">
         <div class="d-flex align-center justify-space-between">
