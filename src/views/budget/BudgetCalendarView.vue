@@ -310,7 +310,10 @@ const onContainerClick = (e: MouseEvent) => {
 <template>
   <v-container class="pa-4 pa-sm-6 pb-16" @click="onContainerClick">
     <div class="d-flex align-center justify-space-between mb-4">
-      <div class="font-weight-bold text-h6">가계부</div>
+      <div class="d-flex align-center ga-2">
+        <img src="/icons/icon-calendar.png" class="header-icon" alt="가계부" />
+        <div class="font-weight-bold text-h6">가계부</div>
+      </div>
       <v-btn icon="mdi-view-grid-outline" variant="text" size="small" to="/hub" />
     </div>
 
@@ -528,6 +531,12 @@ const onContainerClick = (e: MouseEvent) => {
 </template>
 
 <style scoped>
+.header-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
 .glass-card {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(var(--v-theme-on-surface), 0.08);

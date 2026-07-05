@@ -138,7 +138,10 @@ const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.v
 
 <template>
   <v-container class="pa-4 pa-sm-6 pb-16">
-    <div class="font-weight-bold text-h6 mb-4">통계</div>
+    <div class="d-flex align-center ga-2 mb-4">
+      <img src="/icons/icon-stats.png" class="header-icon" alt="통계" />
+      <div class="font-weight-bold text-h6">통계</div>
+    </div>
 
     <div class="d-flex align-center justify-space-between mb-3">
       <v-btn icon="mdi-chevron-left" variant="text" size="small" @click="prevMonth" />
@@ -216,6 +219,12 @@ const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.v
 </template>
 
 <style scoped>
+.header-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
 .chart-card {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(var(--v-theme-on-surface), 0.07);
