@@ -1,10 +1,77 @@
 # CLAUDE.md
 
-Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+흔한 LLM 코딩 실수를 줄이기 위한 행동 지침. 프로젝트별 지침과 함께 적용할 것.
 
-**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+**트레이드오프:** 이 지침은 속도보다 신중함에 무게를 둔다. 사소한 작업에는 상황에 맞게 판단할 것.
 
-## 0. 코딩 완료 후 필수 체크
+## 1. 코딩 전에 먼저 생각하기
+
+**추측하지 말 것. 혼란을 숨기지 말 것. 트레이드오프를 드러낼 것.**
+
+구현하기 전에:
+
+- 가정을 명시적으로 밝힐 것. 확신이 없으면 물어볼 것.
+- 여러 해석이 가능하면 모두 제시할 것 - 임의로 하나를 고르지 말 것.
+- 더 단순한 방법이 있으면 그렇게 말할 것. 필요하면 반박할 것.
+- 불명확한 부분이 있으면 멈출 것. 무엇이 헷갈리는지 명확히 밝히고 물어볼 것.
+
+## 2. 단순함을 우선할 것
+
+**문제를 해결하는 최소한의 코드만. 추측성 코드는 금지.**
+
+- 요청받지 않은 기능은 추가하지 말 것.
+- 한 번만 쓰이는 코드에 추상화를 만들지 말 것.
+- 요청받지 않은 "유연성"이나 "설정 가능성"을 넣지 말 것.
+- 발생할 수 없는 상황에 대한 에러 처리를 하지 말 것.
+- 200줄을 썼는데 50줄로 줄일 수 있다면 다시 쓸 것.
+
+스스로에게 물어볼 것: "시니어 엔지니어가 보면 과하게 복잡하다고 할까?" 그렇다면 단순화할 것.
+
+## 3. 필요한 부분만 수정할 것
+
+**꼭 건드려야 하는 것만 건드릴 것. 자기가 어지른 것만 치울 것.**
+
+기존 코드를 수정할 때:
+
+- 주변 코드, 주석, 포맷팅을 "개선"하지 말 것.
+- 문제 없는 코드를 리팩토링하지 말 것.
+- 마음에 안 들어도 기존 스타일을 따를 것.
+- 관련 없는 죽은 코드를 발견하면 언급만 하고 삭제하지는 말 것.
+
+변경으로 인해 사용되지 않게 된 코드가 생기면:
+
+- 내 변경으로 인해 쓸모없어진 import/변수/함수는 제거할 것.
+- 원래부터 있던 죽은 코드는 요청받지 않는 한 제거하지 말 것.
+
+기준: 변경한 모든 줄은 사용자의 요청과 직접 연결되어야 한다.
+
+## 4. 목표 지향적으로 실행할 것
+
+**성공 기준을 정의할 것. 검증될 때까지 반복할 것.**
+
+작업을 검증 가능한 목표로 바꿀 것:
+
+- "검증 추가" → "잘못된 입력에 대한 테스트를 작성하고, 통과시킨다"
+- "버그 수정" → "버그를 재현하는 테스트를 작성하고, 통과시킨다"
+- "X 리팩토링" → "리팩토링 전후로 테스트가 통과하는지 확인한다"
+
+여러 단계로 이뤄진 작업은 간단한 계획을 먼저 밝힐 것:
+
+```
+1. [단계] → 검증: [확인 방법]
+2. [단계] → 검증: [확인 방법]
+3. [단계] → 검증: [확인 방법]
+```
+
+성공 기준이 명확하면 독립적으로 반복 작업할 수 있다. 기준이 모호하면("일단 되게만 해줘") 계속 확인이 필요해진다.
+
+---
+
+## 1. 프로젝트 개요
+
+**Fire Path** - 개인 FIRE(Financial Independence, Retire Early) 목표 관리 PWA. 투자 포트폴리오 추적 및 목표 달성률을 확인하는 앱.
+
+## 2. 코딩 완료 후 필수 체크
 
 **수정한 파일이 있으면 반드시 타입 체크를 실행하고 오류가 없는지 확인할 것.**
 
@@ -15,117 +82,21 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 `npx tsc --noEmit`은 Vue SFC를 검사하지 못하므로 반드시 `vue-tsc`를 사용할 것.
 오류가 있으면 커밋 전에 수정한다. 오류가 없을 때만 커밋·푸시한다.
 
-## 1. Think Before Coding
-
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
-
-Before implementing:
-
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them - don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
-
-## 2. Simplicity First
-
-**Minimum code that solves the problem. Nothing speculative.**
-
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
-- If you write 200 lines and it could be 50, rewrite it.
-
-Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
-
-## 3. Surgical Changes
-
-**Touch only what you must. Clean up only your own mess.**
-
-When editing existing code:
-
-- Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it - don't delete it.
-
-When your changes create orphans:
-
-- Remove imports/variables/functions that YOUR changes made unused.
-- Don't remove pre-existing dead code unless asked.
-
-The test: Every changed line should trace directly to the user's request.
-
-## 4. Goal-Driven Execution
-
-**Define success criteria. Loop until verified.**
-
-Transform tasks into verifiable goals:
-
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
-
-For multi-step tasks, state a brief plan:
-
-```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
-```
-
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
-
----
-
-**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
-
-## 📋 남은 작업 목록
-
-새 세션 시작 시 **TODO.md** 를 먼저 읽어 남은 작업을 파악할 것.
-
-## ⚠️ 서비스 오픈 전 체크리스트
-
-- [ ] `.env`를 `.gitignore`에 추가할 것 (현재 2PC 개발 편의상 저장소에 포함되어 있음 — API 키 노출 주의!)
-
-## Supabase RLS 정책 작성 주의사항
-
-RLS 정책에서 이메일로 관리자 체크할 때 `auth.users` 테이블 직접 조회는 권한 오류 발생:
-
-```sql
--- ❌ 이렇게 하면 안 됨 (permission denied for table users)
-USING ((SELECT email FROM auth.users WHERE id = auth.uid()) = 'admin@email.com')
-
--- ✅ 이렇게 해야 함 (JWT claims에서 직접 읽기)
-USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'email') = 'admin@email.com')
-```
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-## 커밋 메시지 규칙
+## 3. 커밋 메시지 규칙
 
 **모든 커밋 메시지는 반드시 한글로 작성할 것.**
 
-## Git Push 규칙
+## 4. Git Push 규칙
 
 main 배포는 사용자가 직접 처리한다. 사용자가 "push" 또는 "main에 반영"을 요청해도 Claude는 즉시 실행하지 않는다.
 
 Claude가 git push를 돕는 경우: **빌드 오류, 충돌 등 사용자가 직접 해결하기 어려운 상황이 생겼을 때만** 요청에 따라 지원한다.
 
-## 프로젝트 개요
+## 5. 남은 작업 목록
 
-**Fire Path** - 개인 FIRE(Financial Independence, Retire Early) 목표 관리 PWA. 투자 포트폴리오 추적 및 목표 달성률을 확인하는 앱.
+새 세션 시작 시 **TODO.md** 를 먼저 읽어 남은 작업을 파악할 것.
 
-## 주요 명령어
-
-```bash
-npm run dev        # 개발 서버 실행 (port 3820)
-npm run build      # 타입 체크 + 프로덕션 빌드
-npm run lint       # oxlint → eslint 순서로 lint + auto-fix
-npm run format     # Prettier 포맷
-```
-
-## 아키텍처
+## 6. 아키텍처
 
 ### 인증 및 라우팅 흐름
 
@@ -140,9 +111,8 @@ npm run format     # Prettier 포맷
 ### 백엔드 연동
 
 - **Supabase** (`src/services/supabase.ts`): 단일 클라이언트 인스턴스를 export하여 앱 전체에서 공유
-- **시세 조회** (`src/services/market.ts`): Supabase Edge Function 두 개를 호출
-  - `stock-price`: 주식/ETF 현재가 조회 (ticker, asset_type, currency 파라미터)
-  - `exchange-rate`: 환율 조회 (from, to 파라미터)
+- **Edge Functions**: `stock-price`, `exchange-rate`, `etf-info`, `etf-backtest`, `etf-dividend`, `admin-delete-user`, `admin-reset-password` 총 7개. 상세 내용은 **EDGE_FUNCTIONS.md** 참고 (새 세션 시작 시 함께 읽을 것)
+- **DB 트리거 / RPC / pg_cron**: `TABLE.md` 참고
 
 ### 환경 변수
 
@@ -155,179 +125,7 @@ VITE_SUPABASE_ANON_KEY=
 
 ### Supabase 테이블 스키마
 
-모든 테이블은 `user_id → auth.users` FK를 가지며 user 삭제 시 CASCADE 된다.
-
-#### investment_goals
-
-사용자별 1개 (user_id unique). FIRE 목표 설정.
-
-| 컬럼명             | 타입        | 설명                                                               |
-| ------------------ | ----------- | ------------------------------------------------------------------ |
-| id                 | uuid        | PK                                                                 |
-| user_id            | uuid        | FK → auth.users, unique                                            |
-| target_asset       | int8        | 목표 자산 (KRW)                                                    |
-| monthly_investment | int8        | 월 투자금액 (KRW)                                                  |
-| annual_return      | float8      | 연 기대 수익률 (%, nullable)                                       |
-| target_date        | date        | 목표 달성 날짜 (nullable)                                          |
-| theme              | text        | 앱 테마 (light/dark/system 등, 기본값 system)                      |
-| portfolio_sort     | text        | 포트폴리오 정렬 기준 (custom/eval/profit/rate/name, 기본값 custom) |
-| hide_asset         | boolean     | 자산 숨김 여부 (기본값 false)                                      |
-| include_cash       | boolean     | 대시보드 현재 자산에 현금 포함 여부 (기본값 false)                 |
-| created_at         | timestamptz |                                                                    |
-| updated_at         | timestamptz |                                                                    |
-
-#### asset_summary
-
-사용자별 1개 (user_id unique). 전체 자산 요약 (캐시성 데이터).
-
-| 컬럼명               | 타입        | 설명                    |
-| -------------------- | ----------- | ----------------------- |
-| id                   | uuid        | PK                      |
-| user_id              | uuid        | FK → auth.users, unique |
-| current_asset        | int8        | 현재 평가 자산 (KRW)    |
-| investment_principal | int8        | 투자 원금 (KRW)         |
-| created_at           | timestamptz |                         |
-| updated_at           | timestamptz |                         |
-
-#### portfolios
-
-보유 종목 목록.
-
-| 컬럼명     | 타입          | 설명                         |
-| ---------- | ------------- | ---------------------------- |
-| id         | uuid          | PK                           |
-| user_id    | uuid          | FK → auth.users              |
-| ticker     | text          | 종목 코드 (예: AAPL, 005930) |
-| asset_type | text          | 자산 유형                    |
-| quantity   | numeric       | 보유 수량                    |
-| avg_price  | numeric       | 평균 매수가                  |
-| currency   | currency_enum | KRW \| USD                   |
-| sort_order | int8          | 정렬 순서 (nullable)         |
-| created_at | timestamptz   |                              |
-| updated_at | timestamptz   |                              |
-
-#### asset_history
-
-일별 자산 스냅샷. 매일 자정(KST) pg_cron으로 자동 저장 + PortfolioView 로드 시 당일 upsert. 미래예측 차트의 과거 실선에 사용.
-
-| 컬럼명        | 타입        | 설명                                     |
-| ------------- | ----------- | ---------------------------------------- |
-| id            | uuid        | PK                                       |
-| user_id       | uuid        | FK → auth.users                          |
-| recorded_at   | date        | 기록 날짜 (user_id + recorded_at unique) |
-| current_asset | int8        | 해당 일 평가 자산 (KRW, 현금 제외)       |
-| progress_pct  | float8      | FIRE 달성률 % (nullable)                 |
-| created_at    | timestamptz |                                          |
-
-**pg_cron 스케줄:** `daily-asset-snapshot` — `0 15 * * *` (UTC) = 매일 KST 00:00 실행
-
-```sql
--- save_daily_asset_snapshot() 함수
-BEGIN
-  INSERT INTO asset_history (user_id, recorded_at, current_asset, progress_pct)
-  SELECT
-    a.user_id,
-    CURRENT_DATE,
-    a.current_asset,
-    ROUND((a.current_asset::float8 / g.target_asset * 100)::numeric, 2)
-  FROM asset_summary a
-  JOIN investment_goals g ON g.user_id = a.user_id
-  WHERE a.current_asset > 0
-  ON CONFLICT (user_id, recorded_at) DO UPDATE
-    SET current_asset = EXCLUDED.current_asset,
-        progress_pct  = EXCLUDED.progress_pct;
-END;
-```
-
-#### transactions
-
-종목별 매수/매도 거래 내역. portfolio_id → portfolios CASCADE.
-
-| 컬럼명           | 타입                  | 설명            |
-| ---------------- | --------------------- | --------------- |
-| id               | uuid                  | PK              |
-| user_id          | uuid                  | FK → auth.users |
-| portfolio_id     | uuid                  | FK → portfolios |
-| transaction_type | transaction_type_enum | BUY \| SELL     |
-| quantity         | numeric               | 거래 수량       |
-| unit_price       | numeric               | 거래 단가       |
-| transaction_date | date                  | 거래일          |
-| memo             | text                  | 메모 (nullable) |
-| created_at       | timestamptz           |                 |
-| updated_at       | timestamptz           |                 |
-
-#### login_log
-
-로그인 이력 기록. RLS 적용 (관리자만 조회).
-
-| 컬럼명   | 타입        | 설명            |
-| -------- | ----------- | --------------- |
-| id       | uuid        | PK              |
-| user_id  | uuid        | FK → auth.users |
-| email    | text        | 로그인 이메일   |
-| login_at | timestamptz | 로그인 시각     |
-
-#### signup_log
-
-회원가입 이력 기록. RLS 적용 (관리자만 조회). 재가입 시 `deleted_at` 초기화로 재활성화 처리.
-
-| 컬럼명       | 타입        | 설명                 |
-| ------------ | ----------- | -------------------- |
-| id           | uuid        | PK                   |
-| email        | text        | 가입 이메일 (unique) |
-| signed_up_at | timestamptz | 최초 가입 시각       |
-| deleted_at   | timestamptz | 탈퇴 시각 (nullable) |
-
-#### feedback
-
-사용자 피드백. RLS 적용.
-
-| 컬럼명            | 타입        | 설명                                                                      |
-| ----------------- | ----------- | ------------------------------------------------------------------------- |
-| id                | uuid        | PK                                                                        |
-| email             | text        | 작성자 이메일                                                             |
-| category          | text        | 피드백 카테고리 (버그신고/기능제안/기타의견)                              |
-| title             | text        | 제목                                                                      |
-| content           | text        | 내용                                                                      |
-| status            | text        | 처리 상태 (기본값: 'RECEIVED') RECEIVED/REVIEWING/DONE/REJECTED           |
-| admin_comment     | text        | 관리자 답변 (nullable)                                                    |
-| is_read_by_user   | boolean     | 사용자 확인 여부 (기본값 true). 관리자가 상태변경/답변 저장 시 false로 전환 |
-| created_at        | timestamptz |                                                                           |
-
-**RLS 정책 (feedback 테이블):**
-
-| 정책명                                  | 커맨드  | 설명                                                    |
-| --------------------------------------- | ------- | ------------------------------------------------------- |
-| 로그인 유저 insert                      | INSERT  | 로그인한 모든 사용자 insert 가능                        |
-| 관리자 전체 조회                        | SELECT  | 관리자만 전체 조회 가능                                 |
-| 관리자 수정                             | UPDATE  | 관리자만 수정 가능 (상태 변경, 답변 저장 등)            |
-| 관리자 삭제                             | DELETE  | 관리자만 삭제 가능                                      |
-| Users can read own feedback             | SELECT  | 사용자가 본인 이메일의 의견 조회 가능                   |
-| Users can update read status on own feedback | UPDATE | 사용자가 본인 의견의 is_read_by_user 업데이트 가능  |
-
-#### notices
-
-공지사항. 관리자만 작성 가능, 로그인 유저는 전체 조회 가능. 개발자 노트(버전별 업데이트 이력, 코드 하드코딩)와는 별개로 관리자가 실시간으로 작성하는 공지 게시판.
-
-| 컬럼명     | 타입        | 설명                                             |
-| ---------- | ----------- | ------------------------------------------------ |
-| id         | uuid        | PK                                               |
-| title      | text        | 제목                                             |
-| content    | text        | 내용                                             |
-| is_test    | boolean     | 테스트 공지 여부 (기본값 false). true면 관리자만 조회 가능 |
-| created_at | timestamptz |                                                  |
-| updated_at | timestamptz |                                                  |
-
-**RLS 정책 (notices 테이블):**
-
-| 정책명                | 커맨드 | 설명                                                              |
-| ---------------------- | ------ | ------------------------------------------------------------------ |
-| 로그인 유저 select     | SELECT | is_test = false인 공지는 모든 로그인 유저 조회 가능, true면 관리자만 |
-| 관리자 insert          | INSERT | 관리자만 작성 가능                                                  |
-| 관리자 update          | UPDATE | 관리자만 수정 가능                                                  |
-| 관리자 delete          | DELETE | 관리자만 삭제 가능                                                  |
-
-새 공지 작성 시 대시보드에 최초 1회 팝업 노출. "마지막으로 본 공지 id"는 서버 동기화 없이 로컬스토리지에만 저장(기기별).
+**TABLE.md** 파일 참고. 새 세션 시작 시 함께 읽을 것.
 
 ### 공통 패턴
 

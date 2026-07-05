@@ -96,6 +96,9 @@ const fetchEtfInfo = async (ticker: string, crumb: string | null, cookie: string
       const mean = monthlyReturns.reduce((s, r) => s + r, 0) / monthlyReturns.length
       const variance = monthlyReturns.reduce((s, r) => s + (r - mean) ** 2, 0) / monthlyReturns.length
       result.volatility = Math.sqrt(variance) * Math.sqrt(12)
+
+      // 프론트에서 공통 구간 재계산을 위해 raw 데이터 전달
+      result.chartData = valid.map((x) => ({ t: x.t, c: x.c }))
     }
   }
 
