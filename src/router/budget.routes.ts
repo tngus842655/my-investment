@@ -1,6 +1,21 @@
 import type { RouteRecordRaw } from 'vue-router'
+import BudgetLayout from '@/layouts/BudgetLayout.vue'
+import BudgetCategoryView from '@/views/budget/BudgetCategoryView.vue'
 
-// 가계부 라우트 (기능 구현 시 여기에 추가)
-const budgetRoutes: RouteRecordRaw[] = []
+const budgetRoutes: RouteRecordRaw[] = [
+  {
+    path: '/budget',
+    component: BudgetLayout,
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: 'categories',
+        name: 'budgetCategories',
+        component: BudgetCategoryView,
+        meta: { label: '카테고리 관리' },
+      },
+    ],
+  },
+]
 
 export default budgetRoutes

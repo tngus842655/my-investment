@@ -27,10 +27,14 @@ Fire Path의 서브 기능으로 추가하는 가계부. 자산관리(기존 메
 - [x] `src/views/asset/`, `src/views/shared/` 분리 — 자산관리 전용 화면과 여러 모듈에서 재사용 가능한 공용 화면(계정설정/피드백/공지사항 등) 구분
 - [x] `src/views/HubView.vue` — 자산관리/가계부 선택 화면, `/hub` 라우트로 등록 (`requiresAuth`만 적용, `requiresGoal` 없음)
 - [x] `src/views/budget/`, `src/router/budget.routes.ts` — 빈 스텁만 생성
-- [x] `src/layouts/AppLayout.vue` → `AssetLayout.vue` 리네이밍 + `src/layouts/BudgetLayout.vue` 뼈대 생성 (탭 구성은 화면 확정 후 채울 것). 아직 라우터에 연결 안 됨
+- [x] `src/layouts/AppLayout.vue` → `AssetLayout.vue` 리네이밍 + `src/layouts/BudgetLayout.vue` 뼈대 생성 (탭 구성은 화면 확정 후 채울 것)
+- [x] 기능 범위 확정: 캘린더(메인)/일일/월별/통계 유지, 메모·예산관리·복잡한 리포트는 제외. 결제수단 필드 포함, 카테고리 사용자 커스텀 가능, 즐겨찾기(수동)+최근사용(자동) 구분
+- [x] `budget_categories`/`budget_entries`/`budget_favorites` 테이블 생성 (`supabase/migrations/20260705_01_budget_tables.sql`) — 상세는 **BUDGET_TABLE.md**
+- [x] 카테고리 관리 화면(`BudgetCategoryView.vue`, `/budget/categories`) + 기본 카테고리 자동 시딩
 - [ ] 로그인 후 허브로 자동 진입시키는 흐름 (최초 1회 vs 마지막 사용 모듈 기억) — 미구현
-- [ ] 가계부 기능 목록 확정 (수입/지출 카테고리, 반복거래, 예산 설정 등)
-- [ ] `budget_*` 테이블 스키마 설계 — 확정되면 **BUDGET_TABLE.md**에 기록
+- [ ] 내역 추가/수정 다이얼로그
+- [ ] 캘린더/통계 화면
+- [ ] 더보기 화면 + 검색
 
 ## 관련 문서
 
