@@ -55,21 +55,11 @@ const logout = async () => {
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/budget/categories')">
-        <div class="menu-icon"><v-icon size="18" color="primary">mdi-shape-outline</v-icon></div>
+      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/budget/manage')">
+        <div class="menu-icon"><v-icon size="18" color="primary">mdi-cog-outline</v-icon></div>
         <div>
-          <div class="font-weight-medium">카테고리 관리</div>
-          <div class="text-medium-emphasis">수입·지출 카테고리 추가·수정·삭제</div>
-        </div>
-        <v-spacer />
-        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
-      </div>
-
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/budget/payment-methods')">
-        <div class="menu-icon"><v-icon size="18" color="primary">mdi-credit-card-outline</v-icon></div>
-        <div>
-          <div class="font-weight-medium">결제수단 관리</div>
-          <div class="text-medium-emphasis">결제수단 추가·수정·삭제</div>
+          <div class="font-weight-medium">관리</div>
+          <div class="text-medium-emphasis">카테고리·결제수단·즐겨찾기 관리</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>

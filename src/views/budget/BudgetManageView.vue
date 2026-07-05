@@ -1,0 +1,51 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import BudgetCategoryView from './BudgetCategoryView.vue'
+import BudgetPaymentMethodView from './BudgetPaymentMethodView.vue'
+import BudgetFavoriteView from './BudgetFavoriteView.vue'
+
+const router = useRouter()
+const tab = ref<'category' | 'paymentMethod' | 'favorite'>('category')
+</script>
+
+<template>
+  <v-container class="pa-4 pa-sm-6" style="max-width: 640px">
+    <div class="d-flex align-center ga-3 mb-6">
+      <button class="back-btn" @click="router.back()">
+        <v-icon size="20">mdi-arrow-left</v-icon>
+      </button>
+      <div>
+        <div class="font-weight-bold">관리</div>
+        <div class="text-medium-emphasis">카테고리·결제수단·즐겨찾기 관리</div>
+      </div>
+    </div>
+
+    <v-btn-toggle v-model="tab" mandatory rounded="lg" density="comfortable" class="mb-4">
+      <v-btn value="category" variant="tonal">카테고리</v-btn>
+      <v-btn value="paymentMethod" variant="tonal">결제수단</v-btn>
+      <v-btn value="favorite" variant="tonal">즐겨찾기</v-btn>
+    </v-btn-toggle>
+
+    <BudgetCategoryView v-if="tab === 'category'" />
+    <BudgetPaymentMethodView v-else-if="tab === 'paymentMethod'" />
+    <BudgetFavoriteView v-else />
+  </v-container>
+</template>
+
+<style scoped>
+.back-btn {
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+.back-btn:active { opacity: 0.6; }
+</style>

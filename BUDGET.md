@@ -40,7 +40,7 @@ Fire Path의 서브 기능으로 추가하는 가계부. 자산관리(기존 메
 - [x] 더보기 화면(`BudgetMoreView.vue`, `/budget/more`) + 검색(`BudgetSearchView.vue`, `/budget/search`) — 더보기에서 카테고리 관리/검색/공용 화면(공지사항·피드백·개발자노트·비밀번호변경·화면설정)·서비스 홈·로그아웃 제공. 공용 화면들은 `src/views/shared/`의 동일 컴포넌트를 `/budget/*` 경로로 재라우팅(뒤로가기가 `router.back()`이라 별도 수정 없이 재사용 가능했음). `BudgetLayout` 더보기 탭을 `/budget/more`로 정식 연결. 검색은 최근 500건 내에서 메모/카테고리명/결제수단명 클라이언트 필터링
 - [x] 목록에서 내역 삭제 UI — `BudgetCalendarView`(일일 목록)와 `BudgetSearchView`(검색 결과)에 자산관리 거래내역과 동일한 좌측 스와이프(수정/삭제 버튼 노출) 방식 적용, 삭제 시 확인 다이얼로그 표시. 스와이프 로직은 프로젝트 관례대로 화면마다 복제(공용 컴포저블화 안 함)
 - [x] 캘린더에서 날짜 선택 시 해당 날짜 내역 인라인 표시 + 그 날짜로 내역 추가 시 날짜 기본값 자동 설정 (`BudgetEntryAddDialog`의 `defaultDate` prop)
-- [x] 결제수단 관리 화면(`BudgetPaymentMethodView.vue`, `/budget/payment-methods`) — 카테고리 관리와 동일한 패턴(아이콘 없이 이름만), 더보기 메뉴에 추가
+- [x] 관리 화면 통합(`BudgetManageView.vue`, `/budget/manage`) — 더보기 메뉴 하나("관리")에서 카테고리/결제수단/즐겨찾기를 탭으로 전환. `BudgetCategoryView`/`BudgetPaymentMethodView`는 자체 헤더 없는 탭 콘텐츠로 전환, `BudgetFavoriteView` 신규 추가(즐겨찾기 목록 조회/추가/수정/삭제, 유형·카테고리·금액·결제수단·메모 입력). 기존 `/budget/categories`, `/budget/payment-methods` 개별 라우트는 제거
 
 ## 관련 문서
 

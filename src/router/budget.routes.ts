@@ -2,8 +2,7 @@ import type { RouteRecordRaw } from 'vue-router'
 import BudgetLayout from '@/layouts/BudgetLayout.vue'
 import BudgetCalendarView from '@/views/budget/BudgetCalendarView.vue'
 import BudgetStatsView from '@/views/budget/BudgetStatsView.vue'
-import BudgetCategoryView from '@/views/budget/BudgetCategoryView.vue'
-import BudgetPaymentMethodView from '@/views/budget/BudgetPaymentMethodView.vue'
+import BudgetManageView from '@/views/budget/BudgetManageView.vue'
 import BudgetMoreView from '@/views/budget/BudgetMoreView.vue'
 import BudgetSearchView from '@/views/budget/BudgetSearchView.vue'
 import ChangePasswordView from '@/views/shared/ChangePasswordView.vue'
@@ -43,16 +42,10 @@ const budgetRoutes: RouteRecordRaw[] = [
         meta: { label: '내역 검색' },
       },
       {
-        path: 'categories',
-        name: 'budgetCategories',
-        component: BudgetCategoryView,
-        meta: { label: '카테고리 관리' },
-      },
-      {
-        path: 'payment-methods',
-        name: 'budgetPaymentMethods',
-        component: BudgetPaymentMethodView,
-        meta: { label: '결제수단 관리' },
+        path: 'manage',
+        name: 'budgetManage',
+        component: BudgetManageView,
+        meta: { label: '관리' },
       },
       {
         path: 'change-password',

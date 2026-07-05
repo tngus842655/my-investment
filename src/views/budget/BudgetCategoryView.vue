@@ -1,12 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import type { BudgetCategory, BudgetType } from '@/types/budget'
 import { DEFAULT_BUDGET_CATEGORIES, BUDGET_CATEGORY_ICON_CHOICES } from '@/utils/budgetDefaultCategories'
-
-const router = useRouter()
 
 const loading = ref(true)
 const categories = ref<BudgetCategory[]>([])
@@ -152,17 +149,7 @@ const deleteCategory = async (c: BudgetCategory) => {
 </script>
 
 <template>
-  <v-container class="pa-4 pa-sm-6" style="max-width: 640px">
-    <div class="d-flex align-center ga-3 mb-6">
-      <button class="back-btn" @click="router.back()">
-        <v-icon size="20">mdi-arrow-left</v-icon>
-      </button>
-      <div>
-        <div class="font-weight-bold">카테고리 관리</div>
-        <div class="text-medium-emphasis">수입·지출 카테고리 추가·수정·삭제</div>
-      </div>
-    </div>
-
+  <div>
     <v-btn-toggle v-model="selectedType" mandatory rounded="lg" density="comfortable" class="mb-4">
       <v-btn value="EXPENSE" variant="tonal">지출</v-btn>
       <v-btn value="INCOME" variant="tonal">수입</v-btn>
@@ -173,10 +160,10 @@ const deleteCategory = async (c: BudgetCategory) => {
     </div>
 
     <div v-else class="glass-card pa-4">
-      <div class="category-list">
-        <div v-for="c in filteredCategories" :key="c.id" class="category-row">
-          <span class="category-icon">{{ c.icon }}</span>
-          <span class="category-name">{{ c.name }}</span>
+      <div class="list-scroll">
+        <div v-for="c in filteredCategories" :key="c.id" class="row-item">
+          <span class="row-icon">{{ c.icon }}</span>
+          <span class="row-name">{{ c.name }}</span>
           <v-btn icon="mdi-pencil-outline" size="small" variant="text" class="action-btn" @click="openEditDialog(c)" />
           <v-btn icon="mdi-delete-outline" size="small" variant="text" color="error" class="action-btn" @click="deleteCategory(c)" />
         </div>
@@ -230,53 +217,38 @@ const deleteCategory = async (c: BudgetCategory) => {
         </div>
       </v-card>
     </v-dialog>
-  </v-container>
+  </div>
 </template>
 
 <style scoped>
-.back-btn {
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: opacity 0.15s;
-}
-.back-btn:active { opacity: 0.6; }
-
 .glass-card {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
   border-radius: 20px;
 }
 
-.category-list {
+.list-scroll {
   max-height: 480px;
   overflow-y: auto;
 }
 
-.category-row {
+.row-item {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 8px 0;
   border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.05);
 }
-.category-row:last-child { border-bottom: none; }
+.row-item:last-child { border-bottom: none; }
 
-.category-icon {
+.row-icon {
   font-size: 1.25rem;
   width: 28px;
   text-align: center;
   flex-shrink: 0;
 }
 
-.category-name {
+.row-name {
   font-size: 0.875rem;
   flex: 1;
   color: rgb(var(--v-theme-on-surface));
