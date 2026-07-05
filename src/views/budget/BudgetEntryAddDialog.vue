@@ -5,6 +5,7 @@ import { showMessage } from '@/composables/useSnackbar'
 import type { BudgetCategory, BudgetPaymentMethod, BudgetType } from '@/types/budget'
 import { DEFAULT_BUDGET_PAYMENT_METHODS } from '@/utils/budgetDefaultPaymentMethods'
 import BudgetFavoriteView from './BudgetFavoriteView.vue'
+import BudgetDateCalendarCard from './BudgetDateCalendarCard.vue'
 
 const dialog = defineModel<boolean>()
 
@@ -41,66 +42,6 @@ const saving = ref(false)
 const favoritesMenu = ref(false)
 const favoriteManageDialog = ref(false)
 const dateMenu = ref(false)
-const monthYearOpen = ref(false)
-const calendarMonth = ref(0)
-const calendarYear = ref(new Date().getFullYear())
-const monthNames = Array.from({ length: 12 }, (_, i) => `${i + 1}월`)
-
-const toIsoDate = (v: Date) => {
-  const y = v.getFullYear()
-  const m = String(v.getMonth() + 1).padStart(2, '0')
-  const d = String(v.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
-const pickerDate = computed<Date>({
-  get: () => new Date(`${entryDate.value}T00:00:00`),
-  set: (v) => {
-    if (!v) return
-    entryDate.value = toIsoDate(v)
-    dateMenu.value = false
-  },
-})
-
-const syncCalendarNav = () => {
-  const d = pickerDate.value
-  calendarMonth.value = d.getMonth()
-  calendarYear.value = d.getFullYear()
-}
-
-const shiftMonth = (delta: number) => {
-  let m = calendarMonth.value + delta
-  let y = calendarYear.value
-  if (m < 0) { m = 11; y -= 1 }
-  else if (m > 11) { m = 0; y += 1 }
-  calendarMonth.value = m
-  calendarYear.value = y
-}
-
-const setToday = () => {
-  const today = new Date()
-  entryDate.value = toIsoDate(today)
-  calendarMonth.value = today.getMonth()
-  calendarYear.value = today.getFullYear()
-  dateMenu.value = false
-}
-
-const selectMonth = (i: number) => {
-  calendarMonth.value = i
-  monthYearOpen.value = false
-}
-
-const setThisMonth = () => {
-  const today = new Date()
-  calendarMonth.value = today.getMonth()
-  calendarYear.value = today.getFullYear()
-  monthYearOpen.value = false
-}
-
-watch(dateMenu, (open) => {
-  monthYearOpen.value = false
-  if (open) syncCalendarNav()
-})
 
 interface QuickItem {
   category_id: string
@@ -128,9 +69,16 @@ const handleAmount = (v: string) => {
 }
 const formatAmount = (v: number) => `${addComma(String(v))}원`
 
-const canSave = computed(() => !!categoryId.value && removeComma(amount.value) > 0)
+const MAX_AMOUNT = 10_000_000_000
 
-const amountRules = [(v: string) => removeComma(v) > 0 || '금액을 입력해주세요']
+const canSave = computed(() =>
+  !!categoryId.value && removeComma(amount.value) > 0 && removeComma(amount.value) <= MAX_AMOUNT,
+)
+
+const amountRules = [
+  (v: string) => removeComma(v) > 0 || '금액을 입력해주세요',
+  (v: string) => removeComma(v) <= MAX_AMOUNT || '최대 100억원까지 입력 가능합니다',
+]
 
 const categoryName = (id: string) => {
   const c = categories.value.find((c) => c.id === id)
@@ -354,61 +302,7 @@ const save = async () => {
               class="mb-1"
             />
           </template>
-          <v-card rounded="lg" class="date-picker-card">
-            <div class="date-picker-topbar">
-              <span class="topbar-title">날짜</span>
-              <div class="d-flex align-center ga-1">
-                <button class="topbar-action" @click="setToday">오늘</button>
-                <v-btn icon="mdi-close" variant="text" size="small" @click="dateMenu = false" />
-              </div>
-            </div>
-            <div class="date-nav-row">
-              <button class="nav-arrow" @click="shiftMonth(-1)">
-                <v-icon size="20">mdi-chevron-left</v-icon>
-              </button>
-              <button class="nav-label" @click="monthYearOpen = true">{{ calendarYear }}년 {{ calendarMonth + 1 }}월</button>
-              <button class="nav-arrow" @click="shiftMonth(1)">
-                <v-icon size="20">mdi-chevron-right</v-icon>
-              </button>
-            </div>
-            <v-date-picker
-              v-model="pickerDate"
-              v-model:month="calendarMonth"
-              v-model:year="calendarYear"
-              hide-header
-              show-adjacent-months
-            >
-              <template #controls />
-            </v-date-picker>
-
-            <div v-if="monthYearOpen" class="month-year-overlay">
-              <div class="date-picker-topbar">
-                <span class="topbar-title">날짜</span>
-                <div class="d-flex align-center ga-1">
-                  <button class="topbar-action" @click="setThisMonth">이번달</button>
-                  <v-btn icon="mdi-close" variant="text" size="small" @click="monthYearOpen = false" />
-                </div>
-              </div>
-              <div class="date-nav-row">
-                <button class="nav-arrow" @click="calendarYear -= 1">
-                  <v-icon size="20">mdi-chevron-left</v-icon>
-                </button>
-                <span class="nav-label-static">{{ calendarYear }}년</span>
-                <button class="nav-arrow" @click="calendarYear += 1">
-                  <v-icon size="20">mdi-chevron-right</v-icon>
-                </button>
-              </div>
-              <div class="month-grid">
-                <button
-                  v-for="(name, i) in monthNames"
-                  :key="i"
-                  class="month-cell"
-                  :class="{ 'month-cell-active': calendarMonth === i }"
-                  @click="selectMonth(i)"
-                >{{ name }}</button>
-              </div>
-            </div>
-          </v-card>
+          <BudgetDateCalendarCard v-model="entryDate" :open="dateMenu" @close="dateMenu = false" />
         </v-menu>
 
         <v-select
@@ -619,106 +513,4 @@ const save = async () => {
   border-style: dashed;
 }
 
-.date-picker-card {
-  position: relative;
-  overflow: hidden;
-}
-
-.month-year-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: rgb(var(--v-theme-surface));
-  border-radius: 0 0 16px 16px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
-  z-index: 5;
-}
-.date-picker-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 8px 10px 16px;
-  background: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-on-primary));
-}
-.topbar-title {
-  font-weight: 700;
-  font-size: 1.4rem;
-}
-.topbar-action {
-  padding: 4px 10px;
-  border: none;
-  background: none;
-  color: inherit;
-  font-weight: 700;
-  font-size: 1.2rem;
-  cursor: pointer;
-}
-.date-picker-topbar .v-btn {
-  color: inherit;
-}
-.date-picker-topbar :deep(.v-icon) {
-  font-size: 1.75rem;
-}
-
-.date-picker-card :deep(.v-date-picker-controls) {
-  display: none;
-}
-
-.date-nav-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 4px 0 0;
-}
-.nav-arrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: none;
-  color: rgba(var(--v-theme-on-surface), 0.6);
-  cursor: pointer;
-}
-.nav-label {
-  border: none;
-  background: none;
-  font-weight: 700;
-  font-size: 0.9375rem;
-  color: rgb(var(--v-theme-on-surface));
-  cursor: pointer;
-  padding: 4px 8px;
-}
-.nav-label-static {
-  font-weight: 700;
-  font-size: 0.9375rem;
-  color: rgb(var(--v-theme-on-surface));
-  min-width: 72px;
-  text-align: center;
-}
-
-.month-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-  padding: 12px 16px 20px;
-}
-.month-cell {
-  padding: 12px 0;
-  border: none;
-  border-radius: 10px;
-  background: none;
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: rgb(var(--v-theme-on-surface));
-  cursor: pointer;
-}
-.month-cell-active {
-  color: rgb(var(--v-theme-primary));
-  background: rgba(var(--v-theme-primary), 0.1);
-}
 </style>

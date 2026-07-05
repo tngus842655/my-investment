@@ -5,6 +5,7 @@ import { showMessage } from '@/composables/useSnackbar'
 import { formatCurrency } from '@/utils/numberFormat'
 import type { BudgetType } from '@/types/budget'
 import BudgetEntryAddDialog from './BudgetEntryAddDialog.vue'
+import BudgetDateCalendarCard from './BudgetDateCalendarCard.vue'
 
 interface EntryRow {
   id: string
@@ -144,6 +145,17 @@ const calendarWeeks = computed(() => {
 const pad2ForToday = () => `${today.getFullYear()}-${pad2(today.getMonth() + 1)}-${pad2(today.getDate())}`
 const isCurrentMonth = () => year.value === today.getFullYear() && month.value === today.getMonth() + 1
 const selectedDate = ref<string | null>(isCurrentMonth() ? pad2ForToday() : null)
+
+const dateMenuOpen = ref(false)
+const navDate = computed<string>({
+  get: () => selectedDate.value ?? `${year.value}-${pad2(month.value)}-01`,
+  set: (v) => {
+    const d = new Date(`${v}T00:00:00`)
+    year.value = d.getFullYear()
+    month.value = d.getMonth() + 1
+    selectedDate.value = v
+  },
+})
 
 const selectDate = (cell: CalendarCell) => {
   if (!cell.inMonth) return
@@ -331,9 +343,13 @@ const onContainerClick = (e: MouseEvent) => {
         size="small"
         @click="subTab === 'monthly' ? monthlyYear -= 1 : prevMonth()"
       />
-      <div class="font-weight-bold">
-        {{ subTab === 'monthly' ? `${monthlyYear}년` : `${year}년 ${month}월` }}
-      </div>
+      <div v-if="subTab === 'monthly'" class="font-weight-bold">{{ monthlyYear }}년</div>
+      <v-menu v-else v-model="dateMenuOpen" :close-on-content-click="false">
+        <template #activator="{ props: menuProps }">
+          <button v-bind="menuProps" class="font-weight-bold nav-year-month-btn">{{ year }}년 {{ month }}월</button>
+        </template>
+        <BudgetDateCalendarCard v-model="navDate" :open="dateMenuOpen" @close="dateMenuOpen = false" />
+      </v-menu>
       <v-btn
         icon="mdi-chevron-right"
         variant="text"
@@ -535,6 +551,15 @@ const onContainerClick = (e: MouseEvent) => {
   width: 28px;
   height: 28px;
   object-fit: contain;
+}
+
+.nav-year-month-btn {
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  padding: 4px 8px;
 }
 
 .glass-card {
