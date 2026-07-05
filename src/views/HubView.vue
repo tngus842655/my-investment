@@ -7,11 +7,11 @@ const router = useRouter()
 const { themeId } = useDesignTokens()
 
 const LOGO_WIDE: Partial<Record<string, string>> = {
-  light:  '/icons/wide/logo-wide-light.png',
-  dark:   '/icons/wide/logo-wide-dark.png',
-  gold:   '/icons/wide/logo-wide-gold.png',
+  light: '/icons/wide/logo-wide-light.png',
+  dark: '/icons/wide/logo-wide-dark.png',
+  gold: '/icons/wide/logo-wide-gold.png',
   nature: '/icons/wide/logo-wide-nature.png',
-  space:  '/icons/wide/logo-wide-space.png',
+  space: '/icons/wide/logo-wide-space.png',
 }
 const logoWide = computed(() => LOGO_WIDE[themeId.value] ?? null)
 
@@ -30,8 +30,6 @@ onMounted(() => {
       <img v-if="logoWide" :src="logoWide" class="header-logo-wide" alt="FIREPATH" />
       <div v-else class="font-weight-bold text-h6">Fire Path</div>
     </div>
-
-    <div class="text-center text-medium-emphasis mb-3">이용할 서비스를 선택하세요</div>
 
     <div class="d-flex flex-column ga-3">
       <div class="hub-card glass-card pa-5 d-flex align-center ga-3" @click="router.push('/dashboard')">
@@ -83,7 +81,9 @@ onMounted(() => {
   flex-shrink: 0;
   transition: opacity 0.15s;
 }
-.back-btn:active { opacity: 0.6; }
+.back-btn:active {
+  opacity: 0.6;
+}
 
 .header-logo-wide {
   height: 40px;
