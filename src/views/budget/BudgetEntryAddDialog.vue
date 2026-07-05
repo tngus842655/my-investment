@@ -130,6 +130,8 @@ const formatAmount = (v: number) => `${addComma(String(v))}원`
 
 const canSave = computed(() => !!categoryId.value && removeComma(amount.value) > 0)
 
+const amountRules = [(v: string) => removeComma(v) > 0 || '금액을 입력해주세요']
+
 const categoryName = (id: string) => {
   const c = categories.value.find((c) => c.id === id)
   return c ? `${c.icon} ${c.name}` : ''
@@ -430,6 +432,7 @@ const save = async () => {
           density="compact"
           rounded="lg"
           class="mb-1"
+          :rules="amountRules"
           @update:model-value="handleAmount"
         />
 
@@ -471,6 +474,8 @@ const save = async () => {
           density="compact"
           rounded="lg"
           class="mb-1 mt-4"
+          maxlength="30"
+          counter
         />
       </v-card-text>
 

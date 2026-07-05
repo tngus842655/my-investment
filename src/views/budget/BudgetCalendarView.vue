@@ -399,7 +399,7 @@ const onContainerClick = (e: MouseEvent) => {
         <div v-if="selectedDateEntries.length === 0" class="glass-card pa-4 text-center text-medium-emphasis">
           내역이 없습니다.
         </div>
-        <div v-else class="glass-card pa-3">
+        <div v-else class="glass-card pa-2">
           <div
             v-for="e in selectedDateEntries"
             :key="e.id"
@@ -441,8 +441,8 @@ const onContainerClick = (e: MouseEvent) => {
         <div v-if="dailyGroups.length === 0" class="text-center text-medium-emphasis py-8">
           이번 달 내역이 없습니다.
         </div>
-        <div v-for="group in dailyGroups" :key="group.date" class="glass-card pa-3 mb-2">
-          <div class="d-flex align-center justify-space-between mb-2">
+        <div v-for="group in dailyGroups" :key="group.date" class="glass-card pa-2 mb-2">
+          <div class="d-flex align-center justify-space-between mb-1">
             <div class="font-weight-bold">
               {{ Number(group.date.slice(8, 10)) }}일
               <span class="text-medium-emphasis" style="font-size: 0.75rem">{{ weekdayLabel(group.date) }}요일</span>
@@ -658,13 +658,13 @@ const onContainerClick = (e: MouseEvent) => {
 .daily-entry-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 4px;
+  gap: 8px;
+  padding: 6px 4px;
   cursor: pointer;
 }
 .daily-entry-icon {
-  font-size: 1.25rem;
-  width: 28px;
+  font-size: 1.125rem;
+  width: 24px;
   text-align: center;
   flex-shrink: 0;
 }
@@ -675,10 +675,12 @@ const onContainerClick = (e: MouseEvent) => {
 .daily-entry-category {
   font-size: 0.8125rem;
   font-weight: 600;
+  line-height: 1.2;
 }
 .daily-entry-sub {
   font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.45);
+  line-height: 1.2;
 }
 
 .monthly-row {
