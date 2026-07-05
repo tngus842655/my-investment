@@ -3,12 +3,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDesignTokens } from '@/composables/useDesignTokens'
 import { supabase } from '@/services/supabase'
-import { isAdminEmail } from '@/config/admin'
+import { isBudgetPreviewAllowed } from '@/config/admin'
 
 const router = useRouter()
 const { themeId } = useDesignTokens()
 
-const isAdmin = ref(false)
+const canAccessBudget = ref(false)
 
 const LOGO_WIDE: Partial<Record<string, string>> = {
   light: '/icons/wide/logo-wide-light.png',
@@ -23,7 +23,7 @@ const showBack = ref(false)
 onMounted(async () => {
   showBack.value = window.history.state?.back != null && window.history.state.back !== '/'
   const { data: { user } } = await supabase.auth.getUser()
-  isAdmin.value = isAdminEmail(user?.email)
+  canAccessBudget.value = isBudgetPreviewAllowed(user?.email)
 })
 </script>
 
@@ -50,19 +50,19 @@ onMounted(async () => {
 
       <div
         class="hub-card glass-card pa-5 d-flex align-center ga-3"
-        :class="{ 'hub-card-disabled': !isAdmin }"
-        @click="isAdmin && router.push('/budget')"
+        :class="{ 'hub-card-disabled': !canAccessBudget }"
+        @click="canAccessBudget && router.push('/budget')"
       >
         <div class="hub-icon"><v-icon size="24" color="primary">mdi-notebook-outline</v-icon></div>
         <div>
           <div class="d-flex align-center ga-2">
             <div class="font-weight-medium">가계부</div>
-            <div v-if="!isAdmin" class="coming-soon-badge">준비중</div>
+            <div v-if="!canAccessBudget" class="coming-soon-badge">준비중</div>
           </div>
           <div class="text-medium-emphasis">수입·지출 기록 관리</div>
         </div>
         <v-spacer />
-        <v-icon v-if="isAdmin" size="16" class="chevron-icon">mdi-chevron-right</v-icon>
+        <v-icon v-if="canAccessBudget" size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
     </div>
   </v-container>
