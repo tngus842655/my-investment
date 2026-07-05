@@ -1,8 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { ADMIN_EMAIL } from '@/config/admin'
+import budgetRoutes from './budget.routes'
 
 import LoginView from '@/views/auth/LoginView.vue'
+import HubView from '@/views/HubView.vue'
 import GoalSettingsView from '@/views/asset/dashboard/GoalSettingsView.vue'
 import AppLayout from '@/layouts/AppLayout.vue'
 import DashboardView from '@/views/asset/dashboard/DashboardView.vue'
@@ -42,6 +44,13 @@ const router = createRouter({
       name: 'login',
       component: LoginView,
     },
+    {
+      path: '/hub',
+      name: 'hub',
+      component: HubView,
+      meta: { requiresAuth: true, label: '허브' },
+    },
+    ...budgetRoutes,
     {
       path: '/admin',
       name: 'admin',
