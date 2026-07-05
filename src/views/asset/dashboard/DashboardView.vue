@@ -215,9 +215,14 @@ onUnmounted(clearPullToRefresh)
           <div class="font-weight-bold">FIREPATH</div>
         </template>
       </div>
-      <button class="icon-btn" @click="router.push('/goalSettings')">
-        <img src="/icons/icon-goal.png" alt="목표수정" class="icon-btn-img" />
-      </button>
+      <div class="d-flex align-center ga-1">
+        <button class="icon-btn" @click="router.push('/hub')">
+          <img src="/icons/icon-hub.png" alt="허브" class="icon-btn-img" />
+        </button>
+        <button class="icon-btn" @click="router.push('/goalSettings')">
+          <img src="/icons/icon-goal.png" alt="목표수정" class="icon-btn-img" />
+        </button>
+      </div>
     </div>
 
     <!-- 스켈레톤 -->

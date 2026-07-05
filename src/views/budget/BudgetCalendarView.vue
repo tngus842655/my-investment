@@ -324,7 +324,9 @@ const onContainerClick = (e: MouseEvent) => {
         <img src="/icons/icon-calendar.png" class="header-icon" alt="가계부" />
         <div class="font-weight-bold text-h6">가계부</div>
       </div>
-      <v-btn icon="mdi-view-grid-outline" variant="text" size="small" to="/hub" />
+      <v-btn icon variant="text" size="small" to="/hub">
+        <img src="/icons/icon-hub.png" class="header-icon" alt="허브" />
+      </v-btn>
     </div>
 
     <v-btn-toggle v-model="subTab" mandatory rounded="lg" density="comfortable" class="mb-4">
