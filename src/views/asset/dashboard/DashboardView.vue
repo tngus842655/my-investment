@@ -536,6 +536,7 @@ onUnmounted(clearPullToRefresh)
   font-size: 1.125rem;
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
+  text-align: center;
 }
 
 /* 투자 현황 미니 리스트 */
