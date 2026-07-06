@@ -241,13 +241,12 @@ const save = async () => {
 </script>
 
 <template>
-  <v-dialog v-model="dialog" max-width="480" transition="fade-transition">
+  <v-dialog v-model="dialog" max-width="480">
     <v-card rounded="xl" class="glass-dialog" style="overflow: hidden; display: flex; flex-direction: column; max-height: 90dvh">
       <div class="dialog-header" :class="entryType === 'EXPENSE' ? 'header-sell' : 'header-buy'">
         <div class="d-flex align-center justify-space-between">
           <div class="font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">{{ isEditMode ? '내역 수정' : '내역 추가' }}</div>
-          <!-- 임시 비활성화: 터치 밀림 원인 격리 테스트 -->
-          <v-menu v-if="false && !isEditMode" v-model="favoritesMenu" :close-on-content-click="false">
+          <v-menu v-if="!isEditMode" v-model="favoritesMenu" :close-on-content-click="false">
             <template #activator="{ props: menuProps }">
               <v-btn v-bind="menuProps" icon="mdi-star-outline" variant="text" size="small" />
             </template>
