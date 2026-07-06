@@ -30,7 +30,7 @@ const router = useRouter()
       <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/goalSettings')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-target</v-icon></div>
         <div>
-          <div class="font-weight-medium">FIRE 목표 설정</div>
+          <div class="font-weight-medium">목표 설정</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -39,7 +39,7 @@ const router = useRouter()
       <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/fire-simulator')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-chart-timeline-variant</v-icon></div>
         <div>
-          <div class="font-weight-medium">FIRE 시뮬레이터</div>
+          <div class="font-weight-medium">시뮬레이터</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -48,7 +48,7 @@ const router = useRouter()
       <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/fire-history')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-flag-checkered</v-icon></div>
         <div>
-          <div class="font-weight-medium">FIRE 진행 기록</div>
+          <div class="font-weight-medium">진행 기록</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
