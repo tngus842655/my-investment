@@ -130,12 +130,12 @@ const executeReset = async () => {
       </div>
     </div>
 
-    <div class="glass-card pa-4 mb-5 mt-auto">
+    <div class="glass-card py-2 px-4 mb-5 mt-auto">
       <div class="section-label-lg d-flex align-center justify-space-between cursor-pointer" @click="dataManageOpen = !dataManageOpen">
         <span>데이터 관리</span>
         <v-icon size="18" class="collapse-icon" :class="{ 'collapse-icon-open': dataManageOpen }">mdi-chevron-down</v-icon>
       </div>
-      <div v-if="dataManageOpen" class="mt-3">
+      <div v-if="dataManageOpen" class="mt-2">
         <v-btn variant="tonal" color="error" rounded="lg" block prepend-icon="mdi-delete-clock-outline" class="mb-2" @click="openResetDialog('entries')">
           거래내역 초기화
         </v-btn>
