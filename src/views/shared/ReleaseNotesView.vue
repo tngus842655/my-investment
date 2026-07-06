@@ -1,7 +1,14 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+
+// 최신 항목만 기본 펼침
+const expandedIndex = ref<number | null>(0)
+const toggleExpand = (i: number) => {
+  expandedIndex.value = expandedIndex.value === i ? null : i
+}
 
 const notes = [
   {
@@ -100,17 +107,22 @@ const notes = [
       </div>
     </div>
 
-    <div v-for="note in notes" :key="note.version" class="release-card glass-card pa-4 mb-3">
-      <div class="d-flex align-center ga-2 mb-3">
-        <v-chip size="small" color="primary" variant="tonal" class="font-weight-bold">{{ note.version }}</v-chip>
-        <span class="release-date">{{ note.date }}</span>
+    <div v-for="(note, index) in notes" :key="note.version" class="release-card glass-card pa-4 mb-3">
+      <div class="d-flex align-center justify-space-between cursor-pointer" @click="toggleExpand(index)">
+        <div class="d-flex align-center ga-2">
+          <v-chip size="small" color="primary" variant="tonal" class="font-weight-bold">{{ note.version }}</v-chip>
+          <span class="release-date">{{ note.date }}</span>
+        </div>
+        <v-icon size="18" class="collapse-icon" :class="{ 'collapse-icon-open': expandedIndex === index }">mdi-chevron-down</v-icon>
       </div>
-      <div v-if="note.description?.length" class="note-desc mb-2">
-        <p v-for="(line, i) in note.description" :key="i" :class="i === 0 ? 'note-desc-title' : ''">{{ line }}</p>
-      </div>
-      <ul v-if="note.items.length" class="note-list">
-        <li v-for="(item, i) in note.items" :key="i">{{ item }}</li>
-      </ul>
+      <template v-if="expandedIndex === index">
+        <div v-if="note.description?.length" class="note-desc mt-3 mb-2">
+          <p v-for="(line, i) in note.description" :key="i" :class="i === 0 ? 'note-desc-title' : ''">{{ line }}</p>
+        </div>
+        <ul v-if="note.items.length" class="note-list mt-3">
+          <li v-for="(item, i) in note.items" :key="i">{{ item }}</li>
+        </ul>
+      </template>
     </div>
   </v-container>
 </template>
@@ -159,5 +171,18 @@ const notes = [
 .release-date {
   font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.45);
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.collapse-icon {
+  color: rgba(var(--v-theme-on-surface), 0.4);
+  transition: transform 0.2s ease;
+}
+
+.collapse-icon-open {
+  transform: rotate(180deg);
 }
 </style>
