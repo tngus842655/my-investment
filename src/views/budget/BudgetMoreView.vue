@@ -82,7 +82,7 @@ const executeReset = async () => {
 </script>
 
 <template>
-  <v-container class="pa-4 pa-sm-6">
+  <v-container class="pa-4 pa-sm-6 budget-more-page">
     <div class="d-flex align-center ga-2 mb-6">
       <img src="/icons/icon-more.png" class="header-icon" alt="더보기" />
       <div>
@@ -133,7 +133,7 @@ const executeReset = async () => {
       </div>
     </div>
 
-    <div class="glass-card pa-4 mb-5">
+    <div class="glass-card pa-4 mb-5 mt-auto">
       <div class="section-label d-flex align-center justify-space-between cursor-pointer" @click="dataManageOpen = !dataManageOpen">
         <span>데이터 관리</span>
         <v-icon size="18" class="collapse-icon" :class="{ 'collapse-icon-open': dataManageOpen }">mdi-chevron-down</v-icon>
@@ -178,6 +178,12 @@ const executeReset = async () => {
 </template>
 
 <style scoped>
+.budget-more-page {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 32px);
+}
+
 .header-icon {
   width: 28px;
   height: 28px;
