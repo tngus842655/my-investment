@@ -33,7 +33,7 @@ const fetchEntries = async () => {
     .select('id, type, category_id, amount, payment_method_id, memo, entry_date, budget_categories(name), budget_payment_methods(name)')
     .eq('user_id', user.id)
     .order('entry_date', { ascending: false })
-    .limit(500)
+    .limit(5000)
   loading.value = false
   if (error) {
     showMessage('내역을 불러오지 못했습니다.', 'error')

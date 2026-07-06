@@ -144,17 +144,17 @@ const deleteCategory = async (c: BudgetCategory) => {
 </script>
 
 <template>
-  <div>
-    <v-btn-toggle v-model="selectedType" mandatory rounded="lg" density="comfortable" class="mb-4">
-      <v-btn value="EXPENSE" variant="tonal">지출</v-btn>
-      <v-btn value="INCOME" variant="tonal">수입</v-btn>
+  <div class="manage-tab">
+    <v-btn-toggle v-model="selectedType" mandatory rounded="lg" density="comfortable" class="mb-4 w-100">
+      <v-btn value="EXPENSE" variant="tonal" class="flex-grow-1">지출</v-btn>
+      <v-btn value="INCOME" variant="tonal" class="flex-grow-1">수입</v-btn>
     </v-btn-toggle>
 
     <div v-if="loading" class="d-flex justify-center py-8">
       <v-progress-circular indeterminate color="primary" size="28" />
     </div>
 
-    <div v-else class="glass-card pa-4">
+    <div v-else class="glass-card pa-4 list-wrap">
       <div class="list-scroll">
         <div v-for="c in filteredCategories" :key="c.id" class="row-item">
           <span class="row-name">{{ c.name }}</span>
@@ -167,7 +167,7 @@ const deleteCategory = async (c: BudgetCategory) => {
       </div>
     </div>
 
-    <v-btn block color="primary" variant="tonal" rounded="lg" class="mt-4" prepend-icon="mdi-plus" @click="openAddDialog">
+    <v-btn block color="primary" variant="tonal" rounded="lg" class="mt-4 add-btn" prepend-icon="mdi-plus" @click="openAddDialog">
       카테고리 추가
     </v-btn>
 
@@ -203,15 +203,33 @@ const deleteCategory = async (c: BudgetCategory) => {
 </template>
 
 <style scoped>
+.manage-tab {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .glass-card {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
   border-radius: 20px;
 }
 
+.list-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .list-scroll {
-  max-height: 480px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+}
+
+.add-btn {
+  flex-shrink: 0;
 }
 
 .row-item {

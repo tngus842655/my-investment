@@ -10,7 +10,7 @@ const tab = ref<'category' | 'paymentMethod' | 'favorite'>('category')
 </script>
 
 <template>
-  <v-container class="pa-4 pa-sm-6" style="max-width: 640px">
+  <v-container class="pa-4 pa-sm-6 d-flex flex-column" style="max-width: 640px; height: 100%">
     <div class="d-flex align-center ga-3 mb-6">
       <button class="back-btn" @click="router.back()">
         <v-icon size="20">mdi-arrow-left</v-icon>
@@ -21,15 +21,17 @@ const tab = ref<'category' | 'paymentMethod' | 'favorite'>('category')
       </div>
     </div>
 
-    <v-btn-toggle v-model="tab" mandatory rounded="lg" density="comfortable" class="mb-4">
-      <v-btn value="category" variant="tonal">카테고리</v-btn>
-      <v-btn value="paymentMethod" variant="tonal">결제수단</v-btn>
-      <v-btn value="favorite" variant="tonal">즐겨찾기</v-btn>
+    <v-btn-toggle v-model="tab" mandatory rounded="lg" density="comfortable" class="mb-4 w-100">
+      <v-btn value="category" variant="tonal" class="flex-grow-1">카테고리</v-btn>
+      <v-btn value="paymentMethod" variant="tonal" class="flex-grow-1">결제수단</v-btn>
+      <v-btn value="favorite" variant="tonal" class="flex-grow-1">즐겨찾기</v-btn>
     </v-btn-toggle>
 
-    <BudgetCategoryView v-if="tab === 'category'" />
-    <BudgetPaymentMethodView v-else-if="tab === 'paymentMethod'" />
-    <BudgetFavoriteView v-else />
+    <div class="flex-grow-1" style="min-height: 0">
+      <BudgetCategoryView v-if="tab === 'category'" />
+      <BudgetPaymentMethodView v-else-if="tab === 'paymentMethod'" />
+      <BudgetFavoriteView v-else />
+    </div>
   </v-container>
 </template>
 

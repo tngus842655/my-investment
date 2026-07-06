@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
@@ -25,6 +25,26 @@ const parsing = ref(false)
 const importing = ref(false)
 const parsedRows = ref<ParsedRow[]>([])
 
+const existingCategories = ref<BudgetCategory[]>([])
+const existingPaymentMethods = ref<BudgetPaymentMethod[]>([])
+
+// 기본 카테고리("🍚 식비" 등)는 이모지 접두사가 붙어 있어, 엑셀에 이모지 없이
+// "식비"라고만 적혀 있어도 같은 카테고리로 인식하도록 비교 시에만 선행 기호를 제거
+const normalizeForMatch = (name: string) => name.replace(/^[^\p{L}\p{N}]+/u, '').trim().toLowerCase()
+
+const fetchExisting = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const [{ data: catData }, { data: pmData }] = await Promise.all([
+    supabase.from('budget_categories').select('*').eq('user_id', user.id),
+    supabase.from('budget_payment_methods').select('*').eq('user_id', user.id),
+  ])
+  existingCategories.value = (catData ?? []) as BudgetCategory[]
+  existingPaymentMethods.value = (pmData ?? []) as BudgetPaymentMethod[]
+}
+
+onMounted(fetchExisting)
+
 const validRows = computed(() => parsedRows.value.filter((r) => !r.error))
 const errorRows = computed(() => parsedRows.value.filter((r) => r.error))
 
@@ -35,6 +55,10 @@ const newCategoryNames = computed(() => {
     const key = `${r.type}:${r.categoryName}`
     if (seen.has(key)) continue
     seen.add(key)
+    const exists = existingCategories.value.some(
+      (c) => c.type === r.type && normalizeForMatch(c.name) === normalizeForMatch(r.categoryName),
+    )
+    if (exists) continue
     list.push({ type: r.type as BudgetType, name: r.categoryName })
   }
   return list
@@ -46,6 +70,10 @@ const newPaymentMethodNames = computed(() => {
   for (const r of validRows.value) {
     if (!r.paymentMethodName || seen.has(r.paymentMethodName)) continue
     seen.add(r.paymentMethodName)
+    const exists = existingPaymentMethods.value.some(
+      (p) => normalizeForMatch(p.name) === normalizeForMatch(r.paymentMethodName),
+    )
+    if (exists) continue
     list.push(r.paymentMethodName)
   }
   return list
@@ -186,7 +214,7 @@ const doImport = async () => {
       INCOME: categories.filter((c) => c.type === 'INCOME').length,
     }
     const missingCategories = newCategoryNames.value.filter(
-      (n) => !categories.some((c) => c.type === n.type && c.name === n.name),
+      (n) => !categories.some((c) => c.type === n.type && normalizeForMatch(c.name) === normalizeForMatch(n.name)),
     )
     if (missingCategories.length > 0) {
       const rows = missingCategories.map((n) => {
@@ -201,7 +229,7 @@ const doImport = async () => {
     // ── 누락된 결제수단 생성 ──────────────────────────
     let pmSortOrder = paymentMethods.length
     const missingPaymentMethods = newPaymentMethodNames.value.filter(
-      (name) => !paymentMethods.some((p) => p.name === name),
+      (name) => !paymentMethods.some((p) => normalizeForMatch(p.name) === normalizeForMatch(name)),
     )
     if (missingPaymentMethods.length > 0) {
       const rows = missingPaymentMethods.map((name) => ({ user_id: user.id, name, sort_order: pmSortOrder++ }))
@@ -212,9 +240,11 @@ const doImport = async () => {
 
     // ── 내역 등록 ──────────────────────────
     const entries = validRows.value.map((r) => {
-      const category = categories.find((c) => c.type === r.type && c.name === r.categoryName)
+      const category = categories.find(
+        (c) => c.type === r.type && normalizeForMatch(c.name) === normalizeForMatch(r.categoryName),
+      )
       const paymentMethod = r.paymentMethodName
-        ? paymentMethods.find((p) => p.name === r.paymentMethodName)
+        ? paymentMethods.find((p) => normalizeForMatch(p.name) === normalizeForMatch(r.paymentMethodName))
         : null
       return {
         user_id: user.id,

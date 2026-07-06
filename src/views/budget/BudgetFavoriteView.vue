@@ -163,12 +163,12 @@ const onFormTypeChange = (type: BudgetType) => {
 </script>
 
 <template>
-  <div>
+  <div class="manage-tab">
     <div v-if="loading" class="d-flex justify-center py-8">
       <v-progress-circular indeterminate color="primary" size="28" />
     </div>
 
-    <div v-else class="glass-card pa-4">
+    <div v-else class="glass-card pa-4 list-wrap">
       <div class="list-scroll">
         <div v-for="f in favorites" :key="f.id" class="row-item">
           <div class="favorite-info">
@@ -187,7 +187,7 @@ const onFormTypeChange = (type: BudgetType) => {
       </div>
     </div>
 
-    <v-btn block color="primary" variant="tonal" rounded="lg" class="mt-4" prepend-icon="mdi-plus" @click="openAddDialog">
+    <v-btn block color="primary" variant="tonal" rounded="lg" class="mt-4 add-btn" prepend-icon="mdi-plus" @click="openAddDialog">
       즐겨찾기 추가
     </v-btn>
 
@@ -265,15 +265,33 @@ const onFormTypeChange = (type: BudgetType) => {
 </template>
 
 <style scoped>
+.manage-tab {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .glass-card {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
   border-radius: 20px;
 }
 
+.list-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .list-scroll {
-  max-height: 480px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+}
+
+.add-btn {
+  flex-shrink: 0;
 }
 
 .row-item {

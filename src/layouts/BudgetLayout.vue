@@ -45,6 +45,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
 
 .budget-content {
   flex: 1;
+  min-height: 0;
   padding-bottom: calc(84px + env(safe-area-inset-bottom));
   overflow-y: auto;
 }
