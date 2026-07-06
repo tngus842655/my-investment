@@ -573,7 +573,7 @@ onUnmounted(() => {
       </div>
 
       <!-- 건수 + 날짜 드롭다운 -->
-      <div class="d-flex align-center mb-3 ga-2">
+      <div class="d-flex align-center ga-2" style="margin-bottom: 6px">
         <span style="font-size: 0.75rem; color: rgba(var(--v-theme-on-surface), 0.4)">
           총 {{ totalsData.length }}건
         </span>
