@@ -83,20 +83,6 @@ const totalReturn = computed(() => {
 
 const finalAsset = computed(() => fireGoalYear.value?.asset ?? projection.value[projection.value.length - 1]?.asset ?? 0)
 
-const remainingInfo = computed(() => {
-  const T = targetAsset.value
-  const C = currentAsset.value
-  const M = monthlyInvestment.value
-  const rate = annualReturn.value
-  if (!T || !M || rate === null || C >= T) return null
-
-  const months = calcMonths(T, C, M, rate)
-  if (months === null || months <= 0) return null
-  const years = Math.floor(months / 12)
-  const rem = months % 12
-  return years > 0 ? `약 ${years}년 ${rem > 0 ? rem + '개월' : ''} 남았습니다` : `약 ${months}개월 남았습니다`
-})
-
 
 const hasData = computed(() => annualReturn.value !== null && monthlyInvestment.value > 0 && currentAsset.value >= 0)
 
@@ -393,12 +379,6 @@ onUnmounted(clearPullToRefresh)
     </template>
 
     <template v-else>
-      <!-- 소제목 -->
-      <div v-if="remainingInfo" class="remain-badge mb-4">
-        <span class="remain-text">{{ remainingInfo }}</span>
-        <span class="remain-sub" v-if="annualReturn !== null">연 {{ annualReturn }}% 복리 기준</span>
-      </div>
-
       <!-- 차트 카드 -->
       <div class="glass-card pa-4 mb-3">
         <div class="d-flex justify-space-between align-center mb-1">
@@ -597,21 +577,6 @@ onUnmounted(clearPullToRefresh)
   width: 28px;
   height: 28px;
   object-fit: contain;
-}
-
-.remain-badge {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.remain-text {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: rgb(var(--v-theme-on-surface));
-}
-.remain-sub {
-  font-size: 0.75rem;
-  color: rgba(var(--v-theme-on-surface), 0.45);
 }
 
 .chart-asset-label {
@@ -1100,7 +1065,8 @@ onUnmounted(clearPullToRefresh)
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 .fire-goal-remain {
-  color: rgba(var(--v-theme-on-surface), 0.3);
+  font-weight: 700;
+  color: rgb(var(--v-theme-primary));
 }
 .fire-goal-bar-bg {
   height: 2px;
