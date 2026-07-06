@@ -176,11 +176,11 @@ onMounted(async () => {
           <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-palette-outline" class="mb-2" @click="themeSheet = true">
             테마 선택
           </v-btn>
-          <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-lock-reset" class="mb-2" @click="router.push('/change-password')">
-            비밀번호 변경
-          </v-btn>
-          <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-cellphone-cog" @click="router.push('/display-settings')">
+          <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-cellphone-cog" class="mb-2" @click="router.push('/display-settings')">
             화면 설정
+          </v-btn>
+          <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-lock-reset" @click="router.push('/change-password')">
+            비밀번호 변경
           </v-btn>
         </div>
       </div>
