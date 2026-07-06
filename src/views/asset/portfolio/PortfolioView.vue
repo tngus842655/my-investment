@@ -586,14 +586,11 @@ onUnmounted(() => {
 <template>
   <v-container class="pa-4 pa-sm-6" @click="onContainerClick">
     <!-- 헤더 -->
-    <div class="asset-header d-flex justify-space-between align-center mb-5">
+    <div class="asset-header d-flex justify-space-between align-center mb-3">
       <div class="d-flex align-center ga-2" style="min-width: 0">
         <img src="/icons/icon-asset.png" class="header-icon" alt="자산" />
-        <div style="min-width: 0">
-          <div class="font-weight-bold header-title" style="color: rgb(var(--v-theme-on-surface))">
-            보유자산
-          </div>
-          <div class="text-medium-emphasis header-title">실시간 평가금액 기준</div>
+        <div class="font-weight-bold header-title" style="color: rgb(var(--v-theme-on-surface))">
+          보유자산
         </div>
       </div>
       <div class="d-flex ga-2 align-center" style="flex-shrink: 0">

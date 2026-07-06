@@ -1,9 +1,34 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
+// 최신 항목만 기본 펼침
+const expandedIndex = ref<number | null>(0)
+const toggleExpand = (i: number) => {
+  expandedIndex.value = expandedIndex.value === i ? null : i
+}
+
 const notes = [
+  {
+    version: 'v1.0.6',
+    date: '2026.7.6',
+    description: [],
+    items: [
+      '더보기에 있던 공지사항/의견 관리/개발자 노트/비밀번호 변경/화면 설정을 서비스홈 화면으로 통합',
+      '로그아웃/회원탈퇴/테마 선택도 자산관리 더보기에서 서비스홈으로 이동',
+      '회원탈퇴 최종 확인 방식을 이메일 입력 대신 비밀번호 확인으로 변경',
+      '가계부 더보기 데이터 관리(초기화) 메뉴를 카드+버튼 형태로 변경, 화면 맨 하단으로 배치',
+      '서비스홈 서비스/설정/데이터 관리 카드에 접기·펼치기 기능 추가',
+      '자산관리(홈/자산/기록/예측/더보기), 가계부(캘린더/통계/더보기) 화면 헤더의 부가설명 문구 제거 및 여백 정리',
+      '하단 탭 네비게이션 바의 부가설명 문구 제거, 여백 축소',
+      '대시보드: 예상 달성일 표기를 "YYYY년 M월" 형식으로 변경, 월 투자금/연평균 수익률 값 가운데 정렬, 전반적인 여백 축소',
+      '미래예측: 상단 "약 N년 N개월 남았습니다" 문구 제거, FIRE 목표 달성 카드의 잔여 기간 텍스트를 눈에 잘 띄게 개선',
+      '거래내역: 적용환율 안내 문구 제거, 총 건수/날짜 필터 위치를 보유자산 화면과 통일',
+      '개발자 노트: 각 버전 카드에 접기·펼치기 기능 추가 (최신 버전만 기본 펼침)',
+    ],
+  },
   {
     version: 'v1.0.5',
     date: '2026.7.4',
@@ -100,17 +125,22 @@ const notes = [
       </div>
     </div>
 
-    <div v-for="note in notes" :key="note.version" class="release-card glass-card pa-4 mb-3">
-      <div class="d-flex align-center ga-2 mb-3">
-        <v-chip size="small" color="primary" variant="tonal" class="font-weight-bold">{{ note.version }}</v-chip>
-        <span class="text-medium-emphasis">{{ note.date }}</span>
+    <div v-for="(note, index) in notes" :key="note.version" class="release-card glass-card pa-4 mb-3">
+      <div class="d-flex align-center justify-space-between cursor-pointer" @click="toggleExpand(index)">
+        <div class="d-flex align-center ga-2">
+          <v-chip size="small" color="primary" variant="tonal" class="font-weight-bold">{{ note.version }}</v-chip>
+          <span class="release-date">{{ note.date }}</span>
+        </div>
+        <v-icon size="18" class="collapse-icon" :class="{ 'collapse-icon-open': expandedIndex === index }">mdi-chevron-down</v-icon>
       </div>
-      <div v-if="note.description?.length" class="note-desc mb-2">
-        <p v-for="(line, i) in note.description" :key="i" :class="i === 0 ? 'note-desc-title' : ''">{{ line }}</p>
-      </div>
-      <ul v-if="note.items.length" class="note-list">
-        <li v-for="(item, i) in note.items" :key="i">{{ item }}</li>
-      </ul>
+      <template v-if="expandedIndex === index">
+        <div v-if="note.description?.length" class="note-desc mt-3 mb-2">
+          <p v-for="(line, i) in note.description" :key="i" :class="i === 0 ? 'note-desc-title' : ''">{{ line }}</p>
+        </div>
+        <ul v-if="note.items.length" class="note-list mt-3">
+          <li v-for="(item, i) in note.items" :key="i">{{ item }}</li>
+        </ul>
+      </template>
     </div>
   </v-container>
 </template>
@@ -129,7 +159,7 @@ const notes = [
 }
 
 .note-desc-title {
-  font-size: 0.95rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   color: rgb(var(--v-theme-on-surface));
   margin-bottom: 4px;
@@ -137,6 +167,7 @@ const notes = [
 
 .note-desc p {
   margin: 0;
+  font-size: 0.875rem;
   color: rgba(var(--v-theme-on-surface), 0.75);
   line-height: 1.6;
 }
@@ -150,7 +181,26 @@ const notes = [
 }
 
 .note-list li {
+  font-size: 0.875rem;
   color: rgba(var(--v-theme-on-surface), 0.75);
   line-height: 1.5;
+}
+
+.release-date {
+  font-size: 0.75rem;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.collapse-icon {
+  color: rgba(var(--v-theme-on-surface), 0.4);
+  transition: transform 0.2s ease;
+}
+
+.collapse-icon-open {
+  transform: rotate(180deg);
 }
 </style>

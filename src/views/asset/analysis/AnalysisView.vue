@@ -83,21 +83,6 @@ const totalReturn = computed(() => {
 
 const finalAsset = computed(() => fireGoalYear.value?.asset ?? projection.value[projection.value.length - 1]?.asset ?? 0)
 
-const remainingInfo = computed(() => {
-  const T = targetAsset.value
-  const C = currentAsset.value
-  const M = monthlyInvestment.value
-  const rate = annualReturn.value
-  if (!T || !M || rate === null || C >= T) return null
-
-  const months = calcMonths(T, C, M, rate)
-  if (months === null || months <= 0) return null
-  const years = Math.floor(months / 12)
-  const rem = months % 12
-  return years > 0 ? `약 ${years}년 ${rem > 0 ? rem + '개월' : ''} 남았습니다` : `약 ${months}개월 남았습니다`
-})
-
-
 const hasData = computed(() => annualReturn.value !== null && monthlyInvestment.value > 0 && currentAsset.value >= 0)
 
 // ── Progress Timeline ─────────────────────────────
@@ -371,12 +356,14 @@ onUnmounted(clearPullToRefresh)
 <template>
   <v-container class="pa-4 pa-sm-6">
     <!-- 헤더 -->
-    <div class="d-flex align-center ga-2 mb-5">
-      <img src="/icons/icon-predict.png" class="header-icon" alt="예측" />
-      <div>
+    <div class="d-flex justify-space-between align-center mb-2">
+      <div class="d-flex align-center ga-2">
+        <img src="/icons/icon-predict.png" class="header-icon" alt="예측" />
         <div class="font-weight-bold">미래 예측</div>
-        <div class="text-medium-emphasis">FIRE 달성까지의 여정</div>
       </div>
+      <button class="icon-btn" @click="router.push('/hub')">
+        <img src="/icons/icon-hub.png" alt="허브" class="icon-btn-img" />
+      </button>
     </div>
 
     <!-- 스켈레톤 -->
@@ -396,12 +383,6 @@ onUnmounted(clearPullToRefresh)
     </template>
 
     <template v-else>
-      <!-- 소제목 -->
-      <div v-if="remainingInfo" class="remain-badge mb-4">
-        <span class="remain-text">{{ remainingInfo }}</span>
-        <span class="remain-sub" v-if="annualReturn !== null">연 {{ annualReturn }}% 복리 기준</span>
-      </div>
-
       <!-- 차트 카드 -->
       <div class="glass-card pa-4 mb-3">
         <div class="d-flex justify-space-between align-center mb-1">
@@ -602,19 +583,22 @@ onUnmounted(clearPullToRefresh)
   object-fit: contain;
 }
 
-.remain-badge {
+.icon-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: opacity 0.15s ease;
 }
-.remain-text {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: rgb(var(--v-theme-on-surface));
-}
-.remain-sub {
-  font-size: 0.75rem;
-  color: rgba(var(--v-theme-on-surface), 0.45);
+.icon-btn:active { opacity: 0.6; }
+.icon-btn-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
 }
 
 .chart-asset-label {
@@ -1103,7 +1087,8 @@ onUnmounted(clearPullToRefresh)
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 .fire-goal-remain {
-  color: rgba(var(--v-theme-on-surface), 0.3);
+  font-weight: 700;
+  color: rgb(var(--v-theme-primary));
 }
 .fire-goal-bar-bg {
   height: 2px;

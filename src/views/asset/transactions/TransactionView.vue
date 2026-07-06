@@ -313,10 +313,6 @@ const grouped = computed(() => {
 
 const usdToKrw = ref(0)
 
-const hasUSD = computed(() =>
-  totalsData.value.some((t) => t.portfolios?.currency === 'USD'),
-)
-
 const totalBuy = computed(() => {
   const krw = totalsData.value
     .filter((t) => t.transaction_type === 'BUY' && t.portfolios?.currency === 'KRW')
@@ -483,14 +479,11 @@ onUnmounted(() => {
 <template>
   <v-container class="pa-4 pa-sm-6" @click="onContainerClick">
     <!-- 헤더 -->
-    <div class="asset-header d-flex justify-space-between align-center mb-5">
+    <div class="asset-header d-flex justify-space-between align-center mb-3">
       <div class="d-flex align-center ga-2" style="min-width: 0">
         <img src="/icons/icon-record.png" class="header-icon" alt="기록" />
-        <div style="min-width: 0">
-          <div class="font-weight-bold header-title" style="color: rgb(var(--v-theme-on-surface))">
-            거래내역
-          </div>
-          <div class="text-medium-emphasis header-title">매수 / 매도 기록</div>
+        <div class="font-weight-bold header-title" style="color: rgb(var(--v-theme-on-surface))">
+          거래내역
         </div>
       </div>
       <v-btn
@@ -579,9 +572,12 @@ onUnmounted(() => {
         >{{ acc }}</button>
       </div>
 
-      <!-- 날짜 드롭다운 + 건수 -->
-      <div class="d-flex align-center mb-3 ga-2">
-        <div class="date-filter-wrap">
+      <!-- 건수 + 날짜 드롭다운 -->
+      <div class="d-flex align-center ga-2" style="margin-bottom: 6px">
+        <span style="font-size: 0.75rem; color: rgba(var(--v-theme-on-surface), 0.4)">
+          총 {{ totalsData.length }}건
+        </span>
+        <div class="date-filter-wrap ml-auto">
           <select v-model="selectedYear" class="date-select">
             <option :value="null">연도</option>
             <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}년</option>
@@ -593,9 +589,7 @@ onUnmounted(() => {
           <button v-if="selectedYear" class="date-clear-btn" @click="selectedYear = null; selectedMonth = null">
             <v-icon size="12">mdi-close</v-icon>
           </button>
-          <span v-if="hasUSD && usdToKrw" class="date-hint">적용환율 {{ Math.round(usdToKrw).toLocaleString() }}원 (전일 기준)</span>
         </div>
-        <span class="text-disabled flex-shrink-0 ml-auto">총 {{ totalsData.length }}건</span>
       </div>
 
       <!-- 빈 상태 -->
@@ -1068,12 +1062,6 @@ onUnmounted(() => {
 .date-select:disabled {
   opacity: 0.35;
   cursor: default;
-}
-.date-hint {
-  font-size: 0.625rem;
-  color: rgba(var(--v-theme-on-surface), 0.35);
-  white-space: nowrap;
-  padding: 0 4px;
 }
 .date-clear-btn {
   display: flex;

@@ -143,13 +143,10 @@ const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.v
 
 <template>
   <v-container class="pa-4 pa-sm-6 pb-16">
-    <div class="d-flex align-center justify-space-between mb-4">
+    <div class="d-flex align-center justify-space-between mb-2">
       <div class="d-flex align-center ga-2">
         <img src="/icons/icon-stats.png" class="header-icon" alt="통계" />
-        <div>
-          <div class="font-weight-bold text-h6">통계</div>
-          <div class="text-medium-emphasis">카테고리별 수입·지출 분석</div>
-        </div>
+        <div class="font-weight-bold text-h6">통계</div>
       </div>
       <v-btn icon variant="text" size="small" to="/hub">
         <img src="/icons/icon-hub.png" class="header-icon" alt="허브" />

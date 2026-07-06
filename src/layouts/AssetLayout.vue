@@ -1,17 +1,15 @@
 <script setup lang="ts">
-import { ref, watch, nextTick, provide } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { isAdminEmail } from '@/config/admin'
 import { activeRefreshHandler } from '@/composables/usePullToRefresh'
-import { feedbackBadgeKey } from '@/composables/useFeedbackBadge'
 
 const router = useRouter()
 const route = useRoute()
 const contentRef = ref<HTMLElement | null>(null)
 const isAdmin = ref(false)
 const unreadFeedbackCount = ref(0)
-provide(feedbackBadgeKey, { isAdmin, unreadFeedbackCount })
 
 // ── 아래로 당겨서 새로고침 ──────────────────────────
 const PULL_THRESHOLD = 64
@@ -102,11 +100,11 @@ watch(() => route.path, async () => {
 })
 
 const tabs = [
-  { label: '홈', desc: '대시보드', icon: null, activeIcon: null, route: '/dashboard', img: '/icons/icon-dashboard.png' },
-  { label: '자산', desc: '보유 자산 한눈에', icon: null, activeIcon: null, route: '/portfolio', img: '/icons/icon-asset.png' },
-  { label: '기록', desc: '매매 내역 관리', icon: null, activeIcon: null, route: '/transactions', img: '/icons/icon-record.png' },
-  { label: '예측', desc: '목표 달성 시점', icon: null, activeIcon: null, route: '/analysis', img: '/icons/icon-predict.png' },
-  { label: '더보기', desc: '설정 및 계정', icon: 'mdi-dots-horizontal', activeIcon: 'mdi-dots-horizontal', route: '/more', img: '/icons/icon-more.png' },
+  { label: '홈', icon: null, activeIcon: null, route: '/dashboard', img: '/icons/icon-dashboard.png' },
+  { label: '자산', icon: null, activeIcon: null, route: '/portfolio', img: '/icons/icon-asset.png' },
+  { label: '기록', icon: null, activeIcon: null, route: '/transactions', img: '/icons/icon-record.png' },
+  { label: '예측', icon: null, activeIcon: null, route: '/analysis', img: '/icons/icon-predict.png' },
+  { label: '더보기', icon: 'mdi-dots-horizontal', activeIcon: 'mdi-dots-horizontal', route: '/more', img: '/icons/icon-more.png' },
 ]
 
 const isActive = (tabRoute: string) => route.path === tabRoute
@@ -150,7 +148,6 @@ const isActive = (tabRoute: string) => route.path === tabRoute
           <span v-if="tab.route === '/more' && unreadFeedbackCount > 0" class="nav-unread-dot" />
         </div>
         <span class="bottom-nav-label">{{ tab.label }}</span>
-        <span class="bottom-nav-desc">{{ tab.desc }}</span>
       </button>
     </nav>
   </div>
@@ -166,7 +163,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
 
 .app-content {
   flex: 1;
-  padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  padding-bottom: calc(60px + env(safe-area-inset-bottom));
   overflow-y: auto;
 }
 
@@ -183,7 +180,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   bottom: 0;
   left: 0;
   right: 0;
-  height: calc(76px + env(safe-area-inset-bottom));
+  height: calc(56px + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   display: flex;
   align-items: stretch;
@@ -234,7 +231,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   cursor: pointer;
   color: rgba(var(--v-theme-on-surface), 0.35);
   transition: color 0.15s ease;
-  padding: 10px 4px 6px;
+  padding: 4px 4px;
 }
 
 .bottom-nav-item.active {
@@ -286,14 +283,4 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   border: 1.5px solid rgb(var(--v-theme-surface));
 }
 
-.bottom-nav-desc {
-  font-size: 0.5625rem;
-  font-weight: 400;
-  opacity: 0.6;
-  line-height: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 60px;
-}
 </style>

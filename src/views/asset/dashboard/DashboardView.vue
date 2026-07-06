@@ -103,7 +103,7 @@ const estimatedDate = computed(() => {
   const date = new Date()
   date.setMonth(date.getMonth() + months)
 
-  const dateStr = `${date.getFullYear()}. ${String(date.getMonth() + 1).padStart(2, '0')}.`
+  const dateStr = `${date.getFullYear()}년 ${date.getMonth() + 1}월`
   const durationStr =
     years > 0 ? `${years}년 ${remainMonths > 0 ? remainMonths + '개월' : ''}` : `${months}개월`
 
@@ -192,18 +192,12 @@ onUnmounted(clearPullToRefresh)
 <template>
   <v-container class="pa-4 pa-sm-6">
     <!-- 헤더 -->
-    <div class="d-flex justify-space-between align-center mb-6">
+    <div class="d-flex justify-space-between align-center mb-2">
       <div class="d-flex align-center ga-2">
         <img src="/icons/icon-dashboard.png" class="header-icon" alt="대시보드" />
-        <div>
-          <div class="font-weight-bold text-h6">대시보드</div>
-          <div class="text-medium-emphasis">자산 현황 한눈에 보기</div>
-        </div>
+        <div class="font-weight-bold text-h6">대시보드</div>
       </div>
       <div class="d-flex align-center ga-1">
-        <button class="icon-btn" @click="router.push('/goalSettings')">
-          <img src="/icons/icon-goal.png" alt="목표수정" class="icon-btn-img" />
-        </button>
         <button class="icon-btn" @click="router.push('/hub')">
           <img src="/icons/icon-hub.png" alt="허브" class="icon-btn-img" />
         </button>
@@ -220,7 +214,7 @@ onUnmounted(clearPullToRefresh)
 
     <template v-else>
       <!-- 현재 자산 카드 -->
-      <div class="glass-card pa-5 mb-3">
+      <div class="glass-card pa-4 mb-2">
         <div class="d-flex align-center justify-space-between mb-1">
           <div class="field-label">현재 자산</div>
           <div class="d-flex align-center" style="gap: 22px">
@@ -264,8 +258,8 @@ onUnmounted(clearPullToRefresh)
       </div>
 
       <!-- FIRE 달성률 카드 (도넛 차트) -->
-      <div class="glass-card pa-5 mb-3">
-        <div class="field-label mb-4">FIRE 달성률</div>
+      <div class="glass-card pa-4 mb-2">
+        <div class="field-label mb-2">FIRE 달성률</div>
         <div class="fire-rate-layout">
           <div class="donut-wrap">
             <svg
@@ -316,7 +310,7 @@ onUnmounted(clearPullToRefresh)
             <template v-else>
               <div class="fire-info-sub mb-1">목표까지</div>
               <div class="fire-info-main">{{ formatShortMoney(remainingAsset) }}원 남음</div>
-              <div class="fire-divider my-3" />
+              <div class="fire-divider my-2" />
               <div class="fire-info-sub mb-1">예상 달성일</div>
               <template v-if="estimatedDate">
                 <div class="fire-info-date">{{ estimatedDate.dateStr }}</div>
@@ -337,7 +331,7 @@ onUnmounted(clearPullToRefresh)
       </div>
 
       <!-- 스탯 2개 -->
-      <div class="stat-grid mb-3">
+      <div class="stat-grid mb-2">
         <div class="stat-card">
           <div class="stat-label">월 투자금</div>
           <div class="stat-value">
@@ -528,17 +522,18 @@ onUnmounted(clearPullToRefresh)
   gap: 8px;
 }
 .stat-card {
-  padding: 16px;
+  padding: 12px;
 }
 .stat-label {
   font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 .stat-value {
   font-size: 1.125rem;
   font-weight: 600;
   color: rgb(var(--v-theme-on-surface));
+  text-align: center;
 }
 
 /* 투자 현황 미니 리스트 */
