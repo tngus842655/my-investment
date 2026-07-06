@@ -66,10 +66,6 @@ const selectTheme = (id: string) => {
   themeSheet.value = false
 }
 
-const currentThemeLabel = computed(() => {
-  const t = themes.find(t => t.id === currentThemeId.value)
-  return t ? `${t.emoji} ${t.label}` : ''
-})
 </script>
 
 <template>
@@ -89,7 +85,6 @@ const currentThemeLabel = computed(() => {
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-view-grid-outline</v-icon></div>
         <div>
           <div class="font-weight-medium">서비스 홈</div>
-          <div class="text-medium-emphasis">자산관리·가계부 전환</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -103,7 +98,6 @@ const currentThemeLabel = computed(() => {
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-target</v-icon></div>
         <div>
           <div class="font-weight-medium">FIRE 목표 설정</div>
-          <div class="text-medium-emphasis">목표 자산·월 투자금·수익률 수정</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -113,7 +107,6 @@ const currentThemeLabel = computed(() => {
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-chart-timeline-variant</v-icon></div>
         <div>
           <div class="font-weight-medium">FIRE 시뮬레이터</div>
-          <div class="text-medium-emphasis">투자금·수익률 변경 시 달성일 비교</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -123,7 +116,6 @@ const currentThemeLabel = computed(() => {
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-flag-checkered</v-icon></div>
         <div>
           <div class="font-weight-medium">FIRE 진행 기록</div>
-          <div class="text-medium-emphasis">목표 달성률 변화 히스토리</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -133,7 +125,6 @@ const currentThemeLabel = computed(() => {
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-trophy-outline</v-icon></div>
         <div>
           <div class="font-weight-medium">목표 달성 배지</div>
-          <div class="text-medium-emphasis">FIRE 달성률 구간별 업적</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -147,7 +138,6 @@ const currentThemeLabel = computed(() => {
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-chart-donut</v-icon></div>
         <div>
           <div class="font-weight-medium">포트폴리오 분석</div>
-          <div class="text-medium-emphasis">종목별 비중 도넛 차트</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -157,7 +147,6 @@ const currentThemeLabel = computed(() => {
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-chart-bar</v-icon></div>
         <div>
           <div class="font-weight-medium">자산 성장 리포트</div>
-          <div class="text-medium-emphasis">월별 자산 증가 추이</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -171,7 +160,6 @@ const currentThemeLabel = computed(() => {
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-chart-box-outline</v-icon></div>
         <div>
           <div class="font-weight-medium">ETF 분석&amp;비교</div>
-          <div class="text-medium-emphasis">CAGR · MDD · 변동성 · 배당률 · 운용보수</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -181,7 +169,6 @@ const currentThemeLabel = computed(() => {
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-history</v-icon></div>
         <div>
           <div class="font-weight-medium">ETF 백테스트</div>
-          <div class="text-medium-emphasis">과거 DCA 투자 수익률 시뮬레이션</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -191,7 +178,6 @@ const currentThemeLabel = computed(() => {
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-calendar-month-outline</v-icon></div>
         <div>
           <div class="font-weight-medium">배당 캘린더</div>
-          <div class="text-medium-emphasis">배당락일 · 지급일 일정 확인</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -207,7 +193,6 @@ const currentThemeLabel = computed(() => {
         </div>
         <div>
           <div class="font-weight-medium">테마 선택</div>
-          <div class="text-medium-emphasis">현재: {{ currentThemeLabel }}</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>

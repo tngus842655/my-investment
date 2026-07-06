@@ -109,7 +109,6 @@ const executeReset = async () => {
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-view-grid-outline</v-icon></div>
         <div>
           <div class="font-weight-medium">서비스 홈</div>
-          <div class="text-medium-emphasis">자산관리·가계부 전환</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -122,7 +121,6 @@ const executeReset = async () => {
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-magnify</v-icon></div>
         <div>
           <div class="font-weight-medium">내역 검색</div>
-          <div class="text-medium-emphasis">메모·카테고리로 내역 찾기</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -132,7 +130,6 @@ const executeReset = async () => {
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-cog-outline</v-icon></div>
         <div>
           <div class="font-weight-medium">관리</div>
-          <div class="text-medium-emphasis">카테고리·결제수단·즐겨찾기 관리</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -142,7 +139,6 @@ const executeReset = async () => {
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-file-excel-outline</v-icon></div>
         <div>
           <div class="font-weight-medium">엑셀 가져오기</div>
-          <div class="text-medium-emphasis">엑셀 파일로 과거 내역 일괄 등록</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -155,7 +151,6 @@ const executeReset = async () => {
         <div class="menu-icon menu-icon-error"><v-icon size="18" color="error">mdi-delete-clock-outline</v-icon></div>
         <div>
           <div class="font-weight-medium text-error">거래내역 초기화</div>
-          <div class="text-medium-emphasis">등록된 모든 거래내역 삭제</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -165,7 +160,6 @@ const executeReset = async () => {
         <div class="menu-icon menu-icon-error"><v-icon size="18" color="error">mdi-star-off-outline</v-icon></div>
         <div>
           <div class="font-weight-medium text-error">즐겨찾기 초기화</div>
-          <div class="text-medium-emphasis">등록된 모든 즐겨찾기 삭제</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -175,7 +169,6 @@ const executeReset = async () => {
         <div class="menu-icon menu-icon-error"><v-icon size="18" color="error">mdi-database-remove-outline</v-icon></div>
         <div>
           <div class="font-weight-medium text-error">전체 초기화</div>
-          <div class="text-medium-emphasis">카테고리·결제수단 포함 모든 데이터 삭제</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
