@@ -145,34 +145,17 @@ const executeReset = async () => {
       </div>
     </div>
 
-    <div class="section-label mb-2">데이터 관리</div>
-    <div class="d-flex flex-column ga-2 mb-5">
-      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="openResetDialog('entries')">
-        <div class="menu-icon menu-icon-error"><v-icon size="18" color="error">mdi-delete-clock-outline</v-icon></div>
-        <div>
-          <div class="font-weight-medium text-error">거래내역 초기화</div>
-        </div>
-        <v-spacer />
-        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
-      </div>
-
-      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="openResetDialog('favorites')">
-        <div class="menu-icon menu-icon-error"><v-icon size="18" color="error">mdi-star-off-outline</v-icon></div>
-        <div>
-          <div class="font-weight-medium text-error">즐겨찾기 초기화</div>
-        </div>
-        <v-spacer />
-        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
-      </div>
-
-      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="openResetDialog('all')">
-        <div class="menu-icon menu-icon-error"><v-icon size="18" color="error">mdi-database-remove-outline</v-icon></div>
-        <div>
-          <div class="font-weight-medium text-error">전체 초기화</div>
-        </div>
-        <v-spacer />
-        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
-      </div>
+    <div class="glass-card pa-4 mb-5">
+      <div class="section-label mb-3">데이터 관리</div>
+      <v-btn variant="tonal" color="error" rounded="lg" block prepend-icon="mdi-delete-clock-outline" class="mb-2" @click="openResetDialog('entries')">
+        거래내역 초기화
+      </v-btn>
+      <v-btn variant="tonal" color="error" rounded="lg" block prepend-icon="mdi-star-off-outline" class="mb-2" @click="openResetDialog('favorites')">
+        즐겨찾기 초기화
+      </v-btn>
+      <v-btn variant="tonal" color="error" rounded="lg" block prepend-icon="mdi-database-remove-outline" @click="openResetDialog('all')">
+        전체 초기화
+      </v-btn>
     </div>
 
     <div class="section-label mb-2">계정</div>
