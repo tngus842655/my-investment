@@ -46,7 +46,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
 .budget-content {
   flex: 1;
   min-height: 0;
-  padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  padding-bottom: calc(60px + env(safe-area-inset-bottom));
   overflow-y: auto;
 }
 
@@ -55,7 +55,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   bottom: 0;
   left: 0;
   right: 0;
-  height: calc(76px + env(safe-area-inset-bottom));
+  height: calc(56px + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   display: flex;
   align-items: stretch;
@@ -77,7 +77,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   cursor: pointer;
   color: rgba(var(--v-theme-on-surface), 0.35);
   transition: color 0.15s ease;
-  padding: 10px 4px 6px;
+  padding: 4px 4px;
 }
 
 .bottom-nav-item.active {

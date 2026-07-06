@@ -181,7 +181,7 @@ const executeReset = async () => {
 .budget-more-page {
   display: flex;
   flex-direction: column;
-  min-height: calc(100dvh - 32px);
+  min-height: calc(100dvh - 32px - 60px);
 }
 
 .header-icon {
