@@ -39,6 +39,9 @@ const LOGO_WIDE: Partial<Record<string, string>> = {
 }
 const logoWide = computed(() => LOGO_WIDE[themeId.value] ?? null)
 
+const serviceOpen = ref(false)
+const settingsOpen = ref(false)
+
 const showBack = ref(false)
 onMounted(async () => {
   showBack.value = window.history.state?.back != null && window.history.state.back !== '/'
@@ -58,8 +61,8 @@ onMounted(async () => {
       <div v-else class="font-weight-bold text-h6">Fire Path</div>
     </div>
 
-    <div class="d-flex flex-column ga-3">
-      <div class="hub-card glass-card pa-5 d-flex align-center ga-3" @click="router.push('/dashboard')">
+    <div class="d-flex flex-column ga-2">
+      <div class="hub-card glass-card pa-3 d-flex align-center ga-3" @click="router.push('/dashboard')">
         <div class="hub-icon"><v-icon size="24" color="primary">mdi-finance</v-icon></div>
         <div>
           <div class="font-weight-medium">자산관리</div>
@@ -70,7 +73,7 @@ onMounted(async () => {
       </div>
 
       <div
-        class="hub-card glass-card pa-5 d-flex align-center ga-3"
+        class="hub-card glass-card pa-3 d-flex align-center ga-3"
         :class="{ 'hub-card-disabled': !canAccessBudget }"
         @click="canAccessBudget && router.push('/budget')"
       >
@@ -89,28 +92,38 @@ onMounted(async () => {
 
     <!-- 서비스 -->
     <div class="glass-card pa-4 mt-3">
-      <div class="section-label mb-3">서비스</div>
-      <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-bullhorn-outline" class="mb-2" @click="router.push('/notices')">
-        공지사항
-      </v-btn>
-      <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-message-text-outline" class="mb-2" @click="router.push('/feedback')">
-        의견 관리
-        <v-badge v-if="!isAdmin && unreadFeedbackCount > 0" dot color="error" inline class="ml-2" />
-      </v-btn>
-      <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-notebook-edit-outline" @click="router.push('/release-notes')">
-        개발자 노트
-      </v-btn>
+      <div class="section-label d-flex align-center justify-space-between cursor-pointer" @click="serviceOpen = !serviceOpen">
+        <span>서비스</span>
+        <v-icon size="18" class="collapse-icon" :class="{ 'collapse-icon-open': serviceOpen }">mdi-chevron-down</v-icon>
+      </div>
+      <div v-if="serviceOpen" class="mt-3">
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-bullhorn-outline" class="mb-2" @click="router.push('/notices')">
+          공지사항
+        </v-btn>
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-message-text-outline" class="mb-2" @click="router.push('/feedback')">
+          의견 관리
+          <v-badge v-if="!isAdmin && unreadFeedbackCount > 0" dot color="error" inline class="ml-2" />
+        </v-btn>
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-notebook-edit-outline" @click="router.push('/release-notes')">
+          개발자 노트
+        </v-btn>
+      </div>
     </div>
 
     <!-- 설정 -->
     <div class="glass-card pa-4 mt-3">
-      <div class="section-label mb-3">설정</div>
-      <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-lock-reset" class="mb-2" @click="router.push('/change-password')">
-        비밀번호 변경
-      </v-btn>
-      <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-cellphone-cog" @click="router.push('/display-settings')">
-        화면 설정
-      </v-btn>
+      <div class="section-label d-flex align-center justify-space-between cursor-pointer" @click="settingsOpen = !settingsOpen">
+        <span>설정</span>
+        <v-icon size="18" class="collapse-icon" :class="{ 'collapse-icon-open': settingsOpen }">mdi-chevron-down</v-icon>
+      </div>
+      <div v-if="settingsOpen" class="mt-3">
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-lock-reset" class="mb-2" @click="router.push('/change-password')">
+          비밀번호 변경
+        </v-btn>
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-cellphone-cog" @click="router.push('/display-settings')">
+          화면 설정
+        </v-btn>
+      </div>
     </div>
 
     <!-- 관리자 -->
@@ -205,5 +218,18 @@ onMounted(async () => {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: rgba(var(--v-theme-on-surface), 0.4);
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.collapse-icon {
+  color: rgba(var(--v-theme-on-surface), 0.4);
+  transition: transform 0.2s ease;
+}
+
+.collapse-icon-open {
+  transform: rotate(180deg);
 }
 </style>
