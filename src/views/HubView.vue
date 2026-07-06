@@ -39,8 +39,8 @@ const LOGO_WIDE: Partial<Record<string, string>> = {
 }
 const logoWide = computed(() => LOGO_WIDE[themeId.value] ?? null)
 
-const serviceOpen = ref(false)
-const settingsOpen = ref(false)
+const serviceOpen = ref(true)
+const settingsOpen = ref(true)
 
 const showBack = ref(false)
 onMounted(async () => {
@@ -52,7 +52,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <v-container class="pa-4 pa-sm-6">
+  <v-container class="pa-4 pa-sm-6 hub-page">
     <div class="hub-header mb-6">
       <button v-if="showBack" class="back-btn hub-header-back" @click="router.back()">
         <v-icon size="20">mdi-arrow-left</v-icon>
@@ -64,10 +64,7 @@ onMounted(async () => {
     <div class="d-flex flex-column ga-2">
       <div class="hub-card glass-card pa-3 d-flex align-center ga-3" @click="router.push('/dashboard')">
         <div class="hub-icon"><v-icon size="24" color="primary">mdi-finance</v-icon></div>
-        <div>
-          <div class="font-weight-medium">자산관리</div>
-          <div class="text-medium-emphasis">투자 포트폴리오·FIRE 목표 관리</div>
-        </div>
+        <div class="font-weight-medium">자산관리</div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
@@ -78,66 +75,76 @@ onMounted(async () => {
         @click="canAccessBudget && router.push('/budget')"
       >
         <div class="hub-icon"><v-icon size="24" color="primary">mdi-notebook-outline</v-icon></div>
-        <div>
-          <div class="d-flex align-center ga-2">
-            <div class="font-weight-medium">가계부</div>
-            <div v-if="!canAccessBudget" class="coming-soon-badge">준비중</div>
-          </div>
-          <div class="text-medium-emphasis">수입·지출 기록 관리</div>
+        <div class="d-flex align-center ga-2">
+          <div class="font-weight-medium">가계부</div>
+          <div v-if="!canAccessBudget" class="coming-soon-badge">준비중</div>
         </div>
         <v-spacer />
         <v-icon v-if="canAccessBudget" size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
     </div>
 
-    <!-- 서비스 -->
-    <div class="glass-card pa-4 mt-3">
-      <div class="section-label d-flex align-center justify-space-between cursor-pointer" @click="serviceOpen = !serviceOpen">
-        <span>서비스</span>
-        <v-icon size="18" class="collapse-icon" :class="{ 'collapse-icon-open': serviceOpen }">mdi-chevron-down</v-icon>
+    <!-- 서비스/설정/관리자: 화면 하단에 고정 배치 -->
+    <div class="bottom-menu mt-auto">
+      <!-- 서비스 -->
+      <div class="glass-card pa-4 mt-3">
+        <div class="section-label d-flex align-center justify-space-between cursor-pointer" @click="serviceOpen = !serviceOpen">
+          <span>서비스</span>
+          <v-icon size="18" class="collapse-icon" :class="{ 'collapse-icon-open': serviceOpen }">mdi-chevron-down</v-icon>
+        </div>
+        <div v-if="serviceOpen" class="mt-3">
+          <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-bullhorn-outline" class="mb-2" @click="router.push('/notices')">
+            공지사항
+          </v-btn>
+          <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-message-text-outline" class="mb-2" @click="router.push('/feedback')">
+            의견 관리
+            <v-badge v-if="!isAdmin && unreadFeedbackCount > 0" dot color="error" inline class="ml-2" />
+          </v-btn>
+          <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-notebook-edit-outline" @click="router.push('/release-notes')">
+            개발자 노트
+          </v-btn>
+        </div>
       </div>
-      <div v-if="serviceOpen" class="mt-3">
-        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-bullhorn-outline" class="mb-2" @click="router.push('/notices')">
-          공지사항
-        </v-btn>
-        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-message-text-outline" class="mb-2" @click="router.push('/feedback')">
-          의견 관리
-          <v-badge v-if="!isAdmin && unreadFeedbackCount > 0" dot color="error" inline class="ml-2" />
-        </v-btn>
-        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-notebook-edit-outline" @click="router.push('/release-notes')">
-          개발자 노트
-        </v-btn>
-      </div>
-    </div>
 
-    <!-- 설정 -->
-    <div class="glass-card pa-4 mt-3">
-      <div class="section-label d-flex align-center justify-space-between cursor-pointer" @click="settingsOpen = !settingsOpen">
-        <span>설정</span>
-        <v-icon size="18" class="collapse-icon" :class="{ 'collapse-icon-open': settingsOpen }">mdi-chevron-down</v-icon>
+      <!-- 설정 -->
+      <div class="glass-card pa-4 mt-3">
+        <div class="section-label d-flex align-center justify-space-between cursor-pointer" @click="settingsOpen = !settingsOpen">
+          <span>설정</span>
+          <v-icon size="18" class="collapse-icon" :class="{ 'collapse-icon-open': settingsOpen }">mdi-chevron-down</v-icon>
+        </div>
+        <div v-if="settingsOpen" class="mt-3">
+          <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-lock-reset" class="mb-2" @click="router.push('/change-password')">
+            비밀번호 변경
+          </v-btn>
+          <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-cellphone-cog" @click="router.push('/display-settings')">
+            화면 설정
+          </v-btn>
+        </div>
       </div>
-      <div v-if="settingsOpen" class="mt-3">
-        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-lock-reset" class="mb-2" @click="router.push('/change-password')">
-          비밀번호 변경
-        </v-btn>
-        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-cellphone-cog" @click="router.push('/display-settings')">
-          화면 설정
-        </v-btn>
-      </div>
-    </div>
 
-    <!-- 관리자 -->
-    <div v-if="isAdmin" class="glass-card pa-4 mt-3">
-      <div class="section-label mb-3">관리자</div>
-      <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-shield-crown-outline" @click="router.push('/admin')">
-        관리자 페이지
-        <v-badge v-if="unreadFeedbackCount > 0" :content="unreadFeedbackCount" color="error" inline class="ml-2" />
-      </v-btn>
+      <!-- 관리자 -->
+      <div v-if="isAdmin" class="glass-card pa-4 mt-3">
+        <div class="section-label mb-3">관리자</div>
+        <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-shield-crown-outline" @click="router.push('/admin')">
+          관리자 페이지
+          <v-badge v-if="unreadFeedbackCount > 0" :content="unreadFeedbackCount" color="error" inline class="ml-2" />
+        </v-btn>
+      </div>
     </div>
   </v-container>
 </template>
 
 <style scoped>
+.hub-page {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 32px);
+}
+
+.bottom-menu {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 .hub-header {
   position: relative;
   display: flex;
