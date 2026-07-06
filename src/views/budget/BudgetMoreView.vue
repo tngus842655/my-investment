@@ -105,7 +105,7 @@ const executeReset = async () => {
 
     <div class="section-label mb-2">다른 서비스</div>
     <div class="d-flex flex-column ga-2 mb-5">
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/hub')">
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/hub')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-view-grid-outline</v-icon></div>
         <div>
           <div class="font-weight-medium">서비스 홈</div>
@@ -117,7 +117,7 @@ const executeReset = async () => {
 
     <div class="section-label mb-2">가계부</div>
     <div class="d-flex flex-column ga-2 mb-5">
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/budget/search')">
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/budget/search')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-magnify</v-icon></div>
         <div>
           <div class="font-weight-medium">내역 검색</div>
@@ -126,7 +126,7 @@ const executeReset = async () => {
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/budget/manage')">
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/budget/manage')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-cog-outline</v-icon></div>
         <div>
           <div class="font-weight-medium">관리</div>
@@ -135,7 +135,7 @@ const executeReset = async () => {
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/budget/import')">
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/budget/import')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-file-excel-outline</v-icon></div>
         <div>
           <div class="font-weight-medium">엑셀 가져오기</div>
@@ -147,7 +147,7 @@ const executeReset = async () => {
 
     <div class="section-label mb-2">데이터 관리</div>
     <div class="d-flex flex-column ga-2 mb-5">
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="openResetDialog('entries')">
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="openResetDialog('entries')">
         <div class="menu-icon menu-icon-error"><v-icon size="18" color="error">mdi-delete-clock-outline</v-icon></div>
         <div>
           <div class="font-weight-medium text-error">거래내역 초기화</div>
@@ -156,7 +156,7 @@ const executeReset = async () => {
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="openResetDialog('favorites')">
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="openResetDialog('favorites')">
         <div class="menu-icon menu-icon-error"><v-icon size="18" color="error">mdi-star-off-outline</v-icon></div>
         <div>
           <div class="font-weight-medium text-error">즐겨찾기 초기화</div>
@@ -165,7 +165,7 @@ const executeReset = async () => {
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="openResetDialog('all')">
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="openResetDialog('all')">
         <div class="menu-icon menu-icon-error"><v-icon size="18" color="error">mdi-database-remove-outline</v-icon></div>
         <div>
           <div class="font-weight-medium text-error">전체 초기화</div>
@@ -177,7 +177,7 @@ const executeReset = async () => {
 
     <div class="section-label mb-2">계정</div>
     <div class="d-flex flex-column ga-2">
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="confirmDialog = true">
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="confirmDialog = true">
         <div class="menu-icon menu-icon-error"><v-icon size="18" color="error">mdi-logout</v-icon></div>
         <div class="font-weight-medium text-error">로그아웃</div>
       </div>

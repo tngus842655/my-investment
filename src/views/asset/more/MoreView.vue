@@ -81,7 +81,7 @@ const selectTheme = (id: string) => {
     <!-- 다른 서비스 -->
     <div class="section-label mb-2">다른 서비스</div>
     <div class="d-flex flex-column ga-2 mb-5">
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/hub')">
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/hub')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-view-grid-outline</v-icon></div>
         <div>
           <div class="font-weight-medium">서비스 홈</div>
@@ -94,7 +94,7 @@ const selectTheme = (id: string) => {
     <!-- FIRE 관리 섹션 -->
     <div class="section-label mb-2">FIRE 관리</div>
     <div class="d-flex flex-column ga-2 mb-5">
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/goalSettings')">
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/goalSettings')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-target</v-icon></div>
         <div>
           <div class="font-weight-medium">FIRE 목표 설정</div>
@@ -103,7 +103,7 @@ const selectTheme = (id: string) => {
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/fire-simulator')">
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/fire-simulator')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-chart-timeline-variant</v-icon></div>
         <div>
           <div class="font-weight-medium">FIRE 시뮬레이터</div>
@@ -112,7 +112,7 @@ const selectTheme = (id: string) => {
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/fire-history')">
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/fire-history')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-flag-checkered</v-icon></div>
         <div>
           <div class="font-weight-medium">FIRE 진행 기록</div>
@@ -121,7 +121,7 @@ const selectTheme = (id: string) => {
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/badges')">
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/badges')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-trophy-outline</v-icon></div>
         <div>
           <div class="font-weight-medium">목표 달성 배지</div>
@@ -134,7 +134,7 @@ const selectTheme = (id: string) => {
     <!-- 자산 분석 섹션 -->
     <div class="section-label mb-2">자산 분석</div>
     <div class="d-flex flex-column ga-2 mb-5">
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/portfolio-analysis')">
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/portfolio-analysis')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-chart-donut</v-icon></div>
         <div>
           <div class="font-weight-medium">포트폴리오 분석</div>
@@ -143,7 +143,7 @@ const selectTheme = (id: string) => {
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/asset-growth')">
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/asset-growth')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-chart-bar</v-icon></div>
         <div>
           <div class="font-weight-medium">자산 성장 리포트</div>
@@ -156,7 +156,7 @@ const selectTheme = (id: string) => {
     <!-- 투자 도구 섹션 -->
     <div class="section-label mb-2">투자 도구</div>
     <div class="d-flex flex-column ga-2 mb-5">
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/etf-analysis')">
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/etf-analysis')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-chart-box-outline</v-icon></div>
         <div>
           <div class="font-weight-medium">ETF 분석&amp;비교</div>
@@ -165,7 +165,7 @@ const selectTheme = (id: string) => {
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/etf-backtest')">
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/etf-backtest')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-history</v-icon></div>
         <div>
           <div class="font-weight-medium">ETF 백테스트</div>
@@ -174,7 +174,7 @@ const selectTheme = (id: string) => {
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/dividend-calendar')">
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/dividend-calendar')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-calendar-month-outline</v-icon></div>
         <div>
           <div class="font-weight-medium">배당 캘린더</div>
@@ -187,7 +187,7 @@ const selectTheme = (id: string) => {
     <!-- 설정 섹션 -->
     <div class="section-label mb-2">설정</div>
     <div class="d-flex flex-column ga-2 mb-5">
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="themeSheet = true">
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="themeSheet = true">
         <div class="menu-icon">
           <v-icon size="18" color="primary">mdi-palette-outline</v-icon>
         </div>
@@ -202,7 +202,7 @@ const selectTheme = (id: string) => {
     <!-- 계정 섹션 -->
     <div class="section-label mb-2">계정</div>
     <div class="d-flex flex-column ga-2">
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="confirmDialog = true">
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="confirmDialog = true">
         <div class="menu-icon menu-icon-error">
           <v-icon size="18" color="error">mdi-logout</v-icon>
         </div>
