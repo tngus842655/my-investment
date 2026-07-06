@@ -38,30 +38,41 @@ const logout = async () => {
 
 // 회원탈퇴 상태
 const deleteStep = ref(0)
-const deleteEmailInput = ref('')
+const deletePassword = ref('')
+const deletePasswordError = ref('')
 const deleteLoading = ref(false)
-const currentUserEmail = ref('')
 
-const deleteEmailValid = computed(() =>
-  deleteEmailInput.value.trim() === currentUserEmail.value,
-)
-
-const openDeleteDialog = async () => {
-  const { data: { user } } = await supabase.auth.getUser()
-  currentUserEmail.value = user?.email ?? ''
-  deleteEmailInput.value = ''
+const openDeleteDialog = () => {
+  deletePassword.value = ''
+  deletePasswordError.value = ''
   deleteStep.value = 1
 }
 
 const closeDeleteDialog = () => {
   deleteStep.value = 0
-  deleteEmailInput.value = ''
+  deletePassword.value = ''
+  deletePasswordError.value = ''
 }
 
 const deleteAccount = async () => {
-  if (!deleteEmailValid.value) return
+  if (!deletePassword.value) {
+    deletePasswordError.value = '비밀번호를 입력해주세요.'
+    return
+  }
   deleteLoading.value = true
   try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user?.email) return
+
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: deletePassword.value,
+    })
+    if (authError) {
+      deletePasswordError.value = '비밀번호가 올바르지 않습니다.'
+      return
+    }
+
     const { error } = await supabase.rpc('delete_user_account')
     if (error) throw error
     await supabase.auth.signOut()
@@ -245,22 +256,24 @@ onMounted(async () => {
         <v-card-title class="text-center pt-6 text-error">최종 확인</v-card-title>
         <v-card-text>
           <div class="text-medium-emphasis text-center mb-4">
-            본인 확인을 위해 이메일 주소를 입력해주세요.
+            본인 확인을 위해 비밀번호를 입력해주세요.
           </div>
           <v-text-field
-            v-model="deleteEmailInput"
-            placeholder="이메일 주소 입력"
+            v-model="deletePassword"
+            type="password"
+            label="비밀번호"
             variant="outlined"
             density="compact"
             rounded="lg"
-            hide-details
+            :error-messages="deletePasswordError"
+            autofocus
             @keyup.enter="deleteAccount"
           />
         </v-card-text>
         <v-divider />
         <v-card-actions>
-          <v-btn variant="text" block @click="closeDeleteDialog">취소</v-btn>
-          <v-btn color="error" block :disabled="!deleteEmailValid || deleteLoading" :loading="deleteLoading" @click="deleteAccount">탈퇴</v-btn>
+          <v-btn variant="text" block :disabled="deleteLoading" @click="closeDeleteDialog">취소</v-btn>
+          <v-btn color="error" block :loading="deleteLoading" @click="deleteAccount">탈퇴</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
