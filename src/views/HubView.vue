@@ -423,7 +423,7 @@ onMounted(async () => {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgba(var(--v-theme-on-surface), 0.4);
+  color: rgb(var(--v-theme-on-surface));
   padding: 6px 0;
 }
 

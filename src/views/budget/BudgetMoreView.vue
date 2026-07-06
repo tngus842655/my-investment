@@ -131,7 +131,7 @@ const executeReset = async () => {
     </div>
 
     <div class="glass-card pa-4 mb-5 mt-auto">
-      <div class="section-label d-flex align-center justify-space-between cursor-pointer" @click="dataManageOpen = !dataManageOpen">
+      <div class="section-label-lg d-flex align-center justify-space-between cursor-pointer" @click="dataManageOpen = !dataManageOpen">
         <span>데이터 관리</span>
         <v-icon size="18" class="collapse-icon" :class="{ 'collapse-icon-open': dataManageOpen }">mdi-chevron-down</v-icon>
       </div>
@@ -194,6 +194,15 @@ const executeReset = async () => {
   text-transform: uppercase;
   color: rgba(var(--v-theme-on-surface), 0.4);
   padding: 0 4px;
+}
+
+.section-label-lg {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(var(--v-theme-on-surface));
+  padding: 6px 0;
 }
 
 .glass-card {
