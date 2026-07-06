@@ -93,8 +93,8 @@ const LOGO_WIDE: Partial<Record<string, string>> = {
 }
 const logoWide = computed(() => LOGO_WIDE[themeId.value] ?? null)
 
-const serviceOpen = ref(true)
-const settingsOpen = ref(true)
+const serviceOpen = ref(false)
+const settingsOpen = ref(false)
 
 const showBack = ref(false)
 onMounted(async () => {
@@ -352,7 +352,7 @@ onMounted(async () => {
 }
 
 .section-label-lg {
-  font-size: 1.03125rem;
+  font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
