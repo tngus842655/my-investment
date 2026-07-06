@@ -218,6 +218,8 @@ const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.v
           :class="{ 'legend-dimmed': hoveredKey && hoveredKey !== seg.key, 'legend-active': hoveredKey === seg.key }"
           @mouseenter="hoveredKey = seg.key"
           @mouseleave="hoveredKey = null"
+          @touchstart.passive="hoveredKey = seg.key"
+          @touchend.passive="hoveredKey = null"
         >
           <div class="legend-info">
             <div class="legend-name">{{ seg.label }}</div>
