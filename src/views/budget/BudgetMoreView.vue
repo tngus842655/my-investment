@@ -3,21 +3,9 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
-import { useUserDataStore } from '@/stores/userData'
 
 const router = useRouter()
-const userDataStore = useUserDataStore()
-const confirmDialog = ref(false)
-
-const logout = async () => {
-  const { error } = await supabase.auth.signOut()
-  if (error) {
-    showMessage('로그아웃 중 오류가 발생했습니다.', 'error')
-    return
-  }
-  userDataStore.reset()
-  router.replace('/')
-}
+const dataManageOpen = ref(false)
 
 // ── 데이터 초기화 ──────────────────────────
 type ResetTarget = 'entries' | 'favorites' | 'all'
@@ -146,36 +134,22 @@ const executeReset = async () => {
     </div>
 
     <div class="glass-card pa-4 mb-5">
-      <div class="section-label mb-3">데이터 관리</div>
-      <v-btn variant="tonal" color="error" rounded="lg" block prepend-icon="mdi-delete-clock-outline" class="mb-2" @click="openResetDialog('entries')">
-        거래내역 초기화
-      </v-btn>
-      <v-btn variant="tonal" color="error" rounded="lg" block prepend-icon="mdi-star-off-outline" class="mb-2" @click="openResetDialog('favorites')">
-        즐겨찾기 초기화
-      </v-btn>
-      <v-btn variant="tonal" color="error" rounded="lg" block prepend-icon="mdi-database-remove-outline" @click="openResetDialog('all')">
-        전체 초기화
-      </v-btn>
-    </div>
-
-    <div class="section-label mb-2">계정</div>
-    <div class="d-flex flex-column ga-2">
-      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="confirmDialog = true">
-        <div class="menu-icon menu-icon-error"><v-icon size="18" color="error">mdi-logout</v-icon></div>
-        <div class="font-weight-medium text-error">로그아웃</div>
+      <div class="section-label d-flex align-center justify-space-between cursor-pointer" @click="dataManageOpen = !dataManageOpen">
+        <span>데이터 관리</span>
+        <v-icon size="18" class="collapse-icon" :class="{ 'collapse-icon-open': dataManageOpen }">mdi-chevron-down</v-icon>
+      </div>
+      <div v-if="dataManageOpen" class="mt-3">
+        <v-btn variant="tonal" color="error" rounded="lg" block prepend-icon="mdi-delete-clock-outline" class="mb-2" @click="openResetDialog('entries')">
+          거래내역 초기화
+        </v-btn>
+        <v-btn variant="tonal" color="error" rounded="lg" block prepend-icon="mdi-star-off-outline" class="mb-2" @click="openResetDialog('favorites')">
+          즐겨찾기 초기화
+        </v-btn>
+        <v-btn variant="tonal" color="error" rounded="lg" block prepend-icon="mdi-database-remove-outline" @click="openResetDialog('all')">
+          전체 초기화
+        </v-btn>
       </div>
     </div>
-
-    <v-dialog v-model="confirmDialog" max-width="360">
-      <v-card rounded="xl" class="glass-dialog">
-        <v-card-title class="text-center pt-6">로그아웃</v-card-title>
-        <v-card-text class="text-center text-medium-emphasis">정말 로그아웃 하시겠습니까?</v-card-text>
-        <v-card-actions class="pa-4 pt-2">
-          <v-btn variant="text" block @click="confirmDialog = false">취소</v-btn>
-          <v-btn color="error" block @click="logout">로그아웃</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
 
     <v-dialog :model-value="resetTarget !== null" max-width="360" @update:model-value="(v) => !v && closeResetDialog()">
       <v-card rounded="xl" class="glass-dialog pa-4">
@@ -236,10 +210,6 @@ const executeReset = async () => {
   flex-shrink: 0;
 }
 
-.menu-icon-error {
-  background: rgba(var(--v-theme-error), 0.1);
-}
-
 .menu-card {
   cursor: pointer;
   transition: opacity 0.15s ease;
@@ -251,6 +221,19 @@ const executeReset = async () => {
 
 .chevron-icon {
   color: rgba(var(--v-theme-on-surface), 0.3);
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.collapse-icon {
+  color: rgba(var(--v-theme-on-surface), 0.4);
+  transition: transform 0.2s ease;
+}
+
+.collapse-icon-open {
+  transform: rotate(180deg);
 }
 
 .glass-dialog {
