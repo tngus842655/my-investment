@@ -6,22 +6,14 @@ const router = useRouter()
 
 <template>
   <v-container class="pa-4 pa-sm-6">
-    <div class="d-flex align-center ga-2 mb-3">
-      <img src="/icons/icon-more.png" class="header-icon" alt="더보기" />
-      <div class="font-weight-bold">더보기</div>
-    </div>
-
-    <!-- 다른 서비스 -->
-    <div class="section-label mb-2">다른 서비스</div>
-    <div class="d-flex flex-column ga-2 mb-5">
-      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/hub')">
-        <div class="menu-icon"><v-icon size="18" color="primary">mdi-view-grid-outline</v-icon></div>
-        <div>
-          <div class="font-weight-medium">서비스 홈</div>
-        </div>
-        <v-spacer />
-        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
+    <div class="d-flex justify-space-between align-center mb-3">
+      <div class="d-flex align-center ga-2">
+        <img src="/icons/icon-more.png" class="header-icon" alt="더보기" />
+        <div class="font-weight-bold">더보기</div>
       </div>
+      <button class="icon-btn" @click="router.push('/hub')">
+        <img src="/icons/icon-hub.png" alt="허브" class="icon-btn-img" />
+      </button>
     </div>
 
     <!-- FIRE 관리 섹션 -->
@@ -121,6 +113,24 @@ const router = useRouter()
 
 <style scoped>
 .header-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: opacity 0.15s ease;
+}
+.icon-btn:active { opacity: 0.6; }
+.icon-btn-img {
   width: 32px;
   height: 32px;
   object-fit: contain;

@@ -83,21 +83,14 @@ const executeReset = async () => {
 
 <template>
   <v-container class="pa-4 pa-sm-6 budget-more-page">
-    <div class="d-flex align-center ga-2 mb-2">
-      <img src="/icons/icon-more.png" class="header-icon" alt="더보기" />
-      <div class="font-weight-bold">더보기</div>
-    </div>
-
-    <div class="section-label mb-2">다른 서비스</div>
-    <div class="d-flex flex-column ga-2 mb-5">
-      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/hub')">
-        <div class="menu-icon"><v-icon size="18" color="primary">mdi-view-grid-outline</v-icon></div>
-        <div>
-          <div class="font-weight-medium">서비스 홈</div>
-        </div>
-        <v-spacer />
-        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
+    <div class="d-flex align-center justify-space-between mb-2">
+      <div class="d-flex align-center ga-2">
+        <img src="/icons/icon-more.png" class="header-icon" alt="더보기" />
+        <div class="font-weight-bold">더보기</div>
       </div>
+      <v-btn icon variant="text" size="small" to="/hub">
+        <img src="/icons/icon-hub.png" class="header-icon" alt="허브" />
+      </v-btn>
     </div>
 
     <div class="section-label mb-2">가계부</div>
