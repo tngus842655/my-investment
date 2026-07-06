@@ -103,7 +103,7 @@ const notes = [
     <div v-for="note in notes" :key="note.version" class="release-card glass-card pa-4 mb-3">
       <div class="d-flex align-center ga-2 mb-3">
         <v-chip size="small" color="primary" variant="tonal" class="font-weight-bold">{{ note.version }}</v-chip>
-        <span class="text-medium-emphasis">{{ note.date }}</span>
+        <span class="release-date">{{ note.date }}</span>
       </div>
       <div v-if="note.description?.length" class="note-desc mb-2">
         <p v-for="(line, i) in note.description" :key="i" :class="i === 0 ? 'note-desc-title' : ''">{{ line }}</p>
@@ -129,7 +129,7 @@ const notes = [
 }
 
 .note-desc-title {
-  font-size: 0.95rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   color: rgb(var(--v-theme-on-surface));
   margin-bottom: 4px;
@@ -137,6 +137,7 @@ const notes = [
 
 .note-desc p {
   margin: 0;
+  font-size: 0.875rem;
   color: rgba(var(--v-theme-on-surface), 0.75);
   line-height: 1.6;
 }
@@ -150,7 +151,13 @@ const notes = [
 }
 
 .note-list li {
+  font-size: 0.875rem;
   color: rgba(var(--v-theme-on-surface), 0.75);
   line-height: 1.5;
+}
+
+.release-date {
+  font-size: 0.75rem;
+  color: rgba(var(--v-theme-on-surface), 0.45);
 }
 </style>

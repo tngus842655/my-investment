@@ -7,6 +7,7 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { useUserDataStore } from '@/stores/userData'
 import { isAdminEmail, isBudgetPreviewAllowed } from '@/config/admin'
+import { serviceMenuOpen, settingsMenuOpen } from '@/composables/useHubMenuState'
 
 const router = useRouter()
 const { themeId } = useDesignTokens()
@@ -101,9 +102,6 @@ const LOGO_WIDE: Partial<Record<string, string>> = {
 }
 const logoWide = computed(() => LOGO_WIDE[themeId.value] ?? null)
 
-const serviceOpen = ref(false)
-const settingsOpen = ref(false)
-
 const showBack = ref(false)
 onMounted(async () => {
   showBack.value = window.history.state?.back != null && window.history.state.back !== '/'
@@ -150,11 +148,11 @@ onMounted(async () => {
     <div class="bottom-menu mt-auto">
       <!-- 서비스 -->
       <div class="glass-card py-2 px-4 mt-3">
-        <div class="section-label-lg d-flex align-center justify-space-between cursor-pointer" @click="serviceOpen = !serviceOpen">
+        <div class="section-label-lg d-flex align-center justify-space-between cursor-pointer" @click="serviceMenuOpen = !serviceMenuOpen">
           <span>서비스</span>
-          <v-icon size="18" class="collapse-icon" :class="{ 'collapse-icon-open': serviceOpen }">mdi-chevron-down</v-icon>
+          <v-icon size="18" class="collapse-icon" :class="{ 'collapse-icon-open': serviceMenuOpen }">mdi-chevron-down</v-icon>
         </div>
-        <div v-if="serviceOpen" class="mt-2">
+        <div v-if="serviceMenuOpen" class="mt-2">
           <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-bullhorn-outline" class="mb-2" @click="router.push('/notices')">
             공지사항
           </v-btn>
@@ -170,11 +168,11 @@ onMounted(async () => {
 
       <!-- 설정 -->
       <div class="glass-card py-2 px-4 mt-3">
-        <div class="section-label-lg d-flex align-center justify-space-between cursor-pointer" @click="settingsOpen = !settingsOpen">
+        <div class="section-label-lg d-flex align-center justify-space-between cursor-pointer" @click="settingsMenuOpen = !settingsMenuOpen">
           <span>설정</span>
-          <v-icon size="18" class="collapse-icon" :class="{ 'collapse-icon-open': settingsOpen }">mdi-chevron-down</v-icon>
+          <v-icon size="18" class="collapse-icon" :class="{ 'collapse-icon-open': settingsMenuOpen }">mdi-chevron-down</v-icon>
         </div>
-        <div v-if="settingsOpen" class="mt-2">
+        <div v-if="settingsMenuOpen" class="mt-2">
           <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-palette-outline" class="mb-2" @click="themeSheet = true">
             테마 선택
           </v-btn>
