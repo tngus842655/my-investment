@@ -319,7 +319,7 @@ const onContainerClick = (e: MouseEvent) => {
 
 <template>
   <v-container class="pa-4 pa-sm-6 pb-16" @click="onContainerClick">
-    <div class="d-flex align-center justify-space-between mb-4">
+    <div class="d-flex align-center justify-space-between mb-2">
       <div class="d-flex align-center ga-2">
         <img src="/icons/icon-calendar.png" class="header-icon" alt="가계부" />
         <div class="font-weight-bold text-h6">가계부</div>

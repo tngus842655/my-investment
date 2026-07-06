@@ -483,7 +483,7 @@ onUnmounted(() => {
 <template>
   <v-container class="pa-4 pa-sm-6" @click="onContainerClick">
     <!-- 헤더 -->
-    <div class="asset-header d-flex justify-space-between align-center mb-5">
+    <div class="asset-header d-flex justify-space-between align-center mb-3">
       <div class="d-flex align-center ga-2" style="min-width: 0">
         <img src="/icons/icon-record.png" class="header-icon" alt="기록" />
         <div class="font-weight-bold header-title" style="color: rgb(var(--v-theme-on-surface))">
