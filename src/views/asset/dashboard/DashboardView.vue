@@ -192,7 +192,7 @@ onUnmounted(clearPullToRefresh)
 <template>
   <v-container class="pa-4 pa-sm-6">
     <!-- 헤더 -->
-    <div class="d-flex justify-space-between align-center mb-2">
+    <div class="d-flex justify-space-between align-center mb-3">
       <div class="d-flex align-center ga-2">
         <img src="/icons/icon-dashboard.png" class="header-icon" alt="대시보드" />
         <div class="font-weight-bold text-h6">대시보드</div>

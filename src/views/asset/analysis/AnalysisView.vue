@@ -83,7 +83,6 @@ const totalReturn = computed(() => {
 
 const finalAsset = computed(() => fireGoalYear.value?.asset ?? projection.value[projection.value.length - 1]?.asset ?? 0)
 
-
 const hasData = computed(() => annualReturn.value !== null && monthlyInvestment.value > 0 && currentAsset.value >= 0)
 
 // ── Progress Timeline ─────────────────────────────

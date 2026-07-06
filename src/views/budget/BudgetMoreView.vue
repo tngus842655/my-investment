@@ -83,7 +83,7 @@ const executeReset = async () => {
 
 <template>
   <v-container class="pa-4 pa-sm-6 budget-more-page">
-    <div class="d-flex align-center ga-2 mb-4">
+    <div class="d-flex align-center ga-2 mb-2">
       <img src="/icons/icon-more.png" class="header-icon" alt="더보기" />
       <div class="font-weight-bold">더보기</div>
     </div>
