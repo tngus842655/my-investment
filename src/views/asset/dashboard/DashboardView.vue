@@ -103,7 +103,7 @@ const estimatedDate = computed(() => {
   const date = new Date()
   date.setMonth(date.getMonth() + months)
 
-  const dateStr = `${date.getFullYear()}. ${String(date.getMonth() + 1).padStart(2, '0')}.`
+  const dateStr = `${date.getFullYear()}년 ${date.getMonth() + 1}월`
   const durationStr =
     years > 0 ? `${years}년 ${remainMonths > 0 ? remainMonths + '개월' : ''}` : `${months}개월`
 
