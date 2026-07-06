@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import type { BudgetCategory, BudgetPaymentMethod, BudgetType } from '@/types/budget'
@@ -42,6 +42,15 @@ const saving = ref(false)
 const favoritesMenu = ref(false)
 const favoriteManageDialog = ref(false)
 const dateMenu = ref(false)
+const amountFieldRef = ref()
+const memoFieldRef = ref()
+
+const focusAmount = () => {
+  nextTick(() => amountFieldRef.value?.focus())
+}
+const focusMemo = () => {
+  nextTick(() => memoFieldRef.value?.focus())
+}
 
 interface QuickItem {
   category_id: string
@@ -186,7 +195,7 @@ watch(dialog, async (open) => {
     entryType.value = 'EXPENSE'
     categoryId.value = null
     amount.value = ''
-    paymentMethodId.value = null
+    paymentMethodId.value = paymentMethods.value[0]?.id ?? null
     memo.value = ''
     entryDate.value = props.defaultDate ?? new Date().toISOString().slice(0, 10)
   }
@@ -304,7 +313,7 @@ const save = async () => {
               @focus="(e: FocusEvent) => (e.target as HTMLElement).blur()"
             />
           </template>
-          <BudgetDateCalendarCard v-model="entryDate" :open="dateMenu" @close="dateMenu = false" />
+          <BudgetDateCalendarCard v-model="entryDate" :open="dateMenu" @close="dateMenu = false; focusAmount()" />
         </v-menu>
 
         <v-select
@@ -318,9 +327,11 @@ const save = async () => {
           no-data-text="카테고리가 없습니다. 카테고리 관리에서 먼저 추가해주세요"
           class="mb-1"
           autocomplete="off"
+          @update:model-value="focusAmount"
         />
 
         <v-text-field
+          ref="amountFieldRef"
           :model-value="amount"
           label="금액"
           inputmode="numeric"
@@ -332,6 +343,7 @@ const save = async () => {
           class="mb-1"
           :rules="amountRules"
           @update:model-value="handleAmount"
+          @keyup.enter="focusMemo"
         />
 
         <div class="text-medium-emphasis mb-1" style="font-size: 0.75rem">결제수단</div>
@@ -366,6 +378,7 @@ const save = async () => {
         </v-expand-transition>
 
         <v-text-field
+          ref="memoFieldRef"
           v-model="memo"
           label="내용"
           prepend-inner-icon="mdi-note-outline"
