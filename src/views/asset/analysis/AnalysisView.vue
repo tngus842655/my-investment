@@ -356,9 +356,14 @@ onUnmounted(clearPullToRefresh)
 <template>
   <v-container class="pa-4 pa-sm-6">
     <!-- 헤더 -->
-    <div class="d-flex align-center ga-2 mb-3">
-      <img src="/icons/icon-predict.png" class="header-icon" alt="예측" />
-      <div class="font-weight-bold">미래 예측</div>
+    <div class="d-flex justify-space-between align-center mb-3">
+      <div class="d-flex align-center ga-2">
+        <img src="/icons/icon-predict.png" class="header-icon" alt="예측" />
+        <div class="font-weight-bold">미래 예측</div>
+      </div>
+      <button class="icon-btn" @click="router.push('/hub')">
+        <img src="/icons/icon-hub.png" alt="허브" class="icon-btn-img" />
+      </button>
     </div>
 
     <!-- 스켈레톤 -->
@@ -575,6 +580,24 @@ onUnmounted(clearPullToRefresh)
 .header-icon {
   width: 28px;
   height: 28px;
+  object-fit: contain;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: opacity 0.15s ease;
+}
+.icon-btn:active { opacity: 0.6; }
+.icon-btn-img {
+  width: 32px;
+  height: 32px;
   object-fit: contain;
 }
 
