@@ -356,7 +356,7 @@ onUnmounted(clearPullToRefresh)
 <template>
   <v-container class="pa-4 pa-sm-6">
     <!-- 헤더 -->
-    <div class="d-flex justify-space-between align-center mb-3">
+    <div class="d-flex justify-space-between align-center mb-2">
       <div class="d-flex align-center ga-2">
         <img src="/icons/icon-predict.png" class="header-icon" alt="예측" />
         <div class="font-weight-bold">미래 예측</div>
