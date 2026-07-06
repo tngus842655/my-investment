@@ -322,10 +322,7 @@ const onContainerClick = (e: MouseEvent) => {
     <div class="d-flex align-center justify-space-between mb-4">
       <div class="d-flex align-center ga-2">
         <img src="/icons/icon-calendar.png" class="header-icon" alt="가계부" />
-        <div>
-          <div class="font-weight-bold text-h6">가계부</div>
-          <div class="text-medium-emphasis">수입·지출 내역 관리</div>
-        </div>
+        <div class="font-weight-bold text-h6">가계부</div>
       </div>
       <v-btn icon variant="text" size="small" to="/hub">
         <img src="/icons/icon-hub.png" class="header-icon" alt="허브" />

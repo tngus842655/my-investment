@@ -8,10 +8,7 @@ const router = useRouter()
   <v-container class="pa-4 pa-sm-6">
     <div class="d-flex align-center ga-2 mb-6">
       <img src="/icons/icon-more.png" class="header-icon" alt="더보기" />
-      <div>
-        <div class="font-weight-bold">더보기</div>
-        <div class="text-medium-emphasis">설정 및 계정 관리</div>
-      </div>
+      <div class="font-weight-bold">더보기</div>
     </div>
 
     <!-- 다른 서비스 -->

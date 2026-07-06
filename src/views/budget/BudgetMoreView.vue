@@ -85,10 +85,7 @@ const executeReset = async () => {
   <v-container class="pa-4 pa-sm-6 budget-more-page">
     <div class="d-flex align-center ga-2 mb-6">
       <img src="/icons/icon-more.png" class="header-icon" alt="더보기" />
-      <div>
-        <div class="font-weight-bold">더보기</div>
-        <div class="text-medium-emphasis">가계부 설정 및 계정 관리</div>
-      </div>
+      <div class="font-weight-bold">더보기</div>
     </div>
 
     <div class="section-label mb-2">다른 서비스</div>

@@ -486,11 +486,8 @@ onUnmounted(() => {
     <div class="asset-header d-flex justify-space-between align-center mb-5">
       <div class="d-flex align-center ga-2" style="min-width: 0">
         <img src="/icons/icon-record.png" class="header-icon" alt="기록" />
-        <div style="min-width: 0">
-          <div class="font-weight-bold header-title" style="color: rgb(var(--v-theme-on-surface))">
-            거래내역
-          </div>
-          <div class="text-medium-emphasis header-title">매수 / 매도 기록</div>
+        <div class="font-weight-bold header-title" style="color: rgb(var(--v-theme-on-surface))">
+          거래내역
         </div>
       </div>
       <v-btn

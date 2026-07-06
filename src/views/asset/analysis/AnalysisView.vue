@@ -373,10 +373,7 @@ onUnmounted(clearPullToRefresh)
     <!-- 헤더 -->
     <div class="d-flex align-center ga-2 mb-5">
       <img src="/icons/icon-predict.png" class="header-icon" alt="예측" />
-      <div>
-        <div class="font-weight-bold">미래 예측</div>
-        <div class="text-medium-emphasis">FIRE 달성까지의 여정</div>
-      </div>
+      <div class="font-weight-bold">미래 예측</div>
     </div>
 
     <!-- 스켈레톤 -->

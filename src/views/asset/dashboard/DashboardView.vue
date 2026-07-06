@@ -195,10 +195,7 @@ onUnmounted(clearPullToRefresh)
     <div class="d-flex justify-space-between align-center mb-6">
       <div class="d-flex align-center ga-2">
         <img src="/icons/icon-dashboard.png" class="header-icon" alt="대시보드" />
-        <div>
-          <div class="font-weight-bold text-h6">대시보드</div>
-          <div class="text-medium-emphasis">자산 현황 한눈에 보기</div>
-        </div>
+        <div class="font-weight-bold text-h6">대시보드</div>
       </div>
       <div class="d-flex align-center ga-1">
         <button class="icon-btn" @click="router.push('/goalSettings')">
