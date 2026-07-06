@@ -1,22 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, inject } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { useAppTheme } from '@/composables/useAppTheme'
 import { useUserDataStore } from '@/stores/userData'
-import { feedbackBadgeKey } from '@/composables/useFeedbackBadge'
 
 const router = useRouter()
 const { currentThemeId, themes, setTheme } = useAppTheme()
 const userDataStore = useUserDataStore()
 const confirmDialog = ref(false)
 const themeSheet = ref(false)
-
-// AssetLayout이 이미 조회한 값을 공유받아 중복 조회를 피함
-const feedbackBadge = inject(feedbackBadgeKey)
-const isAdmin = feedbackBadge?.isAdmin ?? ref(false)
-const unreadFeedbackCount = feedbackBadge?.unreadFeedbackCount ?? ref(0)
 
 // 회원탈퇴 상태
 const deleteStep = ref(0)
@@ -218,83 +212,7 @@ const currentThemeLabel = computed(() => {
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
-
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/display-settings')">
-        <div class="menu-icon">
-          <v-icon size="18" color="primary">mdi-cellphone-cog</v-icon>
-        </div>
-        <div>
-          <div class="font-weight-medium">화면 설정</div>
-          <div class="text-medium-emphasis">폰트 크기 등 화면 표시 설정</div>
-        </div>
-        <v-spacer />
-        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
-      </div>
-
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/change-password')">
-        <div class="menu-icon">
-          <v-icon size="18" color="primary">mdi-lock-reset</v-icon>
-        </div>
-        <div>
-          <div class="font-weight-medium">비밀번호 변경</div>
-          <div class="text-medium-emphasis">계정 비밀번호를 변경합니다</div>
-        </div>
-        <v-spacer />
-        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
-      </div>
     </div>
-
-    <!-- 서비스 섹션 -->
-    <div class="section-label mb-2">서비스</div>
-    <div class="d-flex flex-column ga-2 mb-5">
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/notices')">
-        <div class="menu-icon"><v-icon size="18" color="primary">mdi-bullhorn-outline</v-icon></div>
-        <div>
-          <div class="font-weight-medium">공지사항</div>
-          <div class="text-medium-emphasis">서비스 관련 안내 및 공지를 확인하세요.</div>
-        </div>
-        <v-spacer />
-        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
-      </div>
-
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/feedback')">
-        <div class="menu-icon"><v-icon size="18" color="primary">mdi-message-text-outline</v-icon></div>
-        <div>
-          <div class="font-weight-medium">의견 관리</div>
-          <div class="text-medium-emphasis">불편한 점이나 개선 아이디어를 보내주세요.</div>
-        </div>
-        <v-spacer />
-        <span v-if="!isAdmin && unreadFeedbackCount > 0" class="unread-dot mr-2" />
-        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
-      </div>
-
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/release-notes')">
-        <div class="menu-icon"><v-icon size="18" color="primary">mdi-notebook-edit-outline</v-icon></div>
-        <div>
-          <div class="font-weight-medium">개발자 노트</div>
-          <div class="text-medium-emphasis">업데이트 내역을 확인하세요.</div>
-        </div>
-        <v-spacer />
-        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
-      </div>
-    </div>
-
-    <!-- 관리자 섹션 -->
-    <template v-if="isAdmin">
-      <div class="section-label mb-2">관리자</div>
-      <div class="d-flex flex-column ga-2 mb-5">
-        <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/admin')">
-          <div class="menu-icon"><v-icon size="18" color="primary">mdi-shield-crown-outline</v-icon></div>
-          <div>
-            <div class="font-weight-medium">관리자 페이지</div>
-            <div class="text-medium-emphasis">회원 가입 이력 조회</div>
-          </div>
-          <v-spacer />
-          <v-badge v-if="unreadFeedbackCount > 0" :content="unreadFeedbackCount" color="error" inline class="mr-1" />
-          <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
-        </div>
-      </div>
-    </template>
 
     <!-- 계정 섹션 -->
     <div class="section-label mb-2">계정</div>
@@ -491,14 +409,6 @@ const currentThemeLabel = computed(() => {
 .glass-dialog {
   background: var(--fp-surface) !important;
   border: 1px solid var(--fp-outline) !important;
-}
-
-.unread-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgb(var(--v-theme-error));
-  flex-shrink: 0;
 }
 
 .delete-account-btn {

@@ -149,62 +149,6 @@ const executeReset = async () => {
       </div>
     </div>
 
-    <div class="section-label mb-2">서비스</div>
-    <div class="d-flex flex-column ga-2 mb-5">
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/budget/notices')">
-        <div class="menu-icon"><v-icon size="18" color="primary">mdi-bullhorn-outline</v-icon></div>
-        <div>
-          <div class="font-weight-medium">공지사항</div>
-          <div class="text-medium-emphasis">서비스 관련 안내 및 공지를 확인하세요.</div>
-        </div>
-        <v-spacer />
-        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
-      </div>
-
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/budget/feedback')">
-        <div class="menu-icon"><v-icon size="18" color="primary">mdi-message-text-outline</v-icon></div>
-        <div>
-          <div class="font-weight-medium">의견 관리</div>
-          <div class="text-medium-emphasis">불편한 점이나 개선 아이디어를 보내주세요.</div>
-        </div>
-        <v-spacer />
-        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
-      </div>
-
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/budget/release-notes')">
-        <div class="menu-icon"><v-icon size="18" color="primary">mdi-notebook-edit-outline</v-icon></div>
-        <div>
-          <div class="font-weight-medium">개발자 노트</div>
-          <div class="text-medium-emphasis">업데이트 내역을 확인하세요.</div>
-        </div>
-        <v-spacer />
-        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
-      </div>
-    </div>
-
-    <div class="section-label mb-2">설정</div>
-    <div class="d-flex flex-column ga-2 mb-5">
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/budget/change-password')">
-        <div class="menu-icon"><v-icon size="18" color="primary">mdi-lock-outline</v-icon></div>
-        <div>
-          <div class="font-weight-medium">비밀번호 변경</div>
-          <div class="text-medium-emphasis">계정 비밀번호를 변경합니다</div>
-        </div>
-        <v-spacer />
-        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
-      </div>
-
-      <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="router.push('/budget/display-settings')">
-        <div class="menu-icon"><v-icon size="18" color="primary">mdi-palette-outline</v-icon></div>
-        <div>
-          <div class="font-weight-medium">화면 설정</div>
-          <div class="text-medium-emphasis">테마·글자 크기 조절</div>
-        </div>
-        <v-spacer />
-        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
-      </div>
-    </div>
-
     <div class="section-label mb-2">데이터 관리</div>
     <div class="d-flex flex-column ga-2 mb-5">
       <div class="menu-card glass-card pa-4 d-flex align-center ga-3" @click="openResetDialog('entries')">

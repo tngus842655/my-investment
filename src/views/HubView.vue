@@ -3,12 +3,32 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDesignTokens } from '@/composables/useDesignTokens'
 import { supabase } from '@/services/supabase'
-import { isBudgetPreviewAllowed } from '@/config/admin'
+import { isAdminEmail, isBudgetPreviewAllowed } from '@/config/admin'
 
 const router = useRouter()
 const { themeId } = useDesignTokens()
 
 const canAccessBudget = ref(false)
+const isAdmin = ref(false)
+const unreadFeedbackCount = ref(0)
+
+const fetchUnreadFeedbackCount = async (user: { email?: string | null }) => {
+  isAdmin.value = isAdminEmail(user.email)
+  if (isAdmin.value) {
+    const { count } = await supabase
+      .from('feedback')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'RECEIVED')
+    unreadFeedbackCount.value = count ?? 0
+  } else {
+    const { count } = await supabase
+      .from('feedback')
+      .select('id', { count: 'exact', head: true })
+      .eq('email', user.email ?? '')
+      .eq('is_read_by_user', false)
+    unreadFeedbackCount.value = count ?? 0
+  }
+}
 
 const LOGO_WIDE: Partial<Record<string, string>> = {
   light: '/icons/wide/logo-wide-light.png',
@@ -24,6 +44,7 @@ onMounted(async () => {
   showBack.value = window.history.state?.back != null && window.history.state.back !== '/'
   const { data: { user } } = await supabase.auth.getUser()
   canAccessBudget.value = isBudgetPreviewAllowed(user?.email)
+  if (user) await fetchUnreadFeedbackCount(user)
 })
 </script>
 
@@ -64,6 +85,41 @@ onMounted(async () => {
         <v-spacer />
         <v-icon v-if="canAccessBudget" size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
+    </div>
+
+    <!-- 서비스 -->
+    <div class="glass-card pa-4 mt-3">
+      <div class="section-label mb-3">서비스</div>
+      <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-bullhorn-outline" class="mb-2" @click="router.push('/notices')">
+        공지사항
+      </v-btn>
+      <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-message-text-outline" class="mb-2" @click="router.push('/feedback')">
+        의견 관리
+        <v-badge v-if="!isAdmin && unreadFeedbackCount > 0" dot color="error" inline class="ml-2" />
+      </v-btn>
+      <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-notebook-edit-outline" @click="router.push('/release-notes')">
+        개발자 노트
+      </v-btn>
+    </div>
+
+    <!-- 설정 -->
+    <div class="glass-card pa-4 mt-3">
+      <div class="section-label mb-3">설정</div>
+      <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-lock-reset" class="mb-2" @click="router.push('/change-password')">
+        비밀번호 변경
+      </v-btn>
+      <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-cellphone-cog" @click="router.push('/display-settings')">
+        화면 설정
+      </v-btn>
+    </div>
+
+    <!-- 관리자 -->
+    <div v-if="isAdmin" class="glass-card pa-4 mt-3">
+      <div class="section-label mb-3">관리자</div>
+      <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-shield-crown-outline" @click="router.push('/admin')">
+        관리자 페이지
+        <v-badge v-if="unreadFeedbackCount > 0" :content="unreadFeedbackCount" color="error" inline class="ml-2" />
+      </v-btn>
     </div>
   </v-container>
 </template>
@@ -141,5 +197,13 @@ onMounted(async () => {
 
 .chevron-icon {
   color: rgba(var(--v-theme-on-surface), 0.3);
+}
+
+.section-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(var(--v-theme-on-surface), 0.4);
 }
 </style>

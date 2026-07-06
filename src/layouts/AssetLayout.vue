@@ -1,17 +1,15 @@
 <script setup lang="ts">
-import { ref, watch, nextTick, provide } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { isAdminEmail } from '@/config/admin'
 import { activeRefreshHandler } from '@/composables/usePullToRefresh'
-import { feedbackBadgeKey } from '@/composables/useFeedbackBadge'
 
 const router = useRouter()
 const route = useRoute()
 const contentRef = ref<HTMLElement | null>(null)
 const isAdmin = ref(false)
 const unreadFeedbackCount = ref(0)
-provide(feedbackBadgeKey, { isAdmin, unreadFeedbackCount })
 
 // ── 아래로 당겨서 새로고침 ──────────────────────────
 const PULL_THRESHOLD = 64
