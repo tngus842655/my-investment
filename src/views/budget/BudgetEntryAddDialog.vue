@@ -6,6 +6,7 @@ import { showMessage } from '@/composables/useSnackbar'
 import type { BudgetCategory, BudgetPaymentMethod, BudgetType } from '@/types/budget'
 import BudgetFavoriteView from './BudgetFavoriteView.vue'
 import BudgetDateCalendarCard from './BudgetDateCalendarCard.vue'
+import BudgetAmountKeypad from './BudgetAmountKeypad.vue'
 
 const router = useRouter()
 const dialog = defineModel<boolean>()
@@ -46,6 +47,7 @@ const dateMenu = ref(false)
 const categoryMenu = ref(false)
 const amountFieldRef = ref()
 const memoFieldRef = ref()
+const amountKeypadOpen = ref(false)
 
 const openCategoryMenu = () => {
   nextTick(() => (categoryMenu.value = true))
@@ -53,6 +55,22 @@ const openCategoryMenu = () => {
 const focusAmount = () => {
   nextTick(() => amountFieldRef.value?.focus())
 }
+const keypadDigit = (d: string) => {
+  const raw = amount.value.replace(/,/g, '')
+  handleAmount(raw + d)
+}
+const keypadBackspace = () => {
+  const raw = amount.value.replace(/,/g, '')
+  handleAmount(raw.slice(0, -1))
+}
+const keypadDone = () => {
+  amountKeypadOpen.value = false
+  focusMemo()
+}
+
+// 금액 키패드가 열려있는 동안 다른 선택지를 열면 키패드는 닫음
+watch(dateMenu, (v) => { if (v) amountKeypadOpen.value = false })
+watch(categoryMenu, (v) => { if (v) amountKeypadOpen.value = false })
 const goToCategoryManage = () => {
   dialog.value = false
   router.push('/budget/manage')
@@ -343,7 +361,7 @@ const save = async () => {
           ref="amountFieldRef"
           :model-value="amount"
           label="금액"
-          inputmode="numeric"
+          readonly
           autocomplete="off"
           prepend-inner-icon="mdi-currency-krw"
           variant="outlined"
@@ -352,8 +370,7 @@ const save = async () => {
           hide-details="auto"
           class="mb-1"
           :rules="amountRules"
-          @update:model-value="handleAmount"
-          @keyup.enter="focusMemo"
+          @focus="amountKeypadOpen = true"
         />
 
         <div class="text-medium-emphasis mb-1" style="font-size: 0.75rem">결제수단</div>
@@ -399,12 +416,13 @@ const save = async () => {
           maxlength="30"
           counter
           autocomplete="off"
+          @focus="amountKeypadOpen = false"
         />
       </v-card-text>
 
       <v-divider />
 
-      <v-card-actions class="px-4 py-2">
+      <v-card-actions v-if="!amountKeypadOpen" class="px-4 py-2">
         <v-btn variant="text" :disabled="saving" @click="reset">취소</v-btn>
         <v-spacer />
         <v-btn
@@ -416,6 +434,7 @@ const save = async () => {
           @click="save"
         >{{ isEditMode ? '수정 저장' : '저장' }}</v-btn>
       </v-card-actions>
+      <BudgetAmountKeypad v-else @digit="keypadDigit" @backspace="keypadBackspace" @done="keypadDone" />
     </v-card>
 
     <v-dialog v-model="favoriteManageDialog" max-width="480">
