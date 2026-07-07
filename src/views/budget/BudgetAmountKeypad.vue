@@ -3,6 +3,7 @@ const emit = defineEmits<{
   digit: [string]
   backspace: []
   done: []
+  close: []
 }>()
 
 const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'back']
@@ -10,6 +11,10 @@ const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'back']
 
 <template>
   <div class="amount-keypad">
+    <div class="keypad-topbar">
+      <span class="topbar-title">금액</span>
+      <v-btn icon="mdi-close" variant="text" size="small" @click="emit('close')" />
+    </div>
     <div class="keypad-grid">
       <button
         v-for="(key, i) in keys"
@@ -32,6 +37,31 @@ const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'back']
   display: flex;
   flex-direction: column;
   border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+}
+
+.keypad-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 6px 6px 14px;
+  background: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
+  flex-shrink: 0;
+}
+.topbar-title {
+  font-weight: 700;
+  font-size: 1.0625rem;
+  line-height: 1.375rem;
+}
+.keypad-topbar .v-btn {
+  color: inherit;
+}
+.keypad-topbar :deep(.v-btn) {
+  width: 28px !important;
+  height: 28px !important;
+}
+.keypad-topbar :deep(.v-icon) {
+  font-size: 1.375rem;
 }
 
 .keypad-grid {

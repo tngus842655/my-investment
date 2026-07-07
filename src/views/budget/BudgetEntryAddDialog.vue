@@ -454,7 +454,13 @@ const save = async () => {
           @close="categoryPickerOpen = false"
           @manage="goToCategoryManage"
         />
-        <BudgetAmountKeypad v-else @digit="keypadDigit" @backspace="keypadBackspace" @done="keypadDone" />
+        <BudgetAmountKeypad
+          v-else
+          @digit="keypadDigit"
+          @backspace="keypadBackspace"
+          @done="keypadDone"
+          @close="amountKeypadOpen = false"
+        />
       </div>
     </Teleport>
   </v-dialog>
