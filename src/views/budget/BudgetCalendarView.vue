@@ -364,7 +364,7 @@ const onContainerClick = (e: MouseEvent) => {
 
     <v-btn-toggle v-model="subTab" mandatory rounded="lg" density="comfortable" class="mb-4 w-100">
       <v-btn value="calendar" variant="tonal" class="flex-grow-1">캘린더</v-btn>
-      <v-btn value="daily" variant="tonal" class="flex-grow-1">일일</v-btn>
+      <v-btn value="daily" variant="tonal" class="flex-grow-1">일별</v-btn>
       <v-btn value="monthly" variant="tonal" class="flex-grow-1">월별</v-btn>
     </v-btn-toggle>
 
