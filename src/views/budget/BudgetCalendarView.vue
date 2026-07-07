@@ -459,6 +459,7 @@ const onContainerClick = (e: MouseEvent) => {
             </div>
           </div>
         </div>
+        <p v-if="selectedDateEntries.length > 0" class="swipe-hint">← 항목을 왼쪽으로 밀면 수정/삭제할 수 있어요</p>
       </div>
 
       <!-- 일일 -->
