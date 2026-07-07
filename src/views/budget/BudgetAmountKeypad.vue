@@ -5,18 +5,19 @@ const emit = defineEmits<{
   done: []
 }>()
 
-const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '000', '0', 'back']
+const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'back']
 </script>
 
 <template>
   <div class="amount-keypad">
     <div class="keypad-grid">
       <button
-        v-for="key in keys"
-        :key="key"
+        v-for="(key, i) in keys"
+        :key="i"
         class="keypad-key"
-        :class="{ 'keypad-key--back': key === 'back' }"
-        @click="key === 'back' ? emit('backspace') : emit('digit', key)"
+        :class="{ 'keypad-key--back': key === 'back', 'keypad-key--empty': key === '' }"
+        :disabled="key === ''"
+        @click="key === 'back' ? emit('backspace') : key && emit('digit', key)"
       >
         <v-icon v-if="key === 'back'" size="20">mdi-backspace-outline</v-icon>
         <span v-else>{{ key }}</span>
@@ -60,6 +61,12 @@ const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '000', '0', 'back']
 }
 .keypad-key--back {
   color: rgba(var(--v-theme-on-surface), 0.6);
+}
+.keypad-key--empty {
+  cursor: default;
+}
+.keypad-key--empty:active {
+  background: none;
 }
 
 .keypad-done {
