@@ -161,16 +161,23 @@ const formatDate = (iso: string) => {
 }
 
 // 라우터에 등록된 각 페이지의 meta.label을 그대로 사용 — 메뉴 추가 시 라우터에만 label을 채우면 자동 반영됨
+// router.getRoutes()는 부모/자식 meta를 병합해주지 않으므로, 원본 라우트 트리를 직접 순회하며 module을 자식에게 전파한다
 const MODULE_LABELS: Record<string, string> = { asset: '자산관리', budget: '가계부' }
-const PAGE_LABELS: Record<string, string> = Object.fromEntries(
-  router.getRoutes()
-    .filter((r) => typeof r.meta.label === 'string')
-    .map((r) => {
-      const moduleLabel = typeof r.meta.module === 'string' ? MODULE_LABELS[r.meta.module] : undefined
-      const label = moduleLabel ? `${moduleLabel}-${r.meta.label}` : (r.meta.label as string)
-      return [r.path, label]
-    }),
-)
+const PAGE_LABELS: Record<string, string> = {}
+const collectPageLabels = (routes: typeof router.options.routes, parentPath = '', inheritedModule?: string) => {
+  for (const r of routes) {
+    const fullPath = r.path.startsWith('/')
+      ? r.path
+      : `${parentPath}/${r.path}`.replace(/\/+/g, '/').replace(/(.)\/$/, '$1')
+    const moduleKey = (r.meta?.module as string | undefined) ?? inheritedModule
+    if (typeof r.meta?.label === 'string') {
+      const moduleLabel = moduleKey ? MODULE_LABELS[moduleKey] : undefined
+      PAGE_LABELS[fullPath] = moduleLabel ? `${moduleLabel}-${r.meta.label}` : r.meta.label
+    }
+    if (r.children) collectPageLabels(r.children, fullPath, moduleKey)
+  }
+}
+collectPageLabels(router.options.routes)
 
 const PAGE_SELECT_OPTIONS = Object.entries(PAGE_LABELS).map(([value, label]) => ({ value, label: `${label} (${value})` }))
 const pageLabel = (page: string) => PAGE_LABELS[page] ?? page
