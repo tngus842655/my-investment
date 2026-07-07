@@ -137,6 +137,9 @@ const COLUMN_LABELS: Record<ColumnKey, string> = {
   type: '수입/지출',
 }
 
+// 화면 안내용 — 자산은 "자산(결제수단)"으로 더 풀어서 보여줌
+const REQUIRED_COLUMN_LABELS = ['날짜', '자산(결제수단)', '카테고리', '내용', '금액(원)', '수입/지출']
+
 // 제목 행 문구가 조금 다르게 적혀 있어도(예: "결제수단", "금액") 인식되도록 별칭 허용
 const COLUMN_ALIASES: Record<ColumnKey, string[]> = {
   date: ['날짜', '일자'],
@@ -364,14 +367,17 @@ const doImport = async () => {
       </div>
     </div>
 
-    <div class="glass-card pa-4 mb-4">
+    <div class="glass-card pa-4 mb-3">
       <div class="format-title mb-2">엑셀 양식 안내</div>
       <div class="text-medium-emphasis mb-3" style="font-size: 0.8125rem">
-        1행은 제목 행이며, 2행부터 데이터를 읽습니다. 필요한 열 이름(순서는 상관없음): <b>날짜 · 자산(결제수단) · 카테고리 · 내용 · 금액(원) · 수입/지출</b>
+        1행은 제목 행, 2행부터 데이터를 읽습니다. 열 순서는 상관없이 아래 이름만 있으면 됩니다.
+      </div>
+      <div class="column-chip-wrap mb-3">
+        <span v-for="label in REQUIRED_COLUMN_LABELS" :key="label" class="column-chip">{{ label }}</span>
       </div>
       <v-btn
         block
-        variant="text"
+        variant="tonal"
         color="primary"
         rounded="lg"
         prepend-icon="mdi-download-outline"
@@ -380,6 +386,11 @@ const doImport = async () => {
       >
         엑셀 양식 다운로드
       </v-btn>
+    </div>
+
+    <div class="pc-notice mb-4">
+      <v-icon size="16" class="mr-1">mdi-monitor</v-icon>
+      <span>엑셀 파일 작성·업로드·양식 다운로드는 모바일보다 <b>PC 환경</b>에서 진행하시는 것을 권장합니다.</span>
     </div>
 
     <input ref="fileInput" type="file" accept=".xlsx,.xls" class="d-none" @change="onFileChange" />
@@ -444,11 +455,6 @@ const doImport = async () => {
         {{ validRows.length }}건 가져오기
       </v-btn>
     </template>
-
-    <div class="pc-notice mt-4">
-      <v-icon size="16" class="mr-1">mdi-monitor</v-icon>
-      <span>엑셀 파일 작성·업로드·양식 다운로드는 모바일보다 <b>PC 환경에서 진행하시는 것을 권장</b>합니다.</span>
-    </div>
   </v-container>
 </template>
 
@@ -477,6 +483,20 @@ const doImport = async () => {
 .format-title {
   font-weight: 700;
   font-size: 0.875rem;
+}
+
+.column-chip-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.column-chip {
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(var(--v-theme-primary), 0.08);
+  color: rgb(var(--v-theme-primary));
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .summary-chip {
