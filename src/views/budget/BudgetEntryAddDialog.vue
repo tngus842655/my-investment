@@ -301,6 +301,7 @@ const save = async () => {
               variant="outlined"
               density="compact"
               rounded="lg"
+              hide-details
               class="mb-1"
               @focus="(e: FocusEvent) => (e.target as HTMLElement).blur()"
             />
