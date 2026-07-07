@@ -255,25 +255,37 @@ onMounted(async () => {
       <v-card rounded="xl" class="glass-dialog">
         <v-card-title class="text-center pt-6 text-error">최종 확인</v-card-title>
         <v-card-text>
-          <div class="text-medium-emphasis text-center mb-4">
-            본인 확인을 위해 비밀번호를 입력해주세요.
-          </div>
-          <v-text-field
-            v-model="deletePassword"
-            type="password"
-            label="비밀번호"
-            variant="outlined"
-            density="compact"
-            rounded="lg"
-            :error-messages="deletePasswordError"
-            autofocus
-            @keyup.enter="deleteAccount"
-          />
+          <form @submit.prevent="deleteAccount">
+            <input
+              type="text"
+              value=""
+              autocomplete="off"
+              readonly
+              class="visually-hidden"
+              tabindex="-1"
+              aria-hidden="true"
+            />
+            <div class="text-medium-emphasis text-center mb-4">
+              본인 확인을 위해 비밀번호를 입력해주세요.
+            </div>
+            <v-text-field
+              v-model="deletePassword"
+              type="password"
+              autocomplete="current-password"
+              label="비밀번호"
+              variant="outlined"
+              density="compact"
+              rounded="lg"
+              :error-messages="deletePasswordError"
+              autofocus
+            />
+            <button type="submit" class="d-none" />
+          </form>
         </v-card-text>
         <v-divider />
         <v-card-actions>
-          <v-btn variant="text" block :disabled="deleteLoading" @click="closeDeleteDialog">취소</v-btn>
-          <v-btn color="error" block :loading="deleteLoading" @click="deleteAccount">탈퇴</v-btn>
+          <v-btn type="button" variant="text" block :disabled="deleteLoading" @click="closeDeleteDialog">취소</v-btn>
+          <v-btn type="button" color="error" block :loading="deleteLoading" @click="deleteAccount">탈퇴</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -326,6 +338,16 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+/* 크롬 비밀번호 폼 접근성 경고 방지용 — 화면에는 안 보이지만 DOM/접근성 트리에는 남겨둠 */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
 .hub-page {
   display: flex;
   flex-direction: column;

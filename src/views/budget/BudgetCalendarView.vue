@@ -325,9 +325,14 @@ const onContainerClick = (e: MouseEvent) => {
         <img src="/icons/icon-calendar.png" class="header-icon" alt="가계부" />
         <div class="font-weight-bold text-h6">가계부</div>
       </div>
-      <v-btn icon variant="text" size="small" to="/hub">
-        <img src="/icons/icon-hub.png" class="header-icon" alt="허브" />
-      </v-btn>
+      <div class="d-flex align-center ga-1">
+        <v-btn icon variant="text" size="small" to="/budget/search">
+          <v-icon size="20">mdi-magnify</v-icon>
+        </v-btn>
+        <v-btn icon variant="text" size="small" to="/hub">
+          <img src="/icons/icon-hub.png" class="header-icon" alt="허브" />
+        </v-btn>
+      </div>
     </div>
 
     <!-- 월/연도 이동 -->

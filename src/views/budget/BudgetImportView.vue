@@ -126,6 +126,45 @@ const resetResult = () => {
   fileName.value = ''
 }
 
+type ColumnKey = 'date' | 'asset' | 'category' | 'memo' | 'amount' | 'type'
+
+const COLUMN_LABELS: Record<ColumnKey, string> = {
+  date: '날짜',
+  asset: '자산',
+  category: '카테고리',
+  memo: '내용',
+  amount: '금액(원)',
+  type: '수입/지출',
+}
+
+// 화면 안내용 — 자산은 "자산(결제수단)"으로 더 풀어서 보여줌
+const REQUIRED_COLUMN_LABELS = ['날짜', '자산(결제수단)', '카테고리', '내용', '금액(원)', '수입/지출']
+
+// 제목 행 문구가 조금 다르게 적혀 있어도(예: "결제수단", "금액") 인식되도록 별칭 허용
+const COLUMN_ALIASES: Record<ColumnKey, string[]> = {
+  date: ['날짜', '일자'],
+  asset: ['자산', '결제수단', '자산(결제수단)'],
+  category: ['카테고리', '분류'],
+  memo: ['내용', '메모'],
+  amount: ['금액(원)', '금액'],
+  type: ['수입/지출', '수입지출', '구분'],
+}
+
+// 제목 행 텍스트로 각 열이 실제로 몇 번째 칸에 있는지 찾음 (열 순서가 바뀌어도 정상 인식되도록)
+const findColumnIndexes = (
+  headerRow: unknown[],
+): { indexes: Record<ColumnKey, number>; missing: ColumnKey[] } => {
+  const headerCells = headerRow.map((v) => cellToString(v).trim())
+  const indexes = {} as Record<ColumnKey, number>
+  const missing: ColumnKey[] = []
+  for (const key of Object.keys(COLUMN_ALIASES) as ColumnKey[]) {
+    const index = headerCells.findIndex((h) => COLUMN_ALIASES[key].includes(h))
+    if (index === -1) missing.push(key)
+    else indexes[key] = index
+  }
+  return { indexes, missing }
+}
+
 const onFileChange = async (e: Event) => {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!file) return
@@ -144,8 +183,18 @@ const onFileChange = async (e: Event) => {
     const { default: readXlsxFile } = await import('read-excel-file/browser')
     const sheets = await readXlsxFile(file)
     const data = sheets[0]?.data
-    if (!data) {
+    if (!data || data.length === 0) {
       showMessage('시트를 찾을 수 없습니다.', 'error')
+      return
+    }
+
+    const { indexes: col, missing } = findColumnIndexes(data[0] ?? [])
+    if (missing.length > 0) {
+      showMessage(
+        `제목 행에서 "${missing.map((k) => COLUMN_LABELS[k]).join(', ')}" 열을 찾을 수 없습니다. 양식을 확인해주세요.`,
+        'error',
+      )
+      resetResult()
       return
     }
 
@@ -153,7 +202,12 @@ const onFileChange = async (e: Event) => {
     for (let i = 1; i < data.length; i++) {
       const rowNumber = i + 1
       const cells = data[i] ?? []
-      const [dateRaw, assetRaw, categoryRaw, memoRaw, amountRaw, typeRaw] = cells
+      const dateRaw = cells[col.date]
+      const assetRaw = cells[col.asset]
+      const categoryRaw = cells[col.category]
+      const memoRaw = cells[col.memo]
+      const amountRaw = cells[col.amount]
+      const typeRaw = cells[col.type]
 
       // 완전히 빈 행은 건너뜀
       if (![dateRaw, assetRaw, categoryRaw, memoRaw, amountRaw, typeRaw].some((v) => v != null && cellToString(v).trim() !== '')) {
@@ -192,6 +246,32 @@ const onFileChange = async (e: Event) => {
 
 const triggerFileSelect = () => {
   fileInput.value?.click()
+}
+
+const downloadingTemplate = ref(false)
+const downloadTemplate = async () => {
+  downloadingTemplate.value = true
+  try {
+    const { default: writeXlsxFile } = await import('write-excel-file/browser')
+    const sampleRows = [
+      { date: '2026-01-15', asset: '현금', category: '식비', memo: '점심', amount: 12000, type: '지출' },
+      { date: '2026-01-25', asset: '통장', category: '월급', memo: '', amount: 3000000, type: '수입' },
+    ]
+    const columns = [
+      { header: '날짜', cell: (r: (typeof sampleRows)[number]) => ({ value: r.date }), width: 12 },
+      { header: '자산', cell: (r: (typeof sampleRows)[number]) => ({ value: r.asset }), width: 12 },
+      { header: '카테고리', cell: (r: (typeof sampleRows)[number]) => ({ value: r.category }), width: 12 },
+      { header: '내용', cell: (r: (typeof sampleRows)[number]) => ({ value: r.memo }), width: 16 },
+      { header: '금액(원)', cell: (r: (typeof sampleRows)[number]) => ({ value: r.amount, type: Number }), width: 12 },
+      { header: '수입/지출', cell: (r: (typeof sampleRows)[number]) => ({ value: r.type }), width: 10 },
+    ]
+    await writeXlsxFile(sampleRows, { columns }).toFile('가계부_엑셀양식.xlsx')
+  } catch (err) {
+    console.error('양식 다운로드 오류:', err)
+    showMessage('양식 파일을 만드는 중 오류가 발생했습니다.', 'error')
+  } finally {
+    downloadingTemplate.value = false
+  }
 }
 
 const doImport = async () => {
@@ -287,11 +367,30 @@ const doImport = async () => {
       </div>
     </div>
 
-    <div class="glass-card pa-4 mb-4">
+    <div class="glass-card pa-4 mb-3">
       <div class="format-title mb-2">엑셀 양식 안내</div>
-      <div class="text-medium-emphasis" style="font-size: 0.8125rem">
-        1행은 제목 행이며, 2행부터 데이터를 읽습니다. 열 순서: <b>날짜 · 자산(결제수단) · 카테고리 · 내용 · 금액(원) · 수입/지출</b>
+      <div class="text-medium-emphasis mb-3" style="font-size: 0.8125rem">
+        1행은 제목 행, 2행부터 데이터를 읽습니다. 열 순서는 상관없이 아래 이름만 있으면 됩니다.
       </div>
+      <div class="column-chip-wrap mb-3">
+        <span v-for="label in REQUIRED_COLUMN_LABELS" :key="label" class="column-chip">{{ label }}</span>
+      </div>
+      <v-btn
+        block
+        variant="tonal"
+        color="primary"
+        rounded="lg"
+        prepend-icon="mdi-download-outline"
+        :loading="downloadingTemplate"
+        @click="downloadTemplate"
+      >
+        엑셀 양식 다운로드
+      </v-btn>
+    </div>
+
+    <div class="pc-notice mb-4">
+      <v-icon size="16" class="mr-1">mdi-monitor</v-icon>
+      <span>엑셀 파일 작성·업로드·양식 다운로드는 모바일보다 <b>PC 환경</b>에서 진행하시는 것을 권장합니다.</span>
     </div>
 
     <input ref="fileInput" type="file" accept=".xlsx,.xls" class="d-none" @change="onFileChange" />
@@ -386,6 +485,20 @@ const doImport = async () => {
   font-size: 0.875rem;
 }
 
+.column-chip-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.column-chip {
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(var(--v-theme-primary), 0.08);
+  color: rgb(var(--v-theme-primary));
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 .summary-chip {
   padding: 4px 12px;
   border-radius: 20px;
@@ -443,4 +556,15 @@ const doImport = async () => {
 
 .income-color { color: rgb(var(--v-theme-primary)); }
 .expense-color { color: rgb(var(--v-theme-error)); }
+
+.pc-notice {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(var(--v-theme-on-surface), 0.05);
+  color: rgba(var(--v-theme-on-surface), 0.6);
+  font-size: 0.75rem;
+}
 </style>

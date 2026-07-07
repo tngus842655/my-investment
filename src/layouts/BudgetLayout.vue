@@ -50,6 +50,13 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   overflow-y: auto;
 }
 
+/* 홈 화면 추가(PWA) 모드에서만 하단 메뉴바 여유 추가 — 사파리 탭 모드는 그대로 유지 */
+@media (display-mode: standalone) {
+  .budget-content {
+    padding-bottom: calc(68px + env(safe-area-inset-bottom));
+  }
+}
+
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -63,6 +70,13 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   border-top: 1px solid rgba(var(--v-theme-on-surface), 0.06);
   z-index: 100;
   backdrop-filter: blur(12px);
+}
+
+@media (display-mode: standalone) {
+  .bottom-nav {
+    height: calc(64px + env(safe-area-inset-bottom));
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
 }
 
 .bottom-nav-item {
