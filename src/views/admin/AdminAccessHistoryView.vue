@@ -22,7 +22,7 @@ interface LogItem {
 const logs = ref<LogItem[]>([])
 const emailSearch = ref('')
 const dateSearch = ref('')
-const pageSearch = ref('')
+const pageSearch = ref<string | null>(null)
 const EXCLUDE_TEST_EMAIL_KEY = 'firepath-admin-exclude-test-email'
 const excludeTestEmail = ref(localStorage.getItem(EXCLUDE_TEST_EMAIL_KEY) === 'true')
 const TEST_EMAIL = 'tngus842655@naver.com'
@@ -144,7 +144,7 @@ const switchTab = (tab: TabType) => {
   logs.value = []
   emailSearch.value = ''
   dateSearch.value = ''
-  pageSearch.value = ''
+  pageSearch.value = null
   search()
 }
 
