@@ -58,7 +58,7 @@ const setToday = () => {
 watch(() => props.open, (open) => {
   monthYearOpen.value = false
   if (open) syncCalendarNav()
-})
+}, { immediate: true })
 </script>
 
 <template>

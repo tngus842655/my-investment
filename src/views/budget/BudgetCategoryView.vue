@@ -30,31 +30,31 @@ const fetchCategories = async () => {
     return
   }
 
-  // 최초 진입 시 기본 카테고리 시딩
-  if ((data ?? []).length === 0) {
-    const { data: { user: seedUser } } = await supabase.auth.getUser()
-    if (!seedUser) return
-    const rows = DEFAULT_BUDGET_CATEGORIES.map((c, i) => ({
-      user_id: seedUser.id,
+  categories.value = data
+}
+
+const seeding = ref(false)
+const seedDefaultCategories = async (type: BudgetType) => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  seeding.value = true
+  const rows = DEFAULT_BUDGET_CATEGORIES
+    .filter((c) => c.type === type)
+    .map((c, i) => ({
+      user_id: user.id,
       type: c.type,
       name: c.name,
       sort_order: i,
     }))
-    const { error: seedError } = await supabase.from('budget_categories').insert(rows)
-    if (seedError) {
-      showMessage('기본 카테고리 생성에 실패했습니다.', 'error')
-      return
-    }
-    const { data: seeded } = await supabase
-      .from('budget_categories')
-      .select('*')
-      .eq('user_id', seedUser.id)
-      .order('sort_order')
-    categories.value = seeded ?? []
+  const { error } = await supabase.from('budget_categories').insert(rows)
+  if (error) {
+    showMessage('기본 카테고리 생성에 실패했습니다.', 'error')
+    seeding.value = false
     return
   }
-
-  categories.value = data
+  await fetchCategories()
+  seeding.value = false
 }
 
 onMounted(async () => {
@@ -161,8 +161,13 @@ const deleteCategory = async (c: BudgetCategory) => {
           <v-btn icon="mdi-pencil-outline" size="small" variant="text" class="action-btn" @click="openEditDialog(c)" />
           <v-btn icon="mdi-delete-outline" size="small" variant="text" color="error" class="action-btn" @click="deleteCategory(c)" />
         </div>
-        <div v-if="filteredCategories.length === 0" class="text-center text-medium-emphasis py-4">
-          카테고리가 없습니다.
+        <div v-if="filteredCategories.length === 0" class="text-center py-6">
+          <div class="text-medium-emphasis mb-3" style="font-size: 0.875rem">
+            카테고리가 없습니다.
+          </div>
+          <v-btn size="small" variant="tonal" color="primary" :loading="seeding" @click="seedDefaultCategories(selectedType)">
+            기본 카테고리 추가
+          </v-btn>
         </div>
       </div>
     </div>

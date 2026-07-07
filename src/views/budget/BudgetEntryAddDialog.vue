@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import type { BudgetCategory, BudgetPaymentMethod, BudgetType } from '@/types/budget'
-import { DEFAULT_BUDGET_PAYMENT_METHODS } from '@/utils/budgetDefaultPaymentMethods'
 import BudgetFavoriteView from './BudgetFavoriteView.vue'
 import BudgetDateCalendarCard from './BudgetDateCalendarCard.vue'
+import BudgetAmountKeypad from './BudgetAmountKeypad.vue'
+import BudgetCategoryGridPicker from './BudgetCategoryGridPicker.vue'
 
+const router = useRouter()
 const dialog = defineModel<boolean>()
 
 const props = defineProps<{
@@ -42,11 +45,43 @@ const saving = ref(false)
 const favoritesMenu = ref(false)
 const favoriteManageDialog = ref(false)
 const dateMenu = ref(false)
+const categoryFieldRef = ref()
 const amountFieldRef = ref()
 const memoFieldRef = ref()
+const categoryPickerOpen = ref(false)
+const amountKeypadOpen = ref(false)
 
+const focusCategory = () => {
+  nextTick(() => categoryFieldRef.value?.focus())
+}
 const focusAmount = () => {
   nextTick(() => amountFieldRef.value?.focus())
+}
+const onCategorySelect = (id: string) => {
+  categoryId.value = id
+  categoryPickerOpen.value = false
+  focusAmount()
+}
+const keypadDigit = (d: string) => {
+  const raw = amount.value.replace(/,/g, '')
+  handleAmount(raw + d)
+}
+const keypadBackspace = () => {
+  const raw = amount.value.replace(/,/g, '')
+  handleAmount(raw.slice(0, -1))
+}
+const keypadDone = () => {
+  amountKeypadOpen.value = false
+  focusMemo()
+}
+
+// 날짜/카테고리/금액 고정 패널은 한 번에 하나만 열림
+watch(dateMenu, (v) => { if (v) { categoryPickerOpen.value = false; amountKeypadOpen.value = false } })
+watch(categoryPickerOpen, (v) => { if (v) amountKeypadOpen.value = false })
+watch(amountKeypadOpen, (v) => { if (v) categoryPickerOpen.value = false })
+const goToCategoryManage = () => {
+  dialog.value = false
+  router.push('/budget/manage')
 }
 const focusMemo = () => {
   nextTick(() => memoFieldRef.value?.focus())
@@ -114,19 +149,6 @@ const fetchPaymentMethods = async () => {
     .select('*')
     .eq('user_id', user.id)
     .order('sort_order')
-
-  if ((data ?? []).length === 0) {
-    const rows = DEFAULT_BUDGET_PAYMENT_METHODS.map((name, i) => ({ user_id: user.id, name, sort_order: i }))
-    const { error: seedError } = await supabase.from('budget_payment_methods').insert(rows)
-    if (seedError) return
-    const { data: seeded } = await supabase
-      .from('budget_payment_methods')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('sort_order')
-    paymentMethods.value = seeded ?? []
-    return
-  }
 
   paymentMethods.value = data ?? []
 }
@@ -309,41 +331,43 @@ const save = async () => {
               variant="outlined"
               density="compact"
               rounded="lg"
+              hide-details
               class="mb-1"
               @focus="(e: FocusEvent) => (e.target as HTMLElement).blur()"
             />
           </template>
-          <BudgetDateCalendarCard v-model="entryDate" :open="dateMenu" @close="dateMenu = false; focusAmount()" />
+          <BudgetDateCalendarCard v-model="entryDate" :open="dateMenu" @close="dateMenu = false; focusCategory()" />
         </v-menu>
 
-        <v-select
-          v-model="categoryId"
-          :items="categoryOptions"
+        <v-text-field
+          ref="categoryFieldRef"
+          :model-value="categoryId ? categoryName(categoryId) : ''"
           label="카테고리"
+          readonly
+          autocomplete="off"
           prepend-inner-icon="mdi-shape-outline"
           variant="outlined"
           density="compact"
           rounded="lg"
-          no-data-text="카테고리가 없습니다. 카테고리 관리에서 먼저 추가해주세요"
+          hide-details
           class="mb-1"
-          autocomplete="off"
-          @update:model-value="focusAmount"
+          @focus="categoryPickerOpen = true"
         />
 
         <v-text-field
           ref="amountFieldRef"
           :model-value="amount"
           label="금액"
-          inputmode="numeric"
+          readonly
           autocomplete="off"
           prepend-inner-icon="mdi-currency-krw"
           variant="outlined"
           density="compact"
           rounded="lg"
+          hide-details="auto"
           class="mb-1"
           :rules="amountRules"
-          @update:model-value="handleAmount"
-          @keyup.enter="focusMemo"
+          @focus="amountKeypadOpen = true"
         />
 
         <div class="text-medium-emphasis mb-1" style="font-size: 0.75rem">결제수단</div>
@@ -389,12 +413,13 @@ const save = async () => {
           maxlength="30"
           counter
           autocomplete="off"
+          @focus="categoryPickerOpen = false; amountKeypadOpen = false"
         />
       </v-card-text>
 
       <v-divider />
 
-      <v-card-actions class="px-4 py-2">
+      <v-card-actions v-if="!categoryPickerOpen && !amountKeypadOpen" class="px-4 py-2">
         <v-btn variant="text" :disabled="saving" @click="reset">취소</v-btn>
         <v-spacer />
         <v-btn
@@ -406,6 +431,14 @@ const save = async () => {
           @click="save"
         >{{ isEditMode ? '수정 저장' : '저장' }}</v-btn>
       </v-card-actions>
+      <BudgetCategoryGridPicker
+        v-else-if="categoryPickerOpen"
+        :items="categoryOptions"
+        @select="onCategorySelect"
+        @close="categoryPickerOpen = false"
+        @manage="goToCategoryManage"
+      />
+      <BudgetAmountKeypad v-else @digit="keypadDigit" @backspace="keypadBackspace" @done="keypadDone" />
     </v-card>
 
     <v-dialog v-model="favoriteManageDialog" max-width="480">

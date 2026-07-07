@@ -216,6 +216,7 @@ const openAddDialog = () => {
 }
 
 const openEditDialog = (e: EntryRow) => {
+  swipedId.value = null
   editingEntry.value = e
   dialog.value = true
 }
