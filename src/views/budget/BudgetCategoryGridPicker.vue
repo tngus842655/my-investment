@@ -50,17 +50,20 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 5px 5px 5px 11px;
+  padding: 6px 6px 6px 14px;
   background: rgb(var(--v-theme-primary));
   color: rgb(var(--v-theme-on-primary));
   flex-shrink: 0;
 }
 .topbar-title {
   font-weight: 700;
-  font-size: 0.9375rem;
+  font-size: 1.0625rem;
 }
 .category-picker-topbar .v-btn {
   color: inherit;
+}
+.category-picker-topbar :deep(.v-icon) {
+  font-size: 1.375rem;
 }
 
 .category-picker-empty {
