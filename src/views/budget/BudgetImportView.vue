@@ -393,6 +393,11 @@ const doImport = async () => {
         {{ validRows.length }}건 가져오기
       </v-btn>
     </template>
+
+    <div class="pc-notice mt-4">
+      <v-icon size="16" class="mr-1">mdi-monitor</v-icon>
+      엑셀 파일 작성·업로드·양식 다운로드는 모바일보다 <b>PC 환경에서 진행하시는 것을 권장</b>합니다.
+    </div>
   </v-container>
 </template>
 
@@ -480,4 +485,16 @@ const doImport = async () => {
 
 .income-color { color: rgb(var(--v-theme-primary)); }
 .expense-color { color: rgb(var(--v-theme-error)); }
+
+.pc-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(var(--v-theme-on-surface), 0.05);
+  color: rgba(var(--v-theme-on-surface), 0.6);
+  font-size: 0.75rem;
+}
 </style>
