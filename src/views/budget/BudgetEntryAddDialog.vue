@@ -7,6 +7,7 @@ import type { BudgetCategory, BudgetPaymentMethod, BudgetType } from '@/types/bu
 import BudgetFavoriteView from './BudgetFavoriteView.vue'
 import BudgetDateCalendarCard from './BudgetDateCalendarCard.vue'
 import BudgetAmountKeypad from './BudgetAmountKeypad.vue'
+import BudgetCategoryGridPicker from './BudgetCategoryGridPicker.vue'
 
 const router = useRouter()
 const dialog = defineModel<boolean>()
@@ -44,16 +45,22 @@ const saving = ref(false)
 const favoritesMenu = ref(false)
 const favoriteManageDialog = ref(false)
 const dateMenu = ref(false)
-const categoryMenu = ref(false)
+const categoryFieldRef = ref()
 const amountFieldRef = ref()
 const memoFieldRef = ref()
+const categoryPickerOpen = ref(false)
 const amountKeypadOpen = ref(false)
 
-const openCategoryMenu = () => {
-  nextTick(() => (categoryMenu.value = true))
+const focusCategory = () => {
+  nextTick(() => categoryFieldRef.value?.focus())
 }
 const focusAmount = () => {
   nextTick(() => amountFieldRef.value?.focus())
+}
+const onCategorySelect = (id: string) => {
+  categoryId.value = id
+  categoryPickerOpen.value = false
+  focusAmount()
 }
 const keypadDigit = (d: string) => {
   const raw = amount.value.replace(/,/g, '')
@@ -68,9 +75,10 @@ const keypadDone = () => {
   focusMemo()
 }
 
-// 금액 키패드가 열려있는 동안 다른 선택지를 열면 키패드는 닫음
-watch(dateMenu, (v) => { if (v) amountKeypadOpen.value = false })
-watch(categoryMenu, (v) => { if (v) amountKeypadOpen.value = false })
+// 날짜/카테고리/금액 고정 패널은 한 번에 하나만 열림
+watch(dateMenu, (v) => { if (v) { categoryPickerOpen.value = false; amountKeypadOpen.value = false } })
+watch(categoryPickerOpen, (v) => { if (v) amountKeypadOpen.value = false })
+watch(amountKeypadOpen, (v) => { if (v) categoryPickerOpen.value = false })
 const goToCategoryManage = () => {
   dialog.value = false
   router.push('/budget/manage')
@@ -328,34 +336,23 @@ const save = async () => {
               @focus="(e: FocusEvent) => (e.target as HTMLElement).blur()"
             />
           </template>
-          <BudgetDateCalendarCard v-model="entryDate" :open="dateMenu" @close="dateMenu = false; openCategoryMenu()" />
+          <BudgetDateCalendarCard v-model="entryDate" :open="dateMenu" @close="dateMenu = false; focusCategory()" />
         </v-menu>
 
-        <v-select
-          v-model="categoryId"
-          v-model:menu="categoryMenu"
-          :items="categoryOptions"
+        <v-text-field
+          ref="categoryFieldRef"
+          :model-value="categoryId ? categoryName(categoryId) : ''"
           label="카테고리"
+          readonly
+          autocomplete="off"
           prepend-inner-icon="mdi-shape-outline"
           variant="outlined"
           density="compact"
           rounded="lg"
           hide-details
           class="mb-1"
-          autocomplete="off"
-          @update:model-value="focusAmount"
-        >
-          <template #no-data>
-            <div class="pa-4 text-center">
-              <div class="text-medium-emphasis mb-2" style="font-size: 0.8125rem; white-space: normal">
-                카테고리가 없습니다. 먼저 추가해주세요.
-              </div>
-              <v-btn size="small" variant="tonal" color="primary" @click="goToCategoryManage">
-                카테고리 추가하러 가기
-              </v-btn>
-            </div>
-          </template>
-        </v-select>
+          @focus="categoryPickerOpen = true"
+        />
 
         <v-text-field
           ref="amountFieldRef"
@@ -416,13 +413,13 @@ const save = async () => {
           maxlength="30"
           counter
           autocomplete="off"
-          @focus="amountKeypadOpen = false"
+          @focus="categoryPickerOpen = false; amountKeypadOpen = false"
         />
       </v-card-text>
 
       <v-divider />
 
-      <v-card-actions v-if="!amountKeypadOpen" class="px-4 py-2">
+      <v-card-actions v-if="!categoryPickerOpen && !amountKeypadOpen" class="px-4 py-2">
         <v-btn variant="text" :disabled="saving" @click="reset">취소</v-btn>
         <v-spacer />
         <v-btn
@@ -434,6 +431,13 @@ const save = async () => {
           @click="save"
         >{{ isEditMode ? '수정 저장' : '저장' }}</v-btn>
       </v-card-actions>
+      <BudgetCategoryGridPicker
+        v-else-if="categoryPickerOpen"
+        :items="categoryOptions"
+        @select="onCategorySelect"
+        @close="categoryPickerOpen = false"
+        @manage="goToCategoryManage"
+      />
       <BudgetAmountKeypad v-else @digit="keypadDigit" @backspace="keypadBackspace" @done="keypadDone" />
     </v-card>
 
