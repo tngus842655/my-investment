@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import BudgetPanelTopbar from './BudgetPanelTopbar.vue'
+import { useFitToPanel } from '@/composables/useFitToPanel'
 
 defineProps<{
   items: { title: string; value: string }[]
@@ -10,39 +12,55 @@ const emit = defineEmits<{
   close: []
   manage: []
 }>()
+
+const rootRef = ref<HTMLElement>()
+const scaleWrapRef = ref<HTMLElement>()
+const { scale, rootHeight } = useFitToPanel(rootRef, scaleWrapRef)
 </script>
 
 <template>
-  <div class="category-picker">
-    <BudgetPanelTopbar title="카테고리" @close="emit('close')" />
+  <div ref="rootRef" class="category-picker" :style="{ height: rootHeight ? `${rootHeight}px` : undefined }">
+    <div
+      ref="scaleWrapRef"
+      class="scale-wrap"
+      :style="{ transform: scale < 1 ? `scale(${scale})` : undefined, width: scale < 1 ? `${100 / scale}%` : '100%' }"
+    >
+      <BudgetPanelTopbar title="카테고리" @close="emit('close')" />
 
-    <div v-if="items.length === 0" class="category-picker-empty">
-      <div class="text-medium-emphasis mb-2" style="font-size: 0.8125rem">
-        카테고리가 없습니다. 먼저 추가해주세요.
+      <div v-if="items.length === 0" class="category-picker-empty">
+        <div class="text-medium-emphasis mb-2" style="font-size: 0.8125rem">
+          카테고리가 없습니다. 먼저 추가해주세요.
+        </div>
+        <v-btn size="small" variant="tonal" color="primary" @click="emit('manage')">
+          카테고리 추가하러 가기
+        </v-btn>
       </div>
-      <v-btn size="small" variant="tonal" color="primary" @click="emit('manage')">
-        카테고리 추가하러 가기
-      </v-btn>
-    </div>
 
-    <div v-else class="category-grid">
-      <button
-        v-for="item in items"
-        :key="item.value"
-        class="category-key"
-        @click="emit('select', item.value)"
-      >{{ item.title }}</button>
-      <button class="category-key category-key--add" @click="emit('manage')">
-        <v-icon size="14">mdi-plus</v-icon> 추가
-      </button>
+      <div v-else class="category-grid">
+        <button
+          v-for="item in items"
+          :key="item.value"
+          class="category-key"
+          @click="emit('select', item.value)"
+        >{{ item.title }}</button>
+        <button class="category-key category-key--add" @click="emit('manage')">
+          <v-icon size="14">mdi-plus</v-icon> 추가
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .category-picker {
+  position: relative;
+  overflow: hidden;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+}
+.scale-wrap {
+  transform-origin: top center;
+  flex-shrink: 0;
 }
 
 .category-picker-empty {

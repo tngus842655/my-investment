@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import BudgetMonthYearCard from './BudgetMonthYearCard.vue'
 import BudgetPanelTopbar from './BudgetPanelTopbar.vue'
+import { useFitToPanel } from '@/composables/useFitToPanel'
 
 const emit = defineEmits<{
   close: []
@@ -14,33 +15,13 @@ const initialDate = new Date(`${modelValue.value}T00:00:00`)
 const calendarMonth = ref(initialDate.getMonth())
 const calendarYear = ref(initialDate.getFullYear())
 
-// 기기별로 하단 고정 패널에 할당된 실제 높이가 다르므로,
-// 달력이 잘리거나 스크롤이 생기지 않도록 실측해서 그 높이에 맞게 축소
 const rootRef = ref<HTMLElement>()
 const scaleWrapRef = ref<HTMLElement>()
-const scale = ref(1)
-const rootHeight = ref<number>()
+const { scale, rootHeight, fit } = useFitToPanel(rootRef, scaleWrapRef)
 
-const fitToPanel = () => {
-  const scaleWrap = scaleWrapRef.value
-  const panel = rootRef.value?.parentElement
-  if (!scaleWrap || !panel) return
-  const naturalHeight = scaleWrap.scrollHeight
-  const availableHeight = panel.clientHeight
-  if (!naturalHeight || !availableHeight) return
-  scale.value = naturalHeight > availableHeight ? availableHeight / naturalHeight : 1
-  rootHeight.value = naturalHeight * scale.value
-}
-
-onMounted(async () => {
-  await nextTick()
-  fitToPanel()
-  window.addEventListener('resize', fitToPanel)
-})
-onUnmounted(() => window.removeEventListener('resize', fitToPanel))
 watch([calendarMonth, calendarYear], async () => {
   await nextTick()
-  fitToPanel()
+  fit()
 })
 
 const toIsoDate = (v: Date) => {
