@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import type { BudgetCategory, BudgetPaymentMethod, BudgetType } from '@/types/budget'
@@ -7,6 +8,7 @@ import { DEFAULT_BUDGET_PAYMENT_METHODS } from '@/utils/budgetDefaultPaymentMeth
 import BudgetFavoriteView from './BudgetFavoriteView.vue'
 import BudgetDateCalendarCard from './BudgetDateCalendarCard.vue'
 
+const router = useRouter()
 const dialog = defineModel<boolean>()
 
 const props = defineProps<{
@@ -47,6 +49,10 @@ const memoFieldRef = ref()
 
 const focusAmount = () => {
   nextTick(() => amountFieldRef.value?.focus())
+}
+const goToCategoryManage = () => {
+  dialog.value = false
+  router.push('/budget/manage')
 }
 const focusMemo = () => {
   nextTick(() => memoFieldRef.value?.focus())
@@ -324,11 +330,21 @@ const save = async () => {
           variant="outlined"
           density="compact"
           rounded="lg"
-          no-data-text="카테고리가 없습니다. 카테고리 관리에서 먼저 추가해주세요"
           class="mb-1"
           autocomplete="off"
           @update:model-value="focusAmount"
-        />
+        >
+          <template #no-data>
+            <div class="pa-4 text-center">
+              <div class="text-medium-emphasis mb-2" style="font-size: 0.8125rem; white-space: normal">
+                카테고리가 없습니다. 먼저 추가해주세요.
+              </div>
+              <v-btn size="small" variant="tonal" color="primary" @click="goToCategoryManage">
+                카테고리 추가하러 가기
+              </v-btn>
+            </div>
+          </template>
+        </v-select>
 
         <v-text-field
           ref="amountFieldRef"
