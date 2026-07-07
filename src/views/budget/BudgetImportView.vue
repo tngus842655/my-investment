@@ -194,6 +194,32 @@ const triggerFileSelect = () => {
   fileInput.value?.click()
 }
 
+const downloadingTemplate = ref(false)
+const downloadTemplate = async () => {
+  downloadingTemplate.value = true
+  try {
+    const { default: writeXlsxFile } = await import('write-excel-file')
+    const sampleRows = [
+      { date: '2026-01-15', asset: '현금', category: '식비', memo: '점심', amount: 12000, type: '지출' },
+      { date: '2026-01-25', asset: '통장', category: '월급', memo: '', amount: 3000000, type: '수입' },
+    ]
+    const schema = [
+      { column: '날짜', type: String, value: (r: (typeof sampleRows)[number]) => r.date, width: 12 },
+      { column: '자산', type: String, value: (r: (typeof sampleRows)[number]) => r.asset, width: 12 },
+      { column: '카테고리', type: String, value: (r: (typeof sampleRows)[number]) => r.category, width: 12 },
+      { column: '내용', type: String, value: (r: (typeof sampleRows)[number]) => r.memo, width: 16 },
+      { column: '금액(원)', type: Number, value: (r: (typeof sampleRows)[number]) => r.amount, width: 12 },
+      { column: '수입/지출', type: String, value: (r: (typeof sampleRows)[number]) => r.type, width: 10 },
+    ]
+    await writeXlsxFile(sampleRows, { schema, fileName: '가계부_엑셀양식.xlsx' })
+  } catch (err) {
+    console.error('양식 다운로드 오류:', err)
+    showMessage('양식 파일을 만드는 중 오류가 발생했습니다.', 'error')
+  } finally {
+    downloadingTemplate.value = false
+  }
+}
+
 const doImport = async () => {
   if (validRows.value.length === 0) return
   importing.value = true
@@ -289,9 +315,20 @@ const doImport = async () => {
 
     <div class="glass-card pa-4 mb-4">
       <div class="format-title mb-2">엑셀 양식 안내</div>
-      <div class="text-medium-emphasis" style="font-size: 0.8125rem">
+      <div class="text-medium-emphasis mb-3" style="font-size: 0.8125rem">
         1행은 제목 행이며, 2행부터 데이터를 읽습니다. 열 순서: <b>날짜 · 자산(결제수단) · 카테고리 · 내용 · 금액(원) · 수입/지출</b>
       </div>
+      <v-btn
+        block
+        variant="text"
+        color="primary"
+        rounded="lg"
+        prepend-icon="mdi-download-outline"
+        :loading="downloadingTemplate"
+        @click="downloadTemplate"
+      >
+        엑셀 양식 다운로드
+      </v-btn>
     </div>
 
     <input ref="fileInput" type="file" accept=".xlsx,.xls" class="d-none" @change="onFileChange" />
