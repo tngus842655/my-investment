@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
@@ -53,38 +53,6 @@ const amountKeypadOpen = ref(false)
 // 날짜/카테고리/금액 하단 고정 패널 — 화면 높이의 1/3만큼 항상 같은 크기로 자리잡음
 const FIXED_PANEL_HEIGHT = '33vh'
 const anyPickerOpen = computed(() => dateCalendarOpen.value || categoryPickerOpen.value || amountKeypadOpen.value)
-
-// (실험) 팝업 카드 전체도 화면에 맞춰 스크롤 없이 축소되도록
-const cardScaleWrapRef = ref<HTMLElement>()
-const cardScale = ref(1)
-const cardHeight = ref<number>()
-
-const fitCard = () => {
-  const wrap = cardScaleWrapRef.value
-  if (!wrap) return
-  const natural = wrap.scrollHeight
-  const reserved = anyPickerOpen.value ? window.innerHeight * 0.33 : 0
-  const available = window.innerHeight * 0.9 - reserved
-  if (!natural || available <= 0) return
-  cardScale.value = natural > available ? available / natural : 1
-  cardHeight.value = natural * cardScale.value
-}
-
-onMounted(async () => {
-  await nextTick()
-  fitCard()
-  window.addEventListener('resize', fitCard)
-})
-onUnmounted(() => window.removeEventListener('resize', fitCard))
-watch(dialog, async (open) => {
-  if (!open) return
-  await nextTick()
-  fitCard()
-})
-watch(anyPickerOpen, async () => {
-  await nextTick()
-  fitCard()
-})
 
 const focusCategory = () => {
   nextTick(() => categoryFieldRef.value?.focus())
@@ -317,17 +285,8 @@ const save = async () => {
     <v-card
       rounded="xl"
       class="glass-dialog"
-      style="overflow: hidden; display: flex; justify-content: center; transition: margin-bottom 0.2s ease"
-      :style="{
-        marginBottom: anyPickerOpen ? `calc(${FIXED_PANEL_HEIGHT} + env(safe-area-inset-bottom))` : 0,
-        height: cardHeight ? `${cardHeight}px` : undefined,
-        maxHeight: cardHeight ? undefined : '90dvh',
-      }"
-    >
-    <div
-      ref="cardScaleWrapRef"
-      class="card-scale-wrap"
-      :style="{ transform: cardScale < 1 ? `scale(${cardScale})` : undefined, width: cardScale < 1 ? `${100 / cardScale}%` : '100%' }"
+      style="overflow: hidden; display: flex; flex-direction: column; max-height: 90dvh; transition: margin-bottom 0.2s ease"
+      :style="{ marginBottom: anyPickerOpen ? `calc(${FIXED_PANEL_HEIGHT} + env(safe-area-inset-bottom))` : 0 }"
     >
       <div class="dialog-header" :class="entryType === 'EXPENSE' ? 'header-sell' : 'header-buy'">
         <div class="d-flex align-center justify-space-between">
@@ -480,7 +439,6 @@ const save = async () => {
           @click="save"
         >{{ isEditMode ? '수정 저장' : '저장' }}</v-btn>
       </v-card-actions>
-    </div>
     </v-card>
 
     <v-dialog v-model="favoriteManageDialog" max-width="480">
@@ -513,13 +471,6 @@ const save = async () => {
 </template>
 
 <style scoped>
-.card-scale-wrap {
-  display: flex;
-  flex-direction: column;
-  transform-origin: top center;
-  flex-shrink: 0;
-}
-
 .fixed-picker-panel {
   position: fixed;
   left: 0;
