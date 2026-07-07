@@ -126,6 +126,42 @@ const resetResult = () => {
   fileName.value = ''
 }
 
+type ColumnKey = 'date' | 'asset' | 'category' | 'memo' | 'amount' | 'type'
+
+const COLUMN_LABELS: Record<ColumnKey, string> = {
+  date: '날짜',
+  asset: '자산',
+  category: '카테고리',
+  memo: '내용',
+  amount: '금액(원)',
+  type: '수입/지출',
+}
+
+// 제목 행 문구가 조금 다르게 적혀 있어도(예: "결제수단", "금액") 인식되도록 별칭 허용
+const COLUMN_ALIASES: Record<ColumnKey, string[]> = {
+  date: ['날짜', '일자'],
+  asset: ['자산', '결제수단', '자산(결제수단)'],
+  category: ['카테고리', '분류'],
+  memo: ['내용', '메모'],
+  amount: ['금액(원)', '금액'],
+  type: ['수입/지출', '수입지출', '구분'],
+}
+
+// 제목 행 텍스트로 각 열이 실제로 몇 번째 칸에 있는지 찾음 (열 순서가 바뀌어도 정상 인식되도록)
+const findColumnIndexes = (
+  headerRow: unknown[],
+): { indexes: Record<ColumnKey, number>; missing: ColumnKey[] } => {
+  const headerCells = headerRow.map((v) => cellToString(v).trim())
+  const indexes = {} as Record<ColumnKey, number>
+  const missing: ColumnKey[] = []
+  for (const key of Object.keys(COLUMN_ALIASES) as ColumnKey[]) {
+    const index = headerCells.findIndex((h) => COLUMN_ALIASES[key].includes(h))
+    if (index === -1) missing.push(key)
+    else indexes[key] = index
+  }
+  return { indexes, missing }
+}
+
 const onFileChange = async (e: Event) => {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!file) return
@@ -144,8 +180,18 @@ const onFileChange = async (e: Event) => {
     const { default: readXlsxFile } = await import('read-excel-file/browser')
     const sheets = await readXlsxFile(file)
     const data = sheets[0]?.data
-    if (!data) {
+    if (!data || data.length === 0) {
       showMessage('시트를 찾을 수 없습니다.', 'error')
+      return
+    }
+
+    const { indexes: col, missing } = findColumnIndexes(data[0] ?? [])
+    if (missing.length > 0) {
+      showMessage(
+        `제목 행에서 "${missing.map((k) => COLUMN_LABELS[k]).join(', ')}" 열을 찾을 수 없습니다. 양식을 확인해주세요.`,
+        'error',
+      )
+      resetResult()
       return
     }
 
@@ -153,7 +199,12 @@ const onFileChange = async (e: Event) => {
     for (let i = 1; i < data.length; i++) {
       const rowNumber = i + 1
       const cells = data[i] ?? []
-      const [dateRaw, assetRaw, categoryRaw, memoRaw, amountRaw, typeRaw] = cells
+      const dateRaw = cells[col.date]
+      const assetRaw = cells[col.asset]
+      const categoryRaw = cells[col.category]
+      const memoRaw = cells[col.memo]
+      const amountRaw = cells[col.amount]
+      const typeRaw = cells[col.type]
 
       // 완전히 빈 행은 건너뜀
       if (![dateRaw, assetRaw, categoryRaw, memoRaw, amountRaw, typeRaw].some((v) => v != null && cellToString(v).trim() !== '')) {
@@ -316,7 +367,7 @@ const doImport = async () => {
     <div class="glass-card pa-4 mb-4">
       <div class="format-title mb-2">엑셀 양식 안내</div>
       <div class="text-medium-emphasis mb-3" style="font-size: 0.8125rem">
-        1행은 제목 행이며, 2행부터 데이터를 읽습니다. 열 순서: <b>날짜 · 자산(결제수단) · 카테고리 · 내용 · 금액(원) · 수입/지출</b>
+        1행은 제목 행이며, 2행부터 데이터를 읽습니다. 필요한 열 이름(순서는 상관없음): <b>날짜 · 자산(결제수단) · 카테고리 · 내용 · 금액(원) · 수입/지출</b>
       </div>
       <v-btn
         block
