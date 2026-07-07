@@ -154,6 +154,7 @@ const setToday = () => {
 .topbar-title {
   font-weight: 700;
   font-size: 1.0625rem;
+  line-height: 1.375rem;
 }
 .topbar-action {
   padding: 2px 8px;
@@ -166,6 +167,10 @@ const setToday = () => {
 }
 .date-picker-topbar .v-btn {
   color: inherit;
+}
+.date-picker-topbar :deep(.v-btn) {
+  width: 28px !important;
+  height: 28px !important;
 }
 .date-picker-topbar :deep(.v-icon) {
   font-size: 1.375rem;

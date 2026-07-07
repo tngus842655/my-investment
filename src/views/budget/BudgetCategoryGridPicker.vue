@@ -58,9 +58,14 @@ const emit = defineEmits<{
 .topbar-title {
   font-weight: 700;
   font-size: 1.0625rem;
+  line-height: 1.375rem;
 }
 .category-picker-topbar .v-btn {
   color: inherit;
+}
+.category-picker-topbar :deep(.v-btn) {
+  width: 28px !important;
+  height: 28px !important;
 }
 .category-picker-topbar :deep(.v-icon) {
   font-size: 1.375rem;
