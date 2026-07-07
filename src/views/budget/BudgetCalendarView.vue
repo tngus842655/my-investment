@@ -646,9 +646,11 @@ const onContainerClick = (e: MouseEvent) => {
 }
 .swipe-actions {
   position: absolute;
-  right: 2px;
-  top: 2px;
-  bottom: 2px;
+  /* 카드 클리핑 경계와 정확히 맞닿지 않도록 사방으로 여유를 두어, 서브픽셀
+     오차로 클리핑이 어긋나도 버튼 색이 아니라 배경만 살짝 보이게 함 */
+  right: 1px;
+  top: 1px;
+  bottom: 1px;
   width: 116px;
   display: flex;
 }
