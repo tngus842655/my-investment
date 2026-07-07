@@ -451,9 +451,10 @@ const onContainerClick = (e: MouseEvent) => {
               @mousedown="onSwipeMouseDown"
               @mouseup="(ev) => onSwipeMouseUp(ev, e.id)"
             >
+              <div class="daily-entry-category-tag">{{ e.budget_categories?.name }}</div>
               <div class="daily-entry-info">
-                <div class="daily-entry-category">{{ e.memo || e.budget_categories?.name || '' }}</div>
-                <div class="daily-entry-sub">{{ e.budget_categories?.name }}<span v-if="e.budget_payment_methods?.name"> · {{ e.budget_payment_methods.name }}</span></div>
+                <div class="daily-entry-category">{{ e.memo || e.budget_payment_methods?.name || '' }}</div>
+                <div v-if="e.memo" class="daily-entry-sub">{{ e.budget_payment_methods?.name }}</div>
               </div>
               <span :class="e.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ formatCurrency(e.amount) }}원</span>
             </div>
@@ -505,9 +506,10 @@ const onContainerClick = (e: MouseEvent) => {
               @mousedown="onSwipeMouseDown"
               @mouseup="(ev) => onSwipeMouseUp(ev, e.id)"
             >
+              <div class="daily-entry-category-tag">{{ e.budget_categories?.name }}</div>
               <div class="daily-entry-info">
-                <div class="daily-entry-category">{{ e.memo || e.budget_categories?.name || '' }}</div>
-                <div class="daily-entry-sub">{{ e.budget_categories?.name }}<span v-if="e.budget_payment_methods?.name"> · {{ e.budget_payment_methods.name }}</span></div>
+                <div class="daily-entry-category">{{ e.memo || e.budget_payment_methods?.name || '' }}</div>
+                <div v-if="e.memo" class="daily-entry-sub">{{ e.budget_payment_methods?.name }}</div>
               </div>
               <span :class="e.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ formatCurrency(e.amount) }}원</span>
             </div>
@@ -695,6 +697,13 @@ const onContainerClick = (e: MouseEvent) => {
   gap: 8px;
   padding: 6px 4px;
   cursor: pointer;
+}
+.daily-entry-category-tag {
+  flex: 0 0 44px;
+  font-size: 0.6875rem;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+  text-align: center;
+  line-height: 1.2;
 }
 .daily-entry-info {
   flex: 1;
