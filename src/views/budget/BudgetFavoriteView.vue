@@ -298,7 +298,7 @@ const onFormTypeChange = (type: BudgetType) => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 0;
+  padding: 4px 0;
   border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.05);
 }
 .row-item:last-child { border-bottom: none; }
