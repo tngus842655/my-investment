@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import BudgetMonthYearCard from './BudgetMonthYearCard.vue'
+import BudgetPanelTopbar from './BudgetPanelTopbar.vue'
 
 const emit = defineEmits<{
   close: []
@@ -83,13 +84,9 @@ const setToday = () => {
       class="scale-wrap"
       :style="{ transform: scale < 1 ? `scale(${scale})` : undefined, width: scale < 1 ? `${100 / scale}%` : '100%' }"
     >
-      <div class="date-picker-topbar">
-        <span class="topbar-title">날짜</span>
-        <div class="d-flex align-center ga-1">
-          <button class="topbar-action" @click="setToday">오늘</button>
-          <v-btn icon="mdi-close" variant="text" size="small" @click="emit('close')" />
-        </div>
-      </div>
+      <BudgetPanelTopbar title="날짜" @close="emit('close')">
+        <button class="topbar-action" @click="setToday">오늘</button>
+      </BudgetPanelTopbar>
       <div class="date-nav-row">
         <button class="nav-arrow" @click="shiftMonth(-1)">
           <v-icon size="20">mdi-chevron-left</v-icon>
@@ -143,19 +140,6 @@ const setToday = () => {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
   z-index: 5;
 }
-.date-picker-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 6px 6px 14px;
-  background: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-on-primary));
-}
-.topbar-title {
-  font-weight: 700;
-  font-size: 1.0625rem;
-  line-height: 1.375rem;
-}
 .topbar-action {
   padding: 2px 8px;
   border: none;
@@ -164,16 +148,6 @@ const setToday = () => {
   font-weight: 700;
   font-size: 0.9375rem;
   cursor: pointer;
-}
-.date-picker-topbar .v-btn {
-  color: inherit;
-}
-.date-picker-topbar :deep(.v-btn) {
-  width: 28px !important;
-  height: 28px !important;
-}
-.date-picker-topbar :deep(.v-icon) {
-  font-size: 1.375rem;
 }
 
 .date-picker-card :deep(.v-date-picker-controls) {

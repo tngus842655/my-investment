@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BudgetPanelTopbar from './BudgetPanelTopbar.vue'
+
 defineProps<{
   items: { title: string; value: string }[]
 }>()
@@ -12,10 +14,7 @@ const emit = defineEmits<{
 
 <template>
   <div class="category-picker">
-    <div class="category-picker-topbar">
-      <span class="topbar-title">카테고리</span>
-      <v-btn icon="mdi-close" variant="text" size="small" @click="emit('close')" />
-    </div>
+    <BudgetPanelTopbar title="카테고리" @close="emit('close')" />
 
     <div v-if="items.length === 0" class="category-picker-empty">
       <div class="text-medium-emphasis mb-2" style="font-size: 0.8125rem">
@@ -44,31 +43,6 @@ const emit = defineEmits<{
 .category-picker {
   display: flex;
   flex-direction: column;
-}
-
-.category-picker-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 6px 6px 14px;
-  background: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-on-primary));
-  flex-shrink: 0;
-}
-.topbar-title {
-  font-weight: 700;
-  font-size: 1.0625rem;
-  line-height: 1.375rem;
-}
-.category-picker-topbar .v-btn {
-  color: inherit;
-}
-.category-picker-topbar :deep(.v-btn) {
-  width: 28px !important;
-  height: 28px !important;
-}
-.category-picker-topbar :deep(.v-icon) {
-  font-size: 1.375rem;
 }
 
 .category-picker-empty {
