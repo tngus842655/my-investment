@@ -51,8 +51,8 @@ const dateCalendarOpen = ref(false)
 const categoryPickerOpen = ref(false)
 const amountKeypadOpen = ref(false)
 
-// 날짜/카테고리/금액 하단 고정 패널 — 항상 이 높이만큼 화면 하단에 자리잡음
-const FIXED_PANEL_HEIGHT = 400
+// 날짜/카테고리/금액 하단 고정 패널 — 화면 높이의 1/3만큼 항상 같은 크기로 자리잡음
+const FIXED_PANEL_HEIGHT = '33vh'
 const anyPickerOpen = computed(() => dateCalendarOpen.value || categoryPickerOpen.value || amountKeypadOpen.value)
 
 const focusCategory = () => {
@@ -281,7 +281,7 @@ const save = async () => {
       rounded="xl"
       class="glass-dialog"
       style="overflow: hidden; display: flex; flex-direction: column; max-height: 90dvh; transition: margin-bottom 0.2s ease"
-      :style="{ marginBottom: anyPickerOpen ? `calc(${FIXED_PANEL_HEIGHT}px + env(safe-area-inset-bottom))` : 0 }"
+      :style="{ marginBottom: anyPickerOpen ? `calc(${FIXED_PANEL_HEIGHT} + env(safe-area-inset-bottom))` : 0 }"
     >
       <div class="dialog-header" :class="entryType === 'EXPENSE' ? 'header-sell' : 'header-buy'">
         <div class="d-flex align-center justify-space-between">
@@ -445,7 +445,7 @@ const save = async () => {
     </v-dialog>
 
     <Teleport to="body">
-      <div v-if="dialog && anyPickerOpen" class="fixed-picker-panel" :style="{ height: FIXED_PANEL_HEIGHT + 'px' }">
+      <div v-if="dialog && anyPickerOpen" class="fixed-picker-panel" :style="{ height: FIXED_PANEL_HEIGHT }">
         <BudgetDateCalendarCard v-if="dateCalendarOpen" v-model="entryDate" @close="dateCalendarOpen = false; focusCategory()" />
         <BudgetCategoryGridPicker
           v-else-if="categoryPickerOpen"
@@ -468,9 +468,13 @@ const save = async () => {
   bottom: 0;
   z-index: 3000;
   overflow-y: auto;
+  scrollbar-width: none;
   background: rgb(var(--v-theme-surface));
   padding-bottom: env(safe-area-inset-bottom);
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+}
+.fixed-picker-panel::-webkit-scrollbar {
+  display: none;
 }
 
 .dialog-header {

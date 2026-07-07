@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import BudgetMonthYearCard from './BudgetMonthYearCard.vue'
 
 const emit = defineEmits<{
@@ -9,8 +9,9 @@ const emit = defineEmits<{
 const modelValue = defineModel<string>({ required: true })
 
 const monthYearOpen = ref(false)
-const calendarMonth = ref(0)
-const calendarYear = ref(new Date().getFullYear())
+const initialDate = new Date(`${modelValue.value}T00:00:00`)
+const calendarMonth = ref(initialDate.getMonth())
+const calendarYear = ref(initialDate.getFullYear())
 
 const toIsoDate = (v: Date) => {
   const y = v.getFullYear()
@@ -28,12 +29,6 @@ const pickerDate = computed<Date>({
   },
 })
 
-const syncCalendarNav = () => {
-  const d = pickerDate.value
-  calendarMonth.value = d.getMonth()
-  calendarYear.value = d.getFullYear()
-}
-
 const shiftMonth = (delta: number) => {
   let m = calendarMonth.value + delta
   let y = calendarYear.value
@@ -50,8 +45,6 @@ const setToday = () => {
   calendarYear.value = today.getFullYear()
   emit('close')
 }
-
-onMounted(() => syncCalendarNav())
 </script>
 
 <template>
@@ -76,6 +69,7 @@ onMounted(() => syncCalendarNav())
       v-model="pickerDate"
       v-model:month="calendarMonth"
       v-model:year="calendarYear"
+      width="100%"
       hide-header
       show-adjacent-months
     >
@@ -92,6 +86,11 @@ onMounted(() => syncCalendarNav())
 .date-picker-card {
   position: relative;
   overflow: hidden;
+}
+.date-picker-card :deep(.v-picker),
+.date-picker-card :deep(.v-picker__body),
+.date-picker-card :deep(.v-date-picker-month) {
+  width: 100% !important;
 }
 
 .month-year-overlay {
