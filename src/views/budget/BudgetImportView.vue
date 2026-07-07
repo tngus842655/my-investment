@@ -198,7 +198,7 @@ const downloadingTemplate = ref(false)
 const downloadTemplate = async () => {
   downloadingTemplate.value = true
   try {
-    const { default: writeXlsxFile } = await import('write-excel-file')
+    const { default: writeXlsxFile } = await import('write-excel-file/browser')
     const sampleRows = [
       { date: '2026-01-15', asset: '현금', category: '식비', memo: '점심', amount: 12000, type: '지출' },
       { date: '2026-01-25', asset: '통장', category: '월급', memo: '', amount: 3000000, type: '수입' },
