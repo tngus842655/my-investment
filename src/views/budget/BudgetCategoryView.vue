@@ -34,17 +34,19 @@ const fetchCategories = async () => {
 }
 
 const seeding = ref(false)
-const seedDefaultCategories = async () => {
+const seedDefaultCategories = async (type: BudgetType) => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
 
   seeding.value = true
-  const rows = DEFAULT_BUDGET_CATEGORIES.map((c, i) => ({
-    user_id: user.id,
-    type: c.type,
-    name: c.name,
-    sort_order: i,
-  }))
+  const rows = DEFAULT_BUDGET_CATEGORIES
+    .filter((c) => c.type === type)
+    .map((c, i) => ({
+      user_id: user.id,
+      type: c.type,
+      name: c.name,
+      sort_order: i,
+    }))
   const { error } = await supabase.from('budget_categories').insert(rows)
   if (error) {
     showMessage('기본 카테고리 생성에 실패했습니다.', 'error')
@@ -159,14 +161,11 @@ const deleteCategory = async (c: BudgetCategory) => {
           <v-btn icon="mdi-pencil-outline" size="small" variant="text" class="action-btn" @click="openEditDialog(c)" />
           <v-btn icon="mdi-delete-outline" size="small" variant="text" color="error" class="action-btn" @click="deleteCategory(c)" />
         </div>
-        <div v-if="filteredCategories.length === 0 && categories.length > 0" class="text-center text-medium-emphasis py-4">
-          카테고리가 없습니다.
-        </div>
-        <div v-else-if="categories.length === 0" class="text-center py-6">
+        <div v-if="filteredCategories.length === 0" class="text-center py-6">
           <div class="text-medium-emphasis mb-3" style="font-size: 0.875rem">
             카테고리가 없습니다.
           </div>
-          <v-btn size="small" variant="tonal" color="primary" :loading="seeding" @click="seedDefaultCategories">
+          <v-btn size="small" variant="tonal" color="primary" :loading="seeding" @click="seedDefaultCategories(selectedType)">
             기본 카테고리 추가
           </v-btn>
         </div>
