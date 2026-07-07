@@ -228,6 +228,16 @@ const reset = () => {
   dialog.value = false
 }
 
+// 날짜/카테고리/금액 패널이 Teleport로 다이얼로그 밖(body)에 렌더링되다 보니
+// Vuetify가 그 패널 탭도 "바깥 클릭"으로 오인해서 팝업이 그냥 닫혀버림 —
+// 실제로 패널 위를 탭한 게 아닐 때만 닫히도록 직접 걸러냄
+const onDialogClickOutside = (e: MouseEvent) => {
+  const target = e.target as Node | null
+  const panel = document.querySelector('.fixed-picker-panel')
+  if (panel && target && panel.contains(target)) return
+  reset()
+}
+
 watch(dialog, async (open) => {
   if (!open) return
   await fetchCategories()
@@ -303,7 +313,7 @@ const save = async () => {
 </script>
 
 <template>
-  <v-dialog v-model="dialog" max-width="480" persistent>
+  <v-dialog v-model="dialog" max-width="480" persistent @click:outside="onDialogClickOutside">
     <v-card
       rounded="xl"
       class="glass-dialog"

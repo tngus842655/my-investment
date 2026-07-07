@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import BudgetPanelTopbar from './BudgetPanelTopbar.vue'
 import { useFitToPanel } from '@/composables/useFitToPanel'
 
-defineProps<{
+const props = defineProps<{
   items: { title: string; value: string }[]
 }>()
 
@@ -15,7 +15,13 @@ const emit = defineEmits<{
 
 const rootRef = ref<HTMLElement>()
 const scaleWrapRef = ref<HTMLElement>()
-const { scale, rootHeight } = useFitToPanel(rootRef, scaleWrapRef)
+const { scale, rootHeight, fit } = useFitToPanel(rootRef, scaleWrapRef)
+
+// 지출/수입 전환 등으로 목록 개수가 바뀌면 다시 실측해서 맞춤
+watch(() => props.items.length, async () => {
+  await nextTick()
+  fit()
+})
 </script>
 
 <template>
