@@ -396,7 +396,7 @@ const doImport = async () => {
 
     <div class="pc-notice mt-4">
       <v-icon size="16" class="mr-1">mdi-monitor</v-icon>
-      엑셀 파일 작성·업로드·양식 다운로드는 모바일보다 <b>PC 환경에서 진행하시는 것을 권장</b>합니다.
+      <span>엑셀 파일 작성·업로드·양식 다운로드는 모바일보다 <b>PC 환경에서 진행하시는 것을 권장</b>합니다.</span>
     </div>
   </v-container>
 </template>
