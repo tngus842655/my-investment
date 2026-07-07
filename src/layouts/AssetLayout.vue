@@ -163,8 +163,15 @@ const isActive = (tabRoute: string) => route.path === tabRoute
 
 .app-content {
   flex: 1;
-  padding-bottom: calc(68px + env(safe-area-inset-bottom));
+  padding-bottom: calc(60px + env(safe-area-inset-bottom));
   overflow-y: auto;
+}
+
+/* 홈 화면 추가(PWA) 모드에서만 하단 메뉴바 여유 추가 — 사파리 탭 모드는 그대로 유지 */
+@media (display-mode: standalone) {
+  .app-content {
+    padding-bottom: calc(68px + env(safe-area-inset-bottom));
+  }
 }
 
 .pull-indicator {
@@ -180,8 +187,8 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   bottom: 0;
   left: 0;
   right: 0;
-  height: calc(64px + env(safe-area-inset-bottom));
-  padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  height: calc(56px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
   display: flex;
   align-items: stretch;
   background: rgb(var(--v-theme-surface));
@@ -192,6 +199,14 @@ const isActive = (tabRoute: string) => route.path === tabRoute
     background     300ms ease,
     border-color   300ms ease,
     box-shadow     300ms ease;
+}
+
+/* 홈 화면 추가(PWA) 모드에서만 하단 메뉴바 여유 추가 — 사파리 탭 모드는 그대로 유지 */
+@media (display-mode: standalone) {
+  .bottom-nav {
+    height: calc(64px + env(safe-area-inset-bottom));
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
 }
 
 /* 🌙 Dark */
