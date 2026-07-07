@@ -27,10 +27,15 @@ const resetDescription = computed(() => {
   return ''
 })
 
-const openResetDialog = (target: ResetTarget) => {
+// 크롬이 "비밀번호 폼에 사용자 이름 필드가 없다"고 경고해서, 접근성용 숨김 필드에 채워줄 이메일
+const userEmail = ref('')
+
+const openResetDialog = async (target: ResetTarget) => {
   resetTarget.value = target
   resetPassword.value = ''
   resetPasswordError.value = ''
+  const { data: { user } } = await supabase.auth.getUser()
+  userEmail.value = user?.email ?? ''
 }
 const closeResetDialog = () => {
   resetTarget.value = null
@@ -148,6 +153,15 @@ const executeReset = async () => {
           {{ resetDescription }} 이 작업은 되돌릴 수 없습니다. 계속하려면 비밀번호를 입력해주세요.
         </div>
         <form @submit.prevent="executeReset">
+          <input
+            type="text"
+            :value="userEmail"
+            autocomplete="username"
+            readonly
+            class="visually-hidden"
+            tabindex="-1"
+            aria-hidden="true"
+          />
           <v-text-field
             v-model="resetPassword"
             type="password"
@@ -170,6 +184,16 @@ const executeReset = async () => {
 </template>
 
 <style scoped>
+/* 크롬 비밀번호 폼 접근성 경고 방지용 — 화면에는 안 보이지만 DOM/접근성 트리에는 남겨둠 */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
 .budget-more-page {
   display: flex;
   flex-direction: column;

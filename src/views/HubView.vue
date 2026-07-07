@@ -41,6 +41,8 @@ const deleteStep = ref(0)
 const deletePassword = ref('')
 const deletePasswordError = ref('')
 const deleteLoading = ref(false)
+// 크롬이 "비밀번호 폼에 사용자 이름 필드가 없다"고 경고해서, 접근성용 숨김 필드에 채워줄 이메일
+const userEmail = ref('')
 
 const openDeleteDialog = () => {
   deletePassword.value = ''
@@ -118,6 +120,7 @@ onMounted(async () => {
   showBack.value = window.history.state?.back != null && window.history.state.back !== '/'
   const { data: { user } } = await supabase.auth.getUser()
   canAccessBudget.value = isBudgetPreviewAllowed(user?.email)
+  userEmail.value = user?.email ?? ''
   if (user) await fetchUnreadFeedbackCount(user)
 })
 </script>
@@ -256,6 +259,15 @@ onMounted(async () => {
         <v-card-title class="text-center pt-6 text-error">최종 확인</v-card-title>
         <v-card-text>
           <form @submit.prevent="deleteAccount">
+            <input
+              type="text"
+              :value="userEmail"
+              autocomplete="username"
+              readonly
+              class="visually-hidden"
+              tabindex="-1"
+              aria-hidden="true"
+            />
             <div class="text-medium-emphasis text-center mb-4">
               본인 확인을 위해 비밀번호를 입력해주세요.
             </div>
@@ -329,6 +341,16 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+/* 크롬 비밀번호 폼 접근성 경고 방지용 — 화면에는 안 보이지만 DOM/접근성 트리에는 남겨둠 */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
 .hub-page {
   display: flex;
   flex-direction: column;
