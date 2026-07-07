@@ -118,8 +118,7 @@ const parseTypeCell = (v: unknown): BudgetType | null => {
   return null
 }
 
-const cleanCategoryName = (v: unknown): string =>
-  cellToString(v).replace(/^[^\p{L}\p{N}]+/u, '').trim()
+const cleanCategoryName = (v: unknown): string => cellToString(v).trim()
 
 const resetResult = () => {
   parsedRows.value = []
