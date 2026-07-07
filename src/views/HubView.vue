@@ -41,8 +41,6 @@ const deleteStep = ref(0)
 const deletePassword = ref('')
 const deletePasswordError = ref('')
 const deleteLoading = ref(false)
-// 크롬이 "비밀번호 폼에 사용자 이름 필드가 없다"고 경고해서, 접근성용 숨김 필드에 채워줄 이메일
-const userEmail = ref('')
 
 const openDeleteDialog = () => {
   deletePassword.value = ''
@@ -120,7 +118,6 @@ onMounted(async () => {
   showBack.value = window.history.state?.back != null && window.history.state.back !== '/'
   const { data: { user } } = await supabase.auth.getUser()
   canAccessBudget.value = isBudgetPreviewAllowed(user?.email)
-  userEmail.value = user?.email ?? ''
   if (user) await fetchUnreadFeedbackCount(user)
 })
 </script>
@@ -261,8 +258,8 @@ onMounted(async () => {
           <form @submit.prevent="deleteAccount">
             <input
               type="text"
-              :value="userEmail"
-              autocomplete="username"
+              value=""
+              autocomplete="off"
               readonly
               class="visually-hidden"
               tabindex="-1"

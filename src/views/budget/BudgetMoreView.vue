@@ -27,15 +27,10 @@ const resetDescription = computed(() => {
   return ''
 })
 
-// 크롬이 "비밀번호 폼에 사용자 이름 필드가 없다"고 경고해서, 접근성용 숨김 필드에 채워줄 이메일
-const userEmail = ref('')
-
-const openResetDialog = async (target: ResetTarget) => {
+const openResetDialog = (target: ResetTarget) => {
   resetTarget.value = target
   resetPassword.value = ''
   resetPasswordError.value = ''
-  const { data: { user } } = await supabase.auth.getUser()
-  userEmail.value = user?.email ?? ''
 }
 const closeResetDialog = () => {
   resetTarget.value = null
@@ -155,8 +150,8 @@ const executeReset = async () => {
         <form @submit.prevent="executeReset">
           <input
             type="text"
-            :value="userEmail"
-            autocomplete="username"
+            value=""
+            autocomplete="off"
             readonly
             class="visually-hidden"
             tabindex="-1"
