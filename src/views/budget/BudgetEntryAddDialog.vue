@@ -123,10 +123,13 @@ const canSave = computed(() =>
   !!categoryId.value && removeComma(amount.value) > 0 && removeComma(amount.value) <= MAX_AMOUNT,
 )
 
-const amountRules = [
-  (v: string) => removeComma(v) > 0 || '금액을 입력해주세요',
-  (v: string) => removeComma(v) <= MAX_AMOUNT || '최대 100억원까지 입력 가능합니다',
-]
+// 에러 메시지를 필드 밖에 따로 띄우면 나타났다 사라질 때마다 아래 요소들이
+// 밀렸다 올라왔다 해서, 메시지 없이 테두리 색으로만 유효성을 표시
+const amountInvalid = computed(() => {
+  if (amount.value === '') return false
+  const n = removeComma(amount.value)
+  return n <= 0 || n > MAX_AMOUNT
+})
 
 const categoryName = (id: string) => {
   const c = categories.value.find((c) => c.id === id)
@@ -361,15 +364,16 @@ const save = async () => {
           ref="amountFieldRef"
           :model-value="amount"
           label="금액"
+          placeholder="금액을 입력해주세요"
           readonly
           autocomplete="off"
           prepend-inner-icon="mdi-currency-krw"
           variant="outlined"
           density="compact"
           rounded="lg"
-          hide-details="auto"
+          hide-details
           class="mb-1"
-          :rules="amountRules"
+          :error="amountInvalid"
           @focus="amountKeypadOpen = true"
         />
 
