@@ -5,6 +5,7 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import type { BudgetCategory, BudgetPaymentMethod, BudgetType } from '@/types/budget'
 import { DEFAULT_BUDGET_PAYMENT_METHODS } from '@/utils/budgetDefaultPaymentMethods'
+import { DEFAULT_BUDGET_CATEGORIES } from '@/utils/budgetDefaultCategories'
 import BudgetFavoriteView from './BudgetFavoriteView.vue'
 import BudgetDateCalendarCard from './BudgetDateCalendarCard.vue'
 
@@ -108,6 +109,25 @@ const fetchCategories = async () => {
     .select('*')
     .eq('user_id', user.id)
     .order('sort_order')
+
+  if ((data ?? []).length === 0) {
+    const rows = DEFAULT_BUDGET_CATEGORIES.map((c, i) => ({
+      user_id: user.id,
+      type: c.type,
+      name: c.name,
+      sort_order: i,
+    }))
+    const { error: seedError } = await supabase.from('budget_categories').insert(rows)
+    if (seedError) return
+    const { data: seeded } = await supabase
+      .from('budget_categories')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('sort_order')
+    categories.value = seeded ?? []
+    return
+  }
+
   categories.value = data ?? []
 }
 
