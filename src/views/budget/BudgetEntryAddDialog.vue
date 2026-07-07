@@ -43,9 +43,13 @@ const saving = ref(false)
 const favoritesMenu = ref(false)
 const favoriteManageDialog = ref(false)
 const dateMenu = ref(false)
+const categoryMenu = ref(false)
 const amountFieldRef = ref()
 const memoFieldRef = ref()
 
+const openCategoryMenu = () => {
+  nextTick(() => (categoryMenu.value = true))
+}
 const focusAmount = () => {
   nextTick(() => amountFieldRef.value?.focus())
 }
@@ -306,11 +310,12 @@ const save = async () => {
               @focus="(e: FocusEvent) => (e.target as HTMLElement).blur()"
             />
           </template>
-          <BudgetDateCalendarCard v-model="entryDate" :open="dateMenu" @close="dateMenu = false; focusAmount()" />
+          <BudgetDateCalendarCard v-model="entryDate" :open="dateMenu" @close="dateMenu = false; openCategoryMenu()" />
         </v-menu>
 
         <v-select
           v-model="categoryId"
+          v-model:menu="categoryMenu"
           :items="categoryOptions"
           label="카테고리"
           prepend-inner-icon="mdi-shape-outline"
