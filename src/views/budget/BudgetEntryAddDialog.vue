@@ -46,7 +46,6 @@ const favoritesMenu = ref(false)
 const favoriteManageDialog = ref(false)
 const categoryFieldRef = ref()
 const amountFieldRef = ref()
-const memoFieldRef = ref()
 const dateCalendarOpen = ref(false)
 const categoryPickerOpen = ref(false)
 const amountKeypadOpen = ref(false)
@@ -74,10 +73,6 @@ const keypadBackspace = () => {
   const raw = amount.value.replace(/,/g, '')
   handleAmount(raw.slice(0, -1))
 }
-const keypadDone = () => {
-  amountKeypadOpen.value = false
-  focusMemo()
-}
 
 // 날짜/카테고리/금액 고정 패널은 한 번에 하나만 열림
 watch(dateCalendarOpen, (v) => { if (v) { categoryPickerOpen.value = false; amountKeypadOpen.value = false } })
@@ -86,9 +81,6 @@ watch(amountKeypadOpen, (v) => { if (v) { dateCalendarOpen.value = false; catego
 const goToCategoryManage = () => {
   dialog.value = false
   router.push('/budget/manage')
-}
-const focusMemo = () => {
-  nextTick(() => memoFieldRef.value?.focus())
 }
 
 interface QuickItem {
@@ -409,7 +401,6 @@ const save = async () => {
         </v-expand-transition>
 
         <v-text-field
-          ref="memoFieldRef"
           v-model="memo"
           label="내용"
           prepend-inner-icon="mdi-note-outline"
@@ -462,7 +453,6 @@ const save = async () => {
           v-else
           @digit="keypadDigit"
           @backspace="keypadBackspace"
-          @done="keypadDone"
           @close="amountKeypadOpen = false"
         />
       </div>

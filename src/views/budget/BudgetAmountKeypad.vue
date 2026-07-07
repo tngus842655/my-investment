@@ -6,7 +6,6 @@ import { useFitToPanel } from '@/composables/useFitToPanel'
 const emit = defineEmits<{
   digit: [string]
   backspace: []
-  done: []
   close: []
 }>()
 
@@ -38,7 +37,6 @@ const { scale, rootHeight } = useFitToPanel(rootRef, scaleWrapRef)
           <span v-else>{{ key }}</span>
         </button>
       </div>
-      <button class="keypad-done" @click="emit('done')">완료</button>
     </div>
   </div>
 </template>
@@ -92,18 +90,5 @@ const { scale, rootHeight } = useFitToPanel(rootRef, scaleWrapRef)
 }
 .keypad-key--empty:active {
   background: none;
-}
-
-.keypad-done {
-  height: 44px;
-  border: none;
-  background: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-on-primary));
-  font-weight: 700;
-  font-size: 0.9375rem;
-  cursor: pointer;
-}
-.keypad-done:active {
-  opacity: 0.85;
 }
 </style>
