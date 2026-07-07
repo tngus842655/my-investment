@@ -6,7 +6,7 @@ import { useAppTheme } from '@/composables/useAppTheme'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { useUserDataStore } from '@/stores/userData'
-import { isAdminEmail, isBudgetPreviewAllowed } from '@/config/admin'
+import { isAdminEmail } from '@/config/admin'
 import { serviceMenuOpen, settingsMenuOpen } from '@/composables/useHubMenuState'
 
 const router = useRouter()
@@ -20,7 +20,6 @@ const selectTheme = (id: string) => {
   themeSheet.value = false
 }
 
-const canAccessBudget = ref(false)
 const isAdmin = ref(false)
 const unreadFeedbackCount = ref(0)
 
@@ -117,7 +116,6 @@ const showBack = ref(false)
 onMounted(async () => {
   showBack.value = window.history.state?.back != null && window.history.state.back !== '/'
   const { data: { user } } = await supabase.auth.getUser()
-  canAccessBudget.value = isBudgetPreviewAllowed(user?.email)
   if (user) await fetchUnreadFeedbackCount(user)
 })
 </script>
@@ -140,18 +138,11 @@ onMounted(async () => {
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
-      <div
-        class="hub-card glass-card pa-2 d-flex align-center ga-3"
-        :class="{ 'hub-card-disabled': !canAccessBudget }"
-        @click="canAccessBudget && router.push('/budget')"
-      >
+      <div class="hub-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/budget')">
         <div class="hub-icon"><v-icon size="24" color="primary">mdi-notebook-outline</v-icon></div>
-        <div class="d-flex align-center ga-2">
-          <div class="font-weight-medium">가계부</div>
-          <div v-if="!canAccessBudget" class="coming-soon-badge">준비중</div>
-        </div>
+        <div class="font-weight-medium">가계부</div>
         <v-spacer />
-        <v-icon v-if="canAccessBudget" size="16" class="chevron-icon">mdi-chevron-right</v-icon>
+        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
     </div>
 
@@ -401,20 +392,6 @@ onMounted(async () => {
 
 .hub-card {
   cursor: pointer;
-}
-
-.hub-card-disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-
-.coming-soon-badge {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: rgba(var(--v-theme-on-surface), 0.5);
-  background: rgba(var(--v-theme-on-surface), 0.08);
-  border-radius: 6px;
-  padding: 2px 6px;
 }
 
 .hub-icon {

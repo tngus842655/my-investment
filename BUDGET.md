@@ -8,7 +8,7 @@ Fire Path의 서브 기능으로 추가하는 가계부. 자산관리(기존 메
 
 - FIRE 목표 설정(`investment_goals`, `requiresGoal` 가드)과 무관하게 동작한다.
 - 진입은 `HubView`(`/hub`)에서 "자산관리"/"가계부" 중 선택하는 방식. 최초 로그인 시에만 자동 진입시키고, 이후엔 마지막 사용 모듈로 바로 이동 + 허브로 가는 버튼 상시 노출.
-- **가계부는 아직 정식 공개 전 — `BUDGET_PREVIEW_EMAILS`(`src/config/admin.ts`)에 등록된 이메일만 접근 가능.** 관리자 권한(`ADMIN_EMAILS`)과는 완전히 별개 목록이니 혼동하지 말 것. 허용되지 않은 계정은 `HubView`에서 가계부 카드가 "준비중" 배지와 함께 비활성화되고, `/budget` 이하 라우트는 `requiresBudgetPreview` 가드로 직접 URL 접근도 차단(→ `/hub` 리다이렉트).
+- 가계부는 정식 오픈되어 로그인한 모든 사용자가 접근 가능하다 (이전엔 `BUDGET_PREVIEW_EMAILS`로 일부 계정만 미리보기 허용했으나 해당 제한은 제거됨).
 
 ## 네이밍 규칙
 

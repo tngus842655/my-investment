@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { supabase } from '@/services/supabase'
-import { isAdminEmail, isBudgetPreviewAllowed } from '@/config/admin'
+import { isAdminEmail } from '@/config/admin'
 import { setLastModule, getLastModule } from '@/utils/lastModule'
 import budgetRoutes from './budget.routes'
 
@@ -274,10 +274,6 @@ router.beforeEach(async (to) => {
 
   if (to.meta.requiresAdmin && !isAdminEmail(session?.user.email)) {
     return '/dashboard'
-  }
-
-  if (to.meta.requiresBudgetPreview && !isBudgetPreviewAllowed(session?.user.email)) {
-    return '/hub'
   }
 
   if (to.meta.requiresGoal && session) {
