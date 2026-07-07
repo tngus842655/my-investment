@@ -560,8 +560,7 @@ const doImport = async () => {
 .pc-notice {
   display: flex;
   align-items: center;
-  justify-content: center;
-  text-align: center;
+  text-align: left;
   padding: 10px 12px;
   border-radius: 12px;
   background: rgba(var(--v-theme-on-surface), 0.05);
