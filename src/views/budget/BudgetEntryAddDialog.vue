@@ -108,7 +108,7 @@ const categoryOptions = computed(() =>
 )
 
 const addComma = (v: string) => {
-  const num = v.replace(/[^0-9]/g, '')
+  const num = v.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '')
   return num.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }
 const removeComma = (v: string) => Number(v.replace(/,/g, '')) || 0
