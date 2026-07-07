@@ -44,12 +44,16 @@ const entryDate = ref(new Date().toISOString().slice(0, 10))
 const saving = ref(false)
 const favoritesMenu = ref(false)
 const favoriteManageDialog = ref(false)
-const dateMenu = ref(false)
 const categoryFieldRef = ref()
 const amountFieldRef = ref()
 const memoFieldRef = ref()
+const dateCalendarOpen = ref(false)
 const categoryPickerOpen = ref(false)
 const amountKeypadOpen = ref(false)
+
+// 날짜/카테고리/금액 하단 고정 패널 — 항상 이 높이만큼 화면 하단에 자리잡음
+const FIXED_PANEL_HEIGHT = 400
+const anyPickerOpen = computed(() => dateCalendarOpen.value || categoryPickerOpen.value || amountKeypadOpen.value)
 
 const focusCategory = () => {
   nextTick(() => categoryFieldRef.value?.focus())
@@ -76,9 +80,9 @@ const keypadDone = () => {
 }
 
 // 날짜/카테고리/금액 고정 패널은 한 번에 하나만 열림
-watch(dateMenu, (v) => { if (v) { categoryPickerOpen.value = false; amountKeypadOpen.value = false } })
-watch(categoryPickerOpen, (v) => { if (v) amountKeypadOpen.value = false })
-watch(amountKeypadOpen, (v) => { if (v) categoryPickerOpen.value = false })
+watch(dateCalendarOpen, (v) => { if (v) { categoryPickerOpen.value = false; amountKeypadOpen.value = false } })
+watch(categoryPickerOpen, (v) => { if (v) { dateCalendarOpen.value = false; amountKeypadOpen.value = false } })
+watch(amountKeypadOpen, (v) => { if (v) { dateCalendarOpen.value = false; categoryPickerOpen.value = false } })
 const goToCategoryManage = () => {
   dialog.value = false
   router.push('/budget/manage')
@@ -272,8 +276,13 @@ const save = async () => {
 </script>
 
 <template>
-  <v-dialog v-model="dialog" max-width="480">
-    <v-card rounded="xl" class="glass-dialog" style="overflow: hidden; display: flex; flex-direction: column; max-height: 90dvh">
+  <v-dialog v-model="dialog" max-width="480" persistent>
+    <v-card
+      rounded="xl"
+      class="glass-dialog"
+      style="overflow: hidden; display: flex; flex-direction: column; max-height: 90dvh; transition: margin-bottom 0.2s ease"
+      :style="{ marginBottom: anyPickerOpen ? `calc(${FIXED_PANEL_HEIGHT}px + env(safe-area-inset-bottom))` : 0 }"
+    >
       <div class="dialog-header" :class="entryType === 'EXPENSE' ? 'header-sell' : 'header-buy'">
         <div class="d-flex align-center justify-space-between">
           <div class="font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">{{ isEditMode ? '내역 수정' : '내역 추가' }}</div>
@@ -319,25 +328,19 @@ const save = async () => {
       </div>
 
       <v-card-text class="pt-2 pb-1" style="overflow-y: auto; flex: 1">
-        <v-menu v-model="dateMenu" :close-on-content-click="false">
-          <template #activator="{ props: menuProps }">
-            <v-text-field
-              v-bind="menuProps"
-              :model-value="entryDate"
-              label="날짜"
-              readonly
-              autocomplete="off"
-              prepend-inner-icon="mdi-calendar-outline"
-              variant="outlined"
-              density="compact"
-              rounded="lg"
-              hide-details
-              class="mb-1"
-              @focus="(e: FocusEvent) => (e.target as HTMLElement).blur()"
-            />
-          </template>
-          <BudgetDateCalendarCard v-model="entryDate" :open="dateMenu" @close="dateMenu = false; focusCategory()" />
-        </v-menu>
+        <v-text-field
+          :model-value="entryDate"
+          label="날짜"
+          readonly
+          autocomplete="off"
+          prepend-inner-icon="mdi-calendar-outline"
+          variant="outlined"
+          density="compact"
+          rounded="lg"
+          hide-details
+          class="mb-1"
+          @focus="dateCalendarOpen = true"
+        />
 
         <v-text-field
           ref="categoryFieldRef"
@@ -413,13 +416,13 @@ const save = async () => {
           maxlength="30"
           counter
           autocomplete="off"
-          @focus="categoryPickerOpen = false; amountKeypadOpen = false"
+          @focus="dateCalendarOpen = false; categoryPickerOpen = false; amountKeypadOpen = false"
         />
       </v-card-text>
 
       <v-divider />
 
-      <v-card-actions v-if="!categoryPickerOpen && !amountKeypadOpen" class="px-4 py-2">
+      <v-card-actions class="px-4 py-2">
         <v-btn variant="text" :disabled="saving" @click="reset">취소</v-btn>
         <v-spacer />
         <v-btn
@@ -431,14 +434,6 @@ const save = async () => {
           @click="save"
         >{{ isEditMode ? '수정 저장' : '저장' }}</v-btn>
       </v-card-actions>
-      <BudgetCategoryGridPicker
-        v-else-if="categoryPickerOpen"
-        :items="categoryOptions"
-        @select="onCategorySelect"
-        @close="categoryPickerOpen = false"
-        @manage="goToCategoryManage"
-      />
-      <BudgetAmountKeypad v-else @digit="keypadDigit" @backspace="keypadBackspace" @done="keypadDone" />
     </v-card>
 
     <v-dialog v-model="favoriteManageDialog" max-width="480">
@@ -448,10 +443,36 @@ const save = async () => {
         <v-btn block variant="text" class="mt-4" @click="favoriteManageDialog = false">닫기</v-btn>
       </v-card>
     </v-dialog>
+
+    <Teleport to="body">
+      <div v-if="dialog && anyPickerOpen" class="fixed-picker-panel" :style="{ height: FIXED_PANEL_HEIGHT + 'px' }">
+        <BudgetDateCalendarCard v-if="dateCalendarOpen" v-model="entryDate" @close="dateCalendarOpen = false; focusCategory()" />
+        <BudgetCategoryGridPicker
+          v-else-if="categoryPickerOpen"
+          :items="categoryOptions"
+          @select="onCategorySelect"
+          @close="categoryPickerOpen = false"
+          @manage="goToCategoryManage"
+        />
+        <BudgetAmountKeypad v-else @digit="keypadDigit" @backspace="keypadBackspace" @done="keypadDone" />
+      </div>
+    </Teleport>
   </v-dialog>
 </template>
 
 <style scoped>
+.fixed-picker-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3000;
+  overflow-y: auto;
+  background: rgb(var(--v-theme-surface));
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+}
+
 .dialog-header {
   padding: 24px 24px 20px;
   transition: background 0.25s ease;

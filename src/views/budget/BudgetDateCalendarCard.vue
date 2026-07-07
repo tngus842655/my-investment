@@ -1,10 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import BudgetMonthYearCard from './BudgetMonthYearCard.vue'
-
-const props = defineProps<{
-  open: boolean
-}>()
 
 const emit = defineEmits<{
   close: []
@@ -55,14 +51,11 @@ const setToday = () => {
   emit('close')
 }
 
-watch(() => props.open, (open) => {
-  monthYearOpen.value = false
-  if (open) syncCalendarNav()
-}, { immediate: true })
+onMounted(() => syncCalendarNav())
 </script>
 
 <template>
-  <v-card rounded="lg" class="date-picker-card">
+  <div class="date-picker-card">
     <div class="date-picker-topbar">
       <span class="topbar-title">날짜</span>
       <div class="d-flex align-center ga-1">
@@ -92,7 +85,7 @@ watch(() => props.open, (open) => {
     <div v-if="monthYearOpen" class="month-year-overlay">
       <BudgetMonthYearCard v-model:year="calendarYear" v-model:month="calendarMonth" @close="monthYearOpen = false" />
     </div>
-  </v-card>
+  </div>
 </template>
 
 <style scoped>

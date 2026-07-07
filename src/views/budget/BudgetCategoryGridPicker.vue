@@ -41,8 +41,6 @@ const emit = defineEmits<{
 .category-picker {
   display: flex;
   flex-direction: column;
-  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
-  max-height: 33vh;
 }
 
 .category-picker-topbar {
@@ -70,7 +68,6 @@ const emit = defineEmits<{
 .category-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  overflow-y: auto;
 }
 
 .category-key {
