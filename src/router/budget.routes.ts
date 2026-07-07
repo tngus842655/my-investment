@@ -17,7 +17,7 @@ const budgetRoutes: RouteRecordRaw[] = [
         path: '',
         name: 'budgetHome',
         component: BudgetCalendarView,
-        meta: { label: '가계부' },
+        meta: { label: '캘린더' },
       },
       {
         path: 'stats',

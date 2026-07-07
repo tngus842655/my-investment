@@ -161,10 +161,15 @@ const formatDate = (iso: string) => {
 }
 
 // 라우터에 등록된 각 페이지의 meta.label을 그대로 사용 — 메뉴 추가 시 라우터에만 label을 채우면 자동 반영됨
+const MODULE_LABELS: Record<string, string> = { asset: '자산관리', budget: '가계부' }
 const PAGE_LABELS: Record<string, string> = Object.fromEntries(
   router.getRoutes()
     .filter((r) => typeof r.meta.label === 'string')
-    .map((r) => [r.path, r.meta.label as string]),
+    .map((r) => {
+      const moduleLabel = typeof r.meta.module === 'string' ? MODULE_LABELS[r.meta.module] : undefined
+      const label = moduleLabel ? `${moduleLabel}-${r.meta.label}` : (r.meta.label as string)
+      return [r.path, label]
+    }),
 )
 
 const PAGE_SELECT_OPTIONS = Object.entries(PAGE_LABELS).map(([value, label]) => ({ value, label: `${label} (${value})` }))
