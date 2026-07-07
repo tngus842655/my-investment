@@ -27,23 +27,24 @@ const fetchPaymentMethods = async () => {
     return
   }
 
-  if ((data ?? []).length === 0) {
-    const rows = DEFAULT_BUDGET_PAYMENT_METHODS.map((name, i) => ({ user_id: user.id, name, sort_order: i }))
-    const { error: seedError } = await supabase.from('budget_payment_methods').insert(rows)
-    if (seedError) {
-      showMessage('기본 결제수단 생성에 실패했습니다.', 'error')
-      return
-    }
-    const { data: seeded } = await supabase
-      .from('budget_payment_methods')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('sort_order')
-    paymentMethods.value = seeded ?? []
+  paymentMethods.value = data
+}
+
+const seeding = ref(false)
+const seedDefaultPaymentMethods = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  seeding.value = true
+  const rows = DEFAULT_BUDGET_PAYMENT_METHODS.map((name, i) => ({ user_id: user.id, name, sort_order: i }))
+  const { error } = await supabase.from('budget_payment_methods').insert(rows)
+  if (error) {
+    showMessage('기본 결제수단 생성에 실패했습니다.', 'error')
+    seeding.value = false
     return
   }
-
-  paymentMethods.value = data
+  await fetchPaymentMethods()
+  seeding.value = false
 }
 
 onMounted(async () => {
@@ -136,8 +137,13 @@ const deletePaymentMethod = async (pm: BudgetPaymentMethod) => {
           <v-btn icon="mdi-pencil-outline" size="small" variant="text" class="action-btn" @click="openEditDialog(pm)" />
           <v-btn icon="mdi-delete-outline" size="small" variant="text" color="error" class="action-btn" @click="deletePaymentMethod(pm)" />
         </div>
-        <div v-if="sortedPaymentMethods.length === 0" class="text-center text-medium-emphasis py-4">
-          결제수단이 없습니다.
+        <div v-if="sortedPaymentMethods.length === 0" class="text-center py-6">
+          <div class="text-medium-emphasis mb-3" style="font-size: 0.875rem">
+            결제수단이 없습니다.
+          </div>
+          <v-btn size="small" variant="tonal" color="primary" :loading="seeding" @click="seedDefaultPaymentMethods">
+            기본 결제수단 추가
+          </v-btn>
         </div>
       </div>
     </div>

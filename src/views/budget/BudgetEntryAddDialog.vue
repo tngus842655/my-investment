@@ -4,7 +4,6 @@ import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import type { BudgetCategory, BudgetPaymentMethod, BudgetType } from '@/types/budget'
-import { DEFAULT_BUDGET_PAYMENT_METHODS } from '@/utils/budgetDefaultPaymentMethods'
 import BudgetFavoriteView from './BudgetFavoriteView.vue'
 import BudgetDateCalendarCard from './BudgetDateCalendarCard.vue'
 
@@ -120,19 +119,6 @@ const fetchPaymentMethods = async () => {
     .select('*')
     .eq('user_id', user.id)
     .order('sort_order')
-
-  if ((data ?? []).length === 0) {
-    const rows = DEFAULT_BUDGET_PAYMENT_METHODS.map((name, i) => ({ user_id: user.id, name, sort_order: i }))
-    const { error: seedError } = await supabase.from('budget_payment_methods').insert(rows)
-    if (seedError) return
-    const { data: seeded } = await supabase
-      .from('budget_payment_methods')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('sort_order')
-    paymentMethods.value = seeded ?? []
-    return
-  }
 
   paymentMethods.value = data ?? []
 }
