@@ -203,15 +203,15 @@ const downloadTemplate = async () => {
       { date: '2026-01-15', asset: '현금', category: '식비', memo: '점심', amount: 12000, type: '지출' },
       { date: '2026-01-25', asset: '통장', category: '월급', memo: '', amount: 3000000, type: '수입' },
     ]
-    const schema = [
-      { column: '날짜', type: String, value: (r: (typeof sampleRows)[number]) => r.date, width: 12 },
-      { column: '자산', type: String, value: (r: (typeof sampleRows)[number]) => r.asset, width: 12 },
-      { column: '카테고리', type: String, value: (r: (typeof sampleRows)[number]) => r.category, width: 12 },
-      { column: '내용', type: String, value: (r: (typeof sampleRows)[number]) => r.memo, width: 16 },
-      { column: '금액(원)', type: Number, value: (r: (typeof sampleRows)[number]) => r.amount, width: 12 },
-      { column: '수입/지출', type: String, value: (r: (typeof sampleRows)[number]) => r.type, width: 10 },
+    const columns = [
+      { header: '날짜', cell: (r: (typeof sampleRows)[number]) => ({ value: r.date }), width: 12 },
+      { header: '자산', cell: (r: (typeof sampleRows)[number]) => ({ value: r.asset }), width: 12 },
+      { header: '카테고리', cell: (r: (typeof sampleRows)[number]) => ({ value: r.category }), width: 12 },
+      { header: '내용', cell: (r: (typeof sampleRows)[number]) => ({ value: r.memo }), width: 16 },
+      { header: '금액(원)', cell: (r: (typeof sampleRows)[number]) => ({ value: r.amount, type: Number }), width: 12 },
+      { header: '수입/지출', cell: (r: (typeof sampleRows)[number]) => ({ value: r.type }), width: 10 },
     ]
-    await writeXlsxFile(sampleRows, { schema, fileName: '가계부_엑셀양식.xlsx' })
+    await writeXlsxFile(sampleRows, { columns }).toFile('가계부_엑셀양식.xlsx')
   } catch (err) {
     console.error('양식 다운로드 오류:', err)
     showMessage('양식 파일을 만드는 중 오류가 발생했습니다.', 'error')
