@@ -699,10 +699,10 @@ const onContainerClick = (e: MouseEvent) => {
   cursor: pointer;
 }
 .daily-entry-category-tag {
-  flex: 0 0 56px;
+  flex: 0 0 65px;
   font-size: 0.6875rem;
   color: rgba(var(--v-theme-on-surface), 0.45);
-  text-align: center;
+  text-align: left;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
