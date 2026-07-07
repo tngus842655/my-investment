@@ -33,6 +33,9 @@ const emit = defineEmits<{
         class="category-key"
         @click="emit('select', item.value)"
       >{{ item.title }}</button>
+      <button class="category-key category-key--add" @click="emit('manage')">
+        <v-icon size="14">mdi-plus</v-icon> 추가
+      </button>
     </div>
   </div>
 </template>
@@ -47,14 +50,14 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 8px 8px 16px;
+  padding: 5px 5px 5px 11px;
   background: rgb(var(--v-theme-primary));
   color: rgb(var(--v-theme-on-primary));
   flex-shrink: 0;
 }
 .topbar-title {
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.9375rem;
 }
 .category-picker-topbar .v-btn {
   color: inherit;
@@ -90,5 +93,9 @@ const emit = defineEmits<{
 }
 .category-key:active {
   background: rgba(var(--v-theme-on-surface), 0.06);
+}
+.category-key--add {
+  color: rgb(var(--v-theme-primary));
+  gap: 2px;
 }
 </style>
