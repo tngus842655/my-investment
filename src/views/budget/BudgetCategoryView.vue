@@ -128,8 +128,31 @@ const saveCategory = async () => {
   }
 }
 
-const deleteCategory = async (c: BudgetCategory) => {
-  const { error } = await supabase.from('budget_categories').delete().eq('id', c.id)
+// ── 삭제 확인 ──────────────────────────
+const deleteDialog = ref(false)
+const categoryToDelete = ref<BudgetCategory | null>(null)
+const favoriteUsageCount = ref(0)
+const deleting = ref(false)
+
+const openDeleteDialog = async (c: BudgetCategory) => {
+  categoryToDelete.value = c
+  const { count } = await supabase
+    .from('budget_favorites')
+    .select('id', { count: 'exact', head: true })
+    .eq('category_id', c.id)
+  favoriteUsageCount.value = count ?? 0
+  deleteDialog.value = true
+}
+const closeDeleteDialog = () => {
+  deleteDialog.value = false
+  categoryToDelete.value = null
+}
+
+const confirmDeleteCategory = async () => {
+  if (!categoryToDelete.value) return
+  deleting.value = true
+  const { error } = await supabase.from('budget_categories').delete().eq('id', categoryToDelete.value.id)
+  deleting.value = false
   if (error) {
     if (error.code === '23503') {
       showMessage('이 카테고리를 사용하는 내역이 있어 삭제할 수 없습니다.', 'error')
@@ -139,6 +162,7 @@ const deleteCategory = async (c: BudgetCategory) => {
     return
   }
   showMessage('카테고리가 삭제되었습니다.', 'success')
+  closeDeleteDialog()
   await fetchCategories()
 }
 </script>
@@ -159,7 +183,7 @@ const deleteCategory = async (c: BudgetCategory) => {
         <div v-for="c in filteredCategories" :key="c.id" class="row-item">
           <span class="row-name">{{ c.name }}</span>
           <v-btn icon="mdi-pencil-outline" size="small" variant="text" class="action-btn" @click="openEditDialog(c)" />
-          <v-btn icon="mdi-delete-outline" size="small" variant="text" color="error" class="action-btn" @click="deleteCategory(c)" />
+          <v-btn icon="mdi-delete-outline" size="small" variant="text" color="error" class="action-btn" @click="openDeleteDialog(c)" />
         </div>
         <div v-if="filteredCategories.length === 0" class="text-center py-6">
           <div class="text-medium-emphasis mb-3" style="font-size: 0.875rem">
@@ -201,6 +225,20 @@ const deleteCategory = async (c: BudgetCategory) => {
         <div class="d-flex ga-2">
           <v-btn variant="text" class="flex-1" @click="closeDialog">취소</v-btn>
           <v-btn color="primary" variant="tonal" class="flex-1" :loading="saving" @click="saveCategory">저장</v-btn>
+        </div>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="deleteDialog" max-width="320">
+      <v-card rounded="xl" class="pa-4">
+        <div class="font-weight-bold mb-2">카테고리 삭제</div>
+        <div class="text-medium-emphasis mb-4" style="font-size: 0.8125rem">
+          "{{ categoryToDelete?.name }}" 카테고리를 삭제하시겠습니까?
+          <template v-if="favoriteUsageCount > 0"><br />이 카테고리를 사용하는 즐겨찾기 {{ favoriteUsageCount }}개도 함께 삭제됩니다.</template>
+        </div>
+        <div class="d-flex ga-2">
+          <v-btn variant="text" class="flex-1" :disabled="deleting" @click="closeDeleteDialog">취소</v-btn>
+          <v-btn color="error" variant="tonal" class="flex-1" :loading="deleting" @click="confirmDeleteCategory">삭제</v-btn>
         </div>
       </v-card>
     </v-dialog>

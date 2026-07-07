@@ -143,13 +143,31 @@ const saveFavorite = async () => {
   }
 }
 
-const deleteFavorite = async (f: FavoriteRow) => {
-  const { error } = await supabase.from('budget_favorites').delete().eq('id', f.id)
+// ── 삭제 확인 ──────────────────────────
+const deleteDialog = ref(false)
+const favoriteToDelete = ref<FavoriteRow | null>(null)
+const deleting = ref(false)
+
+const openDeleteDialog = (f: FavoriteRow) => {
+  favoriteToDelete.value = f
+  deleteDialog.value = true
+}
+const closeDeleteDialog = () => {
+  deleteDialog.value = false
+  favoriteToDelete.value = null
+}
+
+const confirmDeleteFavorite = async () => {
+  if (!favoriteToDelete.value) return
+  deleting.value = true
+  const { error } = await supabase.from('budget_favorites').delete().eq('id', favoriteToDelete.value.id)
+  deleting.value = false
   if (error) {
     showMessage('삭제 중 오류가 발생했습니다.', 'error')
     return
   }
   showMessage('즐겨찾기가 삭제되었습니다.', 'success')
+  closeDeleteDialog()
   await fetchAll()
 }
 
@@ -179,7 +197,7 @@ const onFormTypeChange = (type: BudgetType) => {
             </div>
           </div>
           <v-btn icon="mdi-pencil-outline" size="small" variant="text" class="action-btn" @click="openEditDialog(f)" />
-          <v-btn icon="mdi-delete-outline" size="small" variant="text" color="error" class="action-btn" @click="deleteFavorite(f)" />
+          <v-btn icon="mdi-delete-outline" size="small" variant="text" color="error" class="action-btn" @click="openDeleteDialog(f)" />
         </div>
         <div v-if="favorites.length === 0" class="text-center text-medium-emphasis py-4">
           즐겨찾기가 없습니다.
@@ -258,6 +276,19 @@ const onFormTypeChange = (type: BudgetType) => {
         <div class="d-flex ga-2">
           <v-btn variant="text" class="flex-1" @click="closeDialog">취소</v-btn>
           <v-btn color="primary" variant="tonal" class="flex-1" :disabled="!canSave" :loading="saving" @click="saveFavorite">저장</v-btn>
+        </div>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="deleteDialog" max-width="320">
+      <v-card rounded="xl" class="pa-4">
+        <div class="font-weight-bold mb-2">즐겨찾기 삭제</div>
+        <div class="text-medium-emphasis mb-4" style="font-size: 0.8125rem">
+          이 즐겨찾기를 삭제하시겠습니까?
+        </div>
+        <div class="d-flex ga-2">
+          <v-btn variant="text" class="flex-1" :disabled="deleting" @click="closeDeleteDialog">취소</v-btn>
+          <v-btn color="error" variant="tonal" class="flex-1" :loading="deleting" @click="confirmDeleteFavorite">삭제</v-btn>
         </div>
       </v-card>
     </v-dialog>
