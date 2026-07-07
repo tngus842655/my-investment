@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.firepath.app",
+      "sha256_cert_fingerprints": [
+        "64:AA:89:BC:40:74:D2:74:23:A6:1D:0A:23:96:9D:5F:5A:5B:84:03:63:97:7C:EB:EA:8E:94:24:AB:C5:38:13"
+      ]
+    }
+  }
+]
