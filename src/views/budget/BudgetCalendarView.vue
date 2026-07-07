@@ -727,5 +727,7 @@ const onContainerClick = (e: MouseEvent) => {
   right: 20px;
   bottom: calc(96px + env(safe-area-inset-bottom));
   z-index: 50;
+  transform: scale(0.8);
+  transform-origin: bottom right;
 }
 </style>
