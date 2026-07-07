@@ -322,6 +322,7 @@ const save = async () => {
           variant="outlined"
           density="compact"
           rounded="lg"
+          hide-details
           class="mb-1"
           autocomplete="off"
           @update:model-value="focusAmount"
@@ -348,6 +349,7 @@ const save = async () => {
           variant="outlined"
           density="compact"
           rounded="lg"
+          hide-details="auto"
           class="mb-1"
           :rules="amountRules"
           @update:model-value="handleAmount"
