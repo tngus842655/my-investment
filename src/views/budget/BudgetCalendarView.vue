@@ -364,7 +364,7 @@ const onContainerClick = (e: MouseEvent) => {
 
     <v-btn-toggle v-model="subTab" mandatory rounded="lg" density="comfortable" class="mb-4 w-100">
       <v-btn value="calendar" variant="tonal" class="flex-grow-1">캘린더</v-btn>
-      <v-btn value="daily" variant="tonal" class="flex-grow-1">일일</v-btn>
+      <v-btn value="daily" variant="tonal" class="flex-grow-1">일별</v-btn>
       <v-btn value="monthly" variant="tonal" class="flex-grow-1">월별</v-btn>
     </v-btn-toggle>
 
@@ -451,14 +451,16 @@ const onContainerClick = (e: MouseEvent) => {
               @mousedown="onSwipeMouseDown"
               @mouseup="(ev) => onSwipeMouseUp(ev, e.id)"
             >
+              <div class="daily-entry-category-tag">{{ e.budget_categories?.name }}</div>
               <div class="daily-entry-info">
-                <div class="daily-entry-category">{{ e.memo || e.budget_categories?.name || '' }}</div>
-                <div class="daily-entry-sub">{{ e.budget_categories?.name }}<span v-if="e.budget_payment_methods?.name"> · {{ e.budget_payment_methods.name }}</span></div>
+                <div class="daily-entry-category">{{ e.memo || e.budget_payment_methods?.name || '' }}</div>
+                <div v-if="e.memo" class="daily-entry-sub">{{ e.budget_payment_methods?.name }}</div>
               </div>
               <span :class="e.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ formatCurrency(e.amount) }}원</span>
             </div>
           </div>
         </div>
+        <p v-if="selectedDateEntries.length > 0" class="swipe-hint">← 항목을 왼쪽으로 밀면 수정/삭제할 수 있어요</p>
       </div>
 
       <!-- 일일 -->
@@ -504,9 +506,10 @@ const onContainerClick = (e: MouseEvent) => {
               @mousedown="onSwipeMouseDown"
               @mouseup="(ev) => onSwipeMouseUp(ev, e.id)"
             >
+              <div class="daily-entry-category-tag">{{ e.budget_categories?.name }}</div>
               <div class="daily-entry-info">
-                <div class="daily-entry-category">{{ e.memo || e.budget_categories?.name || '' }}</div>
-                <div class="daily-entry-sub">{{ e.budget_categories?.name }}<span v-if="e.budget_payment_methods?.name"> · {{ e.budget_payment_methods.name }}</span></div>
+                <div class="daily-entry-category">{{ e.memo || e.budget_payment_methods?.name || '' }}</div>
+                <div v-if="e.memo" class="daily-entry-sub">{{ e.budget_payment_methods?.name }}</div>
               </div>
               <span :class="e.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ formatCurrency(e.amount) }}원</span>
             </div>
@@ -695,6 +698,16 @@ const onContainerClick = (e: MouseEvent) => {
   padding: 6px 4px;
   cursor: pointer;
 }
+.daily-entry-category-tag {
+  flex: 0 0 65px;
+  font-size: 0.6875rem;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+  text-align: left;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .daily-entry-info {
   flex: 1;
   min-width: 0;
@@ -727,5 +740,7 @@ const onContainerClick = (e: MouseEvent) => {
   right: 20px;
   bottom: calc(96px + env(safe-area-inset-bottom));
   z-index: 50;
+  transform: scale(0.8);
+  transform-origin: bottom right;
 }
 </style>

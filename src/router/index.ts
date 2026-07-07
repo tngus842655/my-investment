@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { supabase } from '@/services/supabase'
-import { isAdminEmail, isBudgetPreviewAllowed } from '@/config/admin'
+import { isAdminEmail } from '@/config/admin'
 import { setLastModule, getLastModule } from '@/utils/lastModule'
 import budgetRoutes from './budget.routes'
 
@@ -157,25 +157,25 @@ const router = createRouter({
           path: 'dashboard',
           name: 'dashboard',
           component: DashboardView,
-          meta: { label: '대시보드' },
+          meta: { label: '홈' },
         },
         {
           path: 'portfolio',
           name: 'portfolio',
           component: PortfolioView,
-          meta: { label: '포트폴리오' },
+          meta: { label: '자산' },
         },
         {
           path: 'transactions',
           name: 'transactions',
           component: TransactionView,
-          meta: { label: '거래 내역' },
+          meta: { label: '기록' },
         },
         {
           path: 'analysis',
           name: 'analysis',
           component: AnalysisView,
-          meta: { label: '분석' },
+          meta: { label: '예측' },
         },
         {
           path: 'more',
@@ -274,10 +274,6 @@ router.beforeEach(async (to) => {
 
   if (to.meta.requiresAdmin && !isAdminEmail(session?.user.email)) {
     return '/dashboard'
-  }
-
-  if (to.meta.requiresBudgetPreview && !isBudgetPreviewAllowed(session?.user.email)) {
-    return '/hub'
   }
 
   if (to.meta.requiresGoal && session) {

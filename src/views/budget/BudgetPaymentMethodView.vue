@@ -113,13 +113,31 @@ const savePaymentMethod = async () => {
   }
 }
 
-const deletePaymentMethod = async (pm: BudgetPaymentMethod) => {
-  const { error } = await supabase.from('budget_payment_methods').delete().eq('id', pm.id)
+// ── 삭제 확인 ──────────────────────────
+const deleteDialog = ref(false)
+const paymentMethodToDelete = ref<BudgetPaymentMethod | null>(null)
+const deleting = ref(false)
+
+const openDeleteDialog = (pm: BudgetPaymentMethod) => {
+  paymentMethodToDelete.value = pm
+  deleteDialog.value = true
+}
+const closeDeleteDialog = () => {
+  deleteDialog.value = false
+  paymentMethodToDelete.value = null
+}
+
+const confirmDeletePaymentMethod = async () => {
+  if (!paymentMethodToDelete.value) return
+  deleting.value = true
+  const { error } = await supabase.from('budget_payment_methods').delete().eq('id', paymentMethodToDelete.value.id)
+  deleting.value = false
   if (error) {
     showMessage('삭제 중 오류가 발생했습니다.', 'error')
     return
   }
   showMessage('결제수단이 삭제되었습니다. 이 결제수단을 쓰던 내역은 결제수단 없음으로 남습니다.', 'success')
+  closeDeleteDialog()
   await fetchPaymentMethods()
 }
 </script>
@@ -135,7 +153,7 @@ const deletePaymentMethod = async (pm: BudgetPaymentMethod) => {
         <div v-for="pm in sortedPaymentMethods" :key="pm.id" class="row-item">
           <span class="row-name">{{ pm.name }}</span>
           <v-btn icon="mdi-pencil-outline" size="small" variant="text" class="action-btn" @click="openEditDialog(pm)" />
-          <v-btn icon="mdi-delete-outline" size="small" variant="text" color="error" class="action-btn" @click="deletePaymentMethod(pm)" />
+          <v-btn icon="mdi-delete-outline" size="small" variant="text" color="error" class="action-btn" @click="openDeleteDialog(pm)" />
         </div>
         <div v-if="sortedPaymentMethods.length === 0" class="text-center py-6">
           <div class="text-medium-emphasis mb-3" style="font-size: 0.875rem">
@@ -172,6 +190,19 @@ const deletePaymentMethod = async (pm: BudgetPaymentMethod) => {
         <div class="d-flex ga-2">
           <v-btn variant="text" class="flex-1" @click="closeDialog">취소</v-btn>
           <v-btn color="primary" variant="tonal" class="flex-1" :loading="saving" @click="savePaymentMethod">저장</v-btn>
+        </div>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="deleteDialog" max-width="320">
+      <v-card rounded="xl" class="pa-4">
+        <div class="font-weight-bold mb-2">결제수단 삭제</div>
+        <div class="text-medium-emphasis mb-4" style="font-size: 0.8125rem">
+          "{{ paymentMethodToDelete?.name }}" 결제수단을 삭제하시겠습니까?<br />이 결제수단을 쓰던 내역은 결제수단 없음으로 남습니다.
+        </div>
+        <div class="d-flex ga-2">
+          <v-btn variant="text" class="flex-1" :disabled="deleting" @click="closeDeleteDialog">취소</v-btn>
+          <v-btn color="error" variant="tonal" class="flex-1" :loading="deleting" @click="confirmDeletePaymentMethod">삭제</v-btn>
         </div>
       </v-card>
     </v-dialog>
@@ -212,7 +243,7 @@ const deletePaymentMethod = async (pm: BudgetPaymentMethod) => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 0;
+  padding: 4px 0;
   border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.05);
 }
 .row-item:last-child { border-bottom: none; }

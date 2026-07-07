@@ -11,13 +11,13 @@ const budgetRoutes: RouteRecordRaw[] = [
   {
     path: '/budget',
     component: BudgetLayout,
-    meta: { requiresAuth: true, module: 'budget', requiresBudgetPreview: true },
+    meta: { requiresAuth: true, module: 'budget' },
     children: [
       {
         path: '',
         name: 'budgetHome',
         component: BudgetCalendarView,
-        meta: { label: '가계부' },
+        meta: { label: '캘린더' },
       },
       {
         path: 'stats',
