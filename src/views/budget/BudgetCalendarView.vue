@@ -327,7 +327,7 @@ const onContainerClick = (e: MouseEvent) => {
       </div>
       <div class="d-flex align-center ga-1">
         <v-btn icon variant="text" size="small" to="/budget/search">
-          <img src="/icons/icon-search.png" class="header-icon" alt="검색" />
+          <v-icon size="20">mdi-magnify</v-icon>
         </v-btn>
         <v-btn icon variant="text" size="small" to="/hub">
           <img src="/icons/icon-hub.png" class="header-icon" alt="허브" />
