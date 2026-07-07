@@ -70,6 +70,7 @@ const setToday = () => {
       v-model:month="calendarMonth"
       v-model:year="calendarYear"
       width="100%"
+      density="compact"
       hide-header
       show-adjacent-months
     >
@@ -105,28 +106,28 @@ const setToday = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 8px 10px 16px;
+  padding: 6px 6px 6px 14px;
   background: rgb(var(--v-theme-primary));
   color: rgb(var(--v-theme-on-primary));
 }
 .topbar-title {
   font-weight: 700;
-  font-size: 1.4rem;
+  font-size: 1.0625rem;
 }
 .topbar-action {
-  padding: 4px 10px;
+  padding: 2px 8px;
   border: none;
   background: none;
   color: inherit;
   font-weight: 700;
-  font-size: 1.2rem;
+  font-size: 0.9375rem;
   cursor: pointer;
 }
 .date-picker-topbar .v-btn {
   color: inherit;
 }
 .date-picker-topbar :deep(.v-icon) {
-  font-size: 1.75rem;
+  font-size: 1.375rem;
 }
 
 .date-picker-card :deep(.v-date-picker-controls) {
@@ -138,14 +139,14 @@ const setToday = () => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 4px 0 0;
+  padding: 2px 0 0;
 }
 .nav-arrow {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 26px;
+  height: 26px;
   border: none;
   background: none;
   color: rgba(var(--v-theme-on-surface), 0.6);
@@ -155,9 +156,25 @@ const setToday = () => {
   border: none;
   background: none;
   font-weight: 700;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   color: rgb(var(--v-theme-on-surface));
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 2px 8px;
+}
+
+/* 6주(row)가 모두 보이도록 날짜 셀 자체를 압축 */
+.date-picker-card :deep(.v-date-picker-month) {
+  --v-date-picker-month-day-size: 30px;
+}
+.date-picker-card :deep(.v-date-picker-month__day),
+.date-picker-card :deep(.v-date-picker-month__weekday) {
+  height: 30px;
+  font-size: 0.75rem;
+}
+.date-picker-card :deep(.v-date-picker-month__day .v-btn) {
+  --v-btn-height: 26px;
+  width: 26px;
+  height: 26px;
+  font-size: 0.75rem;
 }
 </style>

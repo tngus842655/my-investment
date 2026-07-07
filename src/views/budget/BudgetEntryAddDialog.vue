@@ -313,7 +313,7 @@ const save = async () => {
             </v-card>
           </v-menu>
         </div>
-        <div class="type-toggle mt-3">
+        <div class="type-toggle mt-2">
           <button
             class="toggle-btn"
             :class="{ 'toggle-active-sell': entryType === 'EXPENSE' }"
@@ -478,7 +478,7 @@ const save = async () => {
 }
 
 .dialog-header {
-  padding: 24px 24px 20px;
+  padding: 14px 20px 12px;
   transition: background 0.25s ease;
 }
 .header-buy {
@@ -499,7 +499,7 @@ const save = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 0;
+  padding: 8px 0;
   border-radius: 12px;
   border: 1.5px solid rgba(var(--v-theme-on-surface), 0.1);
   background: transparent;
