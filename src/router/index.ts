@@ -36,6 +36,7 @@ import AdminFeedbackView from '@/views/admin/AdminFeedbackView.vue'
 import AdminAccessHistoryView from '@/views/admin/AdminAccessHistoryView.vue'
 import AdminNoticesView from '@/views/admin/AdminNoticesView.vue'
 import NoticesView from '@/views/shared/NoticesView.vue'
+import PrivacyPolicyView from '@/views/shared/PrivacyPolicyView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -44,6 +45,11 @@ const router = createRouter({
       path: '/',
       name: 'login',
       component: LoginView,
+    },
+    {
+      path: '/privacy-policy',
+      name: 'privacyPolicy',
+      component: PrivacyPolicyView,
     },
     {
       path: '/hub',
