@@ -15,13 +15,14 @@ interface SignupLog {
 }
 
 const logs = ref<SignupLog[]>([])
+const confirmedMap = ref<Record<string, boolean>>({})
 const newFeedbackCount = ref(0)
 const todaySignupCount = ref(0)
 const todayAccessCount = ref(0)
 
 const stats = computed(() => {
   const total = logs.value.length
-  const active = logs.value.filter((l) => !l.deleted_at).length
+  const active = logs.value.filter((l) => !l.deleted_at && confirmedMap.value[l.email] !== false).length
   const deleted = logs.value.filter((l) => !!l.deleted_at).length
   const retentionRate = total > 0 ? Math.round((active / total) * 100) : 0
 
@@ -77,13 +78,15 @@ onMounted(async () => {
   const todayStart = new Date().toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '-').replace('.', '')
   const todayFrom = `${todayStart}T00:00:00+09:00`
 
-  const [{ data }, { count }, { count: signupToday }, accessTodayRes] = await Promise.all([
+  const [{ data }, { count }, { count: signupToday }, accessTodayRes, { data: confirmations }] = await Promise.all([
     supabase.from('signup_log').select('*').order('signed_up_at', { ascending: false }),
     supabase.from('feedback').select('id', { count: 'exact', head: true }).eq('status', 'RECEIVED'),
     supabase.from('signup_log').select('id', { count: 'exact', head: true }).gte('signed_up_at', todayFrom),
     supabase.from('access_log').select('email').gte('accessed_at', todayFrom),
+    supabase.rpc('admin_get_email_confirmations'),
   ])
   logs.value = data ?? []
+  confirmedMap.value = Object.fromEntries((confirmations ?? []).map((c: { email: string; confirmed: boolean }) => [c.email, c.confirmed]))
   newFeedbackCount.value = count ?? 0
   todaySignupCount.value = signupToday ?? 0
   // 오늘 접속 unique 유저 수
