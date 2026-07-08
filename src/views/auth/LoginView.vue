@@ -66,7 +66,7 @@ const signUp = async () => {
     const { data, error } = await supabase.auth.signUp({ email: email.value, password: password.value })
     if (error) { showMessage(getErrorMessage(error.code), 'warning'); return }
 
-    // 이메일 인증 OFF 상태에서 이미 가입된 이메일은 identities가 빈 배열로 반환됨
+    // 이미 가입된 이메일로 재시도하면 에러 없이 identities가 빈 배열로 반환됨 (Supabase의 사용자 열거 방지 동작)
     if (!data.user?.identities || data.user.identities.length === 0) {
       showMessage('이미 가입된 이메일입니다.', 'warning')
       return
