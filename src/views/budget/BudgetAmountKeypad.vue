@@ -7,9 +7,10 @@ const emit = defineEmits<{
   digit: [string]
   backspace: []
   close: []
+  confirm: []
 }>()
 
-const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'back']
+const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'back', '', '', 'confirm']
 
 const rootRef = ref<HTMLElement>()
 const scaleWrapRef = ref<HTMLElement>()
@@ -29,11 +30,12 @@ const { scale, rootHeight } = useFitToPanel(rootRef, scaleWrapRef)
           v-for="(key, i) in keys"
           :key="i"
           class="keypad-key"
-          :class="{ 'keypad-key--back': key === 'back', 'keypad-key--empty': key === '' }"
+          :class="{ 'keypad-key--back': key === 'back', 'keypad-key--empty': key === '', 'keypad-key--confirm': key === 'confirm' }"
           :disabled="key === ''"
-          @click="key === 'back' ? emit('backspace') : key && emit('digit', key)"
+          @click="key === 'back' ? emit('backspace') : key === 'confirm' ? emit('confirm') : key && emit('digit', key)"
         >
           <v-icon v-if="key === 'back'" size="20">mdi-backspace-outline</v-icon>
+          <span v-else-if="key === 'confirm'">확인</span>
           <span v-else>{{ key }}</span>
         </button>
       </div>
@@ -90,5 +92,9 @@ const { scale, rootHeight } = useFitToPanel(rootRef, scaleWrapRef)
 }
 .keypad-key--empty:active {
   background: none;
+}
+.keypad-key--confirm {
+  color: rgb(var(--v-theme-primary));
+  font-size: 1rem;
 }
 </style>

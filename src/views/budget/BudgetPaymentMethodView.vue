@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import { VueDraggable } from 'vue-draggable-plus'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import type { BudgetPaymentMethod } from '@/types/budget'
@@ -8,9 +9,25 @@ import { DEFAULT_BUDGET_PAYMENT_METHODS } from '@/utils/budgetDefaultPaymentMeth
 const loading = ref(true)
 const paymentMethods = ref<BudgetPaymentMethod[]>([])
 
-const sortedPaymentMethods = computed(() =>
-  [...paymentMethods.value].sort((a, b) => a.sort_order - b.sort_order),
-)
+// 드래그 정렬 중엔 paymentMethods와 별개로 다뤄야 해서 화면 표시용 리스트를 분리
+const displayList = ref<BudgetPaymentMethod[]>([])
+watch(paymentMethods, () => {
+  displayList.value = [...paymentMethods.value].sort((a, b) => a.sort_order - b.sort_order)
+})
+
+const persistOrder = async () => {
+  const rows = displayList.value.map((pm, i) => ({ ...pm, sort_order: i }))
+  const { error } = await supabase.from('budget_payment_methods').upsert(rows)
+  if (error) {
+    showMessage('정렬 저장에 실패했습니다.', 'error')
+    await fetchPaymentMethods()
+    return
+  }
+  rows.forEach((r) => {
+    const target = paymentMethods.value.find((pm) => pm.id === r.id)
+    if (target) target.sort_order = r.sort_order
+  })
+}
 
 const fetchPaymentMethods = async () => {
   const { data: { user } } = await supabase.auth.getUser()
@@ -150,12 +167,15 @@ const confirmDeletePaymentMethod = async () => {
 
     <div v-else class="glass-card pa-4 list-wrap">
       <div class="list-scroll">
-        <div v-for="pm in sortedPaymentMethods" :key="pm.id" class="row-item">
-          <span class="row-name">{{ pm.name }}</span>
-          <v-btn icon="mdi-pencil-outline" size="small" variant="text" class="action-btn" @click="openEditDialog(pm)" />
-          <v-btn icon="mdi-delete-outline" size="small" variant="text" color="error" class="action-btn" @click="openDeleteDialog(pm)" />
-        </div>
-        <div v-if="sortedPaymentMethods.length === 0" class="text-center py-6">
+        <VueDraggable v-model="displayList" tag="div" :animation="150" handle=".drag-handle" @end="persistOrder">
+          <div v-for="pm in displayList" :key="pm.id" class="row-item">
+            <v-icon class="drag-handle" size="18" color="rgba(var(--v-theme-on-surface), 0.35)">mdi-drag</v-icon>
+            <span class="row-name">{{ pm.name }}</span>
+            <v-btn icon="mdi-pencil-outline" size="small" variant="text" class="action-btn" @click="openEditDialog(pm)" />
+            <v-btn icon="mdi-delete-outline" size="small" variant="text" color="error" class="action-btn" @click="openDeleteDialog(pm)" />
+          </div>
+        </VueDraggable>
+        <div v-if="displayList.length === 0" class="text-center py-6">
           <div class="text-medium-emphasis mb-3" style="font-size: 0.875rem">
             결제수단이 없습니다.
           </div>
@@ -247,6 +267,12 @@ const confirmDeletePaymentMethod = async () => {
   border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.05);
 }
 .row-item:last-child { border-bottom: none; }
+
+.drag-handle {
+  flex-shrink: 0;
+  cursor: grab;
+  touch-action: none;
+}
 
 .row-name {
   font-size: 0.875rem;
