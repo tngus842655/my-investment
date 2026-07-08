@@ -46,6 +46,7 @@ const favoritesMenu = ref(false)
 const favoriteManageDialog = ref(false)
 const categoryFieldRef = ref()
 const amountFieldRef = ref()
+const memoFieldRef = ref()
 const dateCalendarOpen = ref(false)
 const categoryPickerOpen = ref(false)
 const amountKeypadOpen = ref(false)
@@ -59,6 +60,13 @@ const focusCategory = () => {
 }
 const focusAmount = () => {
   nextTick(() => amountFieldRef.value?.focus())
+}
+const focusMemo = () => {
+  nextTick(() => memoFieldRef.value?.focus())
+}
+const confirmAmount = () => {
+  amountKeypadOpen.value = false
+  focusMemo()
 }
 const onCategorySelect = (id: string) => {
   categoryId.value = id
@@ -411,6 +419,7 @@ const save = async () => {
         </v-expand-transition>
 
         <v-text-field
+          ref="memoFieldRef"
           v-model="memo"
           label="내용"
           prepend-inner-icon="mdi-note-outline"
@@ -464,7 +473,7 @@ const save = async () => {
           @digit="keypadDigit"
           @backspace="keypadBackspace"
           @close="amountKeypadOpen = false"
-          @confirm="amountKeypadOpen = false"
+          @confirm="confirmAmount"
         />
       </div>
     </Teleport>
