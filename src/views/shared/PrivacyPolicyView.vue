@@ -55,7 +55,7 @@ const router = useRouter()
 
       <h3>6. 개인정보 보호 문의</h3>
       <p>개인정보 관련 문의사항은 아래 이메일로 연락해주시기 바랍니다.</p>
-      <p class="font-weight-bold">tngus842655@gmail.com</p>
+      <p class="font-weight-bold">tngus842655@naver.com</p>
     </div>
   </v-container>
 </template>
