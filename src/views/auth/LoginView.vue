@@ -66,7 +66,7 @@ const signUp = async () => {
     const { data, error } = await supabase.auth.signUp({ email: email.value, password: password.value })
     if (error) { showMessage(getErrorMessage(error.code), 'warning'); return }
 
-    // 이메일 인증 OFF 상태에서 이미 가입된 이메일은 identities가 빈 배열로 반환됨
+    // 이미 가입된 이메일로 재시도하면 에러 없이 identities가 빈 배열로 반환됨 (Supabase의 사용자 열거 방지 동작)
     if (!data.user?.identities || data.user.identities.length === 0) {
       showMessage('이미 가입된 이메일입니다.', 'warning')
       return
@@ -75,7 +75,7 @@ const signUp = async () => {
     // SECURITY DEFINER RPC로 RLS 우회하여 signup_log 기록 (재가입 시 재활성화 처리 포함)
     const { error: logError } = await supabase.rpc('record_signup', { user_email: email.value })
     if (logError) { showMessage('회원가입 중 오류가 발생했습니다.', 'error'); return }
-    showMessage('회원가입이 완료되었습니다. 로그인해주세요.', 'success')
+    showMessage('가입 확인 메일을 발송했습니다. 메일함을 확인해 인증을 완료해주세요.', 'success')
     switchMode('login')
   } finally {
     loading.value = false

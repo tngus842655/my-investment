@@ -4,6 +4,32 @@
 
 ---
 
+## ✅ 완료된 작업 (2026-07-08) — 이메일 인증 도입
+
+### 배경
+
+- 구글 플레이 출시를 앞두고 보안 점검 중 이메일 인증이 꺼져 있어 아무 형식의 이메일로나 가입이 가능했던 점을 발견, 인증 활성화 결정
+- 예전에도 시도했으나 Sender 주소가 `gmail.com`(Resend 미인증 도메인)이라 발송이 막혀서 방치했던 이력 확인 (Resend 로그에서 403 "Testing domain restriction" 원인 확인)
+
+### 이메일 발송 인프라 구축
+
+- Resend 가입, `firepath.me` 도메인 등록 및 GoDaddy 자동 연동으로 DNS(DKIM/SPF) 인증 완료
+- Supabase Authentication > SMTP Settings에 Resend 연결 (Host: `smtp.resend.com`), Sender를 `noreply@firepath.me`로 수정
+- 노출됐던 기존 API 키/미사용 "Onboarding" 키 정리
+- "Confirm sign up" 이메일 템플릿에 로고(`logo-wide-nature.png`) 및 한글 안내 문구 추가
+- URL Configuration의 Site URL을 `http://localhost:3000`(방치된 로컬 기본값) → `https://firepath.me`로 수정, Redirect URLs에 `https://firepath.me/**`, `http://localhost:3820/**` 추가 (인증 링크 클릭 시 "네트워크 서버에 연결할 수 없음" 오류 원인이었음)
+- Authentication > Sign In/Providers에서 **Confirm email 활성화**
+
+### 소스 수정
+
+- 회원가입 성공 메시지를 "가입 확인 메일을 발송했습니다..."로 변경 (`LoginView.vue`)
+- `email_not_confirmed` 에러 메시지를 "이메일 인증이 완료되지 않았습니다"로 명확화 (`errorMessage.ts`)
+- 관리자 전용 RPC `admin_get_email_confirmations()` 신규 추가 — `auth.users.email_confirmed_at` 조회 (SECURITY DEFINER, 관리자 이메일만 호출 가능)
+- 가입 이력 화면(`AdminSignupLogView.vue`)에 **활성 / 미인증 / 탈퇴** 3단계 상태 표시 추가
+- 회원 현황 대시보드(`AdminView.vue`) 활성 회원 집계에서 미인증 계정 제외, 잔존율도 미인증 대기자를 분모에서 제외하도록 수정
+
+---
+
 ## 💭 검토했으나 보류한 것 (나중에 다시 꺼내지 않도록 기록)
 
 ### 연도별 예상자산 추이 - 지난 연도 표시

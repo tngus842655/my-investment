@@ -29,6 +29,7 @@ USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'email') = 'admin
 | delete_user_account()       | MoreView.vue (회원탈퇴)       | SECURITY DEFINER. signup_log.deleted_at 기록 후 auth.users 삭제(CASCADE) |
 | record_signup(user_email)   | LoginView.vue (로그인/가입)   | SECURITY DEFINER. signup_log에 신규 insert 또는 탈퇴 이력 재활성화     |
 | save_daily_asset_snapshot() | FireHistoryView.vue, pg_cron  | asset_history에 당일 스냅샷 upsert (아래 pg_cron 항목 참고)          |
+| admin_get_email_confirmations() | AdminSignupLogView.vue (가입 이력) | SECURITY DEFINER. 관리자만 호출 가능. auth.users의 이메일별 인증 여부(email_confirmed_at) 반환 |
 
 ### pg_cron
 
