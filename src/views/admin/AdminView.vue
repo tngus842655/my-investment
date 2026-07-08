@@ -22,9 +22,11 @@ const todayAccessCount = ref(0)
 
 const stats = computed(() => {
   const total = logs.value.length
+  const pending = logs.value.filter((l) => !l.deleted_at && confirmedMap.value[l.email] === false).length
   const active = logs.value.filter((l) => !l.deleted_at && confirmedMap.value[l.email] !== false).length
   const deleted = logs.value.filter((l) => !!l.deleted_at).length
-  const retentionRate = total > 0 ? Math.round((active / total) * 100) : 0
+  const retentionBase = total - pending
+  const retentionRate = retentionBase > 0 ? Math.round((active / retentionBase) * 100) : 0
 
   const deletedLogs = logs.value.filter((l) => !!l.deleted_at)
   const avgDays =
