@@ -408,7 +408,20 @@ onUnmounted(() => {
   position: absolute;
   top: 10px;
   right: 10px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
   color: rgba(var(--v-theme-on-surface), 0.4);
+  transition: opacity 0.15s;
+}
+.install-banner-close:active {
+  opacity: 0.6;
 }
 
 .install-banner-title {
