@@ -19,6 +19,7 @@ interface SignupLog {
 }
 
 const logs = ref<SignupLog[]>([])
+const confirmedMap = ref<Record<string, boolean>>({})
 const deleteTarget = ref<SignupLog | null>(null)
 const deleteDialog = ref(false)
 const deleteLoading = ref(false)
@@ -262,13 +263,20 @@ onMounted(async () => {
     return
   }
   isAdmin.value = true
-  const { data } = await supabase
-    .from('signup_log')
-    .select('*')
-    .order('signed_up_at', { ascending: false })
+  const [{ data }, { data: confirmations }] = await Promise.all([
+    supabase.from('signup_log').select('*').order('signed_up_at', { ascending: false }),
+    supabase.rpc('admin_get_email_confirmations'),
+  ])
   logs.value = data ?? []
+  confirmedMap.value = Object.fromEntries((confirmations ?? []).map((c: { email: string; confirmed: boolean }) => [c.email, c.confirmed]))
   loading.value = false
 })
+
+const memberStatus = (log: SignupLog): { label: string; color: string; icon: string } => {
+  if (log.deleted_at) return { label: '탈퇴', color: 'error', icon: 'mdi-account-remove-outline' }
+  if (confirmedMap.value[log.email] === false) return { label: '미인증', color: 'warning', icon: 'mdi-email-alert-outline' }
+  return { label: '활성', color: 'primary', icon: 'mdi-account-check-outline' }
+}
 </script>
 
 <template>
@@ -299,14 +307,12 @@ onMounted(async () => {
           <div class="log-row" :class="{ 'mt-2': i > 0 }" style="cursor:pointer" @click="openDetail(log)">
             <div class="d-flex align-center justify-space-between">
               <div class="d-flex align-center ga-2">
-                <v-icon size="15" :color="log.deleted_at ? 'error' : 'primary'">
-                  {{ log.deleted_at ? 'mdi-account-remove-outline' : 'mdi-account-check-outline' }}
-                </v-icon>
+                <v-icon size="15" :color="memberStatus(log).color">{{ memberStatus(log).icon }}</v-icon>
                 <span class="log-email">{{ log.email }}</span>
               </div>
               <div class="d-flex align-center ga-2">
-                <v-chip :color="log.deleted_at ? 'error' : 'primary'" size="x-small" variant="tonal">
-                  {{ log.deleted_at ? '탈퇴' : '활성' }}
+                <v-chip :color="memberStatus(log).color" size="x-small" variant="tonal">
+                  {{ memberStatus(log).label }}
                 </v-chip>
                 <button v-if="!log.deleted_at" class="del-btn" @click.stop="confirmDelete(log)">
                   <v-icon size="14">mdi-account-remove-outline</v-icon>
