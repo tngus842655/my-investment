@@ -464,6 +464,7 @@ const save = async () => {
           @digit="keypadDigit"
           @backspace="keypadBackspace"
           @close="amountKeypadOpen = false"
+          @confirm="amountKeypadOpen = false"
         />
       </div>
     </Teleport>
