@@ -328,6 +328,10 @@ onUnmounted(() => {
         </template>
 
       </div>
+
+      <div class="text-center mt-4">
+        <RouterLink to="/privacy-policy" class="privacy-link">개인정보처리방침</RouterLink>
+      </div>
     </div>
   </div>
 </template>
@@ -345,6 +349,12 @@ onUnmounted(() => {
 .login-inner {
   width: 100%;
   max-width: 380px;
+}
+
+.privacy-link {
+  font-size: 0.75rem;
+  color: rgba(var(--v-theme-on-surface), 0.4);
+  text-decoration: none;
 }
 
 .brand-logo {

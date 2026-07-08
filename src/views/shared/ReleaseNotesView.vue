@@ -17,6 +17,7 @@ const notes = [
     description: [],
     items: [
       '회원가입 시 이메일 인증기능 on',
+      '개인정보처리방침 페이지 추가'
     ],
   },
   {
