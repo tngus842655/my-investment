@@ -75,7 +75,7 @@ const signUp = async () => {
     // SECURITY DEFINER RPC로 RLS 우회하여 signup_log 기록 (재가입 시 재활성화 처리 포함)
     const { error: logError } = await supabase.rpc('record_signup', { user_email: email.value })
     if (logError) { showMessage('회원가입 중 오류가 발생했습니다.', 'error'); return }
-    showMessage('회원가입이 완료되었습니다. 로그인해주세요.', 'success')
+    showMessage('가입 확인 메일을 발송했습니다. 메일함을 확인해 인증을 완료해주세요.', 'success')
     switchMode('login')
   } finally {
     loading.value = false

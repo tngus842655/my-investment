@@ -4,7 +4,7 @@ export const getErrorMessage = (code?: string) => {
       return '가입되지 않은 계정이거나 비밀번호가 올바르지 않습니다.'
 
     case 'email_not_confirmed':
-      return '가입되지 않은 계정이거나 비밀번호가 올바르지 않습니다.'
+      return '이메일 인증이 완료되지 않았습니다. 메일함을 확인해주세요.'
 
     case 'user_already_exists':
       return '이미 가입된 이메일입니다.'
