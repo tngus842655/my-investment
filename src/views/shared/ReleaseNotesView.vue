@@ -12,6 +12,14 @@ const toggleExpand = (i: number) => {
 
 const notes = [
   {
+    version: 'v1.0.8',
+    date: '2026.7.8',
+    description: [],
+    items: [
+      '회원가입 시 이메일 인증 절차 추가 — 가입 후 발송되는 인증 메일의 링크를 확인해야 로그인 가능',
+    ],
+  },
+  {
     version: 'v1.0.7',
     date: '2026.7.7',
     description: [],
