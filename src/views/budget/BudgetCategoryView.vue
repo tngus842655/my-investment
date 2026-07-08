@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import { VueDraggable } from 'vue-draggable-plus'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import type { BudgetCategory, BudgetType } from '@/types/budget'
@@ -9,11 +10,28 @@ const loading = ref(true)
 const categories = ref<BudgetCategory[]>([])
 const selectedType = ref<BudgetType>('EXPENSE')
 
-const filteredCategories = computed(() =>
-  categories.value
+// 드래그 정렬 중엔 categories와 별개로 다뤄야 해서 화면 표시용 리스트를 분리
+const displayList = ref<BudgetCategory[]>([])
+const syncDisplayList = () => {
+  displayList.value = categories.value
     .filter((c) => c.type === selectedType.value)
-    .sort((a, b) => a.sort_order - b.sort_order),
-)
+    .sort((a, b) => a.sort_order - b.sort_order)
+}
+watch([categories, selectedType], syncDisplayList)
+
+const persistOrder = async () => {
+  const rows = displayList.value.map((c, i) => ({ ...c, sort_order: i }))
+  const { error } = await supabase.from('budget_categories').upsert(rows)
+  if (error) {
+    showMessage('정렬 저장에 실패했습니다.', 'error')
+    await fetchCategories()
+    return
+  }
+  rows.forEach((r) => {
+    const target = categories.value.find((c) => c.id === r.id)
+    if (target) target.sort_order = r.sort_order
+  })
+}
 
 const fetchCategories = async () => {
   const { data: { user } } = await supabase.auth.getUser()
@@ -180,12 +198,15 @@ const confirmDeleteCategory = async () => {
 
     <div v-else class="glass-card pa-4 list-wrap">
       <div class="list-scroll">
-        <div v-for="c in filteredCategories" :key="c.id" class="row-item">
-          <span class="row-name">{{ c.name }}</span>
-          <v-btn icon="mdi-pencil-outline" size="small" variant="text" class="action-btn" @click="openEditDialog(c)" />
-          <v-btn icon="mdi-delete-outline" size="small" variant="text" color="error" class="action-btn" @click="openDeleteDialog(c)" />
-        </div>
-        <div v-if="filteredCategories.length === 0" class="text-center py-6">
+        <VueDraggable v-model="displayList" tag="div" :animation="150" handle=".drag-handle" @end="persistOrder">
+          <div v-for="c in displayList" :key="c.id" class="row-item">
+            <v-icon class="drag-handle" size="18" color="rgba(var(--v-theme-on-surface), 0.35)">mdi-drag</v-icon>
+            <span class="row-name">{{ c.name }}</span>
+            <v-btn icon="mdi-pencil-outline" size="small" variant="text" class="action-btn" @click="openEditDialog(c)" />
+            <v-btn icon="mdi-delete-outline" size="small" variant="text" color="error" class="action-btn" @click="openDeleteDialog(c)" />
+          </div>
+        </VueDraggable>
+        <div v-if="displayList.length === 0" class="text-center py-6">
           <div class="text-medium-emphasis mb-3" style="font-size: 0.875rem">
             카테고리가 없습니다.
           </div>
@@ -283,6 +304,12 @@ const confirmDeleteCategory = async () => {
   border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.05);
 }
 .row-item:last-child { border-bottom: none; }
+
+.drag-handle {
+  flex-shrink: 0;
+  cursor: grab;
+  touch-action: none;
+}
 
 .row-name {
   font-size: 0.875rem;

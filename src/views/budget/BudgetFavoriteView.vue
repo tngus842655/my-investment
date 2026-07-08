@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { VueDraggable } from 'vue-draggable-plus'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { formatCurrency } from '@/utils/numberFormat'
@@ -51,6 +52,17 @@ onMounted(async () => {
   await fetchAll()
   loading.value = false
 })
+
+const persistOrder = async () => {
+  const rows = favorites.value.map((f, i) => ({ ...f, sort_order: i }))
+  const { error } = await supabase.from('budget_favorites').upsert(rows)
+  if (error) {
+    showMessage('정렬 저장에 실패했습니다.', 'error')
+    await fetchAll()
+    return
+  }
+  favorites.value = rows
+}
 
 // ── 추가/수정 다이얼로그 ──────────────────────────
 const dialog = ref(false)
@@ -188,17 +200,20 @@ const onFormTypeChange = (type: BudgetType) => {
 
     <div v-else class="glass-card pa-4 list-wrap">
       <div class="list-scroll">
-        <div v-for="f in favorites" :key="f.id" class="row-item">
-          <div class="favorite-info">
-            <div class="row-name">{{ categoryName(f.category_id) }}<span v-if="f.memo"> · {{ f.memo }}</span></div>
-            <div class="favorite-sub">
-              <span :class="f.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ formatCurrency(f.amount) }}원</span>
-              <span v-if="paymentMethodName(f.payment_method_id)"> · {{ paymentMethodName(f.payment_method_id) }}</span>
+        <VueDraggable v-model="favorites" tag="div" :animation="150" handle=".drag-handle" @end="persistOrder">
+          <div v-for="f in favorites" :key="f.id" class="row-item">
+            <v-icon class="drag-handle" size="18" color="rgba(var(--v-theme-on-surface), 0.35)">mdi-drag</v-icon>
+            <div class="favorite-info">
+              <div class="row-name">{{ categoryName(f.category_id) }}<span v-if="f.memo"> · {{ f.memo }}</span></div>
+              <div class="favorite-sub">
+                <span :class="f.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ formatCurrency(f.amount) }}원</span>
+                <span v-if="paymentMethodName(f.payment_method_id)"> · {{ paymentMethodName(f.payment_method_id) }}</span>
+              </div>
             </div>
+            <v-btn icon="mdi-pencil-outline" size="small" variant="text" class="action-btn" @click="openEditDialog(f)" />
+            <v-btn icon="mdi-delete-outline" size="small" variant="text" color="error" class="action-btn" @click="openDeleteDialog(f)" />
           </div>
-          <v-btn icon="mdi-pencil-outline" size="small" variant="text" class="action-btn" @click="openEditDialog(f)" />
-          <v-btn icon="mdi-delete-outline" size="small" variant="text" color="error" class="action-btn" @click="openDeleteDialog(f)" />
-        </div>
+        </VueDraggable>
         <div v-if="favorites.length === 0" class="text-center text-medium-emphasis py-4">
           즐겨찾기가 없습니다.
         </div>
@@ -333,6 +348,12 @@ const onFormTypeChange = (type: BudgetType) => {
   border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.05);
 }
 .row-item:last-child { border-bottom: none; }
+
+.drag-handle {
+  flex-shrink: 0;
+  cursor: grab;
+  touch-action: none;
+}
 
 .favorite-info {
   flex: 1;
