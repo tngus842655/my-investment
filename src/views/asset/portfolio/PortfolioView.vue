@@ -13,6 +13,8 @@ import { evaluateItemKrw, simpleCostKrw } from '@/utils/portfolioMath'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
 import { useFontScale } from '@/composables/useFontScale'
+import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
@@ -410,7 +412,14 @@ const deletePortfolio = async () => {
 }
 
 // ── 포맷 유틸 ─────────────────────────────────────
+const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
+const formatUsd = (v: number) => formatUsdWithRate(v, exchangeRate.value ?? 1350)
 const formatKrw = (v: number) => Math.round(v).toLocaleString('ko-KR')
+
+// 보유자산 카드 평가금액/손익 — 토글에 따라 원화 또는 달러로 표시
+const displayEval = (v: number) => (displayCurrency.value === 'USD' ? formatUsd(v) : formatKrw(v) + '원')
+const displayProfit = (v: number) =>
+  displayCurrency.value === 'USD' ? (v > 0 ? '+' : '') + formatUsd(v) : formatProfit(v) + '원'
 
 // 화면 너비 감지 — 360px 미만(폴드 등 좁은 화면)이면 한글 축약
 const windowWidth = ref(window.innerWidth)
@@ -432,12 +441,17 @@ const formatKrwShort = (v: number): string => {
   return `${sign}${Math.round(abs).toLocaleString()}`
 }
 
-// 총합 카드용 — 좁은 화면이면 한글 축약, 아니면 숫자 그대로
-const formatSummaryKrw = (v: number) => isNarrowScreen.value ? formatKrwShort(v) : formatKrw(v)
-const formatSummaryProfit = (v: number) =>
-  isNarrowScreen.value
+// 총합 카드용 — 달러 모드면 환산, 원화면 좁은 화면일 때만 한글 축약
+const formatSummaryKrw = (v: number) => {
+  if (displayCurrency.value === 'USD') return formatUsd(v)
+  return isNarrowScreen.value ? formatKrwShort(v) : formatKrw(v)
+}
+const formatSummaryProfit = (v: number) => {
+  if (displayCurrency.value === 'USD') return (v > 0 ? '+' : '') + formatUsd(v)
+  return isNarrowScreen.value
     ? (v > 0 ? '+' : '') + formatKrwShort(v)
     : formatProfit(v)
+}
 
 // 평균단가/현재가 표시 — KRW는 금액이 크면 축약, USD는 소수점 처리
 const formatPrice = (v: number, currency: string) => {
@@ -643,6 +657,9 @@ onUnmounted(() => {
     <template v-else>
       <!-- 총 요약 카드 -->
       <div class="glass-card pa-4 mb-4" style="position: relative">
+        <div class="d-flex justify-end mb-2">
+          <CurrencyToggle />
+        </div>
         <div class="summary-grid">
           <div class="summary-row" :class="{ 'summary-row--stacked': summaryStacked }">
             <span class="text-medium-emphasis">매입금액</span>
@@ -892,7 +909,10 @@ onUnmounted(() => {
               <!-- 현금 카드 -->
               <template v-if="item.asset_type === '현금'">
                 <div class="card-amount text-primary mt-1">
-                  <template v-if="item.currency === 'USD'">
+                  <template v-if="displayCurrency === 'USD'">
+                    {{ displayEval(item.evaluationAmountKrw ?? 0) }}
+                  </template>
+                  <template v-else-if="item.currency === 'USD'">
                     ${{ formatPrice(item.avg_price * item.quantity, 'USD') }}
                     <span class="compact-sep ml-1">·</span>
                     <span class="compact-label ml-1"
@@ -911,7 +931,7 @@ onUnmounted(() => {
                     <span class="compact-label">{{ item.quantity }}주</span>
                     <span class="compact-sep mx-1">·</span>
                     <span class="card-amount text-primary" style="white-space: nowrap">
-                      {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원
+                      {{ displayEval(item.evaluationAmountKrw ?? 0) }}
                     </span>
                   </div>
                   <div
@@ -919,7 +939,7 @@ onUnmounted(() => {
                     :class="(item.profitAmountKrw ?? 0) >= 0 ? 'text-success' : 'text-error'"
                     style="flex-shrink: 0; white-space: nowrap"
                   >
-                    {{ formatProfit(item.profitAmountKrw ?? 0) }}원
+                    {{ displayProfit(item.profitAmountKrw ?? 0) }}
                   </div>
                 </div>
               </template>

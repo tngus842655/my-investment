@@ -8,6 +8,8 @@ import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel } from '@/utils/tickerNames'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
+import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
@@ -42,23 +44,9 @@ const setIncludeCash = (v: boolean) => {
   })
 }
 
-const displayCurrency = ref<'KRW' | 'USD'>(
-  localStorage.getItem('firepath-display-currency') === 'USD' ? 'USD' : 'KRW',
-)
+const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
 const exchangeRate = ref(1350)
-
-const setDisplayCurrency = (c: 'KRW' | 'USD') => {
-  if (displayCurrency.value === c) return
-  displayCurrency.value = c
-  localStorage.setItem('firepath-display-currency', c)
-}
-
-const formatUsd = (krwValue: number) =>
-  (krwValue / exchangeRate.value).toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  })
+const formatUsd = (krwValue: number) => formatUsdWithRate(krwValue, exchangeRate.value)
 
 const targetAsset = ref(0)
 const currentAsset = ref(0)
@@ -237,24 +225,7 @@ onUnmounted(clearPullToRefresh)
         <div class="d-flex align-center justify-space-between mb-1">
           <div class="field-label">현재 자산</div>
           <div class="d-flex align-center" style="gap: 22px">
-            <div class="currency-toggle-row">
-              <button
-                type="button"
-                class="currency-toggle-btn"
-                :class="{ 'currency-toggle-btn-active': displayCurrency === 'KRW' }"
-                @click="setDisplayCurrency('KRW')"
-              >
-                ₩
-              </button>
-              <button
-                type="button"
-                class="currency-toggle-btn"
-                :class="{ 'currency-toggle-btn-active': displayCurrency === 'USD' }"
-                @click="setDisplayCurrency('USD')"
-              >
-                $
-              </button>
-            </div>
+            <CurrencyToggle />
             <div v-if="cashTotalKrw > 0" class="cash-toggle-row">
               <span class="cash-toggle-label">현금 포함</span>
               <button
@@ -675,30 +646,6 @@ onUnmounted(clearPullToRefresh)
 
 .asset-hidden-sm {
   color: rgba(var(--v-theme-on-surface), 0.35);
-}
-
-.currency-toggle-row {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  background: rgba(var(--v-theme-on-surface), 0.08);
-  border-radius: 8px;
-  padding: 2px;
-}
-.currency-toggle-btn {
-  background: none;
-  border: none;
-  padding: 2px 8px;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: rgba(var(--v-theme-on-surface), 0.45);
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.currency-toggle-btn-active {
-  background: rgb(var(--v-theme-primary));
-  color: #fff;
 }
 
 .cash-toggle-row {
