@@ -42,6 +42,24 @@ const setIncludeCash = (v: boolean) => {
   })
 }
 
+const displayCurrency = ref<'KRW' | 'USD'>(
+  localStorage.getItem('firepath-display-currency') === 'USD' ? 'USD' : 'KRW',
+)
+const exchangeRate = ref(1350)
+
+const setDisplayCurrency = (c: 'KRW' | 'USD') => {
+  if (displayCurrency.value === c) return
+  displayCurrency.value = c
+  localStorage.setItem('firepath-display-currency', c)
+}
+
+const formatUsd = (krwValue: number) =>
+  (krwValue / exchangeRate.value).toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  })
+
 const targetAsset = ref(0)
 const currentAsset = ref(0)
 const monthlyInvestment = ref(0)
@@ -159,6 +177,7 @@ const loadDashboard = async (force = false) => {
       annualReturn.value = goal.annual_return ?? null
     }
     currentAsset.value = summary?.current_asset ?? 0
+    exchangeRate.value = rate
 
     const cashRows = portfolios.filter((p) => p.asset_type === '현금')
     cashTotalKrw.value = Math.round(
@@ -218,6 +237,24 @@ onUnmounted(clearPullToRefresh)
         <div class="d-flex align-center justify-space-between mb-1">
           <div class="field-label">현재 자산</div>
           <div class="d-flex align-center" style="gap: 22px">
+            <div class="currency-toggle-row">
+              <button
+                type="button"
+                class="currency-toggle-btn"
+                :class="{ 'currency-toggle-btn-active': displayCurrency === 'KRW' }"
+                @click="setDisplayCurrency('KRW')"
+              >
+                ₩
+              </button>
+              <button
+                type="button"
+                class="currency-toggle-btn"
+                :class="{ 'currency-toggle-btn-active': displayCurrency === 'USD' }"
+                @click="setDisplayCurrency('USD')"
+              >
+                $
+              </button>
+            </div>
             <div v-if="cashTotalKrw > 0" class="cash-toggle-row">
               <span class="cash-toggle-label">현금 포함</span>
               <button
@@ -238,11 +275,12 @@ onUnmounted(clearPullToRefresh)
         </div>
         <div class="hero-amount font-weight-bold mb-1 text-center">
           <span v-if="hideAsset" class="asset-hidden">금액 숨김</span>
-          <span v-else>{{ displayedCurrentAsset > 0 ? Math.round(displayedCurrentAsset).toLocaleString('ko-KR') + '원' : '-' }}</span>
+          <span v-else-if="displayedCurrentAsset > 0">{{ displayCurrency === 'USD' ? formatUsd(displayedCurrentAsset) : Math.round(displayedCurrentAsset).toLocaleString('ko-KR') + '원' }}</span>
+          <span v-else>-</span>
         </div>
         <div class="text-center" style="color: rgba(var(--v-theme-on-surface), 0.45)">
           <template v-if="displayedCurrentAsset > 0">
-            목표 자산 <span v-if="hideAsset" class="asset-hidden-sm">금액 숨김</span><span v-else>{{ formatShortMoney(targetAsset) }}원</span>
+            목표 자산 <span v-if="hideAsset" class="asset-hidden-sm">금액 숨김</span><span v-else>{{ displayCurrency === 'USD' ? formatUsd(targetAsset) : formatShortMoney(targetAsset) + '원' }}</span>
           </template>
           <template v-else>
             <span
@@ -637,6 +675,30 @@ onUnmounted(clearPullToRefresh)
 
 .asset-hidden-sm {
   color: rgba(var(--v-theme-on-surface), 0.35);
+}
+
+.currency-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(var(--v-theme-on-surface), 0.08);
+  border-radius: 8px;
+  padding: 2px;
+}
+.currency-toggle-btn {
+  background: none;
+  border: none;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.currency-toggle-btn-active {
+  background: rgb(var(--v-theme-primary));
+  color: #fff;
 }
 
 .cash-toggle-row {
