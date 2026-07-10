@@ -7,6 +7,7 @@ import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { TICKER_NAMES, getTickerDisplayName } from '@/utils/tickerNames'
 import { KR_STOCK_NAMES, KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 import { getStockPrice } from '@/services/market'
+import { assetTypeToClass, assetTypeToMarket, getAssetClass, getMarket } from '@/config/marketConfig'
 
 // 국내주식 + 국내ETF 검색용: [{ title: '삼성전자 (005930)', value: '005930' }, ...]
 const krStockItems = Object.entries({ ...KR_STOCK_NAMES, ...KR_ETF_NAMES }).map(([code, name]) => ({
@@ -152,7 +153,7 @@ watch(dialog, async (opened) => {
   if (!opened) return
   if (props.initialData) {
     ticker.value = props.initialData.ticker
-    if (props.initialData.asset_type === '국내주식') {
+    if (getAssetClass(props.initialData) === 'stock' && getMarket(props.initialData) === 'KR') {
       const name = KR_STOCK_NAMES[props.initialData.ticker] ?? KR_ETF_NAMES[props.initialData.ticker] ?? props.initialData.ticker
       selectedKrStock.value = { value: props.initialData.ticker, name }
       krSearchQuery.value = name
@@ -377,6 +378,9 @@ const save = async () => {
           user_id: user.id,
           ticker: tickerToSave,
           asset_type: assetType.value,
+          // 전환기 dual-write: asset_type과 새 체계를 함께 기록 (GLOBALIZATION.md 단계 A)
+          asset_class: assetTypeToClass(assetType.value),
+          market: assetTypeToMarket(assetType.value, currency.value),
           currency: currency.value,
           account_name: accountNameToSave,
           quantity: 0,

@@ -105,3 +105,23 @@ export const classMarketToAssetType = (assetClass: AssetClass, market: MarketCod
       return '현금'
   }
 }
+
+// ── 접근자: DB 행에서 자산군/시장 읽기 ─────────────────────────
+// 새 컬럼(asset_class/market)이 있으면 그 값을, 없으면 asset_type에서 유추.
+// 분기 코드는 asset_type을 직접 비교하지 말고 반드시 이 접근자를 쓸 것.
+
+export interface ClassifiableItem {
+  asset_type?: string
+  asset_class?: AssetClass | null
+  market?: MarketCode | null
+  currency?: string
+}
+
+export const getAssetClass = (item: ClassifiableItem): AssetClass =>
+  item.asset_class ?? assetTypeToClass(item.asset_type ?? '')
+
+export const getMarket = (item: ClassifiableItem): MarketCode | null =>
+  item.market !== undefined ? item.market : assetTypeToMarket(item.asset_type ?? '', item.currency ?? 'KRW')
+
+export const isCash = (item: ClassifiableItem): boolean => getAssetClass(item) === 'cash'
+export const isCrypto = (item: ClassifiableItem): boolean => getAssetClass(item) === 'crypto'

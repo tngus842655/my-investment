@@ -2,8 +2,9 @@
 // 공통으로 사용하는 평가금액/원가 계산 공식. 한쪽만 고치고 다른 쪽을
 // 놓치면 화면마다 총자산 값이 달라지는 문제가 생기므로 반드시 여기만 수정한다.
 
-export interface EvaluatableItem {
-  asset_type: string
+import { isCrypto, type ClassifiableItem } from '@/config/marketConfig'
+
+export interface EvaluatableItem extends ClassifiableItem {
   currency: string
   avg_price: number
   quantity: number
@@ -12,7 +13,7 @@ export interface EvaluatableItem {
 // 현재가(currentPrice, null이면 미조회/실패 → avg_price로 대체)와 환율로 KRW 평가금액 계산.
 // 암호화폐 + KRW는 시세 API가 USD로 반환하므로 환율을 곱해 KRW로 환산.
 export const evaluateItemKrw = (item: EvaluatableItem, currentPrice: number | null, rate: number) => {
-  const isCryptoKrw = item.asset_type === '암호화폐' && item.currency === 'KRW'
+  const isCryptoKrw = isCrypto(item) && item.currency === 'KRW'
   const currentPriceInCurrency = currentPrice
     ? (isCryptoKrw ? currentPrice * rate : currentPrice)
     : null

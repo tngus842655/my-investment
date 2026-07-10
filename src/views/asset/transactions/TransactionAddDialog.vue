@@ -8,6 +8,14 @@ import { KR_STOCK_NAMES, KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 import { getStockPrice } from '@/services/market'
 import { recomputeAssetSummary } from '@/services/assetSummary'
 import { useUserDataStore } from '@/stores/userData'
+import {
+  assetTypeToClass,
+  assetTypeToMarket,
+  getAssetClass,
+  getMarket,
+  type AssetClass,
+  type MarketCode,
+} from '@/config/marketConfig'
 
 const userDataStore = useUserDataStore()
 
@@ -59,6 +67,8 @@ interface Portfolio {
   id: string
   ticker: string
   asset_type: string
+  asset_class?: AssetClass
+  market?: MarketCode | null
   currency: string
   account_name: string
 }
@@ -130,17 +140,27 @@ const filteredPortfolios = computed(() =>
     : portfolios.value
 )
 
+// 종목 선택 목록에 표시할 자산군 라벨 (기존 asset_type.replace('주식','') 표기와 동일)
+const assetClassLabel = (p: Portfolio): string => {
+  switch (getAssetClass(p)) {
+    case 'stock': return getMarket(p) === 'KR' ? '국내' : '해외'
+    case 'etf': return 'ETF'
+    case 'crypto': return '암호화폐'
+    case 'cash': return '현금'
+  }
+}
+
 const portfolioItems = computed(() => [
   ...filteredPortfolios.value.map((p) => {
     const name = getTickerDisplayName(p.ticker)
     const hasKoreanName = name !== p.ticker
-    const isOverseas = p.asset_type === '해외주식'
+    const isOverseas = getAssetClass(p) === 'stock' && getMarket(p) === 'US'
     const label = hasKoreanName
       ? isOverseas
         ? `${name} (${p.ticker})`
         : name
       : p.ticker
-    const assetLabel = p.asset_type.replace('주식', '')
+    const assetLabel = assetClassLabel(p)
     let accountPrefix = ''
     if (!selectedAccountFilter.value && p.account_name && p.account_name !== '미지정') {
       const acc = p.account_name
@@ -198,8 +218,9 @@ const unitPriceError = computed(() => {
   const p = removeComma(unitPrice.value)
   if (p <= 0) return '거래단가는 0보다 커야 합니다.'
   if (p > maxPrice.value) {
-    const unit = effectiveAssetType.value === '해외주식' ? '$' : ''
-    const suffix = effectiveAssetType.value === '해외주식' ? '' : '원'
+    const isUsStock = effectiveAssetClass.value === 'stock' && effectiveMarket.value === 'US'
+    const unit = isUsStock ? '$' : ''
+    const suffix = isUsStock ? '' : '원'
     return `거래단가는 ${unit}${maxPrice.value.toLocaleString()}${suffix} 이하로 입력해주세요.`
   }
   return ''
@@ -252,9 +273,9 @@ const loadPortfolios = async () => {
     if (!user) return
     const { data, error } = await supabase
       .from('portfolios')
-      .select('id, ticker, asset_type, currency, account_name')
+      .select('id, ticker, asset_type, asset_class, market, currency, account_name')
       .eq('user_id', user.id)
-      .neq('asset_type', '현금')
+      .neq('asset_class', 'cash')
       .order('sort_order', { ascending: true })
     if (error) throw error
     portfolios.value = data ?? []
@@ -291,16 +312,27 @@ watch(dialog, async (opened) => {
   }
 })
 
-// 선택된 종목 또는 새 종목 입력 기준으로 암호화폐 여부 판단
-const effectiveAssetType = computed(() =>
-  isNewPortfolio.value ? newAssetType.value : (selectedPortfolio.value?.asset_type ?? ''),
+// 선택된 종목 또는 새 종목 입력 기준으로 자산군/시장 판단
+const effectiveAssetClass = computed<AssetClass>(() =>
+  isNewPortfolio.value
+    ? assetTypeToClass(newAssetType.value)
+    : selectedPortfolio.value
+      ? getAssetClass(selectedPortfolio.value)
+      : 'stock',
 )
-const isCrypto = computed(() => effectiveAssetType.value === '암호화폐')
+const effectiveMarket = computed<MarketCode | null>(() =>
+  isNewPortfolio.value
+    ? assetTypeToMarket(newAssetType.value, newCurrency.value)
+    : selectedPortfolio.value
+      ? getMarket(selectedPortfolio.value)
+      : null,
+)
+const isCrypto = computed(() => effectiveAssetClass.value === 'crypto')
 const maxPrice = computed(() => {
-  if (isCrypto.value) return 999_999_999                          // 암호화폐: 10억 KRW
-  if (effectiveAssetType.value === '해외주식') return 1_000_000  // 해외주식: $100만 USD
-  if (effectiveAssetType.value === '현금') return 10_000_000_000 // 현금: 100억 KRW/USD
-  return 100_000_000                                              // 국내주식: 1억 KRW
+  if (isCrypto.value) return 999_999_999                            // 암호화폐: 10억 KRW
+  if (effectiveMarket.value === 'US') return 1_000_000              // 미국주식: $100만 USD
+  if (effectiveAssetClass.value === 'cash') return 10_000_000_000   // 현금: 100억 KRW/USD
+  return 100_000_000                                                // 국내주식: 1억 KRW
 })
 const maxQuantity = computed(() => isCrypto.value ? 99_999_999 : 100_000)     // 암호화폐 1억 / 주식·현금 10만
 
@@ -367,6 +399,9 @@ const save = async () => {
           user_id: user.id,
           ticker: tickerToSave,
           asset_type: newAssetType.value,
+          // 전환기 dual-write: asset_type과 새 체계를 함께 기록 (GLOBALIZATION.md 단계 A)
+          asset_class: assetTypeToClass(newAssetType.value),
+          market: assetTypeToMarket(newAssetType.value, newCurrency.value),
           currency: newCurrency.value,
           account_name: accountNameToSave,
           quantity: 0,

@@ -3,6 +3,7 @@ import { getStockPrice } from '@/services/market'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { useUserDataStore } from '@/stores/userData'
 import { evaluateItemKrw, simpleCostKrw } from '@/utils/portfolioMath'
+import { isCash } from '@/config/marketConfig'
 
 // PortfolioView.vue와 동일한 portfolioMath 공식을 사용한다 (src/utils/portfolioMath.ts).
 // 거래 추가/수정/삭제 직후에도 대시보드 등에서 총자산이 바로 반영되도록
@@ -19,7 +20,7 @@ export const recomputeAssetSummary = async (userId: string): Promise<void> => {
     const rate = await getCachedExchangeRate()
     const prices = await Promise.all(
       items.map((item) =>
-        item.asset_type === '현금'
+        isCash(item)
           ? Promise.resolve(null)
           : getStockPrice(item.ticker, item.asset_type, item.currency).catch(() => null),
       ),
@@ -28,7 +29,7 @@ export const recomputeAssetSummary = async (userId: string): Promise<void> => {
     let totalEval = 0
     let totalCost = 0
     items.forEach((item, i) => {
-      if (item.asset_type === '현금') return
+      if (isCash(item)) return
 
       const currentPrice = prices[i] && prices[i]! > 0 ? prices[i] : null
       const { evaluationAmountKrw } = evaluateItemKrw(item, currentPrice, rate)
