@@ -8,6 +8,8 @@ import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel } from '@/utils/tickerNames'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
+import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
@@ -41,6 +43,10 @@ const setIncludeCash = (v: boolean) => {
       .then()
   })
 }
+
+const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
+const exchangeRate = ref(1350)
+const formatUsd = (krwValue: number) => formatUsdWithRate(krwValue, exchangeRate.value)
 
 const targetAsset = ref(0)
 const currentAsset = ref(0)
@@ -159,6 +165,7 @@ const loadDashboard = async (force = false) => {
       annualReturn.value = goal.annual_return ?? null
     }
     currentAsset.value = summary?.current_asset ?? 0
+    exchangeRate.value = rate
 
     const cashRows = portfolios.filter((p) => p.asset_type === '현금')
     cashTotalKrw.value = Math.round(
@@ -218,6 +225,7 @@ onUnmounted(clearPullToRefresh)
         <div class="d-flex align-center justify-space-between mb-1">
           <div class="field-label">현재 자산</div>
           <div class="d-flex align-center" style="gap: 22px">
+            <CurrencyToggle />
             <div v-if="cashTotalKrw > 0" class="cash-toggle-row">
               <span class="cash-toggle-label">현금 포함</span>
               <button
@@ -238,11 +246,12 @@ onUnmounted(clearPullToRefresh)
         </div>
         <div class="hero-amount font-weight-bold mb-1 text-center">
           <span v-if="hideAsset" class="asset-hidden">금액 숨김</span>
-          <span v-else>{{ displayedCurrentAsset > 0 ? Math.round(displayedCurrentAsset).toLocaleString('ko-KR') + '원' : '-' }}</span>
+          <span v-else-if="displayedCurrentAsset > 0">{{ displayCurrency === 'USD' ? formatUsd(displayedCurrentAsset) : Math.round(displayedCurrentAsset).toLocaleString('ko-KR') + '원' }}</span>
+          <span v-else>-</span>
         </div>
         <div class="text-center" style="color: rgba(var(--v-theme-on-surface), 0.45)">
           <template v-if="displayedCurrentAsset > 0">
-            목표 자산 <span v-if="hideAsset" class="asset-hidden-sm">금액 숨김</span><span v-else>{{ formatShortMoney(targetAsset) }}원</span>
+            목표 자산 <span v-if="hideAsset" class="asset-hidden-sm">금액 숨김</span><span v-else>{{ displayCurrency === 'USD' ? formatUsd(targetAsset) : formatShortMoney(targetAsset) + '원' }}</span>
           </template>
           <template v-else>
             <span
@@ -309,7 +318,7 @@ onUnmounted(clearPullToRefresh)
             </template>
             <template v-else>
               <div class="fire-info-sub mb-1">목표까지</div>
-              <div class="fire-info-main">{{ formatShortMoney(remainingAsset) }}원 남음</div>
+              <div class="fire-info-main">{{ displayCurrency === 'USD' ? formatUsd(remainingAsset) : formatShortMoney(remainingAsset) + '원' }} 남음</div>
               <div class="fire-divider my-2" />
               <div class="fire-info-sub mb-1">예상 달성일</div>
               <template v-if="estimatedDate">
@@ -335,7 +344,7 @@ onUnmounted(clearPullToRefresh)
         <div class="stat-card">
           <div class="stat-label">월 투자금</div>
           <div class="stat-value">
-            {{ monthlyInvestment > 0 ? formatShortMoney(monthlyInvestment) + '원' : '-' }}
+            {{ monthlyInvestment > 0 ? (displayCurrency === 'USD' ? formatUsd(monthlyInvestment) : formatShortMoney(monthlyInvestment) + '원') : '-' }}
           </div>
         </div>
         <div class="stat-card">
@@ -401,7 +410,7 @@ onUnmounted(clearPullToRefresh)
 
             <!-- 금액 -->
             <div class="text-right">
-              <div class="mini-amount">{{ item.evaluationKrw.toLocaleString('ko-KR') }}원</div>
+              <div class="mini-amount">{{ displayCurrency === 'USD' ? formatUsd(item.evaluationKrw) : item.evaluationKrw.toLocaleString('ko-KR') + '원' }}</div>
             </div>
           </div>
         </template>

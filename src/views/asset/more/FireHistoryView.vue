@@ -4,10 +4,15 @@ import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { useUserDataStore } from '@/stores/userData'
+import { getCachedExchangeRate } from '@/services/exchangeRateCache'
+import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
 const loading = ref(true)
+const exchangeRate = ref(1350)
+const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
 
 interface HistoryPoint {
   recorded_at: string
@@ -32,11 +37,13 @@ const tooltip = ref<{ x: number; y: number; pt: HistoryPoint } | null>(null)
 onMounted(async () => {
   try {
     await supabase.rpc('save_daily_asset_snapshot')
-    const [historyResult, summary] = await Promise.all([
+    const [historyResult, summary, rate] = await Promise.all([
       supabase.from('asset_history').select('recorded_at, current_asset, progress_pct').order('recorded_at', { ascending: true }),
       userDataStore.ensureAssetSummary(),
+      getCachedExchangeRate(),
     ])
     if (historyResult.error) throw historyResult.error
+    exchangeRate.value = rate
     history.value = historyResult.data ?? []
     currentAsset.value = summary?.current_asset ?? 0
   } catch {
@@ -106,6 +113,7 @@ const pctChange = computed(() => {
 })
 
 const formatAsset = (v: number) => {
+  if (displayCurrency.value === 'USD') return formatUsdWithRate(v, exchangeRate.value)
   if (v >= 100_000_000) return `${(v / 100_000_000).toFixed(1)}억`
   if (v >= 10_000) return `${Math.round(v / 10_000).toLocaleString()}만`
   return v.toLocaleString()
@@ -136,14 +144,17 @@ const onChartLeave = () => { tooltip.value = null }
 <template>
   <v-container class="pa-4 pa-sm-6">
     <!-- 헤더 -->
-    <div class="d-flex align-center ga-2 mb-6">
-      <v-btn icon size="small" variant="text" @click="router.back()">
-        <v-icon>mdi-arrow-left</v-icon>
-      </v-btn>
-      <div>
-        <div class="font-weight-bold">FIRE 진행 기록</div>
-        <div class="text-medium-emphasis">목표 달성률 변화 히스토리</div>
+    <div class="d-flex align-center justify-space-between mb-6">
+      <div class="d-flex align-center ga-2">
+        <v-btn icon size="small" variant="text" @click="router.back()">
+          <v-icon>mdi-arrow-left</v-icon>
+        </v-btn>
+        <div>
+          <div class="font-weight-bold">FIRE 진행 기록</div>
+          <div class="text-medium-emphasis">목표 달성률 변화 히스토리</div>
+        </div>
       </div>
+      <CurrencyToggle />
     </div>
 
     <div v-if="loading" class="d-flex justify-center py-12">

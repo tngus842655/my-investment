@@ -5,10 +5,17 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { useUserDataStore } from '@/stores/userData'
 import { formatShortMoney } from '@/utils/numberFormat'
+import { getCachedExchangeRate } from '@/services/exchangeRateCache'
+import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
 const loading = ref(true)
+const exchangeRate = ref(1350)
+const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
+const formatMoney = (v: number) =>
+  displayCurrency.value === 'USD' ? formatUsdWithRate(v, exchangeRate.value) : formatShortMoney(v)
 
 interface HistoryPoint {
   recorded_at: string
@@ -23,12 +30,14 @@ const annualReturn = ref<number | null>(null)
 
 onMounted(async () => {
   try {
-    const [histRes, goal, summary] = await Promise.all([
+    const [histRes, goal, summary, rate] = await Promise.all([
       supabase.from('asset_history').select('recorded_at, current_asset').order('recorded_at', { ascending: true }),
       userDataStore.ensureGoals(),
       userDataStore.ensureAssetSummary(),
+      getCachedExchangeRate(),
     ])
     if (histRes.error) throw histRes.error
+    exchangeRate.value = rate
     history.value = histRes.data ?? []
     monthlyInvestment.value = goal?.monthly_investment ?? 0
     annualReturn.value = goal?.annual_return ?? null
@@ -199,6 +208,7 @@ const bestMonth = computed(() => {
 const profitAmount = computed(() => latestAsset.value - investmentPrincipal.value)
 
 function formatShort(v: number) {
+  if (displayCurrency.value === 'USD') return formatUsdWithRate(v, exchangeRate.value)
   const abs = Math.abs(v)
   const sign = v < 0 ? '-' : ''
   if (abs >= 100_000_000) return `${sign}${(abs / 100_000_000).toFixed(1)}억`
@@ -208,6 +218,7 @@ function formatShort(v: number) {
 }
 
 function formatFull(v: number) {
+  if (displayCurrency.value === 'USD') return formatUsdWithRate(v, exchangeRate.value)
   return Math.round(v).toLocaleString('ko-KR') + '원'
 }
 </script>
@@ -215,14 +226,17 @@ function formatFull(v: number) {
 <template>
   <v-container class="pa-4 pa-sm-6">
     <!-- 헤더 -->
-    <div class="d-flex align-center ga-2 mb-6">
-      <v-btn icon size="small" variant="text" @click="router.back()">
-        <v-icon>mdi-arrow-left</v-icon>
-      </v-btn>
-      <div>
-        <div class="font-weight-bold">자산 성장 리포트</div>
-        <div class="text-medium-emphasis">월별 자산 증가 추이</div>
+    <div class="d-flex align-center justify-space-between mb-6">
+      <div class="d-flex align-center ga-2">
+        <v-btn icon size="small" variant="text" @click="router.back()">
+          <v-icon>mdi-arrow-left</v-icon>
+        </v-btn>
+        <div>
+          <div class="font-weight-bold">자산 성장 리포트</div>
+          <div class="text-medium-emphasis">월별 자산 증가 추이</div>
+        </div>
       </div>
+      <CurrencyToggle />
     </div>
 
     <div v-if="loading" class="d-flex justify-center py-12">
@@ -351,7 +365,7 @@ function formatFull(v: number) {
               <text
                 :x="PAD.left" :y="chartData.targetY - 4"
                 font-size="8" fill="rgb(var(--v-theme-primary))"
-              >올해 목표 {{ formatShortMoney(thisYearTarget) }}</text>
+              >올해 목표 {{ formatMoney(thisYearTarget) }}</text>
             </template>
             <!-- 현재 자산 (현재 평가 자산) -->
             <text
@@ -359,7 +373,7 @@ function formatFull(v: number) {
               :x="VW - PAD.right" :y="PAD.top - 8"
               text-anchor="end" font-size="8"
               fill="rgba(var(--v-theme-on-surface), 0.5)"
-            >현재 자산 {{ formatShortMoney(currentAssetNow) }}</text>
+            >현재 자산 {{ formatMoney(currentAssetNow) }}</text>
 
             <!-- 바 -->
             <g

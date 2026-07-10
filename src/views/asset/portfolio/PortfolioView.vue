@@ -10,9 +10,12 @@ import { getStockPrice } from '@/services/market'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel, isEtfTicker, getTickerDisplayName, TICKER_NAMES } from '@/utils/tickerNames'
 import { evaluateItemKrw, simpleCostKrw } from '@/utils/portfolioMath'
+import { getAssetClass, getMarket, isCash as isCashItem } from '@/config/marketConfig'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
 import { useFontScale } from '@/composables/useFontScale'
+import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
@@ -54,17 +57,17 @@ const fetchExchangeRate = async (): Promise<number> => {
 
 const totalEvaluationAmountKrw = computed(() =>
   portfolios.value
-    .filter((item) => item.asset_type !== '현금')
+    .filter((item) => !isCashItem(item))
     .reduce((sum, item) => sum + (item.evaluationAmountKrw ?? 0), 0),
 )
 const totalProfitAmountKrw = computed(() =>
   portfolios.value
-    .filter((item) => item.asset_type !== '현금')
+    .filter((item) => !isCashItem(item))
     .reduce((sum, item) => sum + (item.profitAmountKrw ?? 0), 0),
 )
 const totalCostKrw = computed(() =>
   portfolios.value
-    .filter((item) => item.asset_type !== '현금')
+    .filter((item) => !isCashItem(item))
     .reduce((sum, item) => sum + (item.costKrw ?? 0), 0),
 )
 const totalProfitRate = computed(() => {
@@ -118,7 +121,7 @@ const loadPortfolios = async () => {
         .select('portfolio_id, transaction_type, quantity, unit_price, exchange_rate')
         .eq('user_id', user.id),
       ...items.map((item) =>
-        item.asset_type === '현금'
+        isCashItem(item)
           ? Promise.resolve(null)
           : getStockPrice(item.ticker, item.asset_type, item.currency).catch(() => null),
       ),
@@ -144,7 +147,7 @@ const loadPortfolios = async () => {
     }
 
     portfolios.value = items.map((item, i) => {
-      const isCash = item.asset_type === '현금'
+      const isCash = isCashItem(item)
 
       // 현금은 현재가 API 조회 불필요, avg_price 그대로 사용
       const currentPrice = isCash ? null : prices[i] && prices[i]! > 0 ? prices[i] : null
@@ -175,10 +178,10 @@ const loadPortfolios = async () => {
 
     // 평가금액 합산 후 asset_summary에 저장 (현금 제외 — FIRE 예측은 투자자산 기준)
     const totalEval = portfolios.value
-      .filter((item) => item.asset_type !== '현금')
+      .filter((item) => !isCashItem(item))
       .reduce((sum, item) => sum + (item.evaluationAmountKrw ?? 0), 0)
     const totalCost = portfolios.value
-      .filter((item) => item.asset_type !== '현금')
+      .filter((item) => !isCashItem(item))
       .reduce((sum, item) => sum + simpleCostKrw(item, rate), 0)
     const roundedEval = Math.round(totalEval)
     supabase
@@ -205,7 +208,7 @@ const loadPortfolios = async () => {
 
   // 로고 fetch — 캐시 히트는 즉시 반영, 미스만 병렬 API 호출
   prefetchTickerLogos(
-    portfolios.value.filter((item) => item.asset_type !== '현금'),
+    portfolios.value.filter((item) => !isCashItem(item)),
     (ticker, url) => {
       logoMap.value[ticker] = url
     },
@@ -410,7 +413,14 @@ const deletePortfolio = async () => {
 }
 
 // ── 포맷 유틸 ─────────────────────────────────────
+const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
+const formatUsd = (v: number) => formatUsdWithRate(v, exchangeRate.value ?? 1350)
 const formatKrw = (v: number) => Math.round(v).toLocaleString('ko-KR')
+
+// 보유자산 카드 평가금액/손익 — 토글에 따라 원화 또는 달러로 표시
+const displayEval = (v: number) => (displayCurrency.value === 'USD' ? formatUsd(v) : formatKrw(v) + '원')
+const displayProfit = (v: number) =>
+  displayCurrency.value === 'USD' ? (v > 0 ? '+' : '') + formatUsd(v) : formatProfit(v) + '원'
 
 // 화면 너비 감지 — 360px 미만(폴드 등 좁은 화면)이면 한글 축약
 const windowWidth = ref(window.innerWidth)
@@ -432,12 +442,17 @@ const formatKrwShort = (v: number): string => {
   return `${sign}${Math.round(abs).toLocaleString()}`
 }
 
-// 총합 카드용 — 좁은 화면이면 한글 축약, 아니면 숫자 그대로
-const formatSummaryKrw = (v: number) => isNarrowScreen.value ? formatKrwShort(v) : formatKrw(v)
-const formatSummaryProfit = (v: number) =>
-  isNarrowScreen.value
+// 총합 카드용 — 달러 모드면 환산, 원화면 좁은 화면일 때만 한글 축약
+const formatSummaryKrw = (v: number) => {
+  if (displayCurrency.value === 'USD') return formatUsd(v)
+  return isNarrowScreen.value ? formatKrwShort(v) : formatKrw(v)
+}
+const formatSummaryProfit = (v: number) => {
+  if (displayCurrency.value === 'USD') return (v > 0 ? '+' : '') + formatUsd(v)
+  return isNarrowScreen.value
     ? (v > 0 ? '+' : '') + formatKrwShort(v)
     : formatProfit(v)
+}
 
 // 평균단가/현재가 표시 — KRW는 금액이 크면 축약, USD는 소수점 처리
 const formatPrice = (v: number, currency: string) => {
@@ -495,14 +510,15 @@ const summaryMeasureKey = computed(() =>
 )
 
 watch(summaryMeasureKey, () => nextTick(checkSummaryOverflow))
-const assetTypeColor = (type: string): string =>
-  ({
-    국내주식: 'blue',
-    해외주식: 'purple',
-    ETF: 'teal',
-    암호화폐: 'amber',
-    현금: 'green',
-  })[type] ?? 'grey'
+const assetColor = (item: PortfolioViewItem): string => {
+  switch (getAssetClass(item)) {
+    case 'stock': return getMarket(item) === 'KR' ? 'blue' : 'purple'
+    case 'etf': return 'teal'
+    case 'crypto': return 'amber'
+    case 'cash': return 'green'
+    default: return 'grey'
+  }
+}
 
 // ── 정렬 ─────────────────────────────────────────
 type SortKey = 'custom' | 'eval' | 'profit' | 'rate' | 'name'
@@ -643,6 +659,9 @@ onUnmounted(() => {
     <template v-else>
       <!-- 총 요약 카드 -->
       <div class="glass-card pa-4 mb-4" style="position: relative">
+        <div class="d-flex justify-end mb-2">
+          <CurrencyToggle />
+        </div>
         <div class="summary-grid">
           <div class="summary-row" :class="{ 'summary-row--stacked': summaryStacked }">
             <span class="text-medium-emphasis">매입금액</span>
@@ -800,7 +819,7 @@ onUnmounted(() => {
           >
             <div
               class="glass-card asset-card pa-2"
-              :class="item.asset_type === '현금' ? 'border-cash-left' : (item.profitAmountKrw ?? 0) >= 0 ? 'border-success-left' : 'border-error-left'"
+              :class="isCashItem(item) ? 'border-cash-left' : (item.profitAmountKrw ?? 0) >= 0 ? 'border-success-left' : 'border-error-left'"
             >
               <!-- 상단: 종목명 + 수익률 + 드래그 핸들 -->
               <div class="d-flex justify-space-between align-center mb-1" style="gap: 6px">
@@ -824,16 +843,16 @@ onUnmounted(() => {
                   <!-- 로고 -->
                   <div
                     class="ticker-logo-wrap"
-                    :class="{ 'logo-bg-etf': (item.asset_type === 'ETF' || isEtfTicker(item.ticker)) && !logoMap[item.ticker], 'logo-bg-kr': item.currency === 'KRW' && item.asset_type !== '현금' && !isEtfTicker(item.ticker), }"
+                    :class="{ 'logo-bg-etf': (getAssetClass(item) === 'etf' || isEtfTicker(item.ticker)) && !logoMap[item.ticker], 'logo-bg-kr': item.currency === 'KRW' && !isCashItem(item) && !isEtfTicker(item.ticker), }"
                   >
                     <img
-                      v-if="item.asset_type === '현금' && item.ticker === 'CASH_USD'"
+                      v-if="isCashItem(item) && item.ticker === 'CASH_USD'"
                       src="/icons/icon-dollar.png"
                       class="ticker-logo"
                       alt="달러현금"
                     />
                     <img
-                      v-else-if="item.asset_type === '현금'"
+                      v-else-if="isCashItem(item)"
                       src="/icons/icon-won.png"
                       class="ticker-logo"
                       alt="원화현금"
@@ -845,21 +864,21 @@ onUnmounted(() => {
                       :alt="item.ticker"
                     />
                     <span
-                      v-else-if="item.asset_type === 'ETF' || isEtfTicker(item.ticker)"
+                      v-else-if="getAssetClass(item) === 'etf' || isEtfTicker(item.ticker)"
                       class="logo-text logo-text-etf"
                       >E</span
                     >
                     <span
-                      v-else-if="item.currency === 'KRW' && item.asset_type !== '현금'"
+                      v-else-if="item.currency === 'KRW' && !isCashItem(item)"
                       class="logo-text logo-text-kr"
                       >국</span
                     >
-                    <v-icon v-else size="20" :color="assetTypeColor(item.asset_type)"
+                    <v-icon v-else size="20" :color="assetColor(item)"
                       >mdi-chart-line</v-icon
                     >
                   </div>
                   <div style="min-width: 0; overflow: hidden; display: flex; align-items: center; gap: 4px">
-                    <template v-if="item.asset_type === '현금'">
+                    <template v-if="isCashItem(item)">
                       <span class="ticker-name">{{
                         getTickerLabel(item.ticker).name
                       }}</span>
@@ -879,7 +898,7 @@ onUnmounted(() => {
                   </div>
                 </div>
                 <v-chip
-                  v-if="item.asset_type !== '현금'"
+                  v-if="!isCashItem(item)"
                   :color="(item.profitRate ?? 0) >= 0 ? 'success' : 'error'"
                   size="x-small"
                   variant="tonal"
@@ -890,9 +909,12 @@ onUnmounted(() => {
               </div>
 
               <!-- 현금 카드 -->
-              <template v-if="item.asset_type === '현금'">
+              <template v-if="isCashItem(item)">
                 <div class="card-amount text-primary mt-1">
-                  <template v-if="item.currency === 'USD'">
+                  <template v-if="displayCurrency === 'USD'">
+                    {{ displayEval(item.evaluationAmountKrw ?? 0) }}
+                  </template>
+                  <template v-else-if="item.currency === 'USD'">
                     ${{ formatPrice(item.avg_price * item.quantity, 'USD') }}
                     <span class="compact-sep ml-1">·</span>
                     <span class="compact-label ml-1"
@@ -911,7 +933,7 @@ onUnmounted(() => {
                     <span class="compact-label">{{ item.quantity }}주</span>
                     <span class="compact-sep mx-1">·</span>
                     <span class="card-amount text-primary" style="white-space: nowrap">
-                      {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원
+                      {{ displayEval(item.evaluationAmountKrw ?? 0) }}
                     </span>
                   </div>
                   <div
@@ -919,7 +941,7 @@ onUnmounted(() => {
                     :class="(item.profitAmountKrw ?? 0) >= 0 ? 'text-success' : 'text-error'"
                     style="flex-shrink: 0; white-space: nowrap"
                   >
-                    {{ formatProfit(item.profitAmountKrw ?? 0) }}원
+                    {{ displayProfit(item.profitAmountKrw ?? 0) }}
                   </div>
                 </div>
               </template>
@@ -941,7 +963,7 @@ onUnmounted(() => {
         <strong>{{ selectedPortfolio ? getTickerDisplayName(selectedPortfolio.ticker) : '' }}</strong
         >을(를) 삭제하시겠습니까?<br />
         <span class="text-error">
-          <template v-if="selectedPortfolio?.asset_type !== '현금'">해당 자산의 거래내역도 모두 함께 삭제됩니다.<br /></template>이 작업은 되돌릴 수 없습니다.
+          <template v-if="!selectedPortfolio || !isCashItem(selectedPortfolio)">해당 자산의 거래내역도 모두 함께 삭제됩니다.<br /></template>이 작업은 되돌릴 수 없습니다.
         </span>
       </v-card-text>
       <v-divider />

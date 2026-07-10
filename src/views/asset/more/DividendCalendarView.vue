@@ -5,9 +5,12 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { getTickerDisplayName } from '@/utils/tickerNames'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
+import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const loading = ref(true)
+const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
 
 interface Portfolio {
   ticker: string
@@ -353,6 +356,7 @@ const noDividendTickers = computed(() => {
 })
 
 function formatKrw(v: number) {
+  if (displayCurrency.value === 'USD') return formatUsdWithRate(v, exchangeRate.value)
   if (v >= 100_000_000) return `${(v / 100_000_000).toFixed(1)}억원`
   if (v >= 10_000) return `${Math.round(v / 10_000).toLocaleString()}만원`
   return v.toLocaleString() + '원'
@@ -380,6 +384,7 @@ const refreshData = async () => {
         <div class="text-medium-emphasis">보유 종목 배당락일 및 예상 배당금</div>
       </div>
       <v-spacer />
+      <CurrencyToggle class="mr-1" />
       <v-btn icon size="small" variant="text" :loading="loading" @click="refreshData">
         <v-icon size="20">mdi-refresh</v-icon>
       </v-btn>
