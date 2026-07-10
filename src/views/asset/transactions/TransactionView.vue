@@ -7,6 +7,8 @@ import { getTickerDisplayName } from '@/utils/tickerNames'
 import { recomputeAssetSummary } from '@/services/assetSummary'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
+import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 import TransactionAddDialog from './TransactionAddDialog.vue'
 
 const userDataStore = useUserDataStore()
@@ -393,6 +395,25 @@ const formatStatAmount = (v: number) => {
   return v.toLocaleString()
 }
 
+// ── 원화/달러 토글 (화면 간 공유) ─────────────────
+const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
+const formatUsd = (krwValue: number) => formatUsdWithRate(krwValue, usdToKrw.value || 1350)
+
+const formatAmountDisplay = (t: Transaction) => {
+  if (displayCurrency.value !== 'USD') return formatAmount(t)
+  const total = t.quantity * t.unit_price
+  const cur = t.portfolios?.currency ?? 'KRW'
+  const totalKrw = cur === 'USD' ? total * (usdToKrw.value || 1) : total
+  return formatUsd(totalKrw)
+}
+
+const formatUnitPriceDisplay = (t: Transaction) => {
+  if (displayCurrency.value !== 'USD') return formatUnitPrice(t)
+  const cur = t.portfolios?.currency ?? 'KRW'
+  const priceKrw = cur === 'USD' ? t.unit_price * (usdToKrw.value || 1) : t.unit_price
+  return formatUsd(priceKrw)
+}
+
 const assetTypeColor = (type: string) =>
   ({ 국내주식: 'blue', 해외주식: 'purple', ETF: 'teal', 암호화폐: 'amber', 현금: 'green' })[type] ??
   'grey'
@@ -486,16 +507,18 @@ onUnmounted(() => {
           거래내역
         </div>
       </div>
-      <v-btn
-        color="primary"
-        prepend-icon="mdi-plus"
-        rounded="lg"
-        elevation="0"
-        style="flex-shrink: 0"
-        @click="addDialog = true"
-      >
-        거래 추가
-      </v-btn>
+      <div class="d-flex align-center ga-2" style="flex-shrink: 0">
+        <CurrencyToggle />
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-plus"
+          rounded="lg"
+          elevation="0"
+          @click="addDialog = true"
+        >
+          거래 추가
+        </v-btn>
+      </div>
     </div>
 
     <!-- 스켈레톤 -->
@@ -521,7 +544,7 @@ onUnmounted(() => {
             <span class="stat-label">총 매수</span>
           </div>
           <div class="stat-value">
-            {{ formatStatAmount(totalBuy) }}<span class="stat-unit">원</span>
+            {{ displayCurrency === 'USD' ? formatUsd(totalBuy) : formatStatAmount(totalBuy) }}<span v-if="displayCurrency !== 'USD'" class="stat-unit">원</span>
           </div>
           <div class="text-disabled">
             {{ totalsData.filter((t) => t.transaction_type === 'BUY').length }}건
@@ -533,7 +556,7 @@ onUnmounted(() => {
             <span class="stat-label">총 매도</span>
           </div>
           <div class="stat-value">
-            {{ formatStatAmount(totalSell) }}<span class="stat-unit">원</span>
+            {{ displayCurrency === 'USD' ? formatUsd(totalSell) : formatStatAmount(totalSell) }}<span v-if="displayCurrency !== 'USD'" class="stat-unit">원</span>
           </div>
           <div class="text-disabled">
             {{ totalsData.filter((t) => t.transaction_type === 'SELL').length }}건
@@ -681,10 +704,10 @@ onUnmounted(() => {
                     </div>
                     <!-- 2줄: 수량 × 단가 / 금액 -->
                     <div class="d-flex align-center justify-space-between">
-                      <span class="tx-detail">{{ item.quantity % 1 === 0 ? item.quantity : Number(item.quantity).toFixed(4) }}주 × {{ formatUnitPrice(item) }}</span>
+                      <span class="tx-detail">{{ item.quantity % 1 === 0 ? item.quantity : Number(item.quantity).toFixed(4) }}주 × {{ formatUnitPriceDisplay(item) }}</span>
                       <span class="tx-amount" :class="item.transaction_type === 'BUY' ? 'amount-plus' : 'amount-minus'">
-                        {{ item.transaction_type === 'BUY' ? '+' : '-' }}{{ formatAmount(item) }}
-                        <span v-if="item.portfolios?.currency === 'USD' && usdToKrw" class="tx-amount-krw">{{ formatAmountKrw(item) }}</span>
+                        {{ item.transaction_type === 'BUY' ? '+' : '-' }}{{ formatAmountDisplay(item) }}
+                        <span v-if="displayCurrency !== 'USD' && item.portfolios?.currency === 'USD' && usdToKrw" class="tx-amount-krw">{{ formatAmountKrw(item) }}</span>
                       </span>
                     </div>
                   </div>
