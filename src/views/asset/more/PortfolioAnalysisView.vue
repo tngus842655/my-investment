@@ -8,9 +8,12 @@ import { getTickerDisplayName } from '@/utils/tickerNames'
 import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
 import { useDesignTokens } from '@/composables/useDesignTokens'
+import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const { chart } = useDesignTokens()
+const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
 
 const loading = ref(true)
 const viewMode = ref<'type' | 'ticker' | 'compare'>('type')
@@ -24,6 +27,8 @@ interface PortfolioRow {
 }
 const portfolioRows = ref<PortfolioRow[]>([])
 const exchangeRate = ref(1350)
+const formatMoney = (v: number) =>
+  displayCurrency.value === 'USD' ? formatUsdWithRate(v, exchangeRate.value) : formatShortMoney(v)
 
 interface Seg {
   key: string
@@ -242,11 +247,15 @@ const compareRows = computed<CompareRow[]>(() => {
 <template>
   <v-container class="pa-4 pa-sm-6">
     <!-- 헤더 -->
-    <div class="d-flex align-center ga-2 mb-6">
-      <v-btn icon="mdi-arrow-left" variant="text" size="small" class="mr-1" style="color: rgb(var(--v-theme-on-surface))" @click="router.back()" />      <div>
-        <div class="font-weight-bold">포트폴리오 분석</div>
-        <div class="text-medium-emphasis">종목별 비중 분석</div>
+    <div class="d-flex align-center justify-space-between mb-6">
+      <div class="d-flex align-center ga-2">
+        <v-btn icon="mdi-arrow-left" variant="text" size="small" class="mr-1" style="color: rgb(var(--v-theme-on-surface))" @click="router.back()" />
+        <div>
+          <div class="font-weight-bold">포트폴리오 분석</div>
+          <div class="text-medium-emphasis">종목별 비중 분석</div>
+        </div>
       </div>
+      <CurrencyToggle />
     </div>
 
     <template v-if="loading">
@@ -320,7 +329,7 @@ const compareRows = computed<CompareRow[]>(() => {
             </template>
             <template v-else>
               <div class="mb-1">
-                <span class="text-medium-emphasis">{{ formatShortMoney(row.evalKrw) }}원</span>
+                <span class="text-medium-emphasis">{{ formatMoney(row.evalKrw) }}{{ displayCurrency === 'USD' ? '' : '원' }}</span>
                 <span
                   v-if="row.profitRate !== null"
                   class="font-weight-medium ml-1"
@@ -368,10 +377,10 @@ const compareRows = computed<CompareRow[]>(() => {
                 {{ hovered ? hovered.label : '총 자산' }}
               </text>
               <text x="120" y="130" text-anchor="middle" class="center-value">
-                {{ hovered ? hovered.pct.toFixed(1) + '%' : formatShortMoney(totalKrw) }}
+                {{ hovered ? hovered.pct.toFixed(1) + '%' : formatMoney(totalKrw) }}
               </text>
               <text v-if="hovered" x="120" y="150" text-anchor="middle" class="center-sub">
-                {{ formatShortMoney(hovered.valueKrw) }}
+                {{ formatMoney(hovered.valueKrw) }}
               </text>
             </svg>
           </div>
@@ -393,7 +402,7 @@ const compareRows = computed<CompareRow[]>(() => {
             </div>
             <div class="legend-right">
               <span class="legend-pct" :style="{ color: seg.color }">{{ seg.pct.toFixed(1) }}%</span>
-              <span class="legend-val">{{ formatShortMoney(seg.valueKrw) }}</span>
+              <span class="legend-val">{{ formatMoney(seg.valueKrw) }}</span>
             </div>
             <!-- 비중 바 -->
             <div class="legend-bar-wrap">
