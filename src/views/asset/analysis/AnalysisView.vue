@@ -5,10 +5,17 @@ import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
+import { getCachedExchangeRate } from '@/services/exchangeRateCache'
+import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
 const loading = ref(true)
+const exchangeRate = ref(1350)
+const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
+const formatMoney = (v: number) =>
+  displayCurrency.value === 'USD' ? formatUsdWithRate(v, exchangeRate.value) : formatShortMoney(v) + '원'
 
 const targetAsset = ref(0)
 const currentAsset = ref(0)
@@ -237,7 +244,7 @@ const fireTip = computed(() => {
     const mo = investDiff % 12
     const diffStr = y > 0 ? `${y}년 ${mo > 0 ? mo + '개월' : ''}` : `${investDiff}개월`
     return {
-      body: `월 투자금을 <strong>${formatShortMoney(INVEST_BUMP)}원</strong> 늘리면 목표 달성이 약 <strong>${diffStr}</strong> 빨라집니다.`,
+      body: `월 투자금을 <strong>${formatMoney(INVEST_BUMP)}</strong> 늘리면 목표 달성이 약 <strong>${diffStr}</strong> 빨라집니다.`,
     }
   }
   if (rateDiff !== null && rateDiff > 0) {
@@ -328,10 +335,12 @@ const visibleRows = computed(() => (showAllYears.value ? displayRows.value : sum
 const loadData = async (force = false) => {
   loading.value = true
   try {
-    const [goal, summary] = await Promise.all([
+    const [goal, summary, rate] = await Promise.all([
       userDataStore.ensureGoals(force),
       userDataStore.ensureAssetSummary(force),
+      getCachedExchangeRate(),
     ])
+    exchangeRate.value = rate
     if (goal) {
       targetAsset.value = goal.target_asset ?? 0
       monthlyInvestment.value = goal.monthly_investment ?? 0
@@ -361,9 +370,12 @@ onUnmounted(clearPullToRefresh)
         <img src="/icons/icon-predict.png" class="header-icon" alt="예측" />
         <div class="font-weight-bold">미래 예측</div>
       </div>
-      <button class="icon-btn" @click="router.push('/hub')">
-        <img src="/icons/icon-hub.png" alt="허브" class="icon-btn-img" />
-      </button>
+      <div class="d-flex align-center ga-2">
+        <CurrencyToggle />
+        <button class="icon-btn" @click="router.push('/hub')">
+          <img src="/icons/icon-hub.png" alt="허브" class="icon-btn-img" />
+        </button>
+      </div>
     </div>
 
     <!-- 스켈레톤 -->
@@ -389,12 +401,12 @@ onUnmounted(clearPullToRefresh)
           <div>
             <div class="chart-asset-label">현재 자산</div>
             <div class="chart-asset-value" :style="currentAsset === 0 ? 'color: rgba(var(--v-theme-on-surface), 0.35)' : ''">
-              {{ currentAsset === 0 ? '미등록' : formatShortMoney(currentAsset) + '원' }}
+              {{ currentAsset === 0 ? '미등록' : formatMoney(currentAsset) }}
             </div>
           </div>
           <div class="text-right" v-if="targetAsset > 0">
             <div class="chart-asset-label">목표 자산</div>
-            <div class="chart-asset-value" style="color: rgb(var(--v-theme-primary))">{{ formatShortMoney(targetAsset) }}원</div>
+            <div class="chart-asset-value" style="color: rgb(var(--v-theme-primary))">{{ formatMoney(targetAsset) }}</div>
           </div>
         </div>
 
@@ -461,15 +473,15 @@ onUnmounted(clearPullToRefresh)
       <div class="stat-grid mb-3">
         <div class="stat-card text-center">
           <div class="stat-label">총 투자금 (예상)</div>
-          <div class="stat-value">{{ formatShortMoney(currentAsset + totalInvested) }}원</div>
+          <div class="stat-value">{{ formatMoney(currentAsset + totalInvested) }}</div>
         </div>
         <div class="stat-card text-center">
           <div class="stat-label">총 수익 (예상)</div>
-          <div class="stat-value" style="color: rgb(var(--v-theme-primary))">{{ formatShortMoney(Math.max(totalReturn, 0)) }}원</div>
+          <div class="stat-value" style="color: rgb(var(--v-theme-primary))">{{ formatMoney(Math.max(totalReturn, 0)) }}</div>
         </div>
         <div class="stat-card text-center" style="grid-column: 1 / -1">
           <div class="stat-label">최종 자산 (예상)</div>
-          <div class="stat-value-lg">{{ formatShortMoney(finalAsset) }}원</div>
+          <div class="stat-value-lg">{{ formatMoney(finalAsset) }}</div>
         </div>
       </div>
 
@@ -523,7 +535,7 @@ onUnmounted(clearPullToRefresh)
                   <span class="yearly-rate yearly-rate--active">{{ row.annualRate }}%</span>
                 </div>
                 <div class="yearly-sublabels">
-                  <span class="yearly-sublabel">올해 목표 {{ formatShortMoney(row.asset) }}원</span>
+                  <span class="yearly-sublabel">올해 목표 {{ formatMoney(row.asset) }}</span>
                   <span v-if="row.fireRate !== null" class="yearly-fire-rate"> 전체 FIRE {{ row.fireRate }}% </span>
                 </div>
               </template>
@@ -536,7 +548,7 @@ onUnmounted(clearPullToRefresh)
                   </div>
                   <span class="yearly-rate yearly-rate--done">완료</span>
                 </div>
-                <div class="yearly-asset yearly-asset--past">{{ formatShortMoney(row.asset) }}원</div>
+                <div class="yearly-asset yearly-asset--past">{{ formatMoney(row.asset) }}</div>
               </template>
 
               <!-- 미래: 빈 바 -->
@@ -547,7 +559,7 @@ onUnmounted(clearPullToRefresh)
                   </div>
                   <span class="yearly-rate yearly-rate--future">-</span>
                 </div>
-                <div class="yearly-asset yearly-asset--future">{{ formatShortMoney(row.asset) }}원 예정</div>
+                <div class="yearly-asset yearly-asset--future">{{ formatMoney(row.asset) }} 예정</div>
               </template>
             </div>
           </div>
@@ -562,7 +574,7 @@ onUnmounted(clearPullToRefresh)
         <div v-if="fireGoalYear" class="fire-goal-card mt-3">
           <div class="fire-goal-title">🏆 FIRE 목표 달성</div>
           <div class="fire-goal-asset-label">예상 자산</div>
-          <div class="fire-goal-asset">{{ formatShortMoney(finalAsset) }}원</div>
+          <div class="fire-goal-asset">{{ formatMoney(finalAsset) }}</div>
           <div class="fire-goal-meta">
             <span class="fire-goal-year">{{ fireGoalYear.year }}년 {{ fireGoalYear.month }}월 예상</span>
             <span v-if="fireGoalYear.remainText" class="fire-goal-remain"> · {{ fireGoalYear.remainText }}</span>
