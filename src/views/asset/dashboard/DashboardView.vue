@@ -347,7 +347,7 @@ onUnmounted(clearPullToRefresh)
             </template>
             <template v-else>
               <div class="fire-info-sub mb-1">목표까지</div>
-              <div class="fire-info-main">{{ formatShortMoney(remainingAsset) }}원 남음</div>
+              <div class="fire-info-main">{{ displayCurrency === 'USD' ? formatUsd(remainingAsset) : formatShortMoney(remainingAsset) + '원' }} 남음</div>
               <div class="fire-divider my-2" />
               <div class="fire-info-sub mb-1">예상 달성일</div>
               <template v-if="estimatedDate">
@@ -373,7 +373,7 @@ onUnmounted(clearPullToRefresh)
         <div class="stat-card">
           <div class="stat-label">월 투자금</div>
           <div class="stat-value">
-            {{ monthlyInvestment > 0 ? formatShortMoney(monthlyInvestment) + '원' : '-' }}
+            {{ monthlyInvestment > 0 ? (displayCurrency === 'USD' ? formatUsd(monthlyInvestment) : formatShortMoney(monthlyInvestment) + '원') : '-' }}
           </div>
         </div>
         <div class="stat-card">
@@ -439,7 +439,7 @@ onUnmounted(clearPullToRefresh)
 
             <!-- 금액 -->
             <div class="text-right">
-              <div class="mini-amount">{{ item.evaluationKrw.toLocaleString('ko-KR') }}원</div>
+              <div class="mini-amount">{{ displayCurrency === 'USD' ? formatUsd(item.evaluationKrw) : item.evaluationKrw.toLocaleString('ko-KR') + '원' }}</div>
             </div>
           </div>
         </template>
