@@ -1,3 +1,5 @@
+import type { AssetClass, MarketCode } from '@/config/marketConfig'
+
 export interface PortfolioForm {
   ticker: string
   asset_type: string
@@ -9,6 +11,9 @@ export interface PortfolioAsset {
   user_id: string
   ticker: string
   asset_type: string
+  // 다국가 전환용 (GLOBALIZATION.md 단계 A). DB에는 백필 완료, 프론트 전환 중에는 optional
+  asset_class?: AssetClass
+  market?: MarketCode | null
   quantity: number
   avg_price: number
   currency: string
