@@ -4,10 +4,17 @@ import { useRouter } from 'vue-router'
 import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
 import { useUserDataStore } from '@/stores/userData'
+import { getCachedExchangeRate } from '@/services/exchangeRateCache'
+import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
 const loading = ref(true)
+const exchangeRate = ref(1350)
+const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
+const formatMoney = (v: number) =>
+  displayCurrency.value === 'USD' ? formatUsdWithRate(v, exchangeRate.value) : formatShortMoney(v)
 
 // ── 기준값 (DB 로드) ──────────────────────────────
 const baseMonthly = ref(0)
@@ -194,10 +201,12 @@ const resetSim = () => {
 const loadData = async () => {
   loading.value = true
   try {
-    const [goal, summary] = await Promise.all([
+    const [goal, summary, rate] = await Promise.all([
       userDataStore.ensureGoals(),
       userDataStore.ensureAssetSummary(),
+      getCachedExchangeRate(),
     ])
+    exchangeRate.value = rate
     if (goal) {
       baseMonthly.value = Math.round((goal.monthly_investment ?? 0) / 10000) * 10000
       baseReturn.value = goal.annual_return ?? 5
@@ -219,12 +228,15 @@ onMounted(loadData)
 <template>
   <v-container class="pa-4 pa-sm-6">
     <!-- 헤더 -->
-    <div class="d-flex align-center ga-2 mb-6">
-      <v-btn icon="mdi-arrow-left" variant="text" size="small" class="mr-1" style="color: rgb(var(--v-theme-on-surface))" @click="router.back()" />
-      <div>
-        <div class="font-weight-bold">FIRE 시뮬레이터</div>
-        <div class="text-medium-emphasis">투자 조건 변경 시 달성일 비교</div>
+    <div class="d-flex align-center justify-space-between mb-6">
+      <div class="d-flex align-center ga-2">
+        <v-btn icon="mdi-arrow-left" variant="text" size="small" class="mr-1" style="color: rgb(var(--v-theme-on-surface))" @click="router.back()" />
+        <div>
+          <div class="font-weight-bold">FIRE 시뮬레이터</div>
+          <div class="text-medium-emphasis">투자 조건 변경 시 달성일 비교</div>
+        </div>
       </div>
+      <CurrencyToggle />
     </div>
 
     <template v-if="loading">
@@ -247,13 +259,13 @@ onMounted(loadData)
         <div class="slider-group mb-4">
           <div class="d-flex justify-space-between align-center mb-1">
             <div class="slider-label">월 투자금</div>
-            <div class="slider-value">{{ formatShortMoney(simMonthly) }}원</div>
+            <div class="slider-value">{{ formatMoney(simMonthly) }}{{ displayCurrency === 'USD' ? '' : '원' }}</div>
           </div>
           <v-slider v-model="simMonthly" :min="100000" :max="10000000" :step="100000" color="primary" track-color="rgba(var(--v-theme-primary), 0.15)" hide-details thumb-size="18" />
           <div class="d-flex justify-space-between mt-1">
             <span class="slider-hint">10만</span>
             <span class="slider-hint">
-              기준 <span class="base-mark">{{ formatShortMoney(baseMonthly) }}</span>
+              기준 <span class="base-mark">{{ formatMoney(baseMonthly) }}</span>
             </span>
             <span class="slider-hint">1,000만</span>
           </div>
@@ -338,7 +350,7 @@ onMounted(loadData)
           </template>
           <div v-else class="compare-na">달성 불가</div>
           <div class="compare-sub mt-2">
-            <span>월 {{ formatShortMoney(baseMonthly) }}원</span>
+            <span>월 {{ formatMoney(baseMonthly) }}{{ displayCurrency === 'USD' ? '' : '원' }}</span>
             <span class="mx-1">·</span>
             <span>연 {{ baseReturn }}%</span>
           </div>
@@ -353,7 +365,7 @@ onMounted(loadData)
           </template>
           <div v-else class="compare-na">달성 불가</div>
           <div class="compare-sub mt-2">
-            <span>월 {{ formatShortMoney(simMonthly) }}원</span>
+            <span>월 {{ formatMoney(simMonthly) }}{{ displayCurrency === 'USD' ? '' : '원' }}</span>
             <span class="mx-1">·</span>
             <span>연 {{ simReturn }}%</span>
           </div>
