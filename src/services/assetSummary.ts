@@ -22,7 +22,7 @@ export const recomputeAssetSummary = async (userId: string): Promise<void> => {
       items.map((item) =>
         isCash(item)
           ? Promise.resolve(null)
-          : getStockPrice(item.ticker, item.asset_type, item.currency).catch(() => null),
+          : getStockPrice(item.ticker, item).catch(() => null),
       ),
     )
 

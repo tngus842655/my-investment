@@ -123,7 +123,7 @@ const loadPortfolios = async () => {
       ...items.map((item) =>
         isCashItem(item)
           ? Promise.resolve(null)
-          : getStockPrice(item.ticker, item.asset_type, item.currency).catch(() => null),
+          : getStockPrice(item.ticker, item).catch(() => null),
       ),
     ])
 

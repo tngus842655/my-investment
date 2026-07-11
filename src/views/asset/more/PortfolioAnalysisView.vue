@@ -187,7 +187,7 @@ const loadAllPrices = async () => {
       targets.map((h) => {
         const row = portfolioRows.value.find((p) => p.ticker === h.ticker)
         if (!row) return Promise.resolve(0)
-        return getStockPrice(row.ticker, row.asset_type, row.currency).catch(() => 0)
+        return getStockPrice(row.ticker, row).catch(() => 0)
       }),
     )
     const next: Record<string, number> = {}

@@ -255,7 +255,7 @@ const save = async () => {
     if (assetType.value === '해외주식') {
       saving.value = true
       try {
-        await getStockPrice(t, '해외주식', 'USD')
+        await getStockPrice(t, { asset_class: 'stock', market: 'US', currency: 'USD' })
       } catch {
         showMessage('유효하지 않은 티커입니다. 티커를 다시 확인해주세요.', 'error')
         saving.value = false

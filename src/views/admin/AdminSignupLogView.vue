@@ -107,7 +107,7 @@ const openDetail = async (log: SignupLog) => {
         portfolioItems.map(p =>
           p.ticker === 'CASH_KRW' || p.ticker === 'CASH_USD'
             ? Promise.resolve(null)
-            : getStockPrice(p.ticker, p.asset_type, p.currency).catch(() => null),
+            : getStockPrice(p.ticker, p).catch(() => null),
         ),
       )
       portfolioItems = portfolioItems.map((p, i) => {
