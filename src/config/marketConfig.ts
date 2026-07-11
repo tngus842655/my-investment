@@ -45,6 +45,11 @@ export const MARKETS: Record<MarketCode, MarketInfo> = {
 // 1차 오픈 대상 시장 (JP/CN은 설정만 준비, UI 노출은 여기에 추가되는 시점부터)
 export const ACTIVE_MARKETS: MarketCode[] = ['KR', 'US']
 
+// 로케일별 기본 통화 (화면설정에서 언어 변경 시 표시통화 자동 전환에 사용)
+export const LOCALE_CURRENCY: Partial<Record<LocaleCode, CurrencyCode>> = {
+  ko: 'KRW', en: 'USD',
+}
+
 interface CurrencyInfo {
   symbol: string
   // 소수점 자릿수 (표시용 기본값)

@@ -12,7 +12,6 @@ import { convertMoney } from '@/utils/portfolioMath'
 import { formatMoneyIn } from '@/utils/numberFormat'
 import { useI18n } from 'vue-i18n'
 import { getAssetClass, getMarket, isCash as isCashItem, classMarketToAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
-import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 import TransactionAddDialog from './TransactionAddDialog.vue'
 
 const userDataStore = useUserDataStore()
@@ -518,7 +517,6 @@ onUnmounted(() => {
         </div>
       </div>
       <div class="d-flex align-center ga-2" style="flex-shrink: 0">
-        <CurrencyToggle />
         <v-btn
           color="primary"
           prepend-icon="mdi-plus"

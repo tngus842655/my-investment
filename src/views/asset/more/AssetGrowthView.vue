@@ -7,7 +7,6 @@ import { useUserDataStore } from '@/stores/userData'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { convertMoney } from '@/utils/portfolioMath'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
-import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
@@ -243,7 +242,6 @@ function formatFull(v: number) {
           <div class="text-medium-emphasis">{{ $t('assetGrowth.subtitle') }}</div>
         </div>
       </div>
-      <CurrencyToggle />
     </div>
 
     <div v-if="loading" class="d-flex justify-center py-12">

@@ -7,7 +7,6 @@ import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { useI18n } from 'vue-i18n'
 import { formatYearMonth, formatDuration } from '@/utils/dateFormat'
-import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -234,7 +233,6 @@ onMounted(loadData)
           <div class="text-medium-emphasis">{{ $t('fireSim.subtitle') }}</div>
         </div>
       </div>
-      <CurrencyToggle />
     </div>
 
     <template v-if="loading">

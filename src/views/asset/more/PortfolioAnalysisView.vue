@@ -10,7 +10,6 @@ import { convertMoney } from '@/utils/portfolioMath'
 import { useDesignTokens } from '@/composables/useDesignTokens'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { getAssetClass, getMarket, isCash, classMarketToAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
-import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
@@ -265,7 +264,6 @@ const compareRows = computed<CompareRow[]>(() => {
           <div class="text-medium-emphasis">{{ $t('portfolioAnalysis.subtitle') }}</div>
         </div>
       </div>
-      <CurrencyToggle />
     </div>
 
     <template v-if="loading">

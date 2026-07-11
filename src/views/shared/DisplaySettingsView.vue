@@ -1,13 +1,20 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { useFontScale } from '@/composables/useFontScale'
 import { useLocale } from '@/composables/useLocale'
+import { showMessage } from '@/composables/useSnackbar'
 import { FONT_SCALE_DEFAULT } from '@/design'
+import { LOCALE_CURRENCY, type CurrencyCode } from '@/config/marketConfig'
 import type { SupportedLocale } from '@/plugins/i18n'
 
 const router = useRouter()
+const { t } = useI18n()
 const { fontScale, min, max, setFontScale } = useFontScale()
 const { locale, setLocale } = useLocale()
+const { displayCurrency, setDisplayCurrency } = useBaseCurrency()
 
 const percentLabel = (v: number) => `${Math.round(v * 100)}%`
 const resetFontScale = () => setFontScale(FONT_SCALE_DEFAULT)
@@ -17,6 +24,20 @@ const languageOptions: { value: SupportedLocale; label: string }[] = [
   { value: 'ko', label: '한국어' },
   { value: 'en', label: 'English' },
 ]
+
+const currencyOptions = computed<{ value: CurrencyCode; label: string }[]>(() => [
+  { value: 'KRW', label: t('goalSettings.currencyKRW') },
+  { value: 'USD', label: t('goalSettings.currencyUSD') },
+])
+
+const changeLocale = async (loc: SupportedLocale) => {
+  await setLocale(loc)
+  const nextCurrency = LOCALE_CURRENCY[loc]
+  if (nextCurrency && nextCurrency !== displayCurrency.value) {
+    setDisplayCurrency(nextCurrency)
+    showMessage(t('displaySettings.currencyAutoChanged', { currency: nextCurrency }), 'success')
+  }
+}
 </script>
 
 <template>
@@ -73,7 +94,25 @@ const languageOptions: { value: SupportedLocale; label: string }[] = [
           elevation="0"
           :variant="locale === opt.value ? 'flat' : 'tonal'"
           :color="locale === opt.value ? 'primary' : undefined"
-          @click="setLocale(opt.value)"
+          @click="changeLocale(opt.value)"
+        >
+          {{ opt.label }}
+        </v-btn>
+      </div>
+    </v-card>
+
+    <v-card class="glass-card pa-4 mt-4">
+      <div class="font-weight-medium mb-3">{{ $t('displaySettings.currency') }}</div>
+      <div class="d-flex ga-2">
+        <v-btn
+          v-for="opt in currencyOptions"
+          :key="opt.value"
+          size="small"
+          rounded="lg"
+          elevation="0"
+          :variant="displayCurrency === opt.value ? 'flat' : 'tonal'"
+          :color="displayCurrency === opt.value ? 'primary' : undefined"
+          @click="setDisplayCurrency(opt.value)"
         >
           {{ opt.label }}
         </v-btn>

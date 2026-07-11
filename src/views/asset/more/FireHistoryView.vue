@@ -8,7 +8,6 @@ import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { convertMoney } from '@/utils/portfolioMath'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { useI18n } from 'vue-i18n'
-import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -161,7 +160,6 @@ const onChartLeave = () => { tooltip.value = null }
           <div class="text-medium-emphasis">{{ $t('fireHistory.subtitle') }}</div>
         </div>
       </div>
-      <CurrencyToggle />
     </div>
 
     <div v-if="loading" class="d-flex justify-center py-12">

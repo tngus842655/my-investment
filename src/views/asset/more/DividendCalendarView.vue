@@ -9,7 +9,6 @@ import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { useI18n } from 'vue-i18n'
 import { convertMoney } from '@/utils/portfolioMath'
 import { isCash, isCrypto, type AssetClass, type MarketCode } from '@/config/marketConfig'
-import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const loading = ref(true)
@@ -390,7 +389,6 @@ const refreshData = async () => {
         <div class="text-medium-emphasis">{{ $t('dividend.subtitle') }}</div>
       </div>
       <v-spacer />
-      <CurrencyToggle class="mr-1" />
       <v-btn icon size="small" variant="text" :loading="loading" @click="refreshData">
         <v-icon size="20">mdi-refresh</v-icon>
       </v-btn>

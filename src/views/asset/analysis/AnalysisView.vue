@@ -8,7 +8,6 @@ import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { useI18n } from 'vue-i18n'
 import { formatYearMonth, formatDuration } from '@/utils/dateFormat'
-import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -363,7 +362,6 @@ onUnmounted(clearPullToRefresh)
         <div class="font-weight-bold">{{ $t('analysis.title') }}</div>
       </div>
       <div class="d-flex align-center ga-2">
-        <CurrencyToggle />
         <button class="icon-btn" @click="router.push('/hub')">
           <img src="/icons/icon-hub.png" :alt="$t('common.hub')" class="icon-btn-img" />
         </button>

@@ -227,7 +227,9 @@
     "small": "Small ({pct})",
     "large": "Large ({pct})",
     "fontTip": "Setting it too large may cause text to overlap or get cut off on some screens.",
-    "language": "Language"
+    "language": "Language",
+    "currency": "Currency",
+    "currencyAutoChanged": "Currency has been changed to {currency}."
   },
   "fireSim": {
     "title": "FIRE Simulator",

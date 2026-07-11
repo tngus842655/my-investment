@@ -16,7 +16,6 @@ import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/useP
 import { useFontScale } from '@/composables/useFontScale'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { useI18n } from 'vue-i18n'
-import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -661,9 +660,6 @@ onUnmounted(() => {
     <template v-else>
       <!-- 총 요약 카드 -->
       <div class="glass-card pa-4 mb-4" style="position: relative">
-        <div class="d-flex justify-end mb-2">
-          <CurrencyToggle />
-        </div>
         <div class="summary-grid">
           <div class="summary-row" :class="{ 'summary-row--stacked': summaryStacked }">
             <span class="text-medium-emphasis">{{ $t('portfolio.cost') }}</span>

@@ -12,7 +12,6 @@ import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { convertMoney } from '@/utils/portfolioMath'
 import { formatYearMonth, formatDuration } from '@/utils/dateFormat'
 import { getAssetClass, getMarket, isCash as isCashItem, isCrypto as isCryptoItem, classMarketToAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
-import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -239,7 +238,6 @@ onUnmounted(clearPullToRefresh)
         <div class="d-flex align-center justify-space-between mb-1">
           <div class="field-label">{{ $t('dashboard.currentAsset') }}</div>
           <div class="d-flex align-center" style="gap: 22px">
-            <CurrencyToggle />
             <div v-if="cashTotalKrw > 0" class="cash-toggle-row">
               <span class="cash-toggle-label">{{ $t('dashboard.includeCash') }}</span>
               <button
