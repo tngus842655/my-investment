@@ -5,7 +5,8 @@
     "delete": "Delete",
     "edit": "Edit",
     "confirm": "Confirm",
-    "back": "Back"
+    "back": "Back",
+    "hub": "Hub"
   },
   "nav": {
     "home": "Home",
@@ -118,5 +119,43 @@
   },
   "currency": {
     "wonUnit": "won"
+  },
+  "analysis": {
+    "title": "Forecast",
+    "headerAlt": "Forecast",
+    "needSetup": "Setup required",
+    "needSetupHint": "Enter your monthly investment and annual return in Goal Settings",
+    "currentAsset": "Current Assets",
+    "targetAsset": "Target",
+    "unregistered": "N/A",
+    "addAssetHint": "Add holdings to reflect your current assets",
+    "reachedShort": "done",
+    "totalInvested": "Total Invested (est.)",
+    "totalReturn": "Total Return (est.)",
+    "finalAsset": "Final Assets (est.)",
+    "scenarioTitle": "Return Scenarios",
+    "scenarioConservative": "Conservative",
+    "scenarioCurrent": "Current Plan",
+    "scenarioOptimistic": "Optimistic",
+    "annualRatePrefix": "{rate}%/yr",
+    "reached": "Reached!",
+    "diffShorter": "{n}mo sooner ({date})",
+    "diffLonger": "{n}mo later ({date})",
+    "tipTitle": "FIRE Tip",
+    "tipInvest": "Investing <strong>{amount}</strong> more per month brings your goal ~<strong>{duration}</strong> closer.",
+    "tipRate": "A <strong>1%</strong> higher annual return brings your goal ~<strong>{duration}</strong> closer.",
+    "yearlyTitle": "Projected Assets by Year",
+    "thisYearGoal": "This year {amount}",
+    "totalFire": "Total FIRE {rate}%",
+    "done": "Done",
+    "planned": "{amount} planned",
+    "collapse": "Collapse ▲",
+    "expand": "Show all ({n}) ▼",
+    "fireGoalTitle": "🏆 FIRE Goal Reached",
+    "fireGoalAssetLabel": "Est. Assets",
+    "fireGoalYearMonth": "est. {ym}",
+    "untilGoalApprox": "~{duration} to goal",
+    "loadError": "An error occurred while loading data.",
+    "goToGoalSetup": "Set up goal"
   }
 }

@@ -5,7 +5,8 @@
     "delete": "삭제",
     "edit": "수정",
     "confirm": "확인",
-    "back": "뒤로"
+    "back": "뒤로",
+    "hub": "허브"
   },
   "nav": {
     "home": "홈",
@@ -118,5 +119,43 @@
   },
   "currency": {
     "wonUnit": "원"
+  },
+  "analysis": {
+    "title": "미래 예측",
+    "headerAlt": "예측",
+    "needSetup": "설정이 필요합니다",
+    "needSetupHint": "목표 설정에서 월 투자금과 연평균 수익률을 입력해주세요",
+    "currentAsset": "현재 자산",
+    "targetAsset": "목표 자산",
+    "unregistered": "미등록",
+    "addAssetHint": "포트폴리오에 종목을 추가하면 현재 자산이 반영됩니다",
+    "reachedShort": "달성",
+    "totalInvested": "총 투자금 (예상)",
+    "totalReturn": "총 수익 (예상)",
+    "finalAsset": "최종 자산 (예상)",
+    "scenarioTitle": "수익률 시나리오 비교",
+    "scenarioConservative": "보수적",
+    "scenarioCurrent": "현재 계획",
+    "scenarioOptimistic": "낙관적",
+    "annualRatePrefix": "연 {rate}%",
+    "reached": "달성!",
+    "diffShorter": "{n}개월 단축({date})",
+    "diffLonger": "{n}개월 증가({date})",
+    "tipTitle": "FIRE Tip",
+    "tipInvest": "월 투자금을 <strong>{amount}</strong> 늘리면 목표 달성이 약 <strong>{duration}</strong> 빨라집니다.",
+    "tipRate": "연평균 수익률이 <strong>1%</strong> 높아지면 목표 달성이 약 <strong>{duration}</strong> 앞당겨집니다.",
+    "yearlyTitle": "연도별 예상자산 추이",
+    "thisYearGoal": "올해 목표 {amount}",
+    "totalFire": "전체 FIRE {rate}%",
+    "done": "완료",
+    "planned": "{amount} 예정",
+    "collapse": "접기 ▲",
+    "expand": "전체 보기 ({n}개) ▼",
+    "fireGoalTitle": "🏆 FIRE 목표 달성",
+    "fireGoalAssetLabel": "예상 자산",
+    "fireGoalYearMonth": "{ym} 예상",
+    "untilGoalApprox": "목표까지 약 {duration}",
+    "loadError": "데이터를 불러오는 중 오류가 발생했습니다.",
+    "goToGoalSetup": "목표 설정하기"
   }
 }

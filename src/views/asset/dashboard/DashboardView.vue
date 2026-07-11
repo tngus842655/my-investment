@@ -220,7 +220,7 @@ onUnmounted(clearPullToRefresh)
       </div>
       <div class="d-flex align-center ga-1">
         <button class="icon-btn" @click="router.push('/hub')">
-          <img src="/icons/icon-hub.png" alt="허브" class="icon-btn-img" />
+          <img src="/icons/icon-hub.png" :alt="$t('common.hub')" class="icon-btn-img" />
         </button>
       </div>
     </div>
