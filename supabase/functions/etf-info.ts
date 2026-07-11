@@ -5,9 +5,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const yahooSymbol = (ticker: string): string => {
-  if (/^\d{6}$/.test(ticker)) return `${ticker}.KS`
-  return ticker
+// 시장별 야후 심볼 서픽스 — 프론트 src/config/marketConfig.ts와 동일한 맵 (국가 추가 시 양쪽 함께 수정)
+// 6자리 숫자 티커는 KR로 간주 (CN도 6자리지만 시장 정보가 없는 이 API에서는 KR 우선. CN 지원 시 market 파라미터 도입 필요)
+const MARKET_SUFFIXES: Record<string, string[]> = {
+  KR: ['.KS', '.KQ'],
+  US: [],
+  JP: ['.T'],
+  CN: ['.SS', '.SZ'],
+}
+
+const symbolCandidates = (ticker: string): string[] => {
+  if (/^\d{6}$/.test(ticker)) return MARKET_SUFFIXES.KR!.map((s) => `${ticker}${s}`)
+  return [ticker]
 }
 
 // Yahoo Finance crumb 획득 (quoteSummary 인증용)
@@ -32,8 +41,12 @@ const getCrumb = async (): Promise<{ crumb: string; cookie: string } | null> => 
   }
 }
 
-const fetchEtfInfo = async (ticker: string, crumb: string | null, cookie: string | null) => {
-  const symbol = yahooSymbol(ticker)
+const fetchEtfInfoBySymbol = async (
+  ticker: string,
+  symbol: string,
+  crumb: string | null,
+  cookie: string | null,
+): Promise<{ result: Record<string, unknown>; hasChart: boolean }> => {
   const now = Math.floor(Date.now() / 1000)
 
   const headers: Record<string, string> = {
@@ -56,10 +69,12 @@ const fetchEtfInfo = async (ticker: string, crumb: string | null, cookie: string
   ])
 
   const result: Record<string, unknown> = { ticker }
+  let hasChart = false
 
   // chart API에서 기본 정보 + 계산 지표 추출
   if (chartRes.status === 'fulfilled' && chartRes.value.ok) {
     const data = await chartRes.value.json()
+    hasChart = !!data?.chart?.result?.[0]
     const meta = data?.chart?.result?.[0]?.meta
     const closes: number[] = data?.chart?.result?.[0]?.indicators?.quote?.[0]?.close ?? []
     const timestamps: number[] = data?.chart?.result?.[0]?.timestamp ?? []
@@ -124,7 +139,19 @@ const fetchEtfInfo = async (ticker: string, crumb: string | null, cookie: string
     result.category = fund?.categoryName ?? null
   }
 
-  return result
+  return { result, hasChart }
+}
+
+// 심볼 후보를 순서대로 시도 (KR: KOSPI 실패 시 KOSDAQ 재시도)
+const fetchEtfInfo = async (ticker: string, crumb: string | null, cookie: string | null) => {
+  const candidates = symbolCandidates(ticker)
+  let last: Record<string, unknown> = { ticker }
+  for (const symbol of candidates) {
+    const { result, hasChart } = await fetchEtfInfoBySymbol(ticker, symbol, crumb, cookie)
+    last = result
+    if (hasChart) return result
+  }
+  return last
 }
 
 Deno.serve(async (req) => {

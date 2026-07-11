@@ -3,9 +3,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
 const route = useRoute()
+const { t } = useI18n()
 
 const category = ref<string | null>(null)
 const title = ref('')
@@ -31,22 +33,26 @@ interface MyFeedback {
 
 const feedbacks = ref<MyFeedback[]>([])
 
-const categories = [
-  { label: '버그 신고', value: '버그신고', icon: 'mdi-bug-outline' },
-  { label: '기능 제안', value: '기능제안', icon: 'mdi-lightbulb-outline' },
-  { label: '기타 의견', value: '기타의견', icon: 'mdi-chat-outline' },
-]
+const categories = computed(() => [
+  { label: t('feedback.catBug'), value: '버그신고', icon: 'mdi-bug-outline' },
+  { label: t('feedback.catFeature'), value: '기능제안', icon: 'mdi-lightbulb-outline' },
+  { label: t('feedback.catOther'), value: '기타의견', icon: 'mdi-chat-outline' },
+])
 
-const statusConfig: Record<string, { label: string; color: string }> = {
-  RECEIVED: { label: '접수', color: 'primary' },
-  REVIEWING: { label: '검토중', color: 'warning' },
-  DONE: { label: '반영완료', color: 'success' },
-  REJECTED: { label: '반려', color: 'error' },
-}
+const statusConfig = computed<Record<string, { label: string; color: string }>>(() => ({
+  RECEIVED: { label: t('feedback.statusReceived'), color: 'primary' },
+  REVIEWING: { label: t('feedback.statusReviewing'), color: 'warning' },
+  DONE: { label: t('feedback.statusDone'), color: 'success' },
+  REJECTED: { label: t('feedback.statusRejected'), color: 'error' },
+}))
 
 const isValid = computed(
   () => !!category.value && title.value.trim().length > 0 && content.value.trim().length > 0,
 )
+
+// DB에는 category가 한글 값으로 저장되어 있어(예: '버그신고') 목록 표시 시 현재 로케일 라벨로 매핑
+const categoryLabel = (value: string): string =>
+  categories.value.find((c) => c.value === value)?.label ?? value
 
 const KST = 'Asia/Seoul'
 const formatDate = (iso: string) => {
@@ -60,7 +66,7 @@ const formatDate = (iso: string) => {
 
 onMounted(async () => {
   const queryCategory = route.query.category
-  if (typeof queryCategory === 'string' && categories.some((c) => c.value === queryCategory)) {
+  if (typeof queryCategory === 'string' && categories.value.some((c) => c.value === queryCategory)) {
     category.value = queryCategory
   }
   const queryTitle = route.query.title
@@ -98,7 +104,7 @@ const markAllRead = async () => {
 
 const submit = async () => {
   if (!isValid.value) {
-    showMessage('모든 항목을 입력해주세요.', 'error')
+    showMessage(t('feedback.errors.fillAll'), 'error')
     return
   }
   submitting.value = true
@@ -114,10 +120,10 @@ const submit = async () => {
     category.value = null
     title.value = ''
     content.value = ''
-    showMessage('의견이 접수되었습니다.', 'success')
+    showMessage(t('feedback.errors.received'), 'success')
     await loadFeedbacks()
   } catch {
-    showMessage('전송 중 오류가 발생했습니다.', 'error')
+    showMessage(t('feedback.errors.sendError'), 'error')
   } finally {
     submitting.value = false
   }
@@ -136,15 +142,15 @@ const toggleExpand = (id: string) => {
         <v-icon size="20">mdi-arrow-left</v-icon>
       </button>
       <div>
-        <div class="font-weight-bold">의견 관리</div>
-        <div class="text-medium-emphasis">불편한 점이나 개선 아이디어를 보내주세요.</div>
+        <div class="font-weight-bold">{{ $t('feedback.title') }}</div>
+        <div class="text-medium-emphasis">{{ $t('feedback.subtitle') }}</div>
       </div>
     </div>
 
     <!-- 새 의견 작성 -->
-    <div class="section-label mb-2">새 의견 작성</div>
+    <div class="section-label mb-2">{{ $t('feedback.newFeedback') }}</div>
     <div class="field-card mb-2">
-      <div class="field-label mb-3">구분 <span class="required">*</span></div>
+      <div class="field-label mb-3">{{ $t('feedback.category') }} <span class="required">*</span></div>
       <div class="d-flex ga-2">
         <button
           v-for="cat in categories"
@@ -160,26 +166,26 @@ const toggleExpand = (id: string) => {
 
     <div class="field-card mb-2">
       <div class="d-flex align-center justify-space-between mb-2">
-        <div class="field-label">제목 <span class="required">*</span></div>
+        <div class="field-label">{{ $t('feedback.titleLabel') }} <span class="required">*</span></div>
         <span class="char-count">{{ title.length }} / {{ TITLE_MAX }}</span>
       </div>
       <input
         v-model="title"
         class="plain-input"
-        placeholder="제목을 입력해주세요"
+        :placeholder="$t('feedback.titlePlaceholder')"
         :maxlength="TITLE_MAX"
       />
     </div>
 
     <div class="field-card mb-4">
       <div class="d-flex align-center justify-space-between mb-2">
-        <div class="field-label">내용 <span class="required">*</span></div>
+        <div class="field-label">{{ $t('feedback.contentLabel') }} <span class="required">*</span></div>
         <span class="char-count">{{ content.length }} / {{ CONTENT_MAX }}</span>
       </div>
       <textarea
         v-model="content"
         class="plain-input plain-textarea"
-        placeholder="자세한 내용을 입력해주세요"
+        :placeholder="$t('feedback.contentPlaceholder')"
         :maxlength="CONTENT_MAX"
         rows="5"
       />
@@ -191,12 +197,12 @@ const toggleExpand = (id: string) => {
       :disabled="!isValid || submitting"
       @click="submit"
     >
-      <span v-if="submitting">전송 중...</span>
-      <span v-else>의견 보내기</span>
+      <span v-if="submitting">{{ $t('feedback.sending') }}</span>
+      <span v-else>{{ $t('feedback.send') }}</span>
     </button>
 
     <!-- 내 의견 목록 -->
-    <div class="section-label mb-2">내 의견 목록</div>
+    <div class="section-label mb-2">{{ $t('feedback.myFeedback') }}</div>
 
     <template v-if="listLoading">
       <v-skeleton-loader v-for="i in 2" :key="i" type="card" class="mb-3 rounded-xl" />
@@ -204,7 +210,7 @@ const toggleExpand = (id: string) => {
 
     <div v-else-if="feedbacks.length === 0" class="empty-state">
       <v-icon size="36" style="opacity:0.25" class="mb-2">mdi-inbox-outline</v-icon>
-      <div class="text-medium-emphasis">작성한 의견이 없습니다.</div>
+      <div class="text-medium-emphasis">{{ $t('feedback.emptyFeedback') }}</div>
     </div>
 
     <div v-else class="d-flex flex-column ga-3 pb-6">
@@ -216,7 +222,7 @@ const toggleExpand = (id: string) => {
       >
         <!-- 상단 행 -->
         <div class="d-flex align-center ga-2 mb-2">
-          <v-chip size="x-small" color="primary" variant="outlined">{{ f.category }}</v-chip>
+          <v-chip size="x-small" color="primary" variant="outlined">{{ categoryLabel(f.category) }}</v-chip>
           <v-chip
             size="x-small"
             :color="statusConfig[f.status]?.color ?? 'default'"
@@ -238,7 +244,7 @@ const toggleExpand = (id: string) => {
 
         <!-- 작성 내용 (토글) -->
         <div v-if="expandedId === f.id" class="content-box mt-2">
-          <div class="text-medium-emphasis mb-1">작성 내용</div>
+          <div class="text-medium-emphasis mb-1">{{ $t('feedback.writtenContent') }}</div>
           <div style="white-space:pre-wrap; line-height:1.7">{{ f.content }}</div>
         </div>
 
@@ -246,7 +252,7 @@ const toggleExpand = (id: string) => {
         <div v-if="f.admin_comment" class="answer-box mt-3">
           <div class="d-flex align-center ga-1 mb-1">
             <v-icon size="14" color="primary">mdi-message-reply-outline</v-icon>
-            <span class="font-weight-bold text-primary">관리자 답변</span>
+            <span class="font-weight-bold text-primary">{{ $t('feedback.adminReply') }}</span>
           </div>
           <div style="white-space:pre-wrap; line-height:1.7">{{ f.admin_comment }}</div>
         </div>

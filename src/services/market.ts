@@ -1,12 +1,17 @@
 import { supabase } from '@/services/supabase'
+import { getAssetClass, getMarket, type ClassifiableItem } from '@/config/marketConfig'
 
 export const getStockPrice = async (
   ticker: string,
-  assetType: string = '',
-  currency: string = 'USD',
+  item: ClassifiableItem,
 ): Promise<number> => {
   const { data, error } = await supabase.functions.invoke('stock-price', {
-    body: { ticker, asset_type: assetType, currency },
+    body: {
+      ticker,
+      asset_class: getAssetClass(item),
+      market: getMarket(item),
+      currency: item.currency ?? 'USD',
+    },
   })
 
   if (error) throw error

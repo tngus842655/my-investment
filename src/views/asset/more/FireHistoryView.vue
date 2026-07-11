@@ -5,14 +5,16 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { useUserDataStore } from '@/stores/userData'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
-import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
-import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
+import { convertMoney } from '@/utils/portfolioMath'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
+const { t } = useI18n()
 const userDataStore = useUserDataStore()
 const loading = ref(true)
 const exchangeRate = ref(1350)
-const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
+const { baseCurrency, moneyOr } = useBaseCurrency()
 
 interface HistoryPoint {
   recorded_at: string
@@ -24,11 +26,11 @@ const history = ref<HistoryPoint[]>([])
 const currentAsset = ref(0)
 const selectedPeriod = ref<'1M' | '3M' | '6M' | '1Y' | 'ALL'>('3M')
 const periods = [
-  { label: '1개월', value: '1M' },
-  { label: '3개월', value: '3M' },
-  { label: '6개월', value: '6M' },
-  { label: '1년', value: '1Y' },
-  { label: '전체', value: 'ALL' },
+  { labelKey: 'fireHistory.period1M', value: '1M' },
+  { labelKey: 'fireHistory.period3M', value: '3M' },
+  { labelKey: 'fireHistory.period6M', value: '6M' },
+  { labelKey: 'fireHistory.period1Y', value: '1Y' },
+  { labelKey: 'fireHistory.periodAll', value: 'ALL' },
 ] as const
 
 // 툴팁
@@ -38,16 +40,20 @@ onMounted(async () => {
   try {
     await supabase.rpc('save_daily_asset_snapshot')
     const [historyResult, summary, rate] = await Promise.all([
-      supabase.from('asset_history').select('recorded_at, current_asset, progress_pct').order('recorded_at', { ascending: true }),
+      supabase.from('asset_history').select('recorded_at, current_asset, progress_pct, base_currency').order('recorded_at', { ascending: true }),
       userDataStore.ensureAssetSummary(),
       getCachedExchangeRate(),
     ])
     if (historyResult.error) throw historyResult.error
     exchangeRate.value = rate
-    history.value = historyResult.data ?? []
+    // 기준통화 변경 이전의 스냅샷은 행별 통화가 다를 수 있어 표시 시점 환율로 환산 (GLOBALIZATION.md 2-4 정책)
+    history.value = (historyResult.data ?? []).map((p: HistoryPoint & { base_currency?: string }) => ({
+      ...p,
+      current_asset: Math.round(convertMoney(p.current_asset, p.base_currency ?? 'KRW', baseCurrency.value, rate)),
+    }))
     currentAsset.value = summary?.current_asset ?? 0
   } catch {
-    showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
+    showMessage(t('fireHistory.loadError'), 'error')
   } finally {
     loading.value = false
   }
@@ -112,12 +118,12 @@ const pctChange = computed(() => {
   return lastPt.value.progress_pct - firstPt.value.progress_pct
 })
 
-const formatAsset = (v: number) => {
-  if (displayCurrency.value === 'USD') return formatUsdWithRate(v, exchangeRate.value)
-  if (v >= 100_000_000) return `${(v / 100_000_000).toFixed(1)}억`
-  if (v >= 10_000) return `${Math.round(v / 10_000).toLocaleString()}만`
-  return v.toLocaleString()
-}
+const formatAsset = (v: number) =>
+  moneyOr(v, exchangeRate.value, (x) => {
+    if (x >= 100_000_000) return `${(x / 100_000_000).toFixed(1)}억`
+    if (x >= 10_000) return `${Math.round(x / 10_000).toLocaleString()}만`
+    return x.toLocaleString()
+  })
 
 // 차트 터치/클릭으로 툴팁
 const svgRef = ref<SVGSVGElement | null>(null)
@@ -150,11 +156,10 @@ const onChartLeave = () => { tooltip.value = null }
           <v-icon>mdi-arrow-left</v-icon>
         </v-btn>
         <div>
-          <div class="font-weight-bold">FIRE 진행 기록</div>
-          <div class="text-medium-emphasis">목표 달성률 변화 히스토리</div>
+          <div class="font-weight-bold">{{ $t('fireHistory.title') }}</div>
+          <div class="text-medium-emphasis">{{ $t('fireHistory.subtitle') }}</div>
         </div>
       </div>
-      <CurrencyToggle />
     </div>
 
     <div v-if="loading" class="d-flex justify-center py-12">
@@ -164,19 +169,19 @@ const onChartLeave = () => { tooltip.value = null }
     <template v-else>
       <div v-if="history.length < 1" class="text-center py-12 text-medium-emphasis">
         <v-icon size="48" class="mb-3">mdi-chart-timeline-variant</v-icon>
-        <div>아직 기록이 없어요.</div>
-        <div class="mt-1">내일부터 달성률 변화를 확인할 수 있어요.</div>
+        <div>{{ $t('fireHistory.empty') }}</div>
+        <div class="mt-1">{{ $t('fireHistory.emptyHint') }}</div>
       </div>
 
       <template v-else>
         <!-- 요약 카드 -->
         <div class="d-flex ga-3 mb-4">
           <v-card rounded="xl" class="summary-card flex-1 pa-4 text-center">
-            <div class="text-medium-emphasis mb-1">현재 달성률</div>
+            <div class="text-medium-emphasis mb-1">{{ $t('fireHistory.currentRate') }}</div>
             <div class="font-weight-bold text-primary">{{ lastPt?.progress_pct.toFixed(1) }}%</div>
           </v-card>
           <v-card rounded="xl" class="summary-card flex-1 pa-4 text-center">
-            <div class="text-medium-emphasis mb-1">기간 변화</div>
+            <div class="text-medium-emphasis mb-1">{{ $t('fireHistory.periodChange') }}</div>
             <div
               class="font-weight-bold"
               :class="(pctChange ?? 0) >= 0 ? 'text-success' : 'text-error'"
@@ -185,7 +190,7 @@ const onChartLeave = () => { tooltip.value = null }
             </div>
           </v-card>
           <v-card rounded="xl" class="summary-card flex-1 pa-4 text-center">
-            <div class="text-medium-emphasis mb-1">현재 자산</div>
+            <div class="text-medium-emphasis mb-1">{{ $t('fireHistory.currentAsset') }}</div>
             <div class="font-weight-bold">{{ formatAsset(currentAsset) }}</div>
           </v-card>
         </div>
@@ -199,14 +204,14 @@ const onChartLeave = () => { tooltip.value = null }
             :class="{ active: selectedPeriod === p.value }"
             @click="selectedPeriod = p.value; tooltip = null"
           >
-            {{ p.label }}
+            {{ $t(p.labelKey) }}
           </button>
         </div>
 
         <!-- 차트 -->
         <v-card rounded="xl" class="pa-4">
           <div v-if="!chartData" class="text-center text-medium-emphasis py-6">
-            데이터가 2일 이상 쌓이면 차트가 표시돼요.
+            {{ $t('fireHistory.chartHint') }}
           </div>
           <svg
             v-else

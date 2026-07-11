@@ -8,21 +8,21 @@ const router = useRouter()
   <v-container class="pa-4 pa-sm-6">
     <div class="d-flex justify-space-between align-center mb-3">
       <div class="d-flex align-center ga-2">
-        <img src="/icons/icon-more.png" class="header-icon" alt="더보기" />
-        <div class="font-weight-bold">더보기</div>
+        <img src="/icons/icon-more.png" class="header-icon" :alt="$t('more.title')" />
+        <div class="font-weight-bold">{{ $t('more.title') }}</div>
       </div>
       <button class="icon-btn" @click="router.push('/hub')">
-        <img src="/icons/icon-hub.png" alt="허브" class="icon-btn-img" />
+        <img src="/icons/icon-hub.png" :alt="$t('common.hub')" class="icon-btn-img" />
       </button>
     </div>
 
     <!-- FIRE 관리 섹션 -->
-    <div class="section-label mb-2">FIRE 관리</div>
+    <div class="section-label mb-2">{{ $t('more.sectionFire') }}</div>
     <div class="d-flex flex-column ga-2 mb-5">
       <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/goalSettings')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-target</v-icon></div>
         <div>
-          <div class="font-weight-medium">목표 설정</div>
+          <div class="font-weight-medium">{{ $t('more.goalSettings') }}</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -31,7 +31,7 @@ const router = useRouter()
       <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/fire-simulator')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-chart-timeline-variant</v-icon></div>
         <div>
-          <div class="font-weight-medium">시뮬레이터</div>
+          <div class="font-weight-medium">{{ $t('more.simulator') }}</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -40,7 +40,7 @@ const router = useRouter()
       <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/fire-history')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-flag-checkered</v-icon></div>
         <div>
-          <div class="font-weight-medium">진행 기록</div>
+          <div class="font-weight-medium">{{ $t('more.history') }}</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -49,7 +49,7 @@ const router = useRouter()
       <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/badges')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-trophy-outline</v-icon></div>
         <div>
-          <div class="font-weight-medium">목표 달성 배지</div>
+          <div class="font-weight-medium">{{ $t('more.badges') }}</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -57,12 +57,12 @@ const router = useRouter()
     </div>
 
     <!-- 자산 분석 섹션 -->
-    <div class="section-label mb-2">자산 분석</div>
+    <div class="section-label mb-2">{{ $t('more.sectionAnalysis') }}</div>
     <div class="d-flex flex-column ga-2 mb-5">
       <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/portfolio-analysis')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-chart-donut</v-icon></div>
         <div>
-          <div class="font-weight-medium">포트폴리오 분석</div>
+          <div class="font-weight-medium">{{ $t('more.portfolioAnalysis') }}</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -71,7 +71,7 @@ const router = useRouter()
       <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/asset-growth')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-chart-bar</v-icon></div>
         <div>
-          <div class="font-weight-medium">자산 성장 리포트</div>
+          <div class="font-weight-medium">{{ $t('more.assetGrowth') }}</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -79,12 +79,12 @@ const router = useRouter()
     </div>
 
     <!-- 투자 도구 섹션 -->
-    <div class="section-label mb-2">투자 도구</div>
+    <div class="section-label mb-2">{{ $t('more.sectionTools') }}</div>
     <div class="d-flex flex-column ga-2 mb-5">
       <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/etf-analysis')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-chart-box-outline</v-icon></div>
         <div>
-          <div class="font-weight-medium">ETF 분석&amp;비교</div>
+          <div class="font-weight-medium">{{ $t('more.etfAnalysis') }}</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -93,7 +93,7 @@ const router = useRouter()
       <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/etf-backtest')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-history</v-icon></div>
         <div>
-          <div class="font-weight-medium">ETF 백테스트</div>
+          <div class="font-weight-medium">{{ $t('more.etfBacktest') }}</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -102,7 +102,7 @@ const router = useRouter()
       <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/dividend-calendar')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-calendar-month-outline</v-icon></div>
         <div>
-          <div class="font-weight-medium">배당 캘린더</div>
+          <div class="font-weight-medium">{{ $t('more.dividendCalendar') }}</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>

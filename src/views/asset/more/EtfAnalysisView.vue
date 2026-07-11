@@ -5,8 +5,11 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { getTickerDisplayName } from '@/utils/tickerNames'
 import { KR_ETF_NAMES } from '@/utils/tickerNames.kr'
+import { useI18n } from 'vue-i18n'
+import { formatYearMonth } from '@/utils/dateFormat'
 
 const router = useRouter()
+const { t } = useI18n()
 
 interface ChartPoint { t: number; c: number }
 
@@ -90,8 +93,8 @@ const isEmptyResult = (info: EtfInfo) =>
 const fetchInfo = async () => {
   const tA = inputA.value.trim().toUpperCase()
   const tB = inputB.value.trim().toUpperCase()
-  if (!tA) { showMessage('티커를 입력해주세요.', 'warning'); return }
-  if (tB && tA === tB) { showMessage('두 티커가 동일합니다. 서로 다른 티커를 입력해주세요.', 'warning'); return }
+  if (!tA) { showMessage(t('etfAnalysis.enterTicker'), 'warning'); return }
+  if (tB && tA === tB) { showMessage(t('etfAnalysis.sameTickers'), 'warning'); return }
 
   const tickers = [tA, tB].filter(Boolean)
   loading.value = true
@@ -109,7 +112,7 @@ const fetchInfo = async () => {
     if (resA && isEmptyResult(resA)) { notFoundA.value = true } else { dataA.value = resA }
     if (resB && isEmptyResult(resB)) { notFoundB.value = true } else { dataB.value = resB }
   } catch {
-    showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
+    showMessage(t('etfAnalysis.loadError'), 'error')
   } finally {
     loading.value = false
   }
@@ -205,34 +208,34 @@ const cls = (a: number | null, b: number | null, higherIsBetter: boolean, side: 
 
 
 const getEtfTags = (info: EtfInfo) => {
-  const tags: Array<{ label: string; color: string }> = []
+  const tags: Array<{ labelKey: string; color: string }> = []
   const name = (info.name ?? '').toLowerCase()
   const cat = (info.category ?? '').toLowerCase()
 
-  if (/^\d{6}$/.test(info.ticker)) tags.push({ label: '국내', color: 'blue' })
-  else tags.push({ label: '해외', color: 'indigo' })
+  if (/^\d{6}$/.test(info.ticker)) tags.push({ labelKey: 'etfAnalysis.domestic', color: 'blue' })
+  else tags.push({ labelKey: 'etfAnalysis.overseas', color: 'indigo' })
 
   if (cat.includes('leveraged') || name.includes('2x') || name.includes('3x') || name.includes('ultra') || name.includes('레버'))
-    tags.push({ label: '레버리지', color: 'orange' })
+    tags.push({ labelKey: 'etfAnalysis.tags.leverage', color: 'orange' })
   else if (cat.includes('inverse') || name.includes('inverse') || name.includes('short') || name.includes('인버'))
-    tags.push({ label: '인버스', color: 'red' })
+    tags.push({ labelKey: 'etfAnalysis.tags.inverse', color: 'red' })
   else if (name.includes('dividend') || name.includes('income') || name.includes('yield') || name.includes('배당') || cat.includes('dividend'))
-    tags.push({ label: '배당', color: 'green' })
+    tags.push({ labelKey: 'etfAnalysis.tags.dividend', color: 'green' })
 
   if (cat.includes('bond') || name.includes('bond') || name.includes('treasury') || name.includes('채권'))
-    tags.push({ label: '채권', color: 'teal' })
+    tags.push({ labelKey: 'etfAnalysis.tags.bond', color: 'teal' })
 
   return tags
 }
 
-const tooltips: Record<string, string> = {
-  cagr: '연평균 복리 수익률. 상장 이후 매년 이 비율로 성장했을 때 현재 가치에 도달합니다. 높을수록 좋습니다.',
-  mdd: '최대 낙폭(Max Drawdown). 최고점 대비 최대 하락 폭. 절대값이 작을수록(0에 가까울수록) 리스크가 낮습니다.',
-  volatility: '연간 변동성. 월간 수익률의 표준편차를 연율화한 수치. 낮을수록 가격이 안정적입니다.',
-  beta: '시장 민감도. S&P 500 대비 움직임. 1이면 시장과 동일, 1 이상이면 더 크게 움직입니다.',
-  ter: '운용보수(TER). 매년 ETF 운용에 드는 비용 비율. 낮을수록 장기 수익률에 유리합니다.',
-  dividendYield: '최근 12개월 지급 배당금의 현재가 대비 비율입니다.',
-}
+const tooltips = computed<Record<string, string>>(() => ({
+  cagr: t('etfAnalysis.tooltips.cagr'),
+  mdd: t('etfAnalysis.tooltips.mdd'),
+  volatility: t('etfAnalysis.tooltips.volatility'),
+  beta: t('etfAnalysis.tooltips.beta'),
+  ter: t('etfAnalysis.tooltips.ter'),
+  dividendYield: t('etfAnalysis.tooltips.dividendYield'),
+}))
 
 const aiData = computed(() => {
   const a = dataA.value
@@ -243,9 +246,9 @@ const aiData = computed(() => {
     const parts: string[] = []
     if (a.cagr != null) parts.push(`CAGR ${fmt.pct(a.cagr)}`)
     if (a.mdd != null) parts.push(`MDD ${fmt.pct(a.mdd)}`)
-    if (a.expenseRatio != null) parts.push(`운용보수 ${fmt.pct(a.expenseRatio, 2)}`)
-    const risk = a.mdd == null ? '' : a.mdd > -0.2 ? '낮은' : a.mdd > -0.4 ? '중간 수준의' : '높은'
-    return { mode: 'single' as const, summary: `${a.ticker}은 ${parts.join(', ')}의 ETF입니다. 리스크는 ${risk} 편입니다.` }
+    if (a.expenseRatio != null) parts.push(`${t('etfAnalysis.expenseLabel')} ${fmt.pct(a.expenseRatio, 2)}`)
+    const risk = a.mdd == null ? '' : a.mdd > -0.2 ? t('etfAnalysis.riskLow') : a.mdd > -0.4 ? t('etfAnalysis.riskMid') : t('etfAnalysis.riskHigh')
+    return { mode: 'single' as const, summary: t('etfAnalysis.singleSummary', { ticker: a.ticker, parts: parts.join(', '), risk }) }
   }
 
   const dA = dispA.value
@@ -264,17 +267,17 @@ const aiData = computed(() => {
   const winnerTicker = ws === 'b' ? b.ticker : a.ticker
 
   const reasons: string[] = []
-  if (ws && cagrW === ws && dA?.cagr != null) reasons.push('CAGR 수익률 우수')
-  if (ws && mddW  === ws && dA?.mdd  != null) reasons.push('최대 낙폭(MDD) 안정적')
-  if (ws && terW  === ws && a.expenseRatio != null) reasons.push('운용보수(TER) 저렴')
-  if (ws && divW  === ws && (a.dividendYield ?? 0) > 0) reasons.push('배당률 높음')
+  if (ws && cagrW === ws && dA?.cagr != null) reasons.push(t('etfAnalysis.reasonCagr'))
+  if (ws && mddW  === ws && dA?.mdd  != null) reasons.push(t('etfAnalysis.reasonMdd'))
+  if (ws && terW  === ws && a.expenseRatio != null) reasons.push(t('etfAnalysis.reasonTer'))
+  if (ws && divW  === ws && (a.dividendYield ?? 0) > 0) reasons.push(t('etfAnalysis.reasonDiv'))
 
-  const closing = tied ? '두 ETF는 전반적으로 비슷한 수준입니다.'
+  const closing = tied ? t('etfAnalysis.closingTied')
     : (winnerInfo.expenseRatio ?? 1) < 0.003 && (winnerInfo.dividendYield ?? 0) < 0.01
-      ? '장기 적립식 투자에 유리합니다.'
+      ? t('etfAnalysis.closingLongTerm')
       : (winnerInfo.dividendYield ?? 0) > 0.01
-        ? '배당 수익을 원하는 투자자에게 적합합니다.'
-        : '종합적으로 더 유리한 ETF입니다.'
+        ? t('etfAnalysis.closingDividend')
+        : t('etfAnalysis.closingOverall')
 
   return { mode: 'compare' as const, winner: winnerTicker, reasons, closing, tied }
 })
@@ -288,8 +291,8 @@ const aiData = computed(() => {
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <div>
-        <div class="font-weight-bold">ETF 분석 & 비교</div>
-        <div class="text-medium-emphasis">CAGR · MDD · 변동성 · 배당률 · 운용보수</div>
+        <div class="font-weight-bold">{{ $t('etfAnalysis.title') }}</div>
+        <div class="text-medium-emphasis">{{ $t('etfAnalysis.subtitle') }}</div>
       </div>
     </div>
 
@@ -301,7 +304,7 @@ const aiData = computed(() => {
         <div class="d-flex align-center ga-2 mb-3">
           <v-text-field
             v-model="inputA"
-            label="티커 (예: SPY)"
+            :label="$t('etfAnalysis.tickerHint')"
             variant="outlined"
             density="compact"
             rounded="lg"
@@ -315,7 +318,7 @@ const aiData = computed(() => {
           <div class="font-weight-bold text-medium-emphasis">vs</div>
           <v-text-field
             v-model="inputB"
-            label="비교 티커 (선택)"
+            :label="$t('etfAnalysis.compareTickerLabel')"
             variant="outlined"
             density="compact"
             rounded="lg"
@@ -329,13 +332,13 @@ const aiData = computed(() => {
         </div>
         <div class="d-flex align-center ga-1 mb-3">
           <v-btn-toggle v-model="marketA" density="compact" rounded="lg" mandatory color="primary" variant="outlined" style="flex:1">
-            <v-btn value="overseas" size="x-small" style="flex:1">해외</v-btn>
-            <v-btn value="domestic" size="x-small" style="flex:1">국내</v-btn>
+            <v-btn value="overseas" size="x-small" style="flex:1">{{ $t('etfAnalysis.overseas') }}</v-btn>
+            <v-btn value="domestic" size="x-small" style="flex:1">{{ $t('etfAnalysis.domestic') }}</v-btn>
           </v-btn-toggle>
           <div style="width:28px" />
           <v-btn-toggle v-model="marketB" density="compact" rounded="lg" mandatory color="primary" variant="outlined" style="flex:1">
-            <v-btn value="overseas" size="x-small" style="flex:1">해외</v-btn>
-            <v-btn value="domestic" size="x-small" style="flex:1">국내</v-btn>
+            <v-btn value="overseas" size="x-small" style="flex:1">{{ $t('etfAnalysis.overseas') }}</v-btn>
+            <v-btn value="domestic" size="x-small" style="flex:1">{{ $t('etfAnalysis.domestic') }}</v-btn>
           </v-btn-toggle>
         </div>
       </template>
@@ -344,10 +347,10 @@ const aiData = computed(() => {
       <template v-else>
         <!-- 기준 ETF -->
         <div class="d-flex align-center justify-space-between mb-1">
-          <div class="text-medium-emphasis">기준 ETF</div>
+          <div class="text-medium-emphasis">{{ $t('etfAnalysis.baseEtf') }}</div>
           <v-btn-toggle v-model="marketA" density="compact" rounded="lg" mandatory color="primary" variant="outlined">
-            <v-btn value="overseas" size="x-small">해외</v-btn>
-            <v-btn value="domestic" size="x-small">국내</v-btn>
+            <v-btn value="overseas" size="x-small">{{ $t('etfAnalysis.overseas') }}</v-btn>
+            <v-btn value="domestic" size="x-small">{{ $t('etfAnalysis.domestic') }}</v-btn>
           </v-btn-toggle>
         </div>
         <div :key="`field-a-${marketA}`">
@@ -358,7 +361,7 @@ const aiData = computed(() => {
             :items="filteredA"
             item-title="name"
             return-object
-            label="국내 ETF 검색"
+            :label="$t('etfAnalysis.searchDomestic')"
             placeholder="TIGER 미국S&P500 등 종목명 입력"
             prepend-inner-icon="mdi-magnify"
             variant="outlined"
@@ -367,7 +370,7 @@ const aiData = computed(() => {
             hide-details
             clearable
             auto-select-first
-            no-data-text="검색 결과가 없습니다"
+            :no-data-text="$t('etfAnalysis.noSearchResults')"
             :custom-filter="krFilter"
             class="mb-3"
             @keyup.enter="fetchInfo"
@@ -379,7 +382,7 @@ const aiData = computed(() => {
           <v-text-field
             v-else
             v-model="inputA"
-            label="티커 (예: SPY, QQQ)"
+            :label="$t('etfAnalysis.tickerHint2')"
             variant="outlined"
             density="compact"
             rounded="lg"
@@ -399,10 +402,10 @@ const aiData = computed(() => {
 
         <!-- 비교 ETF -->
         <div class="d-flex align-center justify-space-between mb-1">
-          <div class="text-medium-emphasis">비교 ETF <span style="opacity:0.5">(선택)</span></div>
+          <div class="text-medium-emphasis">{{ $t('etfAnalysis.compareEtf') }} <span style="opacity:0.5">{{ $t('etfAnalysis.optional') }}</span></div>
           <v-btn-toggle v-model="marketB" density="compact" rounded="lg" mandatory color="primary" variant="outlined">
-            <v-btn value="overseas" size="x-small">해외</v-btn>
-            <v-btn value="domestic" size="x-small">국내</v-btn>
+            <v-btn value="overseas" size="x-small">{{ $t('etfAnalysis.overseas') }}</v-btn>
+            <v-btn value="domestic" size="x-small">{{ $t('etfAnalysis.domestic') }}</v-btn>
           </v-btn-toggle>
         </div>
         <div :key="`field-b-${marketB}`">
@@ -413,7 +416,7 @@ const aiData = computed(() => {
             :items="filteredB"
             item-title="name"
             return-object
-            label="국내 ETF 검색"
+            :label="$t('etfAnalysis.searchDomestic')"
             placeholder="TIGER 미국S&P500 등 종목명 입력"
             prepend-inner-icon="mdi-magnify"
             variant="outlined"
@@ -422,7 +425,7 @@ const aiData = computed(() => {
             hide-details
             clearable
             auto-select-first
-            no-data-text="검색 결과가 없습니다"
+            :no-data-text="$t('etfAnalysis.noSearchResults')"
             :custom-filter="krFilter"
             class="mb-3"
             @keyup.enter="fetchInfo"
@@ -434,7 +437,7 @@ const aiData = computed(() => {
           <v-text-field
             v-else
             v-model="inputB"
-            label="비교 티커 (선택)"
+            :label="$t('etfAnalysis.compareTickerLabel')"
             variant="outlined"
             density="compact"
             rounded="lg"
@@ -455,9 +458,9 @@ const aiData = computed(() => {
           size="small"
           rounded="lg"
           @click="inputA = ''; inputB = ''; searchA = ''; searchB = ''; selectedA = null; selectedB = null; dataA = null; dataB = null"
-        >초기화</v-btn>
+        >{{ $t('etfAnalysis.reset') }}</v-btn>
         <v-spacer />
-        <v-btn color="primary" rounded="lg" :loading="loading" @click="fetchInfo">분석</v-btn>
+        <v-btn color="primary" rounded="lg" :loading="loading" @click="fetchInfo">{{ $t('etfAnalysis.analyze') }}</v-btn>
       </div>
     </v-card>
 
@@ -484,14 +487,14 @@ const aiData = computed(() => {
       <template v-else>
         <strong>{{ inputB.trim().toUpperCase() }}</strong> 티커를 찾을 수 없습니다.
       </template>
-      <div class="mt-1 opacity-80">미국 ETF(SPY, QQQ 등) 또는 국내 ETF 코드(069500 등)를 확인해주세요.</div>
+      <div class="mt-1 opacity-80">{{ $t('etfAnalysis.notFoundHint') }}</div>
     </v-alert>
 
     <!-- 빈 상태 -->
     <div v-else-if="!dataA" class="text-center py-12 text-medium-emphasis">
       <v-icon size="48" class="mb-3">mdi-chart-box-outline</v-icon>
-      <div>티커를 입력하고 분석 버튼을 눌러주세요.</div>
-      <div class="mt-1">미국 ETF(SPY, QQQ 등) 및 국내 ETF(069500 등) 지원</div>
+      <div>{{ $t('etfAnalysis.enterTickerPrompt') }}</div>
+      <div class="mt-1">{{ $t('etfAnalysis.supportHint') }}</div>
     </div>
 
     <template v-else>
@@ -501,9 +504,9 @@ const aiData = computed(() => {
           <div class="etf-card pa-2">
             <div class="d-flex align-center ga-1 mb-1 flex-wrap">
               <v-chip
-                v-for="tag in getEtfTags(info)" :key="tag.label"
+                v-for="tag in getEtfTags(info)" :key="tag.labelKey"
                 :color="tag.color" size="x-small" variant="tonal"
-              >{{ tag.label }}</v-chip>
+              >{{ $t(tag.labelKey) }}</v-chip>
             </div>
             <div class="d-flex align-center ga-2 mt-1">
               <div class="font-weight-bold">{{ info.ticker }}</div>
@@ -524,18 +527,18 @@ const aiData = computed(() => {
       <!-- 기본 정보 섹션 -->
       <v-card rounded="xl" class="mb-3 overflow-hidden">
         <div class="col-header-row d-flex align-center px-4 pt-3 pb-1">
-          <div class="metric-label section-title">기본 정보</div>
+          <div class="metric-label section-title">{{ $t('etfAnalysis.basicInfo') }}</div>
           <div class="col-header">{{ dataA!.ticker }}</div>
           <div v-if="dataB" class="col-header">{{ dataB.ticker }}</div>
         </div>
 
         <div class="metric-row d-flex align-center px-4 py-2">
-          <div class="metric-label">운용자산 (AUM)</div>
+          <div class="metric-label">{{ $t('etfAnalysis.aum') }}</div>
           <div class="metric-val font-weight-medium text-right">{{ fmt.aum(dataA!.totalAssets, dataA!.currency) }}</div>
           <div v-if="dataB" class="metric-val font-weight-medium text-right">{{ fmt.aum(dataB.totalAssets, dataB.currency) }}</div>
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
-          <div class="metric-label">상장일</div>
+          <div class="metric-label">{{ $t('etfAnalysis.listingDate') }}</div>
           <div class="metric-val font-weight-medium text-right">{{ fmt.date(dataA!.inceptionDate) }}</div>
           <div v-if="dataB" class="metric-val font-weight-medium text-right">{{ fmt.date(dataB.inceptionDate) }}</div>
         </div>
@@ -545,21 +548,23 @@ const aiData = computed(() => {
       <div v-if="commonPeriod && dataB" class="common-period-banner mb-3">
         <v-icon size="14" color="primary">mdi-calendar-sync-outline</v-icon>
         <span>
-          상장일이 달라 <strong>{{ commonPeriod.startDate.replace('-', '년 ') }}월</strong> 이후 공통 구간 기준으로 CAGR · MDD · 변동성을 비교합니다.
+          <i18n-t keypath="etfAnalysis.commonPeriodNote" tag="span" scope="global">
+            <template #date><strong>{{ formatYearMonth(Number(commonPeriod.startDate.split('-')[0]), Number(commonPeriod.startDate.split('-')[1])) }}</strong></template>
+          </i18n-t>
         </span>
       </div>
 
       <!-- 수익률 섹션 -->
       <v-card rounded="xl" class="mb-3 overflow-hidden">
         <div class="col-header-row d-flex align-center px-4 pt-3 pb-1">
-          <div class="metric-label section-title">수익률</div>
+          <div class="metric-label section-title">{{ $t('etfAnalysis.returnSection') }}</div>
           <div class="col-header">{{ dataA!.ticker }}</div>
           <div v-if="dataB" class="col-header">{{ dataB.ticker }}</div>
         </div>
 
         <div class="metric-row d-flex align-center px-4 py-2">
           <div class="metric-label d-flex align-center ga-1">
-            CAGR (연평균 수익률)
+            {{ $t('etfAnalysis.cagrLabel') }}
             <v-tooltip :text="tooltips.cagr" location="bottom" open-on-click>
               <template #activator="{ props }">
                 <v-icon v-bind="props" size="13" class="tooltip-icon">mdi-information-outline</v-icon>
@@ -574,12 +579,12 @@ const aiData = computed(() => {
           </div>
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
-          <div class="metric-label">52주 최고</div>
+          <div class="metric-label">{{ $t('etfAnalysis.week52High') }}</div>
           <div class="metric-val font-weight-medium text-right">{{ fmt.price(dataA!.week52High, dataA!.currency) }}</div>
           <div v-if="dataB" class="metric-val font-weight-medium text-right">{{ fmt.price(dataB.week52High, dataB.currency) }}</div>
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
-          <div class="metric-label">52주 최저</div>
+          <div class="metric-label">{{ $t('etfAnalysis.week52Low') }}</div>
           <div class="metric-val font-weight-medium text-right">{{ fmt.price(dataA!.week52Low, dataA!.currency) }}</div>
           <div v-if="dataB" class="metric-val font-weight-medium text-right">{{ fmt.price(dataB.week52Low, dataB.currency) }}</div>
         </div>
@@ -588,14 +593,14 @@ const aiData = computed(() => {
       <!-- 리스크 섹션 -->
       <v-card rounded="xl" class="mb-3 overflow-hidden">
         <div class="col-header-row d-flex align-center px-4 pt-3 pb-1">
-          <div class="metric-label section-title">리스크</div>
+          <div class="metric-label section-title">{{ $t('etfAnalysis.riskSection') }}</div>
           <div class="col-header">{{ dataA!.ticker }}</div>
           <div v-if="dataB" class="col-header">{{ dataB.ticker }}</div>
         </div>
 
         <div class="metric-row d-flex align-center px-4 py-2">
           <div class="metric-label d-flex align-center ga-1">
-            MDD (최대 낙폭)
+            {{ $t('etfAnalysis.mddLabel') }}
             <v-tooltip :text="tooltips.mdd" location="bottom" open-on-click>
               <template #activator="{ props }">
                 <v-icon v-bind="props" size="13" class="tooltip-icon">mdi-information-outline</v-icon>
@@ -612,7 +617,7 @@ const aiData = computed(() => {
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
           <div class="metric-label d-flex align-center ga-1">
-            연간 변동성
+            {{ $t('etfAnalysis.volatilityLabel') }}
             <v-tooltip :text="tooltips.volatility" location="bottom" open-on-click>
               <template #activator="{ props }">
                 <v-icon v-bind="props" size="13" class="tooltip-icon">mdi-information-outline</v-icon>
@@ -628,7 +633,7 @@ const aiData = computed(() => {
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
           <div class="metric-label d-flex align-center ga-1">
-            베타
+            {{ $t('etfAnalysis.betaLabel') }}
             <v-tooltip :text="tooltips.beta" location="bottom" open-on-click>
               <template #activator="{ props }">
                 <v-icon v-bind="props" size="13" class="tooltip-icon">mdi-information-outline</v-icon>
@@ -649,14 +654,14 @@ const aiData = computed(() => {
       <!-- 배당 & 비용 섹션 -->
       <v-card rounded="xl" class="mb-3 overflow-hidden">
         <div class="col-header-row d-flex align-center px-4 pt-3 pb-1">
-          <div class="metric-label section-title">배당 & 비용</div>
+          <div class="metric-label section-title">{{ $t('etfAnalysis.dividendSection') }}</div>
           <div class="col-header">{{ dataA!.ticker }}</div>
           <div v-if="dataB" class="col-header">{{ dataB.ticker }}</div>
         </div>
 
         <div class="metric-row d-flex align-center px-4 py-2">
           <div class="metric-label d-flex align-center ga-1">
-            배당률
+            {{ $t('etfAnalysis.dividendYieldLabel') }}
             <v-tooltip :text="tooltips.dividendYield" location="bottom" open-on-click>
               <template #activator="{ props }">
                 <v-icon v-bind="props" size="13" class="tooltip-icon">mdi-information-outline</v-icon>
@@ -674,7 +679,7 @@ const aiData = computed(() => {
         </div>
         <div class="metric-row d-flex align-center px-4 py-2">
           <div class="metric-label d-flex align-center ga-1">
-            운용보수 (TER)
+            {{ $t('etfAnalysis.terLabel') }}
             <v-tooltip :text="tooltips.ter" location="bottom" open-on-click>
               <template #activator="{ props }">
                 <v-icon v-bind="props" size="13" class="tooltip-icon">mdi-information-outline</v-icon>
@@ -696,7 +701,7 @@ const aiData = computed(() => {
       <v-card v-if="aiData" rounded="xl" class="mb-4 ai-card pa-4">
         <div class="d-flex align-center ga-2 mb-3">
           <v-icon size="18" color="primary">mdi-creation</v-icon>
-          <div class="font-weight-bold" style="color: rgb(var(--v-theme-primary))">AI 종합 분석</div>
+          <div class="font-weight-bold" style="color: rgb(var(--v-theme-primary))">{{ $t('etfAnalysis.aiTitle') }}</div>
         </div>
 
         <!-- 단일 ETF -->
@@ -707,7 +712,7 @@ const aiData = computed(() => {
           <div v-if="!aiData.tied" class="ai-winner-row d-flex align-center ga-2 mb-3 pa-3">
             <span style="font-size:1.25rem">🏆</span>
             <div>
-              <div class="text-medium-emphasis">추천 ETF</div>
+              <div class="text-medium-emphasis">{{ $t('etfAnalysis.recommendedEtf') }}</div>
               <div class="font-weight-bold">{{ aiData.winner }}</div>
             </div>
           </div>
@@ -722,7 +727,7 @@ const aiData = computed(() => {
       </v-card>
 
       <div class="text-medium-emphasis">
-        * Yahoo Finance 데이터 기반 · 투자 판단의 참고 자료로만 활용하세요.
+        {{ $t('etfAnalysis.disclaimer') }}
       </div>
     </template>
   </v-container>

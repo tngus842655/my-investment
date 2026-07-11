@@ -17,13 +17,23 @@ interface TickerDividend {
   currency: string
 }
 
-const yahooSymbol = (ticker: string, currency: string): string => {
-  if (currency === 'KRW' && /^\d{6}$/.test(ticker)) return `${ticker}.KS`
-  return ticker
+// 시장별 야후 심볼 서픽스/티커 형식 — 프론트 src/config/marketConfig.ts와 동일한 맵 (국가 추가 시 양쪽 함께 수정)
+const MARKETS: Record<string, { suffixes: string[]; tickerPattern: RegExp }> = {
+  KR: { suffixes: ['.KS', '.KQ'], tickerPattern: /^\d{6}$/ },
+  JP: { suffixes: ['.T'], tickerPattern: /^\d{4}$/ },
+  CN: { suffixes: ['.SS', '.SZ'], tickerPattern: /^\d{6}$/ },
 }
 
-const fetchDividends = async (ticker: string, currency: string): Promise<TickerDividend> => {
-  const symbol = yahooSymbol(ticker, currency)
+// 이 API는 market 대신 통화를 받으므로 통화로 시장 판별 (시장별 통화가 유일하다는 전제)
+const CURRENCY_MARKETS: Record<string, string> = { KRW: 'KR', JPY: 'JP', CNY: 'CN' }
+
+const symbolCandidates = (ticker: string, currency: string): string[] => {
+  const market = MARKETS[CURRENCY_MARKETS[currency] ?? '']
+  if (market && market.tickerPattern.test(ticker)) return market.suffixes.map((s) => `${ticker}${s}`)
+  return [ticker]
+}
+
+const fetchDividendsBySymbol = async (symbol: string): Promise<{ dividends: DividendEvent[]; hasChart: boolean }> => {
   const now = Math.floor(Date.now() / 1000)
   const from = 0  // 전체 상장 이력
 
@@ -40,10 +50,12 @@ const fetchDividends = async (ticker: string, currency: string): Promise<TickerD
   ])
 
   const dividends: DividendEvent[] = []
+  let hasChart = false
 
   // 과거 배당 이력
   if (chartRes.status === 'fulfilled' && chartRes.value.ok) {
     const data = await chartRes.value.json()
+    hasChart = !!data?.chart?.result?.[0]
     const rawDividends: Record<string, { amount: number; date: number }> =
       data?.chart?.result?.[0]?.events?.dividends ?? {}
 
@@ -79,7 +91,19 @@ const fetchDividends = async (ticker: string, currency: string): Promise<TickerD
 
   dividends.sort((a, b) => a.date.localeCompare(b.date))
 
-  return { ticker, dividends, currency }
+  return { dividends, hasChart }
+}
+
+// 심볼 후보를 순서대로 시도 (KR: KOSPI 실패 시 KOSDAQ 재시도)
+const fetchDividends = async (ticker: string, currency: string): Promise<TickerDividend> => {
+  const candidates = symbolCandidates(ticker, currency)
+  let last: DividendEvent[] = []
+  for (const symbol of candidates) {
+    const { dividends, hasChart } = await fetchDividendsBySymbol(symbol)
+    last = dividends
+    if (hasChart) return { ticker, dividends, currency }
+  }
+  return { ticker, dividends: last, currency }
 }
 
 Deno.serve(async (req) => {

@@ -5,9 +5,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const yahooSymbol = (ticker: string): string => {
-  if (/^\d{6}$/.test(ticker)) return `${ticker}.KS`
-  return ticker
+// 시장별 야후 심볼 서픽스 — 프론트 src/config/marketConfig.ts와 동일한 맵 (국가 추가 시 양쪽 함께 수정)
+// 6자리 숫자 티커는 KR로 간주 (CN도 6자리지만 시장 정보가 없는 이 API에서는 KR 우선. CN 지원 시 market 파라미터 도입 필요)
+const MARKET_SUFFIXES: Record<string, string[]> = {
+  KR: ['.KS', '.KQ'],
+  US: [],
+  JP: ['.T'],
+  CN: ['.SS', '.SZ'],
+}
+
+const symbolCandidates = (ticker: string): string[] => {
+  if (/^\d{6}$/.test(ticker)) return MARKET_SUFFIXES.KR!.map((s) => `${ticker}${s}`)
+  return [ticker]
 }
 
 Deno.serve(async (req) => {
@@ -27,27 +36,26 @@ Deno.serve(async (req) => {
       })
     }
 
-    const symbol = yahooSymbol(ticker.toUpperCase())
     const [startYear, startMonth] = start_ym.split('-').map(Number)
     const startUnix = Math.floor(new Date(startYear, startMonth - 1, 1).getTime() / 1000)
     const nowUnix = Math.floor(Date.now() / 1000)
 
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1mo&period1=${startUnix}&period2=${nowUnix}&events=adjclose`
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' },
-    })
-
-    if (!res.ok) {
-      return new Response(JSON.stringify({ error: `ticker_not_found` }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // 심볼 후보를 순서대로 시도 (KR: KOSPI 실패 시 KOSDAQ 재시도)
+    // deno-lint-ignore no-explicit-any
+    let result: any = null
+    for (const symbol of symbolCandidates(ticker.toUpperCase())) {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1mo&period1=${startUnix}&period2=${nowUnix}&events=adjclose`
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' },
       })
+      if (!res.ok) continue
+      const json = await res.json()
+      const r = json?.chart?.result?.[0]
+      if (r) { result = r; break }
     }
 
-    const json = await res.json()
-    const result = json?.chart?.result?.[0]
     if (!result) {
-      return new Response(JSON.stringify({ error: 'No data found for ticker' }), {
+      return new Response(JSON.stringify({ error: 'ticker_not_found' }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })

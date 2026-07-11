@@ -76,10 +76,15 @@
 **수정한 파일이 있으면 반드시 타입 체크를 실행하고 오류가 없는지 확인할 것.**
 
 ```bash
-./node_modules/.bin/vue-tsc --noEmit
+./node_modules/.bin/vue-tsc --build
 ```
 
 `npx tsc --noEmit`은 Vue SFC를 검사하지 못하므로 반드시 `vue-tsc`를 사용할 것.
+⚠️ **`vue-tsc --noEmit`을 인자 없이 단독 실행하면 안 됨** — 루트 `tsconfig.json`이 `files: []` +
+project references만 갖고 있어서, `--build` 없이 `--noEmit`만 주면 어떤 파일도 검사하지 않고 항상
+성공(exit 0)을 반환하는 조용한 무검사 상태가 된다 (2026-07-11 발견, 이 실수로 여러 커밋이 실제
+타입 에러를 안은 채 "통과"로 잘못 보고된 적 있음). 반드시 `--build`를 쓰거나, 부득이하게
+`--noEmit`을 쓸 경우 `-p tsconfig.app.json`으로 대상 프로젝트를 명시할 것.
 오류가 있으면 커밋 전에 수정한다. 오류가 없을 때만 커밋·푸시한다.
 
 **UI 변경 사항을 스크린샷 찍어서 확인하지 말 것.** (playwright-core 임시 설치 + dev 서버 구동 + 스크린샷 촬영·읽기 등) 토큰 소모가 매우 크다. `vue-tsc` 타입 체크와 코드 리뷰로 검증하고, 실제 동작 확인은 사용자가 직접 로그인해서 확인한다.
@@ -134,6 +139,8 @@ VITE_SUPABASE_ANON_KEY=
 - **스낵바 알림**: `src/composables/useSnackbar.ts`의 `showMessage(text, color)` 함수를 직접 import해서 사용 (Pinia 스토어가 아닌 모듈 레벨 ref)
 - **테마**: `src/composables/useAppTheme.ts`의 `useAppTheme()` - localStorage에 `my-investment-theme` 키로 저장, 초기값은 시스템 설정 따라감
 - **티커 한글명**: `src/utils/tickerNames.ts`의 `TICKER_NAMES` 매핑 테이블 - 없는 티커는 그대로 표시
+- **시장/자산군 분류**: `src/config/marketConfig.ts` - 시장(KR/US/JP/CN)·자산군(stock/etf/crypto/cash)·통화 상수의 단일 소스. `asset_type` 한글 리터럴을 직접 비교하지 말고 `getAssetClass`/`getMarket`/`isCash`/`isCrypto` 접근자를 쓸 것
+- **기준통화**: `src/composables/useBaseCurrency.ts` - 모든 금액은 기준통화(`investment_goals.base_currency`) 단위로 집계·저장하고 `money()`/`moneyOr()`로 포맷. 통화 간 환산은 `src/utils/portfolioMath.ts`의 `convertMoney`, 환율은 `src/services/exchangeRateCache.ts`의 `getCachedRate(from, to)`(USD 허브·1시간 캐시)
 - **경로 alias**: `@` → `src/`
 
 ### 상태관리

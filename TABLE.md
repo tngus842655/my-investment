@@ -53,6 +53,8 @@ USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'email') = 'admin
 | portfolio_sort     | text        | 포트폴리오 정렬 기준 (custom/eval/profit/rate/name, 기본값 custom) |
 | hide_asset         | boolean     | 자산 숨김 여부 (기본값 false)                                      |
 | include_cash       | boolean     | 대시보드 현재 자산에 현금 포함 여부 (기본값 false)                 |
+| base_currency      | currency_enum | 기준통화 — target_asset/monthly_investment의 단위 (기본값 KRW)   |
+| locale             | text        | 표시 언어 ko \| en \| ja \| zh (기본값 ko, CHECK 제약)           |
 | created_at         | timestamptz |                                                                    |
 | updated_at         | timestamptz |                                                                    |
 
@@ -74,8 +76,9 @@ USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'email') = 'admin
 | -------------------- | ----------- | ----------------------- |
 | id                   | uuid        | PK                      |
 | user_id              | uuid        | FK → auth.users, unique |
-| current_asset        | int8        | 현재 평가 자산 (KRW)    |
-| investment_principal | int8        | 투자 원금 (KRW)         |
+| current_asset        | int8        | 현재 평가 자산 (base_currency 단위) |
+| investment_principal | int8        | 투자 원금 (base_currency 단위)      |
+| base_currency        | currency_enum | 금액 단위 통화 (기본값 KRW)       |
 | created_at           | timestamptz |                         |
 | updated_at           | timestamptz |                         |
 
@@ -98,7 +101,9 @@ USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'email') = 'admin
 | id         | uuid          | PK                           |
 | user_id    | uuid          | FK → auth.users              |
 | ticker     | text          | 종목 코드 (예: AAPL, 005930) |
-| asset_type | text          | 자산 유형                    |
+| asset_type | text          | 자산 유형 (한글, 레거시). 프론트 참조 전면 제거 완료 → 컬럼 DROP SQL 실행 대기(`migrations/20260711_04`, main 배포 후) — GLOBALIZATION.md 사용자 단계 6 |
+| asset_class | text         | stock \| etf \| crypto \| cash (CHECK 제약)  |
+| market     | text          | KR \| US \| JP \| CN (CHECK 제약, crypto/cash는 NULL) |
 | quantity   | numeric       | 보유 수량                    |
 | avg_price  | numeric       | 평균 매수가                  |
 | currency   | currency_enum | KRW \| USD                   |
@@ -125,8 +130,9 @@ USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'email') = 'admin
 | id            | uuid        | PK                                       |
 | user_id       | uuid        | FK → auth.users                          |
 | recorded_at   | date        | 기록 날짜 (user_id + recorded_at unique) |
-| current_asset | int8        | 해당 일 평가 자산 (KRW, 현금 제외)       |
+| current_asset | int8        | 해당 일 평가 자산 (base_currency 단위, 현금 제외) |
 | progress_pct  | float8      | FIRE 달성률 % (nullable)                 |
+| base_currency | currency_enum | 기록 시점의 기준통화 (행 단위 보존 — 기준통화를 바꿔도 과거 행은 소급 환산하지 않음) |
 | created_at    | timestamptz |                                          |
 
 **pg_cron 스케줄:** `daily-asset-snapshot` — `0 15 * * *` (UTC) = 매일 KST 00:00 실행
@@ -134,18 +140,20 @@ USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'email') = 'admin
 ```sql
 -- save_daily_asset_snapshot() 함수
 BEGIN
-  INSERT INTO asset_history (user_id, recorded_at, current_asset, progress_pct)
+  INSERT INTO asset_history (user_id, recorded_at, current_asset, progress_pct, base_currency)
   SELECT
     a.user_id,
     CURRENT_DATE,
     a.current_asset,
-    ROUND((a.current_asset::float8 / g.target_asset * 100)::numeric, 2)
+    ROUND((a.current_asset::float8 / g.target_asset * 100)::numeric, 2),
+    a.base_currency
   FROM asset_summary a
   JOIN investment_goals g ON g.user_id = a.user_id
   WHERE a.current_asset > 0
   ON CONFLICT (user_id, recorded_at) DO UPDATE
     SET current_asset = EXCLUDED.current_asset,
-        progress_pct  = EXCLUDED.progress_pct;
+        progress_pct  = EXCLUDED.progress_pct,
+        base_currency = EXCLUDED.base_currency;
 END;
 ```
 
@@ -169,6 +177,8 @@ END;
 | unit_price       | numeric               | 거래 단가       |
 | transaction_date | date                  | 거래일          |
 | memo             | text                  | 메모 (nullable) |
+| exchange_rate    | numeric               | 거래 시점 환율: 거래통화 1단위 = base_currency 얼마 (거래통화 == base_currency면 NULL) |
+| base_currency    | currency_enum         | exchange_rate가 환산하는 통화 (기본값 KRW) |
 | created_at       | timestamptz           |                 |
 | updated_at       | timestamptz           |                 |
 

@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
-import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
-import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { useI18n } from 'vue-i18n'
+import { formatYearMonth, formatDuration } from '@/utils/dateFormat'
 
 const router = useRouter()
+const { t } = useI18n()
 const userDataStore = useUserDataStore()
 const loading = ref(true)
 const exchangeRate = ref(1350)
-const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
-const formatMoney = (v: number) =>
-  displayCurrency.value === 'USD' ? formatUsdWithRate(v, exchangeRate.value) : formatShortMoney(v) + '원'
+const { money } = useBaseCurrency()
+const formatMoney = (v: number) => money(v, exchangeRate.value, 'short')
 
 const targetAsset = ref(0)
 const currentAsset = ref(0)
@@ -188,24 +188,20 @@ const scenarios = computed<Scenario[]>(() => {
 
 const formatScenarioDate = (months: number | null) => {
   if (months === null) return '-'
-  if (months === 0) return '달성!'
+  if (months === 0) return t('analysis.reached')
   const d = new Date()
   d.setMonth(d.getMonth() + months)
-  return `${d.getFullYear()}년 ${d.getMonth() + 1}월`
+  return formatYearMonth(d.getFullYear(), d.getMonth() + 1)
 }
 
 const formatScenarioDiff = (months: number | null, baseMonths: number | null, isOptimistic: boolean) => {
   if (months === null || baseMonths === null) return '-'
-  if (months === 0) return '달성!'
+  if (months === 0) return t('analysis.reached')
   const d = new Date()
   d.setMonth(d.getMonth() + months)
   const dateStr = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}`
   const diff = Math.abs(baseMonths - months)
-  if (isOptimistic) {
-    return `${diff}개월 단축(${dateStr})`
-  } else {
-    return `${diff}개월 증가(${dateStr})`
-  }
+  return t(isOptimistic ? 'analysis.diffShorter' : 'analysis.diffLonger', { n: diff, date: dateStr })
 }
 
 // ── FIRE Tip ─────────────────────────────────────
@@ -240,19 +236,16 @@ const fireTip = computed(() => {
 
   // 더 임팩트 큰 팁 선택
   if (investDiff !== null && investDiff > 0 && (rateDiff === null || investDiff >= rateDiff)) {
-    const y = Math.floor(investDiff / 12)
-    const mo = investDiff % 12
-    const diffStr = y > 0 ? `${y}년 ${mo > 0 ? mo + '개월' : ''}` : `${investDiff}개월`
     return {
-      body: `월 투자금을 <strong>${formatMoney(INVEST_BUMP)}</strong> 늘리면 목표 달성이 약 <strong>${diffStr}</strong> 빨라집니다.`,
+      key: 'analysis.tipInvest',
+      amount: formatMoney(INVEST_BUMP),
+      duration: formatDuration(investDiff),
     }
   }
   if (rateDiff !== null && rateDiff > 0) {
-    const y = Math.floor(rateDiff / 12)
-    const mo = rateDiff % 12
-    const diffStr = y > 0 ? `${y}년 ${mo > 0 ? mo + '개월' : ''}` : `${rateDiff}개월`
     return {
-      body: `연평균 수익률이 <strong>1%</strong> 높아지면 목표 달성이 약 <strong>${diffStr}</strong> 앞당겨집니다.`,
+      key: 'analysis.tipRate',
+      duration: formatDuration(rateDiff),
     }
   }
   return null
@@ -307,9 +300,7 @@ const fireGoalYear = computed(() => {
 
   let remainText: string | null = null
   if (C < T && totalMonths > 0) {
-    const y = Math.floor(totalMonths / 12)
-    const mo = totalMonths % 12
-    remainText = y > 0 ? `목표까지 약 ${y}년${mo > 0 ? ' ' + mo + '개월' : ''}` : `목표까지 약 ${totalMonths}개월`
+    remainText = t('analysis.untilGoalApprox', { duration: formatDuration(totalMonths) })
   }
 
   return { year: reachedYear, month: reachedMonth, asset: reachedAsset, remainText, totalMonths }
@@ -349,7 +340,7 @@ const loadData = async (force = false) => {
     currentAsset.value = summary?.current_asset ?? 0
   } catch (e) {
     console.error(e)
-    showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
+    showMessage(t('analysis.loadError'), 'error')
   } finally {
     loading.value = false
   }
@@ -367,13 +358,12 @@ onUnmounted(clearPullToRefresh)
     <!-- 헤더 -->
     <div class="d-flex justify-space-between align-center mb-2">
       <div class="d-flex align-center ga-2">
-        <img src="/icons/icon-predict.png" class="header-icon" alt="예측" />
-        <div class="font-weight-bold">미래 예측</div>
+        <img src="/icons/icon-predict.png" class="header-icon" :alt="$t('analysis.headerAlt')" />
+        <div class="font-weight-bold">{{ $t('analysis.title') }}</div>
       </div>
       <div class="d-flex align-center ga-2">
-        <CurrencyToggle />
         <button class="icon-btn" @click="router.push('/hub')">
-          <img src="/icons/icon-hub.png" alt="허브" class="icon-btn-img" />
+          <img src="/icons/icon-hub.png" :alt="$t('common.hub')" class="icon-btn-img" />
         </button>
       </div>
     </div>
@@ -388,9 +378,9 @@ onUnmounted(clearPullToRefresh)
       <!-- 설정 없음 -->
       <div class="glass-card py-12 text-center">
         <v-icon size="48" color="primary" style="opacity: 0.35" class="mb-4">mdi-chart-timeline-variant</v-icon>
-        <div class="font-weight-medium text-medium-emphasis">설정이 필요합니다</div>
-        <div class="text-disabled mt-1 mb-6">목표 설정에서 월 투자금과 연평균 수익률을 입력해주세요</div>
-        <v-btn color="primary" variant="tonal" rounded="lg" @click="router.push('/goalSettings')"> 목표 설정하기 </v-btn>
+        <div class="font-weight-medium text-medium-emphasis">{{ $t('analysis.needSetup') }}</div>
+        <div class="text-disabled mt-1 mb-6">{{ $t('analysis.needSetupHint') }}</div>
+        <v-btn color="primary" variant="tonal" rounded="lg" @click="router.push('/goalSettings')"> {{ $t('analysis.goToGoalSetup') }} </v-btn>
       </div>
     </template>
 
@@ -399,13 +389,13 @@ onUnmounted(clearPullToRefresh)
       <div class="glass-card pa-4 mb-3">
         <div class="d-flex justify-space-between align-center mb-1">
           <div>
-            <div class="chart-asset-label">현재 자산</div>
+            <div class="chart-asset-label">{{ $t('analysis.currentAsset') }}</div>
             <div class="chart-asset-value" :style="currentAsset === 0 ? 'color: rgba(var(--v-theme-on-surface), 0.35)' : ''">
-              {{ currentAsset === 0 ? '미등록' : formatMoney(currentAsset) }}
+              {{ currentAsset === 0 ? $t('analysis.unregistered') : formatMoney(currentAsset) }}
             </div>
           </div>
           <div class="text-right" v-if="targetAsset > 0">
-            <div class="chart-asset-label">목표 자산</div>
+            <div class="chart-asset-label">{{ $t('analysis.targetAsset') }}</div>
             <div class="chart-asset-value" style="color: rgb(var(--v-theme-primary))">{{ formatMoney(targetAsset) }}</div>
           </div>
         </div>
@@ -413,7 +403,7 @@ onUnmounted(clearPullToRefresh)
         <!-- 현재 자산 미등록 안내 -->
         <div v-if="currentAsset === 0" class="no-asset-notice mb-3" @click="router.push('/portfolio')" style="cursor: pointer">
           <v-icon size="13" color="warning">mdi-information-outline</v-icon>
-          <span>포트폴리오에 종목을 추가하면 현재 자산이 반영됩니다</span>
+          <span>{{ $t('analysis.addAssetHint') }}</span>
           <v-icon size="14" color="warning" style="margin-left: auto; opacity: 0.7">mdi-chevron-right</v-icon>
         </div>
 
@@ -422,7 +412,7 @@ onUnmounted(clearPullToRefresh)
           <!-- 달성률 텍스트 -->
           <div class="pt-pct-row">
             <span class="pt-pct-value">{{ progressPct }}%</span>
-            <span class="pt-pct-label">달성</span>
+            <span class="pt-pct-label">{{ $t('analysis.reachedShort') }}</span>
           </div>
 
           <!-- 프로그레스 바 + 마일스톤 -->
@@ -472,29 +462,29 @@ onUnmounted(clearPullToRefresh)
       <!-- 예상 요약 스탯 -->
       <div class="stat-grid mb-3">
         <div class="stat-card text-center">
-          <div class="stat-label">총 투자금 (예상)</div>
+          <div class="stat-label">{{ $t('analysis.totalInvested') }}</div>
           <div class="stat-value">{{ formatMoney(currentAsset + totalInvested) }}</div>
         </div>
         <div class="stat-card text-center">
-          <div class="stat-label">총 수익 (예상)</div>
+          <div class="stat-label">{{ $t('analysis.totalReturn') }}</div>
           <div class="stat-value" style="color: rgb(var(--v-theme-primary))">{{ formatMoney(Math.max(totalReturn, 0)) }}</div>
         </div>
         <div class="stat-card text-center" style="grid-column: 1 / -1">
-          <div class="stat-label">최종 자산 (예상)</div>
+          <div class="stat-label">{{ $t('analysis.finalAsset') }}</div>
           <div class="stat-value-lg">{{ formatMoney(finalAsset) }}</div>
         </div>
       </div>
 
       <!-- 수익률 시나리오 비교 -->
       <div v-if="scenarios.length" class="glass-card pa-4 mb-3">
-        <div class="section-title mb-3">수익률 시나리오 비교</div>
+        <div class="section-title mb-3">{{ $t('analysis.scenarioTitle') }}</div>
         <div class="scenario-grid">
           <div v-for="(s, i) in scenarios" :key="s.rate" class="scenario-col" :class="i === 0 ? 'scenario-low' : i === 2 ? 'scenario-high' : 'scenario-mid'">
             <div class="scenario-emoji">{{ i === 0 ? '🐢' : i === 2 ? '🚀' : '📍' }}</div>
             <div class="scenario-name" :class="i === 0 ? 'name-low' : i === 2 ? 'name-high' : 'name-mid'">
-              {{ i === 0 ? '보수적' : i === 2 ? '낙관적' : '현재 계획' }}
+              {{ i === 0 ? $t('analysis.scenarioConservative') : i === 2 ? $t('analysis.scenarioOptimistic') : $t('analysis.scenarioCurrent') }}
             </div>
-            <div class="scenario-rate-label">연 {{ s.rate }}%</div>
+            <div class="scenario-rate-label">{{ $t('analysis.annualRatePrefix', { rate: s.rate }) }}</div>
             <div class="scenario-divider" />
             <div class="scenario-date">
               <template v-if="i === 1">{{ formatScenarioDate(s.months) }}</template>
@@ -507,13 +497,16 @@ onUnmounted(clearPullToRefresh)
       <!-- FIRE Tip -->
       <div v-if="fireTip" class="tip-card mb-3">
         <span class="tip-emoji">💡</span>
-        <span class="tip-title">FIRE Tip</span>
-        <span class="tip-body ml-1" v-html="fireTip.body"></span>
+        <span class="tip-title">{{ $t('analysis.tipTitle') }}</span>
+        <i18n-t :keypath="fireTip.key" tag="span" class="tip-body ml-1" scope="global">
+          <template v-if="'amount' in fireTip" #amount><strong>{{ fireTip.amount }}</strong></template>
+          <template #duration><strong>{{ fireTip.duration }}</strong></template>
+        </i18n-t>
       </div>
 
       <!-- 연도별 예상자산 추이 -->
       <div class="glass-card pa-4">
-        <div class="section-title mb-3">연도별 예상자산 추이</div>
+        <div class="section-title mb-3">{{ $t('analysis.yearlyTitle') }}</div>
         <div class="yearly-table">
           <div v-for="row in visibleRows" :key="row.year" class="yearly-row" :class="`yearly-row--${row.status}`">
             <!-- 연도 + 아이콘 -->
@@ -535,8 +528,8 @@ onUnmounted(clearPullToRefresh)
                   <span class="yearly-rate yearly-rate--active">{{ row.annualRate }}%</span>
                 </div>
                 <div class="yearly-sublabels">
-                  <span class="yearly-sublabel">올해 목표 {{ formatMoney(row.asset) }}</span>
-                  <span v-if="row.fireRate !== null" class="yearly-fire-rate"> 전체 FIRE {{ row.fireRate }}% </span>
+                  <span class="yearly-sublabel">{{ $t('analysis.thisYearGoal', { amount: formatMoney(row.asset) }) }}</span>
+                  <span v-if="row.fireRate !== null" class="yearly-fire-rate"> {{ $t('analysis.totalFire', { rate: row.fireRate }) }} </span>
                 </div>
               </template>
 
@@ -546,7 +539,7 @@ onUnmounted(clearPullToRefresh)
                   <div class="yearly-bar-bg yearly-bar-bg--done">
                     <div class="yearly-bar-fill yearly-bar-fill--done" style="width: 100%"></div>
                   </div>
-                  <span class="yearly-rate yearly-rate--done">완료</span>
+                  <span class="yearly-rate yearly-rate--done">{{ $t('analysis.done') }}</span>
                 </div>
                 <div class="yearly-asset yearly-asset--past">{{ formatMoney(row.asset) }}</div>
               </template>
@@ -559,7 +552,7 @@ onUnmounted(clearPullToRefresh)
                   </div>
                   <span class="yearly-rate yearly-rate--future">-</span>
                 </div>
-                <div class="yearly-asset yearly-asset--future">{{ formatMoney(row.asset) }} 예정</div>
+                <div class="yearly-asset yearly-asset--future">{{ $t('analysis.planned', { amount: formatMoney(row.asset) }) }}</div>
               </template>
             </div>
           </div>
@@ -567,16 +560,16 @@ onUnmounted(clearPullToRefresh)
 
         <!-- 더보기 / 접기 -->
         <div v-if="displayRows.length > summaryRows.length || showAllYears" class="yearly-toggle" @click="showAllYears = !showAllYears">
-          {{ showAllYears ? '접기 ▲' : `전체 보기 (${displayRows.length}개) ▼` }}
+          {{ showAllYears ? $t('analysis.collapse') : $t('analysis.expand', { n: displayRows.length }) }}
         </div>
 
         <!-- FIRE 달성 카드 -->
         <div v-if="fireGoalYear" class="fire-goal-card mt-3">
-          <div class="fire-goal-title">🏆 FIRE 목표 달성</div>
-          <div class="fire-goal-asset-label">예상 자산</div>
+          <div class="fire-goal-title">{{ $t('analysis.fireGoalTitle') }}</div>
+          <div class="fire-goal-asset-label">{{ $t('analysis.fireGoalAssetLabel') }}</div>
           <div class="fire-goal-asset">{{ formatMoney(finalAsset) }}</div>
           <div class="fire-goal-meta">
-            <span class="fire-goal-year">{{ fireGoalYear.year }}년 {{ fireGoalYear.month }}월 예상</span>
+            <span class="fire-goal-year">{{ $t('analysis.fireGoalYearMonth', { ym: formatYearMonth(fireGoalYear.year, fireGoalYear.month) }) }}</span>
             <span v-if="fireGoalYear.remainText" class="fire-goal-remain"> · {{ fireGoalYear.remainText }}</span>
           </div>
           <div class="fire-goal-bar-bg">

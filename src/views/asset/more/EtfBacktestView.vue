@@ -4,8 +4,11 @@ import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
+import { useI18n } from 'vue-i18n'
+import { formatYearMonth, formatDuration } from '@/utils/dateFormat'
 
 const router = useRouter()
+const { t } = useI18n()
 
 interface MonthlyPoint {
   ym: string
@@ -71,23 +74,23 @@ const saveRecent = (ticker: string) => {
 // 최근 조회 칩이 어느 인풋을 채울지 (null=주 티커, 'compare'=비교 티커)
 const recentTarget = ref<'main' | 'compare'>('main')
 
-const tooltips = {
-  dca: '매월 일정 금액을 꾸준히 투자하는 전략. 가격이 쌀 때 더 많이, 비쌀 때 더 적게 매수하여 평균 단가를 낮추는 효과가 있습니다.',
-  cagr: '연평균 복리 수익률. 투자 기간 전체 수익률을 연 단위로 환산한 값. 높을수록 좋습니다.',
-  mdd: '최대 낙폭(Max Drawdown). 투자 기간 중 고점 대비 최대로 하락한 비율. 절대값이 작을수록 리스크가 낮습니다.',
-  totalReturn: '투자 원금 대비 현재 평가금액의 총 수익률입니다.',
-}
+const tooltips = computed(() => ({
+  dca: t('etfBacktest.tooltips.dca'),
+  cagr: t('etfBacktest.tooltips.cagr'),
+  mdd: t('etfBacktest.tooltips.mdd'),
+  totalReturn: t('etfBacktest.tooltips.totalReturn'),
+}))
 
 // ── 시작일 선택 ───────────────────────────────────────
 type QuickPeriod = '1y' | '3y' | '5y' | '10y' | 'all'
 const activePeriod = ref<QuickPeriod | null>('10y')
 
-const quickPeriods: { label: string; value: QuickPeriod }[] = [
-  { label: '1년', value: '1y' },
-  { label: '3년', value: '3y' },
-  { label: '5년', value: '5y' },
-  { label: '10년', value: '10y' },
-  { label: '전체', value: 'all' },
+const quickPeriods: { labelKey: string; value: QuickPeriod }[] = [
+  { labelKey: 'etfBacktest.quick.y1', value: '1y' },
+  { labelKey: 'etfBacktest.quick.y3', value: '3y' },
+  { labelKey: 'etfBacktest.quick.y5', value: '5y' },
+  { labelKey: 'etfBacktest.quick.y10', value: '10y' },
+  { labelKey: 'etfBacktest.quick.all', value: 'all' },
 ]
 
 
@@ -149,9 +152,9 @@ const monthlyAmountError = computed(() => {
   const v = monthlyAmount.value
   if (v === null || v === undefined || String(v) === '') return ''
   if (!Number.isFinite(v) || v <= 0) return '0보다 큰 금액을 입력해주세요.'
-  if (!Number.isInteger(v)) return '소수점 없이 정수로 입력해주세요.'
+  if (!Number.isInteger(v)) return t('etfBacktest.integerOnly')
   if (isUsdMode.value && v > MAX_USD) return `최대 $${MAX_USD.toLocaleString()}까지 입력 가능합니다.`
-  if (!isUsdMode.value && v > MAX_KRW) return `최대 ${(MAX_KRW / 10000).toLocaleString()}만원까지 입력 가능합니다.`
+  if (!isUsdMode.value && v > MAX_KRW) return t('etfBacktest.maxKrw', { amount: MAX_KRW.toLocaleString() })
   return ''
 })
 
@@ -174,9 +177,9 @@ const fetchBacktest = async (ticker: string): Promise<BacktestResult> => {
 const run = async () => {
   const ticker = sanitizeTicker((tickerInput.value ?? '').trim())
   const cTicker = sanitizeTicker((compareInput.value ?? '').trim())
-  if (!ticker) { showMessage('티커를 입력해주세요.', 'warning'); return }
-  if (!monthlyAmount.value || monthlyAmount.value <= 0) { showMessage('월 투자금을 입력해주세요.', 'warning'); return }
-  if (cTicker && cTicker === ticker) { showMessage('비교 티커가 기준 티커와 동일합니다.', 'warning'); return }
+  if (!ticker) { showMessage(t('etfBacktest.enterTicker'), 'warning'); return }
+  if (!monthlyAmount.value || monthlyAmount.value <= 0) { showMessage(t('etfBacktest.enterMonthly'), 'warning'); return }
+  if (cTicker && cTicker === ticker) { showMessage(t('etfBacktest.sameTicker'), 'warning'); return }
 
   loading.value = true
   result.value = null
@@ -194,9 +197,9 @@ const run = async () => {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : ''
     if (msg.includes('ticker_not_found') || msg.includes('No data') || msg.includes('No valid')) {
-      showMessage('존재하지 않는 티커입니다. 티커를 확인해주세요.', 'warning')
+      showMessage(t('etfBacktest.notFound'), 'warning')
     } else {
-      showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
+      showMessage(t('etfBacktest.loadError'), 'error')
     }
   } finally {
     loading.value = false
@@ -216,16 +219,13 @@ const fmtMoneyKrw = (v: number, currency: string): string | null => {
   return `≈ ₩${krw.toLocaleString()}`
 }
 const fmtPct = (v: number, digits = 1) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(digits)}%`
-const fmtYm = (ym: string) => { const [y, m] = ym.split('-'); return `${y}년 ${Number(m)}월` }
+const fmtYm = (ym: string) => { const [y, m] = ym.split('-'); return formatYearMonth(Number(y), Number(m)) }
 const profitColor = (v: number) => (v >= 0 ? 'success' : 'error')
 
 const periodText = computed(() => {
   const s = result.value?.summary
   if (!s) return ''
-  const y = Math.floor(s.months / 12), m = s.months % 12
-  if (y === 0) return `${m}개월`
-  if (m === 0) return `${y}년`
-  return `${y}년 ${m}개월`
+  return formatDuration(s.months)
 })
 
 const summaryText = computed(() => {
@@ -251,7 +251,7 @@ const compareRows = computed(() => {
     higherIsBetter ? (va >= vb ? 'a' : 'b') : (va <= vb ? 'a' : 'b')
   return [
     {
-      label: '최종 평가금액',
+      label: t('etfBacktest.finalValue'),
       a: fmtMoney(sa.evalAmount, a.currency),
       b: fmtMoney(sb.evalAmount, b.currency),
       win: better(sa.evalAmount, sb.evalAmount, true),
@@ -259,7 +259,7 @@ const compareRows = computed(() => {
       colorB: profitColor(sb.profit),
     },
     {
-      label: '총 수익률',
+      label: t('etfBacktest.totalReturn'),
       a: fmtPct(sa.totalReturn),
       b: fmtPct(sb.totalReturn),
       win: better(sa.totalReturn, sb.totalReturn, true),
@@ -415,15 +415,17 @@ const yearlyRows = computed(() =>
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <div class="flex-grow-1">
-        <div class="font-weight-bold">ETF 백테스트</div>
+        <div class="font-weight-bold">{{ $t('etfBacktest.title') }}</div>
         <div class="d-flex align-center ga-1 text-medium-emphasis">
-          과거
-          <v-tooltip :model-value="dcaOpen" :text="tooltips.dca" location="bottom" max-width="260">
-            <template #activator="{ props }">
-              <span v-bind="props" class="tooltip-term" @click.stop="dcaOpen = !dcaOpen">DCA</span>
+          <i18n-t keypath="etfBacktest.subtitle" tag="span" class="d-flex align-center ga-1" scope="global">
+            <template #dca>
+              <v-tooltip :model-value="dcaOpen" :text="tooltips.dca" location="bottom" max-width="260">
+                <template #activator="{ props }">
+                  <span v-bind="props" class="tooltip-term" @click.stop="dcaOpen = !dcaOpen">DCA</span>
+                </template>
+              </v-tooltip>
             </template>
-          </v-tooltip>
-          투자 수익률 시뮬레이션
+          </i18n-t>
         </div>
       </div>
     </div>
@@ -436,7 +438,7 @@ const yearlyRows = computed(() =>
         class="collapse-header"
         @click="inputCollapsed = !inputCollapsed"
       >
-        <div class="font-weight-bold">조회 조건</div>
+        <div class="font-weight-bold">{{ $t('etfBacktest.conditions') }}</div>
         <div class="d-flex align-center ga-2 text-medium-emphasis">
           <span>{{ tickerInput }}{{ compareInput ? ` vs ${compareInput}` : '' }}{{ startYm ? ` · ${startYm.slice(0, 4)}년~` : '' }}</span>
           <v-icon size="18">{{ inputCollapsed ? 'mdi-chevron-down' : 'mdi-chevron-up' }}</v-icon>
@@ -448,7 +450,7 @@ const yearlyRows = computed(() =>
         <!-- 최근 조회 -->
         <template v-if="recentTickers.length > 0">
           <div>
-            <div class="recent-label">최근 조회</div>
+            <div class="recent-label">{{ $t('etfBacktest.recentSearch') }}</div>
             <div class="d-flex flex-wrap ga-2 mt-1">
               <button
                 v-for="t in recentTickers"
@@ -463,7 +465,7 @@ const yearlyRows = computed(() =>
         <!-- 기준 티커 -->
         <v-text-field
           v-model="tickerInput"
-          label="기준 티커 (예: QQQ)"
+          :label="$t('etfBacktest.baseTickerLabel')"
           variant="outlined"
           density="compact"
           rounded="lg"
@@ -478,7 +480,7 @@ const yearlyRows = computed(() =>
         <!-- 비교 티커 (선택) -->
         <v-text-field
           v-model="compareInput"
-          label="비교 티커 (선택, 예: SPY)"
+          :label="$t('etfBacktest.compareTickerLabel')"
           variant="outlined"
           density="compact"
           rounded="lg"
@@ -492,7 +494,7 @@ const yearlyRows = computed(() =>
 
         <v-text-field
           v-model.number="monthlyAmount"
-          label="월 투자금"
+          :label="$t('etfBacktest.monthlyAmount')"
           variant="outlined"
           density="compact"
           rounded="lg"
@@ -506,14 +508,14 @@ const yearlyRows = computed(() =>
         >
           <template #append-inner>
             <span class="text-medium-emphasis">
-              {{ result?.currency === 'KRW' ? '원' : 'USD' }}
+              {{ result?.currency === 'KRW' ? $t('currency.wonUnit') : 'USD' }}
             </span>
           </template>
         </v-text-field>
 
         <!-- 빠른 선택 -->
         <div>
-          <div class="quick-label">시작일 빠른 선택</div>
+          <div class="quick-label">{{ $t('etfBacktest.quickSelect') }}</div>
           <div class="d-flex ga-2 mt-1 flex-wrap">
             <button
               v-for="opt in quickPeriods"
@@ -522,7 +524,7 @@ const yearlyRows = computed(() =>
               :class="{ 'quick-btn--active': activePeriod === opt.value }"
               :disabled="loading"
               @click="applyQuickPeriod(opt.value)"
-            >{{ opt.label }}</button>
+            >{{ $t(opt.labelKey) }}</button>
           </div>
         </div>
 
@@ -531,7 +533,7 @@ const yearlyRows = computed(() =>
           <v-select
             v-model="startYear"
             :items="yearOptions"
-            label="시작 연도"
+            :label="$t('etfBacktest.startYear')"
             variant="outlined"
             density="compact"
             rounded="lg"
@@ -543,7 +545,7 @@ const yearlyRows = computed(() =>
           <v-select
             v-model="startMonth"
             :items="monthOptions"
-            label="시작 월"
+            :label="$t('etfBacktest.startMonth')"
             variant="outlined"
             density="compact"
             rounded="lg"
@@ -571,7 +573,9 @@ const yearlyRows = computed(() =>
         <v-icon size="14" color="warning">mdi-information-outline</v-icon>
         <span>
           입력하신 시작일({{ fmtYm(queriedStartYm) }})보다 상장일이 늦어
-          <strong>{{ fmtYm(result.summary.startYm) }}</strong>부터 계산되었습니다.
+          <i18n-t keypath="etfBacktest.startNote" tag="span" scope="global">
+            <template #date><strong>{{ fmtYm(result.summary.startYm) }}</strong></template>
+          </i18n-t>
         </span>
       </div>
 
@@ -588,7 +592,7 @@ const yearlyRows = computed(() =>
 
       <!-- ① 최종 평가금액 (강조, 전폭) -->
       <div class="highlight-card-full glass-card rounded-xl pa-4 mb-2">
-        <div class="stat-label">최종 평가금액</div>
+        <div class="stat-label">{{ $t('etfBacktest.finalValue') }}</div>
         <div class="highlight-value text-success">
           {{ fmtMoney(result.summary.evalAmount, result.currency) }}
         </div>
@@ -596,14 +600,14 @@ const yearlyRows = computed(() =>
           {{ fmtMoneyKrw(result.summary.evalAmount, result.currency) }}
         </div>
         <div class="peak-hint">
-          최고 {{ fmtMoney(result.summary.peakEval, result.currency) }} · {{ fmtYm(result.summary.peakYm) }}
+          {{ $t('etfBacktest.peakLine', { amount: fmtMoney(result.summary.peakEval, result.currency), date: fmtYm(result.summary.peakYm) }) }}
         </div>
       </div>
 
       <!-- ② 총 수익금 + 총 수익률 -->
       <div class="summary-grid mb-2">
         <div class="glass-card pa-3 rounded-xl text-center">
-          <div class="stat-label">총 수익금</div>
+          <div class="stat-label">{{ $t('etfBacktest.totalProfit') }}</div>
           <div class="stat-value" :class="`text-${profitColor(result.summary.profit)}`">
             {{ fmtMoney(result.summary.profit, result.currency) }}
           </div>
@@ -613,7 +617,7 @@ const yearlyRows = computed(() =>
         </div>
         <div class="glass-card pa-3 rounded-xl text-center">
           <div class="stat-label d-flex align-center justify-center ga-1">
-            총 수익률
+            {{ $t('etfBacktest.totalReturn') }}
             <v-tooltip :text="tooltips.totalReturn" location="bottom" open-on-click max-width="240">
               <template #activator="{ props }">
                 <v-icon v-bind="props" size="12" class="tooltip-icon">mdi-information-outline</v-icon>
@@ -642,7 +646,7 @@ const yearlyRows = computed(() =>
           </div>
         </div>
         <div class="glass-card pa-3 rounded-xl text-center">
-          <div class="stat-label">투자원금</div>
+          <div class="stat-label">{{ $t('etfBacktest.principal') }}</div>
           <div class="stat-value">{{ fmtMoney(result.summary.totalInvested, result.currency) }}</div>
           <div v-if="fmtMoneyKrw(result.summary.totalInvested, result.currency)" class="stat-krw">
             {{ fmtMoneyKrw(result.summary.totalInvested, result.currency) }}
@@ -653,9 +657,9 @@ const yearlyRows = computed(() =>
       <!-- ④ 투자기간 + MDD -->
       <div class="summary-grid mb-2">
         <div class="glass-card pa-3 rounded-xl text-center">
-          <div class="stat-label">투자기간</div>
+          <div class="stat-label">{{ $t('etfBacktest.period') }}</div>
           <div class="stat-value">{{ periodText }}</div>
-          <div class="stat-sub">{{ result.summary.months }}개월</div>
+          <div class="stat-sub">{{ $t('etfBacktest.months', { n: result.summary.months }) }}</div>
         </div>
         <div class="glass-card pa-3 rounded-xl text-center">
           <div class="stat-label d-flex align-center justify-center ga-1">
@@ -673,7 +677,7 @@ const yearlyRows = computed(() =>
 
       <!-- ETF 비교 테이블 -->
       <v-card v-if="compareResult && compareRows" class="glass-card pa-4 mb-4" rounded="xl">
-        <div class="font-weight-bold mb-3">ETF 비교</div>
+        <div class="font-weight-bold mb-3">{{ $t('etfBacktest.etfCompare') }}</div>
         <div class="cmp-header">
           <span />
           <span class="cmp-ticker cmp-ticker--a">{{ result.ticker }}</span>
@@ -716,11 +720,11 @@ const yearlyRows = computed(() =>
       <!-- SVG 차트 -->
       <v-card class="glass-card pa-4 mb-4" rounded="xl">
         <div class="d-flex align-center justify-space-between mb-2">
-          <div class="font-weight-bold">누적 자산 추이</div>
+          <div class="font-weight-bold">{{ $t('etfBacktest.cumulativeTrend') }}</div>
         </div>
         <div class="d-flex ga-1 mb-3">
-          <button class="mode-btn" :class="{ 'mode-btn--active': chartMode === 'amount' }" @click="chartMode = 'amount'">금액</button>
-          <button class="mode-btn" :class="{ 'mode-btn--active': chartMode === 'rate' }" @click="chartMode = 'rate'">수익률</button>
+          <button class="mode-btn" :class="{ 'mode-btn--active': chartMode === 'amount' }" @click="chartMode = 'amount'">{{ $t('etfBacktest.amountMode') }}</button>
+          <button class="mode-btn" :class="{ 'mode-btn--active': chartMode === 'rate' }" @click="chartMode = 'rate'">{{ $t('etfBacktest.rateMode') }}</button>
         </div>
         <template v-if="chartSvg">
           <div class="chart-wrap">
@@ -778,25 +782,25 @@ const yearlyRows = computed(() =>
             >
               <div class="ct-date">{{ fmtYm(tooltip.pt.ym) }}</div>
               <template v-if="chartMode === 'amount'">
-                <div class="ct-row"><span class="ct-label">투자원금</span><span class="ct-val">{{ fmtMoney(tooltip.pt.totalInvested, result!.currency) }}</span></div>
+                <div class="ct-row"><span class="ct-label">{{ $t('etfBacktest.principal') }}</span><span class="ct-val">{{ fmtMoney(tooltip.pt.totalInvested, result!.currency) }}</span></div>
                 <div v-if="fmtMoneyKrw(tooltip.pt.totalInvested, result!.currency)" class="ct-krw">{{ fmtMoneyKrw(tooltip.pt.totalInvested, result!.currency) }}</div>
                 <div class="ct-row">
-                  <span class="ct-label">평가금액</span>
+                  <span class="ct-label">{{ $t('etfBacktest.evalAmount') }}</span>
                   <span class="ct-val" :class="`text-${profitColor(tooltip.pt.evalAmount - tooltip.pt.totalInvested)}`">{{ fmtMoney(tooltip.pt.evalAmount, result!.currency) }}</span>
                 </div>
                 <div v-if="fmtMoneyKrw(tooltip.pt.evalAmount, result!.currency)" class="ct-krw" :class="`text-${profitColor(tooltip.pt.evalAmount - tooltip.pt.totalInvested)}`">{{ fmtMoneyKrw(tooltip.pt.evalAmount, result!.currency) }}</div>
                 <div class="ct-row">
-                  <span class="ct-label">수익률</span>
+                  <span class="ct-label">{{ $t('etfBacktest.returnRate') }}</span>
                   <span class="ct-val" :class="`text-${profitColor(tooltip.pt.evalAmount - tooltip.pt.totalInvested)}`">{{ fmtPct((tooltip.pt.evalAmount - tooltip.pt.totalInvested) / tooltip.pt.totalInvested) }}</span>
                 </div>
               </template>
               <template v-else>
                 <div class="ct-row">
-                  <span class="ct-label">수익률</span>
+                  <span class="ct-label">{{ $t('etfBacktest.returnRate') }}</span>
                   <span class="ct-val" :class="`text-${profitColor(tooltip.pt.evalAmount - tooltip.pt.totalInvested)}`">{{ fmtPct((tooltip.pt.evalAmount - tooltip.pt.totalInvested) / tooltip.pt.totalInvested) }}</span>
                 </div>
                 <div class="ct-row">
-                  <span class="ct-label">평가금액</span>
+                  <span class="ct-label">{{ $t('etfBacktest.evalAmount') }}</span>
                   <span class="ct-val">{{ fmtMoney(tooltip.pt.evalAmount, result!.currency) }}</span>
                 </div>
                 <div v-if="fmtMoneyKrw(tooltip.pt.evalAmount, result!.currency)" class="ct-krw">{{ fmtMoneyKrw(tooltip.pt.evalAmount, result!.currency) }}</div>
@@ -808,19 +812,19 @@ const yearlyRows = computed(() =>
           <div class="d-flex ga-4 mt-2 justify-center flex-wrap">
             <div class="d-flex align-center ga-1">
               <div class="legend-line legend-solid" />
-              <span class="text-medium-emphasis">{{ result.ticker }} 평가금액</span>
+              <span class="text-medium-emphasis">{{ $t('etfBacktest.tickerValue', { ticker: result.ticker }) }}</span>
             </div>
             <div v-if="compareResult" class="d-flex align-center ga-1">
               <div class="legend-line legend-cmp" />
-              <span class="text-medium-emphasis">{{ compareResult.ticker }} 평가금액</span>
+              <span class="text-medium-emphasis">{{ $t('etfBacktest.tickerValue', { ticker: compareResult.ticker }) }}</span>
             </div>
             <div v-if="chartMode === 'amount'" class="d-flex align-center ga-1">
               <div class="legend-line legend-dash" />
-              <span class="text-medium-emphasis">투자원금</span>
+              <span class="text-medium-emphasis">{{ $t('etfBacktest.principal') }}</span>
             </div>
             <div v-if="chartMode === 'rate'" class="d-flex align-center ga-1">
               <div class="legend-line legend-dash" />
-              <span class="text-medium-emphasis">0% 기준선</span>
+              <span class="text-medium-emphasis">{{ $t('etfBacktest.baseline') }}</span>
             </div>
           </div>
         </template>
@@ -829,14 +833,14 @@ const yearlyRows = computed(() =>
       <!-- 연도별 테이블 -->
       <v-card class="glass-card pa-4" rounded="xl">
         <div class="d-flex align-center justify-space-between mb-3">
-          <div class="font-weight-bold">연도별 스냅샷 (연말 기준)</div>
+          <div class="font-weight-bold">{{ $t('etfBacktest.snapshotTitle') }}</div>
           <button v-if="allYearlyRows.length > 5" class="toggle-btn" @click="showRecentOnly = !showRecentOnly">
-            {{ showRecentOnly ? '전체 보기' : '최근 5년' }}
+            {{ showRecentOnly ? $t('etfBacktest.showAll') : $t('etfBacktest.recent5y') }}
           </button>
         </div>
         <div class="yearly-table">
           <div class="yearly-header">
-            <span>연도</span><span>투자원금</span><span>평가금액</span><span>수익률</span>
+            <span>{{ $t('etfBacktest.year') }}</span><span>{{ $t('etfBacktest.principal') }}</span><span>{{ $t('etfBacktest.evalAmount') }}</span><span>{{ $t('etfBacktest.returnRate') }}</span>
           </div>
           <div v-for="row in yearlyRows" :key="row.ym" class="yearly-row">
             <span class="font-weight-medium">{{ row.ym.slice(0, 4) }}</span>

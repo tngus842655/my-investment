@@ -7,8 +7,11 @@ import { getTickerDisplayName } from '@/utils/tickerNames'
 import { recomputeAssetSummary } from '@/services/assetSummary'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
-import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
-import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { convertMoney } from '@/utils/portfolioMath'
+import { formatMoneyIn } from '@/utils/numberFormat'
+import { useI18n } from 'vue-i18n'
+import { getAssetClass, getMarket, isCash as isCashItem, classMarketToAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
 import TransactionAddDialog from './TransactionAddDialog.vue'
 
 const userDataStore = useUserDataStore()
@@ -26,7 +29,8 @@ interface Transaction {
   memo?: string
   portfolios: {
     ticker: string
-    asset_type: string
+    asset_class?: AssetClass
+    market?: MarketCode | null
     currency: string
     account_name: string | null
   }
@@ -125,7 +129,7 @@ let userId = ''
 async function buildQuery(from: number, to: number) {
   let q = supabase
     .from('transactions')
-    .select('*, portfolios(ticker, asset_type, currency, account_name)')
+    .select('*, portfolios(ticker, asset_class, market, currency, account_name)')
     .eq('user_id', userId)
     .neq('transaction_type', 'INITIAL')
     .order('transaction_date', { ascending: false })
@@ -164,7 +168,7 @@ const loadPage = async (pageNum: number) => {
     if (error) throw error
 
     const rows = (data ?? []).filter(
-      (tx) => (tx.portfolios as { asset_type: string } | null)?.asset_type !== '현금',
+      (tx) => !tx.portfolios || !isCashItem(tx.portfolios),
     ) as Transaction[]
 
     if (pageNum === 0) transactions.value = rows
@@ -174,7 +178,7 @@ const loadPage = async (pageNum: number) => {
     currentPage.value = pageNum
   } catch (e) {
     console.error(e)
-    showMessage('거래내역 조회 중 오류가 발생했습니다.', 'error')
+    showMessage(t('transactions.loadError'), 'error')
   } finally {
     loading.value = false
     loadingMore.value = false
@@ -247,7 +251,7 @@ const deleteTx = async () => {
   try {
     const { error } = await supabase.from('transactions').delete().eq('id', selectedTx.value.id)
     if (error) throw error
-    showMessage('거래내역이 삭제되었습니다.', 'success')
+    showMessage(t('transactions.deleteSuccess'), 'success')
     const deletedId = selectedTx.value.id
     deleteDialog.value = false
     selectedTx.value = null
@@ -259,7 +263,7 @@ const deleteTx = async () => {
     recomputeAssetSummary(userId)
   } catch (e) {
     console.error(e)
-    showMessage('삭제 중 오류가 발생했습니다.', 'error')
+    showMessage(t('transactions.deleteError'), 'error')
   }
 }
 
@@ -315,25 +319,18 @@ const grouped = computed(() => {
 
 const usdToKrw = ref(0)
 
-const totalBuy = computed(() => {
-  const krw = totalsData.value
-    .filter((t) => t.transaction_type === 'BUY' && t.portfolios?.currency === 'KRW')
-    .reduce((s, t) => s + t.quantity * t.unit_price, 0)
-  const usd = totalsData.value
-    .filter((t) => t.transaction_type === 'BUY' && t.portfolios?.currency === 'USD')
-    .reduce((s, t) => s + t.quantity * t.unit_price, 0)
-  return krw + usd * (usdToKrw.value || 1)
-})
+// 거래통화별 금액을 기준통화로 환산해 합산
+const sumInBase = (type: string) =>
+  totalsData.value
+    .filter((t) => t.transaction_type === type)
+    .reduce(
+      (s, t) =>
+        s + convertMoney(t.quantity * t.unit_price, t.portfolios?.currency ?? 'KRW', baseCurrency.value, usdToKrw.value || 1),
+      0,
+    )
 
-const totalSell = computed(() => {
-  const krw = totalsData.value
-    .filter((t) => t.transaction_type === 'SELL' && t.portfolios?.currency === 'KRW')
-    .reduce((s, t) => s + t.quantity * t.unit_price, 0)
-  const usd = totalsData.value
-    .filter((t) => t.transaction_type === 'SELL' && t.portfolios?.currency === 'USD')
-    .reduce((s, t) => s + t.quantity * t.unit_price, 0)
-  return krw + usd * (usdToKrw.value || 1)
-})
+const totalBuy = computed(() => sumInBase('BUY'))
+const totalSell = computed(() => sumInBase('SELL'))
 
 
 
@@ -369,9 +366,10 @@ const formatAmount = (t: Transaction) => {
   return formatKrwValue(total)
 }
 
-const formatAmountKrw = (t: Transaction) => {
-  const total = t.quantity * t.unit_price * usdToKrw.value
-  return `(${formatKrwValue(total)})`
+// 기준통화 병기 (거래통화 ≠ 기준통화인 거래 카드 아래에 표시)
+const formatAmountBase = (t: Transaction) => {
+  const total = convertMoney(t.quantity * t.unit_price, t.portfolios?.currency ?? 'KRW', baseCurrency.value, usdToKrw.value)
+  return `(${baseCurrency.value === 'KRW' ? formatKrwValue(total) : formatMoneyIn(total, baseCurrency.value, 'full')})`
 }
 
 const formatUnitPrice = (t: Transaction) => {
@@ -395,28 +393,38 @@ const formatStatAmount = (v: number) => {
   return v.toLocaleString()
 }
 
-// ── 원화/달러 토글 (화면 간 공유) ─────────────────
-const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
-const formatUsd = (krwValue: number) => formatUsdWithRate(krwValue, usdToKrw.value || 1350)
+// ── 통화 토글 (기준통화 ↔ 미리보기, 화면 간 공유) ─────────────────
+const { baseCurrency, displayCurrency, isPreview, money } = useBaseCurrency()
+const { t } = useI18n()
+// stat 카드가 기존 원화 축약 표기(억/만 + '원' 단위)를 쓰는 조건
+const statUsesKrwStyle = computed(() => baseCurrency.value === 'KRW' && displayCurrency.value === 'KRW')
 
+// 기준통화 표시 모드면 거래통화 그대로, 미리보기 모드면 표시통화로 환산
 const formatAmountDisplay = (t: Transaction) => {
-  if (displayCurrency.value !== 'USD') return formatAmount(t)
-  const total = t.quantity * t.unit_price
-  const cur = t.portfolios?.currency ?? 'KRW'
-  const totalKrw = cur === 'USD' ? total * (usdToKrw.value || 1) : total
-  return formatUsd(totalKrw)
+  if (!isPreview.value) return formatAmount(t)
+  const total = convertMoney(t.quantity * t.unit_price, t.portfolios?.currency ?? 'KRW', displayCurrency.value, usdToKrw.value || 1350)
+  return formatMoneyIn(total, displayCurrency.value, 'full')
 }
 
 const formatUnitPriceDisplay = (t: Transaction) => {
-  if (displayCurrency.value !== 'USD') return formatUnitPrice(t)
-  const cur = t.portfolios?.currency ?? 'KRW'
-  const priceKrw = cur === 'USD' ? t.unit_price * (usdToKrw.value || 1) : t.unit_price
-  return formatUsd(priceKrw)
+  if (!isPreview.value) return formatUnitPrice(t)
+  const price = convertMoney(t.unit_price, t.portfolios?.currency ?? 'KRW', displayCurrency.value, usdToKrw.value || 1350)
+  return formatMoneyIn(price, displayCurrency.value, 'full')
 }
 
-const assetTypeColor = (type: string) =>
-  ({ 국내주식: 'blue', 해외주식: 'purple', ETF: 'teal', 암호화폐: 'amber', 현금: 'green' })[type] ??
-  'grey'
+const assetTypeColor = (p: Transaction['portfolios'] | null | undefined): string => {
+  if (!p) return 'grey'
+  switch (getAssetClass(p)) {
+    case 'stock': return getMarket(p) === 'KR' ? 'blue' : 'purple'
+    case 'etf': return 'teal'
+    case 'crypto': return 'amber'
+    case 'cash': return 'green'
+    default: return 'grey'
+  }
+}
+
+const assetTypeLabel = (p: Transaction['portfolios'] | null | undefined): string =>
+  p ? classMarketToAssetType(getAssetClass(p), getMarket(p)) : ''
 
 // ── 스와이프 ──────────────────────────────────────
 const onSwipeTouchStart = (e: TouchEvent) => {
@@ -502,13 +510,12 @@ onUnmounted(() => {
     <!-- 헤더 -->
     <div class="asset-header d-flex justify-space-between align-center mb-3">
       <div class="d-flex align-center ga-2" style="min-width: 0">
-        <img src="/icons/icon-record.png" class="header-icon" alt="기록" />
+        <img src="/icons/icon-record.png" class="header-icon" :alt="$t('transactions.headerAlt')" />
         <div class="font-weight-bold header-title" style="color: rgb(var(--v-theme-on-surface))">
-          거래내역
+          {{ $t('transactions.title') }}
         </div>
       </div>
       <div class="d-flex align-center ga-2" style="flex-shrink: 0">
-        <CurrencyToggle />
         <v-btn
           color="primary"
           prepend-icon="mdi-plus"
@@ -516,7 +523,7 @@ onUnmounted(() => {
           elevation="0"
           @click="addDialog = true"
         >
-          거래 추가
+          {{ $t('transactions.addTx') }}
         </v-btn>
       </div>
     </div>
@@ -541,10 +548,10 @@ onUnmounted(() => {
         <div class="stat-card">
           <div class="d-flex align-center ga-1 mb-1">
             <v-icon size="13" color="success">mdi-arrow-down-bold</v-icon>
-            <span class="stat-label">총 매수</span>
+            <span class="stat-label">{{ $t('transactions.totalBuy') }}</span>
           </div>
           <div class="stat-value">
-            {{ displayCurrency === 'USD' ? formatUsd(totalBuy) : formatStatAmount(totalBuy) }}<span v-if="displayCurrency !== 'USD'" class="stat-unit">원</span>
+            {{ statUsesKrwStyle ? formatStatAmount(totalBuy) : money(totalBuy, usdToKrw || 1350, 'full') }}<span v-if="statUsesKrwStyle" class="stat-unit">{{ $t('currency.wonUnit') }}</span>
           </div>
           <div class="text-disabled">
             {{ totalsData.filter((t) => t.transaction_type === 'BUY').length }}건
@@ -553,10 +560,10 @@ onUnmounted(() => {
         <div class="stat-card">
           <div class="d-flex align-center ga-1 mb-1">
             <v-icon size="13" color="error">mdi-arrow-up-bold</v-icon>
-            <span class="stat-label">총 매도</span>
+            <span class="stat-label">{{ $t('transactions.totalSell') }}</span>
           </div>
           <div class="stat-value">
-            {{ displayCurrency === 'USD' ? formatUsd(totalSell) : formatStatAmount(totalSell) }}<span v-if="displayCurrency !== 'USD'" class="stat-unit">원</span>
+            {{ statUsesKrwStyle ? formatStatAmount(totalSell) : money(totalSell, usdToKrw || 1350, 'full') }}<span v-if="statUsesKrwStyle" class="stat-unit">{{ $t('currency.wonUnit') }}</span>
           </div>
           <div class="text-disabled">
             {{ totalsData.filter((t) => t.transaction_type === 'SELL').length }}건
@@ -575,7 +582,7 @@ onUnmounted(() => {
         >
           <v-icon v-if="f === 'BUY'" size="13" class="mr-1">mdi-arrow-down-bold</v-icon>
           <v-icon v-else-if="f === 'SELL'" size="13" class="mr-1">mdi-arrow-up-bold</v-icon>
-          {{ f === 'ALL' ? '전체' : f === 'BUY' ? '매수' : '매도' }}
+          {{ f === 'ALL' ? $t('transactions.all') : f === 'BUY' ? $t('transactions.buy') : $t('transactions.sell') }}
         </button>
       </div>
 
@@ -585,7 +592,7 @@ onUnmounted(() => {
           class="account-chip"
           :class="{ 'account-chip-active': selectedAccount === null }"
           @click="selectedAccount = null; closeSwipe()"
-        >전체</button>
+        >{{ $t('transactions.all') }}</button>
         <button
           v-for="acc in accountOptions"
           :key="acc"
@@ -598,16 +605,16 @@ onUnmounted(() => {
       <!-- 건수 + 날짜 드롭다운 -->
       <div class="d-flex align-center ga-2" style="margin-bottom: 6px">
         <span style="font-size: 0.75rem; color: rgba(var(--v-theme-on-surface), 0.4)">
-          총 {{ totalsData.length }}건
+          {{ $t('transactions.totalCount', { n: totalsData.length }) }}
         </span>
         <div class="date-filter-wrap ml-auto">
           <select v-model="selectedYear" class="date-select">
-            <option :value="null">연도</option>
-            <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}년</option>
+            <option :value="null">{{ $t('transactions.yearPlaceholder') }}</option>
+            <option v-for="y in yearOptions" :key="y" :value="y">{{ $t('transactions.yearOption', { y }) }}</option>
           </select>
           <select v-model="selectedMonth" class="date-select" :disabled="!selectedYear">
-            <option :value="null">월</option>
-            <option v-for="m in monthOptions" :key="m" :value="m">{{ m }}월</option>
+            <option :value="null">{{ $t('transactions.monthPlaceholder') }}</option>
+            <option v-for="m in monthOptions" :key="m" :value="m">{{ $t('transactions.monthOption', { m }) }}</option>
           </select>
           <button v-if="selectedYear" class="date-clear-btn" @click="selectedYear = null; selectedMonth = null">
             <v-icon size="12">mdi-close</v-icon>
@@ -622,10 +629,10 @@ onUnmounted(() => {
             >mdi-swap-horizontal</v-icon
           >
           <div class="font-weight-medium text-medium-emphasis">
-            {{ parsedDateFilter || filter !== 'ALL' ? '검색 결과가 없습니다' : '거래내역이 없습니다' }}
+            {{ parsedDateFilter || filter !== 'ALL' ? $t('transactions.emptySearch') : $t('transactions.emptyNone') }}
           </div>
           <div class="text-disabled mt-1">
-            {{ parsedDateFilter || filter !== 'ALL' ? '다른 날짜나 필터를 선택해보세요.' : '거래 추가 버튼으로 첫 거래를 기록하세요.' }}
+            {{ parsedDateFilter || filter !== 'ALL' ? $t('transactions.emptySearchHint') : $t('transactions.emptyNoneHint') }}
           </div>
           <v-btn
             v-if="!parsedDateFilter && filter === 'ALL'"
@@ -636,7 +643,7 @@ onUnmounted(() => {
             prepend-icon="mdi-plus"
             @click="addDialog = true"
           >
-            거래 추가
+            {{ $t('transactions.addTx') }}
           </v-btn>
         </div>
       </template>
@@ -654,11 +661,11 @@ onUnmounted(() => {
             <div class="swipe-actions">
               <button class="action-btn action-edit" @click.stop="openEditDialog(item)">
                 <v-icon size="18">mdi-pencil-outline</v-icon>
-                <span>수정</span>
+                <span>{{ $t('common.edit') }}</span>
               </button>
               <button class="action-btn action-delete" @click.stop="openDeleteDialog(item)">
                 <v-icon size="18">mdi-delete-outline</v-icon>
-                <span>삭제</span>
+                <span>{{ $t('common.delete') }}</span>
               </button>
             </div>
 
@@ -689,9 +696,9 @@ onUnmounted(() => {
                       <div class="d-flex align-center ga-1 flex-grow-1 min-width-0">
                         <span class="tx-name">{{ getTickerDisplayName(item.portfolios?.ticker) }}</span>
                         <span v-if="getTickerDisplayName(item.portfolios?.ticker) !== item.portfolios?.ticker" class="tx-ticker flex-shrink-0">{{ item.portfolios?.ticker }}</span>
-                        <span class="asset-badge flex-shrink-0" :style="`color: rgb(var(--v-theme-${assetTypeColor(item.portfolios?.asset_type)}))`">{{ item.portfolios?.asset_type }}</span>
+                        <span class="asset-badge flex-shrink-0" :style="`color: rgb(var(--v-theme-${assetTypeColor(item.portfolios)}))`">{{ assetTypeLabel(item.portfolios) }}</span>
                         <span v-if="item.portfolios?.account_name && item.portfolios.account_name !== '미지정'" class="account-tag flex-shrink-0">{{ truncateAccount(item.portfolios.account_name) }}</span>
-                        <span class="tx-type-badge flex-shrink-0" :class="item.transaction_type === 'BUY' ? 'badge-buy' : 'badge-sell'">{{ item.transaction_type === 'BUY' ? '매수' : '매도' }}</span>
+                        <span class="tx-type-badge flex-shrink-0" :class="item.transaction_type === 'BUY' ? 'badge-buy' : 'badge-sell'">{{ item.transaction_type === 'BUY' ? $t('transactions.buy') : $t('transactions.sell') }}</span>
                       </div>
                       <div class="d-flex align-center ga-1">
                         <v-tooltip v-if="item.memo" :text="item.memo" location="top">
@@ -707,7 +714,7 @@ onUnmounted(() => {
                       <span class="tx-detail">{{ item.quantity % 1 === 0 ? item.quantity : Number(item.quantity).toFixed(4) }}주 × {{ formatUnitPriceDisplay(item) }}</span>
                       <span class="tx-amount" :class="item.transaction_type === 'BUY' ? 'amount-plus' : 'amount-minus'">
                         {{ item.transaction_type === 'BUY' ? '+' : '-' }}{{ formatAmountDisplay(item) }}
-                        <span v-if="displayCurrency !== 'USD' && item.portfolios?.currency === 'USD' && usdToKrw" class="tx-amount-krw">{{ formatAmountKrw(item) }}</span>
+                        <span v-if="!isPreview && item.portfolios?.currency !== baseCurrency && usdToKrw" class="tx-amount-krw">{{ formatAmountBase(item) }}</span>
                       </span>
                     </div>
                   </div>
@@ -722,7 +729,7 @@ onUnmounted(() => {
         <div v-if="loadingMore" class="text-center py-4">
           <v-progress-circular indeterminate size="24" color="primary" />
         </div>
-        <p class="swipe-hint">← 카드를 왼쪽으로 밀면 수정/삭제할 수 있어요</p>
+        <p class="swipe-hint">{{ $t('transactions.swipeHint') }}</p>
       </template>
     </template>
   </v-container>
@@ -757,16 +764,16 @@ onUnmounted(() => {
   <!-- 삭제 확인 -->
   <v-dialog v-model="deleteDialog" max-width="320">
     <v-card rounded="xl" class="glass-dialog">
-      <v-card-title class="text-center pt-6">거래 삭제</v-card-title>
+      <v-card-title class="text-center pt-6">{{ $t('transactions.deleteTitle') }}</v-card-title>
       <v-card-text class="text-center text-medium-emphasis">
         <strong>{{ selectedTx?.portfolios?.ticker }}</strong>
-        {{ selectedTx?.transaction_type === 'BUY' ? '매수' : '매도' }} 거래를 삭제하시겠습니까?<br />
-        <span>이 작업은 되돌릴 수 없습니다.</span>
+        {{ $t('transactions.deleteConfirm', { type: selectedTx?.transaction_type === 'BUY' ? $t('transactions.buy') : $t('transactions.sell') }) }}<br />
+        <span>{{ $t('transactions.deleteIrreversible') }}</span>
       </v-card-text>
       <v-divider />
       <v-card-actions>
-        <v-btn block variant="text" @click="deleteDialog = false">취소</v-btn>
-        <v-btn block color="error" @click="deleteTx">삭제</v-btn>
+        <v-btn block variant="text" @click="deleteDialog = false">{{ $t('common.cancel') }}</v-btn>
+        <v-btn block color="error" @click="deleteTx">{{ $t('common.delete') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

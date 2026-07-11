@@ -46,8 +46,8 @@ onMounted(async () => {
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <div>
-        <div class="font-weight-bold">공지사항</div>
-        <div class="text-medium-emphasis">서비스 관련 안내 및 공지</div>
+        <div class="font-weight-bold">{{ $t('notices.title') }}</div>
+        <div class="text-medium-emphasis">{{ $t('notices.subtitle') }}</div>
       </div>
     </div>
 
@@ -59,13 +59,13 @@ onMounted(async () => {
     <template v-else>
       <div v-if="notices.length === 0" class="text-center py-12 text-medium-emphasis">
         <v-icon size="40" class="mb-2" style="opacity:0.3">mdi-bullhorn-outline</v-icon>
-        <div>등록된 공지사항이 없습니다</div>
+        <div>{{ $t('notices.empty') }}</div>
       </div>
 
       <div v-for="n in notices" :key="n.id" class="notice-card glass-card pa-4 mb-3">
         <div class="d-flex align-center justify-space-between cursor-pointer" @click="toggleExpand(n)">
           <div class="d-flex align-center ga-1 title-group">
-            <v-chip v-if="n.is_test" size="x-small" color="warning" variant="tonal" class="mr-1">테스트</v-chip>
+            <v-chip v-if="n.is_test" size="x-small" color="warning" variant="tonal" class="mr-1">{{ $t('notices.test') }}</v-chip>
             <span class="notice-title">{{ n.title }}</span>
             <v-icon
               size="18"

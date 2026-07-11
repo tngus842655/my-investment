@@ -1,20 +1,20 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
 import { useUserDataStore } from '@/stores/userData'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
-import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
-import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { useI18n } from 'vue-i18n'
+import { formatYearMonth, formatDuration } from '@/utils/dateFormat'
 
 const router = useRouter()
+const { t } = useI18n()
 const userDataStore = useUserDataStore()
 const loading = ref(true)
 const exchangeRate = ref(1350)
-const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
-const formatMoney = (v: number) =>
-  displayCurrency.value === 'USD' ? formatUsdWithRate(v, exchangeRate.value) : formatShortMoney(v)
+const { displayCurrency, money } = useBaseCurrency()
+const formatMoney = (v: number) => money(v, exchangeRate.value, 'bare')
 
 // ── 기준값 (DB 로드) ──────────────────────────────
 const baseMonthly = ref(0)
@@ -86,16 +86,13 @@ function calcFireMonths(C: number, M: number, annualPct: number, T: number): num
 }
 
 function monthsToLabel(months: number): string {
-  const y = Math.floor(months / 12)
-  const m = months % 12
-  if (y > 0) return `${y}년 ${m > 0 ? m + '개월' : ''}`
-  return `${months}개월`
+  return formatDuration(months)
 }
 
 function monthsToDate(months: number): string {
   const d = new Date()
   d.setMonth(d.getMonth() + months)
-  return `${d.getFullYear()}년 ${d.getMonth() + 1}월`
+  return formatYearMonth(d.getFullYear(), d.getMonth() + 1)
 }
 
 const baseProjection = computed(() => buildProjection(currentAsset.value, baseMonthly.value, baseReturn.value, targetAsset.value))
@@ -216,7 +213,7 @@ const loadData = async () => {
     simMonthly.value = baseMonthly.value
     simReturn.value = baseReturn.value
   } catch {
-    showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
+    showMessage(t('fireSim.loadError'), 'error')
   } finally {
     loading.value = false
   }
@@ -232,11 +229,10 @@ onMounted(loadData)
       <div class="d-flex align-center ga-2">
         <v-btn icon="mdi-arrow-left" variant="text" size="small" class="mr-1" style="color: rgb(var(--v-theme-on-surface))" @click="router.back()" />
         <div>
-          <div class="font-weight-bold">FIRE 시뮬레이터</div>
-          <div class="text-medium-emphasis">투자 조건 변경 시 달성일 비교</div>
+          <div class="font-weight-bold">{{ $t('fireSim.title') }}</div>
+          <div class="text-medium-emphasis">{{ $t('fireSim.subtitle') }}</div>
         </div>
       </div>
-      <CurrencyToggle />
     </div>
 
     <template v-if="loading">
@@ -249,32 +245,32 @@ onMounted(loadData)
       <!-- 슬라이더 섹션 -->
       <div class="sim-card mb-4">
         <div class="d-flex justify-space-between align-center mb-4">
-          <div class="section-title">시뮬레이션 조건</div>
+          <div class="section-title">{{ $t('fireSim.conditions') }}</div>
           <button v-if="isChanged" class="reset-btn" @click="resetSim">
-            <v-icon size="14" class="mr-1">mdi-refresh</v-icon>초기화
+            <v-icon size="14" class="mr-1">mdi-refresh</v-icon>{{ $t('fireSim.reset') }}
           </button>
         </div>
 
         <!-- 월 투자금 슬라이더 -->
         <div class="slider-group mb-4">
           <div class="d-flex justify-space-between align-center mb-1">
-            <div class="slider-label">월 투자금</div>
-            <div class="slider-value">{{ formatMoney(simMonthly) }}{{ displayCurrency === 'USD' ? '' : '원' }}</div>
+            <div class="slider-label">{{ $t('fireSim.monthlyInvestment') }}</div>
+            <div class="slider-value">{{ formatMoney(simMonthly) }}{{ displayCurrency === 'KRW' ? $t('currency.wonUnit') : '' }}</div>
           </div>
           <v-slider v-model="simMonthly" :min="100000" :max="10000000" :step="100000" color="primary" track-color="rgba(var(--v-theme-primary), 0.15)" hide-details thumb-size="18" />
           <div class="d-flex justify-space-between mt-1">
-            <span class="slider-hint">10만</span>
+            <span class="slider-hint">{{ $t('fireSim.sliderMin') }}</span>
             <span class="slider-hint">
               기준 <span class="base-mark">{{ formatMoney(baseMonthly) }}</span>
             </span>
-            <span class="slider-hint">1,000만</span>
+            <span class="slider-hint">{{ $t('fireSim.sliderMax') }}</span>
           </div>
         </div>
 
         <!-- 연 수익률 슬라이더 -->
         <div class="slider-group">
           <div class="d-flex justify-space-between align-center mb-1">
-            <div class="slider-label">연 수익률</div>
+            <div class="slider-label">{{ $t('fireSim.annualReturn') }}</div>
             <div class="slider-value">{{ simReturn.toFixed(1) }}%</div>
           </div>
           <v-slider v-model="simReturn" :min="1" :max="Math.max(25, Math.ceil(baseReturn + 20))" :step="0.5" color="primary" track-color="rgba(var(--v-theme-primary), 0.15)" hide-details thumb-size="18" />
@@ -294,11 +290,11 @@ onMounted(loadData)
         <div class="d-flex ga-4 mb-3">
           <div class="d-flex align-center ga-2">
             <div class="legend-line base-line" />
-            <span class="text-medium-emphasis">기존 계획</span>
+            <span class="text-medium-emphasis">{{ $t('fireSim.basePlan') }}</span>
           </div>
           <div class="d-flex align-center ga-2">
             <div class="legend-line sim-line" />
-            <span class="font-weight-medium">시뮬레이션</span>
+            <span class="font-weight-medium">{{ $t('fireSim.simulation') }}</span>
           </div>
         </div>
 
@@ -343,31 +339,31 @@ onMounted(loadData)
       <div class="compare-grid">
         <!-- 기존 계획 -->
         <div class="compare-card">
-          <div class="compare-badge base-badge">기존 계획</div>
+          <div class="compare-badge base-badge">{{ $t('fireSim.basePlan') }}</div>
           <template v-if="baseMonths !== null">
             <div class="compare-date">{{ monthsToDate(baseMonths) }}</div>
             <div class="compare-duration">{{ monthsToLabel(baseMonths) }}</div>
           </template>
-          <div v-else class="compare-na">달성 불가</div>
+          <div v-else class="compare-na">{{ $t('fireSim.cannotReach') }}</div>
           <div class="compare-sub mt-2">
-            <span>월 {{ formatMoney(baseMonthly) }}{{ displayCurrency === 'USD' ? '' : '원' }}</span>
+            <span>{{ $t('fireSim.perMonth', { amount: formatMoney(baseMonthly) + (displayCurrency === 'KRW' ? $t('currency.wonUnit') : '') }) }}</span>
             <span class="mx-1">·</span>
-            <span>연 {{ baseReturn }}%</span>
+            <span>{{ $t('fireSim.perYear', { rate: baseReturn }) }}</span>
           </div>
         </div>
 
         <!-- 시뮬레이션 -->
         <div class="compare-card sim-active">
-          <div class="compare-badge sim-badge">시뮬레이션</div>
+          <div class="compare-badge sim-badge">{{ $t('fireSim.simulation') }}</div>
           <template v-if="simMonths !== null">
             <div class="compare-date primary-text">{{ monthsToDate(simMonths) }}</div>
             <div class="compare-duration primary-text">{{ monthsToLabel(simMonths) }}</div>
           </template>
-          <div v-else class="compare-na">달성 불가</div>
+          <div v-else class="compare-na">{{ $t('fireSim.cannotReach') }}</div>
           <div class="compare-sub mt-2">
-            <span>월 {{ formatMoney(simMonthly) }}{{ displayCurrency === 'USD' ? '' : '원' }}</span>
+            <span>{{ $t('fireSim.perMonth', { amount: formatMoney(simMonthly) + (displayCurrency === 'KRW' ? $t('currency.wonUnit') : '') }) }}</span>
             <span class="mx-1">·</span>
-            <span>연 {{ simReturn }}%</span>
+            <span>{{ $t('fireSim.perYear', { rate: simReturn }) }}</span>
           </div>
         </div>
 
@@ -375,15 +371,15 @@ onMounted(loadData)
         <div class="diff-card" v-if="diffMonths !== null">
           <template v-if="diffMonths > 0">
             <v-icon color="primary" size="20">mdi-lightning-bolt</v-icon>
-            <span class="diff-text faster">{{ monthsToLabel(Math.abs(diffMonths)) }} 단축</span>
+            <span class="diff-text faster">{{ $t('fireSim.faster', { dur: monthsToLabel(Math.abs(diffMonths)) }) }}</span>
           </template>
           <template v-else-if="diffMonths < 0">
             <v-icon color="error" size="20">mdi-arrow-down</v-icon>
-            <span class="diff-text slower">{{ monthsToLabel(Math.abs(diffMonths)) }} 지연</span>
+            <span class="diff-text slower">{{ $t('fireSim.slower', { dur: monthsToLabel(Math.abs(diffMonths)) }) }}</span>
           </template>
           <template v-else>
             <v-icon color="grey" size="20">mdi-minus</v-icon>
-            <span class="diff-text">차이 없음</span>
+            <span class="diff-text">{{ $t('fireSim.noDiff') }}</span>
           </template>
         </div>
       </div>

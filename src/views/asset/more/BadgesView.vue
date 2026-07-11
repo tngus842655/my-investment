@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { formatShortMoney } from '@/utils/numberFormat'
+import { formatMoneyIn } from '@/utils/numberFormat'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { useUserDataStore } from '@/stores/userData'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
+const { baseCurrency } = useBaseCurrency()
 const loading = ref(true)
 const targetAsset = ref(0)
 const currentAsset = ref(0)
@@ -19,54 +21,54 @@ const BADGES = [
   {
     id: 'seed',
     emoji: '🌱',
-    label: '씨앗',
+    labelKey: 'badges.items.seed.label',
     threshold: 1,
-    desc: 'FIRE 여정의 시작',
+    descKey: 'badges.items.seed.desc',
     gradient: 'linear-gradient(135deg, #34d399 0%, #059669 100%)',
     glow: 'rgba(52, 211, 153, 0.35)',
   },
   {
     id: 'sprout',
     emoji: '🌿',
-    label: '새싹',
+    labelKey: 'badges.items.sprout.label',
     threshold: 10,
-    desc: '첫 10% 돌파',
+    descKey: 'badges.items.sprout.desc',
     gradient: 'linear-gradient(135deg, #4ade80 0%, #16a34a 100%)',
     glow: 'rgba(74, 222, 128, 0.35)',
   },
   {
     id: 'growth',
     emoji: '🌳',
-    label: '성장',
+    labelKey: 'badges.items.growth.label',
     threshold: 25,
-    desc: '목표의 1/4 달성',
+    descKey: 'badges.items.growth.desc',
     gradient: 'linear-gradient(135deg, #60a5fa 0%, #2563eb 100%)',
     glow: 'rgba(96, 165, 250, 0.35)',
   },
   {
     id: 'halfway',
     emoji: '⚡',
-    label: '절반의 기적',
+    labelKey: 'badges.items.halfway.label',
     threshold: 50,
-    desc: '목표의 절반 달성',
+    descKey: 'badges.items.halfway.desc',
     gradient: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)',
     glow: 'rgba(167, 139, 250, 0.4)',
   },
   {
     id: 'firezone',
     emoji: '🔥',
-    label: '파이어존',
+    labelKey: 'badges.items.firezone.label',
     threshold: 75,
-    desc: '목표의 3/4 달성',
+    descKey: 'badges.items.firezone.desc',
     gradient: 'linear-gradient(135deg, #fb923c 0%, #dc2626 100%)',
     glow: 'rgba(251, 146, 60, 0.4)',
   },
   {
     id: 'fire',
     emoji: '🏆',
-    label: 'FIRE 완성',
+    labelKey: 'badges.items.fire.label',
     threshold: 100,
-    desc: '재정 자유 달성!',
+    descKey: 'badges.items.fire.desc',
     gradient: 'linear-gradient(135deg, #fcd34d 0%, #f59e0b 50%, #d97706 100%)',
     glow: 'rgba(252, 211, 77, 0.5)',
   },
@@ -103,8 +105,8 @@ onMounted(loadData)
     <div class="d-flex align-center ga-2 mb-6">
       <v-btn icon="mdi-arrow-left" variant="text" size="small" class="mr-1" style="color: rgb(var(--v-theme-on-surface))" @click="router.back()" />
       <div>
-        <div class="font-weight-bold">목표 달성 배지</div>
-        <div class="text-medium-emphasis">FIRE 달성률 구간별 업적</div>
+        <div class="font-weight-bold">{{ $t('badges.title') }}</div>
+        <div class="text-medium-emphasis">{{ $t('badges.subtitle') }}</div>
       </div>
     </div>
 
@@ -118,11 +120,11 @@ onMounted(loadData)
       <div class="progress-card mb-5">
         <div class="d-flex justify-space-between align-end mb-3">
           <div>
-            <div class="text-medium-emphasis mb-1">FIRE 달성률</div>
+            <div class="text-medium-emphasis mb-1">{{ $t('badges.fireRate') }}</div>
             <div class="progress-pct">{{ progressPct.toFixed(1) }}<span class="progress-pct-unit">%</span></div>
           </div>
           <div class="text-right">
-            <div class="text-medium-emphasis mb-1">배지 획득</div>
+            <div class="text-medium-emphasis mb-1">{{ $t('badges.badgeCount') }}</div>
             <div class="badge-count">{{ unlockedCount }} <span class="text-medium-emphasis">/ {{ BADGES.length }}</span></div>
           </div>
         </div>
@@ -131,28 +133,28 @@ onMounted(loadData)
         <div class="prog-bar-bg">
           <div class="prog-bar-fill" :style="{ width: progressPct + '%' }" />
           <!-- 마일스톤 마커 -->
-          <div v-for="b in BADGES.slice(0, -1)" :key="b.id" class="milestone-marker" :style="{ left: b.threshold + '%' }" :title="b.label + ' ' + b.threshold + '%'" />
+          <div v-for="b in BADGES.slice(0, -1)" :key="b.id" class="milestone-marker" :style="{ left: b.threshold + '%' }" :title="$t(b.labelKey) + ' ' + b.threshold + '%'" />
         </div>
 
         <!-- 다음 배지 힌트 -->
         <div v-if="nextBadge" class="next-badge-hint mt-3">
           <span class="next-badge-emoji">{{ nextBadge.emoji }}</span>
-          <span class="text-medium-emphasis">
-            <span class="font-weight-medium" style="color: rgb(var(--v-theme-on-surface))">{{ nextBadge.label }}</span>
-            까지 {{ (nextBadge.threshold - progressPct).toFixed(1) }}% 남았습니다
-          </span>
+          <i18n-t keypath="badges.nextHint" tag="span" class="text-medium-emphasis" scope="global">
+            <template #label><span class="font-weight-medium" style="color: rgb(var(--v-theme-on-surface))">{{ $t(nextBadge.labelKey) }}</span></template>
+            <template #n>{{ (nextBadge.threshold - progressPct).toFixed(1) }}</template>
+          </i18n-t>
         </div>
         <div v-else class="next-badge-hint mt-3">
           <span>🎉</span>
-          <span class="font-weight-medium" style="color: rgb(var(--v-theme-primary))">모든 배지를 획득했습니다!</span>
+          <span class="font-weight-medium" style="color: rgb(var(--v-theme-primary))">{{ $t('badges.allUnlocked') }}</span>
         </div>
 
         <div class="asset-summary mt-3">
-          <span class="text-medium-emphasis">현재 자산</span>
-          <span class="font-weight-bold">{{ formatShortMoney(currentAsset) }}</span>
+          <span class="text-medium-emphasis">{{ $t('badges.currentAsset') }}</span>
+          <span class="font-weight-bold">{{ formatMoneyIn(currentAsset, baseCurrency, 'bare') }}</span>
           <span class="text-medium-emphasis mx-1">/</span>
-          <span class="text-medium-emphasis">목표</span>
-          <span class="font-weight-medium">{{ formatShortMoney(targetAsset) }}</span>
+          <span class="text-medium-emphasis">{{ $t('badges.target') }}</span>
+          <span class="font-weight-medium">{{ formatMoneyIn(targetAsset, baseCurrency, 'bare') }}</span>
         </div>
       </div>
 
@@ -168,9 +170,9 @@ onMounted(loadData)
           </div>
 
           <!-- 배지 정보 -->
-          <div class="badge-label">{{ badge.label }}</div>
-          <div class="badge-desc">{{ badge.desc }}</div>
-          <div class="badge-threshold" :style="badge.unlocked ? { color: 'rgb(var(--v-theme-primary))' } : {}">{{ badge.threshold }}% 달성</div>
+          <div class="badge-label">{{ $t(badge.labelKey) }}</div>
+          <div class="badge-desc">{{ $t(badge.descKey) }}</div>
+          <div class="badge-threshold" :style="badge.unlocked ? { color: 'rgb(var(--v-theme-primary))' } : {}">{{ $t('badges.thresholdReached', { n: badge.threshold }) }}</div>
 
           <!-- 달성 표시 -->
           <div v-if="badge.unlocked" class="badge-check">

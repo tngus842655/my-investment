@@ -5,30 +5,36 @@ import { supabase } from '@/services/supabase'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getStockPrice } from '@/services/market'
 import { getTickerDisplayName } from '@/utils/tickerNames'
-import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
+import { convertMoney } from '@/utils/portfolioMath'
 import { useDesignTokens } from '@/composables/useDesignTokens'
-import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
-import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { getAssetClass, getMarket, isCash, classMarketToAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
 const { chart } = useDesignTokens()
-const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
+const { baseCurrency, displayCurrency, money } = useBaseCurrency()
+const { t } = useI18n()
 
 const loading = ref(true)
 const viewMode = ref<'type' | 'ticker' | 'compare'>('type')
 const hoveredKey = ref<string | null>(null)
 interface PortfolioRow {
   ticker: string
-  asset_type: string
+  asset_class?: AssetClass
+  market?: MarketCode | null
   currency: 'KRW' | 'USD'
   avg_price: number
   quantity: number
 }
+
+// 유형별 보기의 그룹 키/라벨 (테마 typeColors 키와 동일한 기존 한글 명칭 유지)
+const assetTypeLabel = (p: PortfolioRow): string =>
+  classMarketToAssetType(getAssetClass(p), getMarket(p))
 const portfolioRows = ref<PortfolioRow[]>([])
 const exchangeRate = ref(1350)
-const formatMoney = (v: number) =>
-  displayCurrency.value === 'USD' ? formatUsdWithRate(v, exchangeRate.value) : formatShortMoney(v)
+const formatMoney = (v: number) => money(v, exchangeRate.value, 'bare')
 
 interface Seg {
   key: string
@@ -67,14 +73,14 @@ function buildPath(start: number, end: number): string {
 }
 
 const segments = computed<Seg[]>(() => {
-  const map = new Map<string, { label: string; valueKrw: number; assetType: string }>()
+  const map = new Map<string, { label: string; valueKrw: number }>()
   for (const p of portfolioRows.value) {
-    const key = viewMode.value === 'type' ? p.asset_type : p.ticker
-    const label = viewMode.value === 'type' ? p.asset_type : getTickerDisplayName(p.ticker)
-    const val = p.currency === 'USD' ? p.avg_price * p.quantity * exchangeRate.value : p.avg_price * p.quantity
+    const key = viewMode.value === 'type' ? assetTypeLabel(p) : p.ticker
+    const label = viewMode.value === 'type' ? assetTypeLabel(p) : getTickerDisplayName(p.ticker)
+    const val = convertMoney(p.avg_price * p.quantity, p.currency, baseCurrency.value, exchangeRate.value)
     const existing = map.get(key)
     if (existing) existing.valueKrw += val
-    else map.set(key, { label, valueKrw: val, assetType: p.asset_type })
+    else map.set(key, { label, valueKrw: val })
   }
 
   const total = [...map.values()].reduce((s, v) => s + v.valueKrw, 0)
@@ -109,7 +115,7 @@ const segments = computed<Seg[]>(() => {
   })
 })
 
-const totalKrw = computed(() => portfolioRows.value.reduce((s, p) => s + (p.currency === 'USD' ? p.avg_price * p.quantity * exchangeRate.value : p.avg_price * p.quantity), 0))
+const totalKrw = computed(() => portfolioRows.value.reduce((s, p) => s + convertMoney(p.avg_price * p.quantity, p.currency, baseCurrency.value, exchangeRate.value), 0))
 
 const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.value) ?? null)
 
@@ -134,7 +140,7 @@ const COMPARE_MAX = 4
 interface Holding {
   ticker: string
   label: string
-  assetType: string
+  assetClass: AssetClass
   currency: 'KRW' | 'USD'
   quantity: number
   costKrw: number
@@ -142,26 +148,26 @@ interface Holding {
 
 // 계좌가 달라도 같은 종목이면 수량·원가를 합산해 하나로 집계 (현금 제외)
 const holdings = computed<Holding[]>(() => {
-  const map = new Map<string, { quantity: number; costNative: number; currency: 'KRW' | 'USD'; assetType: string }>()
+  const map = new Map<string, { quantity: number; costNative: number; currency: 'KRW' | 'USD'; assetClass: AssetClass }>()
   for (const p of portfolioRows.value) {
-    if (p.asset_type === '현금') continue
+    if (isCash(p)) continue
     const existing = map.get(p.ticker)
     const costNative = p.avg_price * p.quantity
     if (existing) {
       existing.quantity += p.quantity
       existing.costNative += costNative
     } else {
-      map.set(p.ticker, { quantity: p.quantity, costNative, currency: p.currency, assetType: p.asset_type })
+      map.set(p.ticker, { quantity: p.quantity, costNative, currency: p.currency, assetClass: getAssetClass(p) })
     }
   }
   return [...map.entries()].map(([ticker, v]) => ({
     ticker,
     label: getTickerDisplayName(ticker),
-    assetType: v.assetType,
+    assetClass: v.assetClass,
     currency: v.currency,
     quantity: v.quantity,
-    // 암호화폐+KRW는 avg_price가 사용자가 직접 입력한 KRW 원가라 변환이 필요 없음
-    costKrw: v.currency === 'USD' ? v.costNative * exchangeRate.value : v.costNative,
+    // 암호화폐+KRW는 avg_price가 사용자가 직접 입력한 KRW 원가라 변환이 필요 없음 (costNative는 종목 통화 단위)
+    costKrw: convertMoney(v.costNative, v.currency, baseCurrency.value, exchangeRate.value),
   }))
 })
 
@@ -180,7 +186,7 @@ const loadAllPrices = async () => {
       targets.map((h) => {
         const row = portfolioRows.value.find((p) => p.ticker === h.ticker)
         if (!row) return Promise.resolve(0)
-        return getStockPrice(row.ticker, row.asset_type, row.currency).catch(() => 0)
+        return getStockPrice(row.ticker, row).catch(() => 0)
       }),
     )
     const next: Record<string, number> = {}
@@ -198,7 +204,7 @@ const toggleCompareTicker = (ticker: string) => {
     return
   }
   if (compareTickers.value.length >= COMPARE_MAX) {
-    showMessage(`최대 ${COMPARE_MAX}개까지 선택할 수 있어요.`, 'error')
+    showMessage(t('portfolioAnalysis.maxCompare', { n: COMPARE_MAX }), 'error')
     return
   }
   compareTickers.value = [...compareTickers.value, ticker]
@@ -218,12 +224,14 @@ const compareRows = computed<CompareRow[]>(() => {
     const h = holdings.value.find((x) => x.ticker === ticker)!
     const price = priceCache.value[ticker]
     const hasPrice = price !== undefined && price > 0
-    // 암호화폐 + KRW: 시세 API가 USD(바이낸스)로 반환하므로 환율 곱해서 KRW 현재가로 변환
-    const isCryptoKrw = h.assetType === '암호화폐' && h.currency === 'KRW'
-    const priceInCurrency = hasPrice ? (isCryptoKrw ? price * exchangeRate.value : price) : null
+    // 암호화폐 시세는 USD로 오므로, 통화가 USD가 아닌 종목은 종목 통화로 먼저 환산
+    const isCryptoNonUsd = h.assetClass === 'crypto' && h.currency !== 'USD'
+    const priceInCurrency = hasPrice
+      ? (isCryptoNonUsd ? convertMoney(price, 'USD', h.currency, exchangeRate.value) : price)
+      : null
     const evaluationAmount = priceInCurrency !== null ? priceInCurrency * h.quantity : null
     const evalKrw = evaluationAmount !== null
-      ? (h.currency === 'USD' && !isCryptoKrw ? evaluationAmount * exchangeRate.value : evaluationAmount)
+      ? convertMoney(evaluationAmount, h.currency, baseCurrency.value, exchangeRate.value)
       : null
     const profitRate = evalKrw !== null && h.costKrw > 0 ? ((evalKrw - h.costKrw) / h.costKrw) * 100 : null
     return {
@@ -251,11 +259,10 @@ const compareRows = computed<CompareRow[]>(() => {
       <div class="d-flex align-center ga-2">
         <v-btn icon="mdi-arrow-left" variant="text" size="small" class="mr-1" style="color: rgb(var(--v-theme-on-surface))" @click="router.back()" />
         <div>
-          <div class="font-weight-bold">포트폴리오 분석</div>
-          <div class="text-medium-emphasis">종목별 비중 분석</div>
+          <div class="font-weight-bold">{{ $t('portfolioAnalysis.title') }}</div>
+          <div class="text-medium-emphasis">{{ $t('portfolioAnalysis.subtitle') }}</div>
         </div>
       </div>
-      <CurrencyToggle />
     </div>
 
     <template v-if="loading">
@@ -266,24 +273,24 @@ const compareRows = computed<CompareRow[]>(() => {
     <template v-else-if="segments.length === 0">
       <div class="empty-state">
         <v-icon size="56" color="primary" class="mb-3" style="opacity:0.4">mdi-chart-donut</v-icon>
-        <div class="font-weight-medium mb-1">보유 자산이 없습니다</div>
-        <div class="text-medium-emphasis">포트폴리오에 자산을 추가해 보세요</div>
+        <div class="font-weight-medium mb-1">{{ $t('portfolioAnalysis.emptyTitle') }}</div>
+        <div class="text-medium-emphasis">{{ $t('portfolioAnalysis.emptyHint') }}</div>
       </div>
     </template>
 
     <template v-else>
       <!-- 뷰 모드 토글 -->
       <div class="toggle-row mb-4">
-        <button class="toggle-btn" :class="{ active: viewMode === 'type' }" @click="viewMode = 'type'">자산군별</button>
-        <button class="toggle-btn" :class="{ active: viewMode === 'ticker' }" @click="viewMode = 'ticker'">종목별</button>
-        <button class="toggle-btn" :class="{ active: viewMode === 'compare' }" @click="viewMode = 'compare'; loadAllPrices()">종목 비교</button>
+        <button class="toggle-btn" :class="{ active: viewMode === 'type' }" @click="viewMode = 'type'">{{ $t('portfolioAnalysis.byType') }}</button>
+        <button class="toggle-btn" :class="{ active: viewMode === 'ticker' }" @click="viewMode = 'ticker'">{{ $t('portfolioAnalysis.byTicker') }}</button>
+        <button class="toggle-btn" :class="{ active: viewMode === 'compare' }" @click="viewMode = 'compare'; loadAllPrices()">{{ $t('portfolioAnalysis.compare') }}</button>
       </div>
 
       <!-- 종목 비교 -->
       <template v-if="viewMode === 'compare'">
         <div class="compare-card mb-4">
           <div class="d-flex align-center justify-space-between mb-3">
-            <div class="font-weight-medium">비교할 종목 선택</div>
+            <div class="font-weight-medium">{{ $t('portfolioAnalysis.selectToCompare') }}</div>
             <div class="text-medium-emphasis">{{ compareTickers.length }} / {{ COMPARE_MAX }}</div>
           </div>
           <div class="compare-chip-wrap">
@@ -299,12 +306,12 @@ const compareRows = computed<CompareRow[]>(() => {
 
         <div v-if="holdings.length === 0" class="empty-state">
           <v-icon size="48" color="primary" class="mb-3" style="opacity:0.4">mdi-compare-horizontal</v-icon>
-          <div class="text-medium-emphasis">비교할 수 있는 보유 종목이 없어요</div>
+          <div class="text-medium-emphasis">{{ $t('portfolioAnalysis.noCompareTargets') }}</div>
         </div>
 
         <div v-else-if="compareRows.length < 2" class="empty-state">
           <v-icon size="48" color="primary" class="mb-3" style="opacity:0.4">mdi-compare-horizontal</v-icon>
-          <div class="text-medium-emphasis">비교할 종목을 2개 이상 선택해주세요</div>
+          <div class="text-medium-emphasis">{{ $t('portfolioAnalysis.selectAtLeast2') }}</div>
         </div>
 
         <div v-else class="compare-card">
@@ -325,11 +332,11 @@ const compareRows = computed<CompareRow[]>(() => {
               <v-skeleton-loader type="text" width="140" />
             </template>
             <template v-else-if="row.evalKrw === null">
-              <div class="text-medium-emphasis">현재가 조회 실패</div>
+              <div class="text-medium-emphasis">{{ $t('portfolioAnalysis.priceFailed') }}</div>
             </template>
             <template v-else>
               <div class="mb-1">
-                <span class="text-medium-emphasis">{{ formatMoney(row.evalKrw) }}{{ displayCurrency === 'USD' ? '' : '원' }}</span>
+                <span class="text-medium-emphasis">{{ formatMoney(row.evalKrw) }}{{ displayCurrency === 'USD' ? '' : $t('currency.wonUnit') }}</span>
                 <span
                   v-if="row.profitRate !== null"
                   class="font-weight-medium ml-1"
@@ -345,7 +352,7 @@ const compareRows = computed<CompareRow[]>(() => {
               </div>
             </template>
           </div>
-          <div class="text-medium-emphasis text-center mt-3" style="opacity:0.6">선택한 종목 평가금액 합계를 100%로 한 비중</div>
+          <div class="text-medium-emphasis text-center mt-3" style="opacity:0.6">{{ $t('portfolioAnalysis.shareNote') }}</div>
         </div>
       </template>
 
@@ -374,7 +381,7 @@ const compareRows = computed<CompareRow[]>(() => {
 
               <!-- 중앙 텍스트 -->
               <text x="120" y="108" text-anchor="middle" class="center-label">
-                {{ hovered ? hovered.label : '총 자산' }}
+                {{ hovered ? hovered.label : $t('portfolioAnalysis.totalAsset') }}
               </text>
               <text x="120" y="130" text-anchor="middle" class="center-value">
                 {{ hovered ? hovered.pct.toFixed(1) + '%' : formatMoney(totalKrw) }}
@@ -411,7 +418,7 @@ const compareRows = computed<CompareRow[]>(() => {
           </div>
         </div>
 
-        <div class="text-medium-emphasis text-center mt-3" style="opacity:0.6">취득가 기준 평가금액</div>
+        <div class="text-medium-emphasis text-center mt-3" style="opacity:0.6">{{ $t('portfolioAnalysis.costBasisNote') }}</div>
       </template>
     </template>
   </v-container>
