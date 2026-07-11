@@ -89,5 +89,34 @@
       "cryptoDesc": "실시간에 가까움",
       "fxDesc": "전일 종가 기준 (하루 1회 갱신)"
     }
+  },
+  "transactions": {
+    "title": "거래내역",
+    "headerAlt": "기록",
+    "addTx": "거래 추가",
+    "totalBuy": "총 매수",
+    "totalSell": "총 매도",
+    "all": "전체",
+    "buy": "매수",
+    "sell": "매도",
+    "totalCount": "총 {n}건",
+    "yearPlaceholder": "연도",
+    "monthPlaceholder": "월",
+    "yearOption": "{y}년",
+    "monthOption": "{m}월",
+    "emptySearch": "검색 결과가 없습니다",
+    "emptyNone": "거래내역이 없습니다",
+    "emptySearchHint": "다른 날짜나 필터를 선택해보세요.",
+    "emptyNoneHint": "거래 추가 버튼으로 첫 거래를 기록하세요.",
+    "swipeHint": "← 카드를 왼쪽으로 밀면 수정/삭제할 수 있어요",
+    "deleteTitle": "거래 삭제",
+    "deleteConfirm": "{type} 거래를 삭제하시겠습니까?",
+    "deleteIrreversible": "이 작업은 되돌릴 수 없습니다.",
+    "loadError": "거래내역 조회 중 오류가 발생했습니다.",
+    "deleteSuccess": "거래내역이 삭제되었습니다.",
+    "deleteError": "삭제 중 오류가 발생했습니다."
+  },
+  "currency": {
+    "wonUnit": "원"
   }
 }

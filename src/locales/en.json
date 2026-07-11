@@ -89,5 +89,34 @@
       "cryptoDesc": "near real-time",
       "fxDesc": "prev. close (daily)"
     }
+  },
+  "transactions": {
+    "title": "Transactions",
+    "headerAlt": "Records",
+    "addTx": "Add transaction",
+    "totalBuy": "Total Buy",
+    "totalSell": "Total Sell",
+    "all": "All",
+    "buy": "Buy",
+    "sell": "Sell",
+    "totalCount": "{n} total",
+    "yearPlaceholder": "Year",
+    "monthPlaceholder": "Month",
+    "yearOption": "{y}",
+    "monthOption": "{m}",
+    "emptySearch": "No results",
+    "emptyNone": "No transactions yet",
+    "emptySearchHint": "Try a different date or filter.",
+    "emptyNoneHint": "Tap the Add transaction button to record your first one.",
+    "swipeHint": "← Swipe a card left to edit/delete",
+    "deleteTitle": "Delete transaction",
+    "deleteConfirm": "Delete this {type} transaction?",
+    "deleteIrreversible": "This action cannot be undone.",
+    "loadError": "An error occurred while loading transactions.",
+    "deleteSuccess": "Transaction deleted.",
+    "deleteError": "An error occurred while deleting."
+  },
+  "currency": {
+    "wonUnit": "won"
   }
 }
