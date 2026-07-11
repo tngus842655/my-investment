@@ -7,13 +7,16 @@ import type { LocaleCode } from '@/config/marketConfig'
 // 로그인 후에는 investment_goals.locale과 동기화한다 (src/composables/useLocale.ts).
 export const LOCALE_STORAGE_KEY = 'firepath-locale'
 
-const SUPPORTED_LOCALES: LocaleCode[] = ['ko', 'en']
+// 실제 메시지 번들이 준비된 언어만. LocaleCode(ko/en/ja/zh)는 DB CHECK 제약 기준 전체 후보이고,
+// 이 상수는 그중 현재 i18n에 연결된 부분집합 — 일본어/중국어 추가 시 여기와 messages에 함께 반영.
+export const SUPPORTED_LOCALES: SupportedLocale[] = ['ko', 'en']
+export type SupportedLocale = Extract<LocaleCode, 'ko' | 'en'>
 
-const detectInitialLocale = (): LocaleCode => {
+const detectInitialLocale = (): SupportedLocale => {
   const saved = localStorage.getItem(LOCALE_STORAGE_KEY)
-  if (saved && SUPPORTED_LOCALES.includes(saved as LocaleCode)) return saved as LocaleCode
+  if (saved && SUPPORTED_LOCALES.includes(saved as SupportedLocale)) return saved as SupportedLocale
   const browserLang = navigator.language.slice(0, 2)
-  return SUPPORTED_LOCALES.includes(browserLang as LocaleCode) ? (browserLang as LocaleCode) : 'ko'
+  return SUPPORTED_LOCALES.includes(browserLang as SupportedLocale) ? (browserLang as SupportedLocale) : 'ko'
 }
 
 export const i18n = createI18n({

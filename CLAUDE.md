@@ -76,10 +76,15 @@
 **수정한 파일이 있으면 반드시 타입 체크를 실행하고 오류가 없는지 확인할 것.**
 
 ```bash
-./node_modules/.bin/vue-tsc --noEmit
+./node_modules/.bin/vue-tsc --build
 ```
 
 `npx tsc --noEmit`은 Vue SFC를 검사하지 못하므로 반드시 `vue-tsc`를 사용할 것.
+⚠️ **`vue-tsc --noEmit`을 인자 없이 단독 실행하면 안 됨** — 루트 `tsconfig.json`이 `files: []` +
+project references만 갖고 있어서, `--build` 없이 `--noEmit`만 주면 어떤 파일도 검사하지 않고 항상
+성공(exit 0)을 반환하는 조용한 무검사 상태가 된다 (2026-07-11 발견, 이 실수로 여러 커밋이 실제
+타입 에러를 안은 채 "통과"로 잘못 보고된 적 있음). 반드시 `--build`를 쓰거나, 부득이하게
+`--noEmit`을 쓸 경우 `-p tsconfig.app.json`으로 대상 프로젝트를 명시할 것.
 오류가 있으면 커밋 전에 수정한다. 오류가 없을 때만 커밋·푸시한다.
 
 **UI 변경 사항을 스크린샷 찍어서 확인하지 말 것.** (playwright-core 임시 설치 + dev 서버 구동 + 스크린샷 촬영·읽기 등) 토큰 소모가 매우 크다. `vue-tsc` 타입 체크와 코드 리뷰로 검증하고, 실제 동작 확인은 사용자가 직접 로그인해서 확인한다.

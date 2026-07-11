@@ -14,7 +14,7 @@ import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const { chart } = useDesignTokens()
-const { baseCurrency, money } = useBaseCurrency()
+const { baseCurrency, displayCurrency, money } = useBaseCurrency()
 
 const loading = ref(true)
 const viewMode = ref<'type' | 'ticker' | 'compare'>('type')

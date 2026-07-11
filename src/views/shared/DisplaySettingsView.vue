@@ -3,7 +3,7 @@ import { useRouter } from 'vue-router'
 import { useFontScale } from '@/composables/useFontScale'
 import { useLocale } from '@/composables/useLocale'
 import { FONT_SCALE_DEFAULT } from '@/design'
-import type { LocaleCode } from '@/config/marketConfig'
+import type { SupportedLocale } from '@/plugins/i18n'
 
 const router = useRouter()
 const { fontScale, min, max, setFontScale } = useFontScale()
@@ -13,7 +13,7 @@ const percentLabel = (v: number) => `${Math.round(v * 100)}%`
 const resetFontScale = () => setFontScale(FONT_SCALE_DEFAULT)
 
 // 1차 오픈 대상 언어만 노출 (일본어/중국어는 GLOBALIZATION.md 단계 D 확장 시 추가)
-const languageOptions: { value: LocaleCode; label: string }[] = [
+const languageOptions: { value: SupportedLocale; label: string }[] = [
   { value: 'ko', label: '한국어' },
   { value: 'en', label: 'English' },
 ]
