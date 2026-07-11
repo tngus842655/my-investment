@@ -3,8 +3,10 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
+const { t } = useI18n()
 
 const currentPassword = ref('')
 const newPassword = ref('')
@@ -34,30 +36,30 @@ const submit = async () => {
   try {
     // 현재 비밀번호 확인: 재로그인으로 검증
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user?.email) throw new Error('로그인 정보를 확인할 수 없습니다.')
+    if (!user?.email) throw new Error(t('changePassword.errors.cannotVerifyLogin'))
 
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: user.email,
       password: currentPassword.value,
     })
     if (signInError) {
-      showMessage('현재 비밀번호가 올바르지 않습니다.', 'error')
+      showMessage(t('changePassword.errors.wrongCurrent'), 'error')
       return
     }
 
     const { error } = await supabase.auth.updateUser({ password: newPassword.value })
     if (error) {
       if (error.message.includes('different from the old password') || error.status === 422) {
-        showMessage('현재 비밀번호와 동일한 비밀번호는 사용할 수 없습니다.', 'error')
+        showMessage(t('changePassword.errors.samePasswordNotAllowed'), 'error')
         return
       }
       throw error
     }
 
-    showMessage('비밀번호가 변경되었습니다.', 'success')
+    showMessage(t('changePassword.errors.success'), 'success')
     router.back()
   } catch (e: unknown) {
-    showMessage(e instanceof Error ? e.message : '비밀번호 변경에 실패했습니다.', 'error')
+    showMessage(e instanceof Error ? e.message : t('changePassword.errors.failed'), 'error')
   } finally {
     loading.value = false
   }
@@ -70,13 +72,13 @@ const submit = async () => {
       <v-btn icon variant="text" size="small" @click="router.back()">
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
-      <div class="font-weight-bold">비밀번호 변경</div>
+      <div class="font-weight-bold">{{ $t('changePassword.title') }}</div>
     </div>
 
     <v-card class="glass-card pa-4 mb-4">
       <v-text-field
         v-model="currentPassword"
-        label="현재 비밀번호"
+        :label="$t('changePassword.currentPassword')"
         :type="showCurrent ? 'text' : 'password'"
         :append-inner-icon="showCurrent ? 'mdi-eye-off' : 'mdi-eye'"
         maxlength="72"
@@ -87,12 +89,12 @@ const submit = async () => {
       />
       <v-text-field
         v-model="newPassword"
-        label="새 비밀번호"
+        :label="$t('changePassword.newPassword')"
         :type="showNew ? 'text' : 'password'"
         :append-inner-icon="showNew ? 'mdi-eye-off' : 'mdi-eye'"
         :error="isSameAsCurrent()"
-        :error-messages="isSameAsCurrent() ? '현재 비밀번호와 동일합니다.' : ''"
-        hint="6자 이상 입력해 주세요"
+        :error-messages="isSameAsCurrent() ? $t('changePassword.sameAsCurrentError') : ''"
+        :hint="$t('changePassword.minLengthHint')"
         :persistent-hint="!isSameAsCurrent()"
         maxlength="72"
         variant="outlined"
@@ -102,11 +104,11 @@ const submit = async () => {
       />
       <v-text-field
         v-model="confirmPassword"
-        label="새 비밀번호 확인"
+        :label="$t('changePassword.confirmPassword')"
         :type="showConfirm ? 'text' : 'password'"
         :append-inner-icon="showConfirm ? 'mdi-eye-off' : 'mdi-eye'"
         :error="confirmMismatch()"
-        :error-messages="confirmMismatch() ? '비밀번호가 일치하지 않습니다.' : ''"
+        :error-messages="confirmMismatch() ? $t('changePassword.mismatchError') : ''"
         maxlength="72"
         variant="outlined"
         density="comfortable"
@@ -122,7 +124,7 @@ const submit = async () => {
       :disabled="!isValid()"
       @click="submit"
     >
-      변경하기
+      {{ $t('changePassword.submit') }}
     </v-btn>
   </v-container>
 </template>

@@ -143,8 +143,8 @@ const notes = [
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <div>
-        <div class="font-weight-bold">개발자 노트</div>
-        <div class="text-medium-emphasis">업데이트 내역</div>
+        <div class="font-weight-bold">{{ $t('releaseNotes.title') }}</div>
+        <div class="text-medium-emphasis">{{ $t('releaseNotes.subtitle') }}</div>
       </div>
     </div>
 

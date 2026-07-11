@@ -586,5 +586,60 @@
       "deleted": "Account deleted.",
       "deleteError": "An error occurred while deleting your account."
     }
+  },
+  "changePassword": {
+    "title": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "sameAsCurrentError": "Same as your current password.",
+    "minLengthHint": "At least 6 characters",
+    "mismatchError": "Passwords do not match.",
+    "submit": "Change Password",
+    "errors": {
+      "cannotVerifyLogin": "Could not verify login information.",
+      "wrongCurrent": "Current password is incorrect.",
+      "samePasswordNotAllowed": "New password cannot be the same as the current password.",
+      "success": "Password changed.",
+      "failed": "Failed to change password."
+    }
+  },
+  "feedback": {
+    "title": "Feedback",
+    "subtitle": "Let us know about issues or ideas for improvement.",
+    "newFeedback": "New Feedback",
+    "category": "Category",
+    "catBug": "Bug Report",
+    "catFeature": "Feature Request",
+    "catOther": "Other",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Enter a title",
+    "contentLabel": "Content",
+    "contentPlaceholder": "Describe the details",
+    "sending": "Sending...",
+    "send": "Send Feedback",
+    "myFeedback": "My Feedback",
+    "emptyFeedback": "You haven't submitted any feedback.",
+    "writtenContent": "Content",
+    "adminReply": "Admin Reply",
+    "statusReceived": "Received",
+    "statusReviewing": "Reviewing",
+    "statusDone": "Done",
+    "statusRejected": "Rejected",
+    "errors": {
+      "fillAll": "Please fill in all fields.",
+      "received": "Feedback received.",
+      "sendError": "An error occurred while sending."
+    }
+  },
+  "notices": {
+    "title": "Notices",
+    "subtitle": "Service announcements and notices",
+    "empty": "No notices yet",
+    "test": "Test"
+  },
+  "releaseNotes": {
+    "title": "Dev Notes",
+    "subtitle": "Update history"
   }
 }
