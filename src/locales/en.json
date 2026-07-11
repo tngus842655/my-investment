@@ -481,5 +481,10 @@
       "totalReturn": "Total return of the current value versus the invested principal."
     },
     "subtitle": "Historical {dca} return simulation"
+  },
+  "ticker": {
+    "cash": "Cash",
+    "cashKrw": "KRW",
+    "cashUsd": "USD"
   }
 }

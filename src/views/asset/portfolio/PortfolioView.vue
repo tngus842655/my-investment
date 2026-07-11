@@ -8,7 +8,7 @@ import type { PortfolioAsset } from '@/types/portfolio'
 import { showMessage } from '@/composables/useSnackbar'
 import { getStockPrice } from '@/services/market'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
-import { getTickerLabel, isEtfTicker, getTickerDisplayName, TICKER_NAMES } from '@/utils/tickerNames'
+import { getTickerLabel, isEtfTicker, getTickerDisplayName } from '@/utils/tickerNames'
 import { evaluateItemBase, simpleCostBase, convertMoney } from '@/utils/portfolioMath'
 import { getAssetClass, getMarket, isCash as isCashItem } from '@/config/marketConfig'
 import { useUserDataStore } from '@/stores/userData'
@@ -567,8 +567,7 @@ const sortedPortfolios = computed(() => {
       case 'profit': return list.sort((a, b) => (b.profitAmountBase ?? 0) - (a.profitAmountBase ?? 0))
       case 'rate':   return list.sort((a, b) => (b.profitRate ?? 0) - (a.profitRate ?? 0))
       case 'name': {
-        const getName = (ticker: string) => TICKER_NAMES[ticker.toUpperCase()] ?? ticker
-        return list.sort((a, b) => getName(a.ticker).localeCompare(getName(b.ticker), 'ko'))
+        return list.sort((a, b) => getTickerDisplayName(a.ticker).localeCompare(getTickerDisplayName(b.ticker), 'ko'))
       }
       default:       return list
     }

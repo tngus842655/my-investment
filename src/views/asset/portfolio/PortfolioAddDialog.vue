@@ -5,7 +5,7 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { getCachedRate } from '@/services/exchangeRateCache'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
-import { TICKER_NAMES, getTickerDisplayName } from '@/utils/tickerNames'
+import { isKnownTicker, getTickerDisplayName } from '@/utils/tickerNames'
 import { KR_STOCK_NAMES, KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 import { getStockPrice } from '@/services/market'
 import { assetTypeToClass, assetTypeToMarket, getAssetClass, getMarket, type CurrencyCode } from '@/config/marketConfig'
@@ -264,7 +264,7 @@ const save = async () => {
         saving.value = false
         return
       }
-    } else if (assetType.value !== '국내주식' && !TICKER_NAMES[t]) {
+    } else if (assetType.value !== '국내주식' && !isKnownTicker(t)) {
       showMessage(`등록되지 않은 코인 영문코드입니다. 다시 확인해주세요.`, 'error')
       return
     }

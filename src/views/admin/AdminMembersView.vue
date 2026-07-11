@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { isAdminEmail } from '@/config/admin'
-import { TICKER_NAMES } from '@/utils/tickerNames'
+import { getTickerDisplayName } from '@/utils/tickerNames'
 const router = useRouter()
 const loading = ref(true)
 const isAdmin = ref(false)
@@ -223,7 +223,7 @@ onMounted(async () => {
           <div class="rank-row" :class="{ 'mt-2': i > 0 }">
             <div class="d-flex align-center ga-3">
               <span class="rank-num" :class="i < 3 ? 'rank-top' : ''">{{ i + 1 }}</span>
-              <span class="rank-ticker">{{ TICKER_NAMES[item.ticker] ?? item.ticker }}</span>
+              <span class="rank-ticker">{{ getTickerDisplayName(item.ticker) }}</span>
             </div>
             <div class="d-flex align-center ga-2">
               <div class="rank-bar-wrap">

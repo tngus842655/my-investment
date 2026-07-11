@@ -4,7 +4,7 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { getCachedRate } from '@/services/exchangeRateCache'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
-import { getTickerDisplayName, TICKER_NAMES } from '@/utils/tickerNames'
+import { getTickerDisplayName, isKnownTicker } from '@/utils/tickerNames'
 import { KR_STOCK_NAMES, KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 import { getStockPrice } from '@/services/market'
 import { recomputeAssetSummary } from '@/services/assetSummary'
@@ -364,7 +364,7 @@ const save = async () => {
         saving.value = false
         return
       }
-    } else if (!TICKER_NAMES[t]) {
+    } else if (!isKnownTicker(t)) {
       const label = newAssetType.value === '국내주식' ? '종목코드' : '코인 영문코드'
       showMessage(`등록되지 않은 ${label}입니다. 다시 확인해주세요.`, 'error')
       return
