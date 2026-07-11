@@ -1,11 +1,5 @@
 import type { AssetClass, MarketCode } from '@/config/marketConfig'
 
-export interface PortfolioForm {
-  ticker: string
-  asset_type: string
-  currency: string
-}
-
 export interface PortfolioAsset {
   id: string
   user_id: string

@@ -12,6 +12,16 @@ const toggleExpand = (i: number) => {
 
 const notes = [
   {
+    version: 'v1.0.9',
+    date: '2026.7.11',
+    description: [],
+    items: [
+      '앱 다국어 지원 — 화면 설정에서 한국어/English 전환 가능',
+      '화면 설정에 화폐(표시 통화) 선택 추가 — 언어를 바꾸면 통화가 자동으로 전환(한국어→원화, English→달러)되고, 이후 화폐만 따로 선택할 수도 있습니다',
+      '화면 곳곳에 흩어져 있던 원화/달러 전환 토글을 화면 설정 한 곳으로 통합',
+    ],
+  },
+  {
     version: 'v1.0.8',
     date: '2026.7.8',
     description: [],
