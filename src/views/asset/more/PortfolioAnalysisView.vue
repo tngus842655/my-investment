@@ -22,7 +22,6 @@ const viewMode = ref<'type' | 'ticker' | 'compare'>('type')
 const hoveredKey = ref<string | null>(null)
 interface PortfolioRow {
   ticker: string
-  asset_type: string
   asset_class?: AssetClass
   market?: MarketCode | null
   currency: 'KRW' | 'USD'

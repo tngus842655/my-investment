@@ -34,7 +34,6 @@ interface PortfolioItem {
   quantity: number
   avg_price: number
   currency: string
-  asset_type: string
   asset_class?: import('@/config/marketConfig').AssetClass
   market?: import('@/config/marketConfig').MarketCode | null
   evaluationAmountKrw?: number
@@ -89,7 +88,7 @@ const openDetail = async (log: SignupLog) => {
       const [goalRes, assetRes, portRes, accessRes, rate] = await Promise.all([
         supabase.from('investment_goals').select('target_asset, monthly_investment, annual_return').eq('user_id', userId).maybeSingle(),
         supabase.from('asset_summary').select('current_asset, investment_principal').eq('user_id', userId).maybeSingle(),
-        supabase.from('portfolios').select('ticker, quantity, avg_price, currency, asset_type, asset_class, market').eq('user_id', userId).order('sort_order'),
+        supabase.from('portfolios').select('ticker, quantity, avg_price, currency, asset_class, market').eq('user_id', userId).order('sort_order'),
         supabase.from('access_log').select('accessed_at').eq('user_id', userId).order('accessed_at', { ascending: true }),
         getCachedExchangeRate(),
       ])

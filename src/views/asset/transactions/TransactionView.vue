@@ -29,7 +29,6 @@ interface Transaction {
   memo?: string
   portfolios: {
     ticker: string
-    asset_type: string
     asset_class?: AssetClass
     market?: MarketCode | null
     currency: string
@@ -130,7 +129,7 @@ let userId = ''
 async function buildQuery(from: number, to: number) {
   let q = supabase
     .from('transactions')
-    .select('*, portfolios(ticker, asset_type, asset_class, market, currency, account_name)')
+    .select('*, portfolios(ticker, asset_class, market, currency, account_name)')
     .eq('user_id', userId)
     .neq('transaction_type', 'INITIAL')
     .order('transaction_date', { ascending: false })

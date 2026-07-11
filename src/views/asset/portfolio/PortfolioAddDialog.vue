@@ -11,7 +11,7 @@ import { isKnownTicker, getTickerDisplayName } from '@/utils/tickerNames'
 import { KR_STOCK_NAMES, KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 import { getStockPrice } from '@/services/market'
 import {
-  getAssetClass, getMarket, classMarketToAssetType, ASSET_CLASSES, MARKETS, ACTIVE_MARKETS,
+  getAssetClass, getMarket, ASSET_CLASSES, MARKETS, ACTIVE_MARKETS,
   type AssetClass, type MarketCode, type CurrencyCode,
 } from '@/config/marketConfig'
 
@@ -385,8 +385,6 @@ const save = async () => {
         .insert({
           user_id: user.id,
           ticker: tickerToSave,
-          // 전환기 dual-write: asset_type(레거시)과 새 체계를 함께 기록 (GLOBALIZATION.md 단계 A/사용자 단계 6 이전까지)
-          asset_type: classMarketToAssetType(cls, mkt),
           asset_class: cls,
           market: mkt,
           currency: currency.value,

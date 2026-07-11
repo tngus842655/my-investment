@@ -17,7 +17,6 @@ const { t, tm, rt } = useI18n()
 
 interface Portfolio {
   ticker: string
-  asset_type: string
   asset_class?: AssetClass
   market?: MarketCode | null
   currency: string
@@ -60,7 +59,7 @@ const loadData = async () => {
 
     const [portRes, rate] = await Promise.all([
       supabase.from('portfolios')
-        .select('ticker, asset_type, asset_class, market, currency, quantity')
+        .select('ticker, asset_class, market, currency, quantity')
         .eq('user_id', user.id),
       getCachedExchangeRate(),
     ])

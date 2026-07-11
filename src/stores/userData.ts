@@ -35,7 +35,6 @@ export interface Portfolio {
   id: string
   user_id: string
   ticker: string
-  asset_type: string
   asset_class?: import('@/config/marketConfig').AssetClass
   market?: import('@/config/marketConfig').MarketCode | null
   quantity: number

@@ -66,7 +66,6 @@ const displayedCurrentAsset = computed(() =>
 interface MiniPortfolio {
   id: string
   ticker: string
-  asset_type: string
   asset_class?: AssetClass
   market?: MarketCode | null
   currency: string

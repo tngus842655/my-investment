@@ -12,7 +12,7 @@ import { getStockPrice } from '@/services/market'
 import { recomputeAssetSummary } from '@/services/assetSummary'
 import { useUserDataStore } from '@/stores/userData'
 import {
-  getAssetClass, getMarket, classMarketToAssetType, ASSET_CLASSES, MARKETS, ACTIVE_MARKETS,
+  getAssetClass, getMarket, ASSET_CLASSES, MARKETS, ACTIVE_MARKETS,
   type AssetClass, type MarketCode, type CurrencyCode,
 } from '@/config/marketConfig'
 
@@ -68,7 +68,6 @@ const isEditMode = computed(() => !!props.initialData)
 interface Portfolio {
   id: string
   ticker: string
-  asset_type: string
   asset_class?: AssetClass
   market?: MarketCode | null
   currency: string
@@ -272,7 +271,7 @@ const loadPortfolios = async () => {
     if (!user) return
     const { data, error } = await supabase
       .from('portfolios')
-      .select('id, ticker, asset_type, asset_class, market, currency, account_name')
+      .select('id, ticker, asset_class, market, currency, account_name')
       .eq('user_id', user.id)
       .neq('asset_class', 'cash')
       .order('sort_order', { ascending: true })
@@ -397,8 +396,6 @@ const save = async () => {
         .insert({
           user_id: user.id,
           ticker: tickerToSave,
-          // 전환기 dual-write: asset_type(레거시)과 새 체계를 함께 기록 (GLOBALIZATION.md 단계 A/사용자 단계 6 이전까지)
-          asset_type: classMarketToAssetType(cls, mkt),
           asset_class: cls,
           market: mkt,
           currency: newCurrency.value,

@@ -101,7 +101,7 @@ USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'email') = 'admin
 | id         | uuid          | PK                           |
 | user_id    | uuid          | FK → auth.users              |
 | ticker     | text          | 종목 코드 (예: AAPL, 005930) |
-| asset_type | text          | 자산 유형 (한글, 전환 완료 후 제거 예정 — GLOBALIZATION.md 사용자 단계 6) |
+| asset_type | text          | 자산 유형 (한글, 레거시). 프론트 참조 전면 제거 완료 → 컬럼 DROP SQL 실행 대기(`migrations/20260711_04`, main 배포 후) — GLOBALIZATION.md 사용자 단계 6 |
 | asset_class | text         | stock \| etf \| crypto \| cash (CHECK 제약)  |
 | market     | text          | KR \| US \| JP \| CN (CHECK 제약, crypto/cash는 NULL) |
 | quantity   | numeric       | 보유 수량                    |

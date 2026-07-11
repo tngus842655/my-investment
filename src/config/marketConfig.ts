@@ -71,33 +71,8 @@ export const ASSET_CLASSES: Record<AssetClass, { label: Record<LocaleCode, strin
   cash: { label: { ko: '현금', en: 'Cash', ja: '現金', zh: '现金' } },
 }
 
-// ── 전환기 헬퍼: 기존 asset_type(한글) ↔ 새 체계 매핑 ─────────────
-// 단계 A 완료(프론트가 asset_class/market만 사용) 후 제거 예정.
-
-export const assetTypeToClass = (assetType: string): AssetClass => {
-  switch (assetType) {
-    case '국내주식':
-    case '해외주식':
-      return 'stock'
-    case 'ETF':
-      return 'etf'
-    case '암호화폐':
-      return 'crypto'
-    case '현금':
-      return 'cash'
-    default:
-      return 'stock'
-  }
-}
-
-export const assetTypeToMarket = (assetType: string, currency: string): MarketCode | null => {
-  if (assetType === '국내주식') return 'KR'
-  if (assetType === '해외주식') return 'US'
-  if (assetType === 'ETF') return currency === 'KRW' ? 'KR' : 'US'
-  return null // 암호화폐/현금
-}
-
-// 새 체계 → 기존 asset_type (전환기 dual-write 및 기존 화면 호환용)
+// 새 체계(asset_class/market) → 한글 자산유형 라벨. 화면 표시·테마 색상 키가 아직 한글
+// 자산유형 기준이라 접근자로 재구성한다 (DB asset_type 컬럼과는 무관 — 컬럼은 사용자 단계 6로 제거됨).
 export const classMarketToAssetType = (assetClass: AssetClass, market: MarketCode | null): string => {
   switch (assetClass) {
     case 'stock':
@@ -112,21 +87,18 @@ export const classMarketToAssetType = (assetClass: AssetClass, market: MarketCod
 }
 
 // ── 접근자: DB 행에서 자산군/시장 읽기 ─────────────────────────
-// 새 컬럼(asset_class/market)이 있으면 그 값을, 없으면 asset_type에서 유추.
-// 분기 코드는 asset_type을 직접 비교하지 말고 반드시 이 접근자를 쓸 것.
+// portfolios.asset_class(NOT NULL) / market(crypto·cash는 NULL) 컬럼을 읽는다.
+// 분기 코드는 한글 라벨을 직접 비교하지 말고 반드시 이 접근자를 쓸 것.
 
 export interface ClassifiableItem {
-  asset_type?: string
   asset_class?: AssetClass | null
   market?: MarketCode | null
   currency?: string
 }
 
-export const getAssetClass = (item: ClassifiableItem): AssetClass =>
-  item.asset_class ?? assetTypeToClass(item.asset_type ?? '')
+export const getAssetClass = (item: ClassifiableItem): AssetClass => item.asset_class ?? 'stock'
 
-export const getMarket = (item: ClassifiableItem): MarketCode | null =>
-  item.market !== undefined ? item.market : assetTypeToMarket(item.asset_type ?? '', item.currency ?? 'KRW')
+export const getMarket = (item: ClassifiableItem): MarketCode | null => item.market ?? null
 
 export const isCash = (item: ClassifiableItem): boolean => getAssetClass(item) === 'cash'
 export const isCrypto = (item: ClassifiableItem): boolean => getAssetClass(item) === 'crypto'
