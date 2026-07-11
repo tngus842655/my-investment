@@ -219,5 +219,77 @@
     "large": "Large ({pct})",
     "fontTip": "Setting it too large may cause text to overlap or get cut off on some screens.",
     "language": "Language"
+  },
+  "fireSim": {
+    "title": "FIRE Simulator",
+    "subtitle": "Compare completion dates by changing conditions",
+    "conditions": "Simulation conditions",
+    "reset": "Reset",
+    "monthlyInvestment": "Monthly investment",
+    "annualReturn": "Annual return",
+    "sliderMin": "100K",
+    "sliderMax": "10M",
+    "basePlan": "Current plan",
+    "simulation": "Simulation",
+    "cannotReach": "Unreachable",
+    "perMonth": "{amount}/mo",
+    "perYear": "{rate}%/yr",
+    "faster": "{dur} sooner",
+    "slower": "{dur} later",
+    "noDiff": "No difference",
+    "loadError": "An error occurred while loading data."
+  },
+  "fireHistory": {
+    "title": "FIRE Progress",
+    "subtitle": "History of your progress rate",
+    "period1M": "1M",
+    "period3M": "3M",
+    "period6M": "6M",
+    "period1Y": "1Y",
+    "periodAll": "All",
+    "empty": "No records yet.",
+    "emptyHint": "You'll see progress changes starting tomorrow.",
+    "currentRate": "Current rate",
+    "periodChange": "Period change",
+    "currentAsset": "Current assets",
+    "loadError": "An error occurred while loading data.",
+    "chartHint": "The chart appears once you have 2+ days of data."
+  },
+  "badges": {
+    "title": "Achievement Badges",
+    "subtitle": "Milestones by FIRE progress",
+    "fireRate": "FIRE Progress",
+    "badgeCount": "Badges",
+    "nextHint": "{n}% to go until {label}",
+    "allUnlocked": "All badges unlocked!",
+    "currentAsset": "Current assets",
+    "target": "Target",
+    "thresholdReached": "{n}% reached",
+    "items": {
+      "seed": {
+        "label": "Seed",
+        "desc": "Start of the FIRE journey"
+      },
+      "sprout": {
+        "label": "Sprout",
+        "desc": "Past the first 10%"
+      },
+      "growth": {
+        "label": "Growth",
+        "desc": "1/4 of the goal"
+      },
+      "halfway": {
+        "label": "Halfway Miracle",
+        "desc": "Half of the goal"
+      },
+      "firezone": {
+        "label": "Fire Zone",
+        "desc": "3/4 of the goal"
+      },
+      "fire": {
+        "label": "FIRE Complete",
+        "desc": "Financial independence!"
+      }
+    }
   }
 }

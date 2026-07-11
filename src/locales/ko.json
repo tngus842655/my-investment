@@ -219,5 +219,77 @@
     "large": "크게 ({pct})",
     "fontTip": "너무 크게 설정하면 일부 화면에서 텍스트가 겹치거나 잘려 보일 수 있어요.",
     "language": "언어"
+  },
+  "fireSim": {
+    "title": "FIRE 시뮬레이터",
+    "subtitle": "투자 조건 변경 시 달성일 비교",
+    "conditions": "시뮬레이션 조건",
+    "reset": "초기화",
+    "monthlyInvestment": "월 투자금",
+    "annualReturn": "연 수익률",
+    "sliderMin": "10만",
+    "sliderMax": "1,000만",
+    "basePlan": "기존 계획",
+    "simulation": "시뮬레이션",
+    "cannotReach": "달성 불가",
+    "perMonth": "월 {amount}",
+    "perYear": "연 {rate}%",
+    "faster": "{dur} 단축",
+    "slower": "{dur} 지연",
+    "noDiff": "차이 없음",
+    "loadError": "데이터를 불러오는 중 오류가 발생했습니다."
+  },
+  "fireHistory": {
+    "title": "FIRE 진행 기록",
+    "subtitle": "목표 달성률 변화 히스토리",
+    "period1M": "1개월",
+    "period3M": "3개월",
+    "period6M": "6개월",
+    "period1Y": "1년",
+    "periodAll": "전체",
+    "empty": "아직 기록이 없어요.",
+    "emptyHint": "내일부터 달성률 변화를 확인할 수 있어요.",
+    "currentRate": "현재 달성률",
+    "periodChange": "기간 변화",
+    "currentAsset": "현재 자산",
+    "loadError": "데이터를 불러오는 중 오류가 발생했습니다.",
+    "chartHint": "데이터가 2일 이상 쌓이면 차트가 표시돼요."
+  },
+  "badges": {
+    "title": "목표 달성 배지",
+    "subtitle": "FIRE 달성률 구간별 업적",
+    "fireRate": "FIRE 달성률",
+    "badgeCount": "배지 획득",
+    "nextHint": "{label}까지 {n}% 남았습니다",
+    "allUnlocked": "모든 배지를 획득했습니다!",
+    "currentAsset": "현재 자산",
+    "target": "목표",
+    "thresholdReached": "{n}% 달성",
+    "items": {
+      "seed": {
+        "label": "씨앗",
+        "desc": "FIRE 여정의 시작"
+      },
+      "sprout": {
+        "label": "새싹",
+        "desc": "첫 10% 돌파"
+      },
+      "growth": {
+        "label": "성장",
+        "desc": "목표의 1/4 달성"
+      },
+      "halfway": {
+        "label": "절반의 기적",
+        "desc": "목표의 절반 달성"
+      },
+      "firezone": {
+        "label": "파이어존",
+        "desc": "목표의 3/4 달성"
+      },
+      "fire": {
+        "label": "FIRE 완성",
+        "desc": "재정 자유 달성!"
+      }
+    }
   }
 }
