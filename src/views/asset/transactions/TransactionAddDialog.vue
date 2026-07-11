@@ -4,23 +4,22 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { getCachedRate } from '@/services/exchangeRateCache'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { useLocale } from '@/composables/useLocale'
+import { useI18n } from 'vue-i18n'
 import { getTickerDisplayName, isKnownTicker } from '@/utils/tickerNames'
 import { KR_STOCK_NAMES, KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 import { getStockPrice } from '@/services/market'
 import { recomputeAssetSummary } from '@/services/assetSummary'
 import { useUserDataStore } from '@/stores/userData'
 import {
-  assetTypeToClass,
-  assetTypeToMarket,
-  getAssetClass,
-  getMarket,
-  type AssetClass,
-  type MarketCode,
-  type CurrencyCode,
+  getAssetClass, getMarket, classMarketToAssetType, ASSET_CLASSES, MARKETS, ACTIVE_MARKETS,
+  type AssetClass, type MarketCode, type CurrencyCode,
 } from '@/config/marketConfig'
 
 const userDataStore = useUserDataStore()
 const { baseCurrency } = useBaseCurrency()
+const { locale } = useLocale()
+const { t } = useI18n()
 
 const krStockItems = Object.entries({ ...KR_STOCK_NAMES, ...KR_ETF_NAMES }).map(([code, name]) => ({
   title: `${name} (${code})`,
@@ -77,7 +76,7 @@ interface Portfolio {
 }
 
 const NEW_PORTFOLIO_VALUE = '__NEW__'
-const assetTypes = ['국내주식', '해외주식', '암호화폐']
+const ASSET_CLASS_OPTIONS: AssetClass[] = ['stock', 'crypto']
 
 const portfolios = ref<Portfolio[]>([])
 const loadingPortfolios = ref(false)
@@ -99,33 +98,33 @@ const saving = ref(false)
 // 새 종목 추가 필드
 const isNewPortfolio = computed(() => selectedPortfolioId.value === NEW_PORTFOLIO_VALUE)
 const newTicker = ref('')
-const newAssetType = ref('')
+const newAssetClass = ref<AssetClass | ''>('')
+const newMarket = ref<MarketCode>('KR')
 const newCurrency = ref('KRW')
 const newAccountName = ref('미지정')
 
+const isNewKrStock = computed(() => newAssetClass.value === 'stock' && newMarket.value === 'KR')
+const isNewUsStock = computed(() => newAssetClass.value === 'stock' && newMarket.value === 'US')
+
+const classLabel = (c: AssetClass) => ASSET_CLASSES[c].label[locale.value] ?? c
+const marketLabel = (m: MarketCode) => MARKETS[m].label[locale.value] ?? m
+
 const newTickerConfig = computed(() => {
-  switch (newAssetType.value) {
-    case '해외주식': return { label: '티커', placeholder: 'AAPL', disabled: false }
-    case '국내주식': return { label: '종목코드', placeholder: '005930', disabled: false }
-    case '암호화폐': return { label: '코인 영문코드', placeholder: 'BTC', disabled: false }
-    case '현금':    return { label: '티커', placeholder: '-', disabled: true }
-    default:        return { label: '티커', placeholder: '', disabled: false }
-  }
+  if (isNewKrStock.value) return { label: t('dialog.tickerLabelKr'), placeholder: '005930', disabled: false }
+  if (isNewUsStock.value) return { label: t('dialog.tickerLabelUs'), placeholder: 'AAPL', disabled: false }
+  if (newAssetClass.value === 'crypto') return { label: t('dialog.tickerLabelCrypto'), placeholder: 'BTC', disabled: false }
+  return { label: t('dialog.tickerLabelUs'), placeholder: '', disabled: false }
 })
 
-const newCurrencyLocked = computed(() =>
-  ['해외주식', '국내주식', '현금'].includes(newAssetType.value),
-)
+const newCurrencyLocked = computed(() => newAssetClass.value === 'stock')
 
 watch(selectedKrStock, (v) => { newTicker.value = v?.value ?? '' })
 
-watch(newAssetType, (type) => {
-  if (type === '해외주식') newCurrency.value = 'USD'
-  else if (['국내주식', '현금'].includes(type)) newCurrency.value = 'KRW'
+watch([newAssetClass, newMarket], ([cls]) => {
+  if (cls === 'stock') newCurrency.value = MARKETS[newMarket.value].currency
   newTicker.value = ''
   krSearchQuery.value = ''
   selectedKrStock.value = null
-  if (type === '현금') newTicker.value = '-'
 })
 
 const selectedPortfolio = computed(() =>
@@ -143,22 +142,19 @@ const filteredPortfolios = computed(() =>
     : portfolios.value
 )
 
-// 종목 선택 목록에 표시할 자산군 라벨 (기존 asset_type.replace('주식','') 표기와 동일)
+// 종목 선택 목록에 표시할 자산군 라벨
 const assetClassLabel = (p: Portfolio): string => {
-  switch (getAssetClass(p)) {
-    case 'stock': return getMarket(p) === 'KR' ? '국내' : '해외'
-    case 'etf': return 'ETF'
-    case 'crypto': return '암호화폐'
-    case 'cash': return '현금'
-  }
+  const cls = getAssetClass(p)
+  if (cls === 'stock') return marketLabel(getMarket(p) ?? 'US')
+  return classLabel(cls)
 }
 
 const portfolioItems = computed(() => [
   ...filteredPortfolios.value.map((p) => {
     const name = getTickerDisplayName(p.ticker)
-    const hasKoreanName = name !== p.ticker
+    const hasName = name !== p.ticker
     const isOverseas = getAssetClass(p) === 'stock' && getMarket(p) === 'US'
-    const label = hasKoreanName
+    const label = hasName
       ? isOverseas
         ? `${name} (${p.ticker})`
         : name
@@ -174,7 +170,7 @@ const portfolioItems = computed(() => [
     }
     return { title: `${accountPrefix}${label} · ${assetLabel}`, value: p.id }
   }),
-  { title: '+ 새 종목 추가', value: NEW_PORTFOLIO_VALUE },
+  { title: t('dialog.addNewOption'), value: NEW_PORTFOLIO_VALUE },
 ])
 
 const totalAmount = computed(() => {
@@ -200,45 +196,45 @@ const totalLabel = computed(() => {
 const MIN_TX_DATE = '2000-01-01'
 
 const newTickerError = computed(() => {
-  const t = newTicker.value?.trim() ?? ''
-  if (!isNewPortfolio.value || !t || newAssetType.value === '현금' || newAssetType.value === '국내주식') return ''
-  if (newAssetType.value === '해외주식' && !/^[A-Za-z]{1,10}$/.test(t)) return '영문자만 입력해주세요. (예: AAPL)'
+  const t2 = newTicker.value?.trim() ?? ''
+  if (!isNewPortfolio.value || !t2 || isNewKrStock.value) return ''
+  if (isNewUsStock.value && !/^[A-Za-z]{1,10}$/.test(t2)) return t('dialog.errors.tickerLettersOnly')
   return ''
 })
 
 const quantityError = computed(() => {
   if (!quantity.value) return ''
   const q = Number(quantity.value)
-  if (q <= 0) return '수량은 0보다 커야 합니다.'
-  if (q > maxQuantity.value) return `수량은 ${maxQuantity.value.toLocaleString()} 이하로 입력해주세요.`
+  if (q <= 0) return t('dialog.errors.qtyPositive')
+  if (q > maxQuantity.value) return t('dialog.errors.qtyMax', { max: maxQuantity.value.toLocaleString() })
   const decStr = String(quantity.value).split('.')[1] ?? ''
-  if (decStr.length > 8) return '소수점 8자리까지 입력 가능합니다.'
+  if (decStr.length > 8) return t('dialog.errors.qtyDecimals')
   return ''
 })
 
 const unitPriceError = computed(() => {
   if (!unitPrice.value) return ''
   const p = removeComma(unitPrice.value)
-  if (p <= 0) return '거래단가는 0보다 커야 합니다.'
+  if (p <= 0) return t('dialog.errors.pricePositive')
   if (p > maxPrice.value) {
     const isUsStock = effectiveAssetClass.value === 'stock' && effectiveMarket.value === 'US'
     const unit = isUsStock ? '$' : ''
     const suffix = isUsStock ? '' : '원'
-    return `거래단가는 ${unit}${maxPrice.value.toLocaleString()}${suffix} 이하로 입력해주세요.`
+    return t('dialog.errors.priceMax', { amount: `${unit}${maxPrice.value.toLocaleString()}${suffix}` })
   }
   return ''
 })
 
 const txDateError = computed(() => {
   if (!txDate.value) return ''
-  if (txDate.value < MIN_TX_DATE) return `${MIN_TX_DATE} 이후 날짜를 입력해주세요.`
+  if (txDate.value < MIN_TX_DATE) return t('dialog.errors.dateMin', { date: MIN_TX_DATE })
   return ''
 })
 
 const isNewPortfolioValid = computed(() =>
   !isNewPortfolio.value || (
-    newAssetType.value &&
-    (newAssetType.value === '현금' || ((newTicker.value?.trim() ?? '') && !newTickerError.value)) &&
+    newAssetClass.value &&
+    ((newTicker.value?.trim() ?? '') && !newTickerError.value) &&
     newCurrency.value
   ),
 )
@@ -284,7 +280,7 @@ const loadPortfolios = async () => {
     portfolios.value = data ?? []
   } catch (e) {
     console.error(e)
-    showMessage('포트폴리오 목록 조회에 실패했습니다.', 'error')
+    showMessage(t('dialog.errors.portfolioListError'), 'error')
   } finally {
     loadingPortfolios.value = false
   }
@@ -318,14 +314,14 @@ watch(dialog, async (opened) => {
 // 선택된 종목 또는 새 종목 입력 기준으로 자산군/시장 판단
 const effectiveAssetClass = computed<AssetClass>(() =>
   isNewPortfolio.value
-    ? assetTypeToClass(newAssetType.value)
+    ? (newAssetClass.value || 'stock')
     : selectedPortfolio.value
       ? getAssetClass(selectedPortfolio.value)
       : 'stock',
 )
 const effectiveMarket = computed<MarketCode | null>(() =>
   isNewPortfolio.value
-    ? assetTypeToMarket(newAssetType.value, newCurrency.value)
+    ? (newAssetClass.value === 'stock' ? newMarket.value : null)
     : selectedPortfolio.value
       ? getMarket(selectedPortfolio.value)
       : null,
@@ -334,10 +330,9 @@ const isCrypto = computed(() => effectiveAssetClass.value === 'crypto')
 const maxPrice = computed(() => {
   if (isCrypto.value) return 999_999_999                            // 암호화폐: 10억 KRW
   if (effectiveMarket.value === 'US') return 1_000_000              // 미국주식: $100만 USD
-  if (effectiveAssetClass.value === 'cash') return 10_000_000_000   // 현금: 100억 KRW/USD
   return 100_000_000                                                // 국내주식: 1억 KRW
 })
-const maxQuantity = computed(() => isCrypto.value ? 99_999_999 : 100_000)     // 암호화폐 1억 / 주식·현금 10만
+const maxQuantity = computed(() => isCrypto.value ? 99_999_999 : 100_000)     // 암호화폐 1억 / 주식 10만
 
 const addComma = (v: string) => {
   const num = v.replace(/[^0-9.]/g, '')
@@ -353,20 +348,20 @@ const handleUnitPrice = (v: string) => {
 
 const save = async () => {
   if (!canSave.value) return
-  if (isNewPortfolio.value && newAssetType.value !== '현금') {
-    const t = newTicker.value.trim().toUpperCase()
-    if (newAssetType.value === '해외주식') {
+  if (isNewPortfolio.value) {
+    const t2 = newTicker.value.trim().toUpperCase()
+    if (isNewUsStock.value) {
       saving.value = true
       try {
-        await getStockPrice(t, { asset_class: 'stock', market: 'US', currency: 'USD' })
+        await getStockPrice(t2, { asset_class: 'stock', market: 'US', currency: 'USD' })
       } catch {
-        showMessage('유효하지 않은 티커입니다. 티커를 다시 확인해주세요.', 'error')
+        showMessage(t('dialog.errors.invalidTicker'), 'error')
         saving.value = false
         return
       }
-    } else if (!isKnownTicker(t)) {
-      const label = newAssetType.value === '국내주식' ? '종목코드' : '코인 영문코드'
-      showMessage(`등록되지 않은 ${label}입니다. 다시 확인해주세요.`, 'error')
+    } else if (!isNewKrStock.value && !isKnownTicker(t2)) {
+      const label = newAssetClass.value === 'crypto' ? t('dialog.tickerLabelCrypto') : t('dialog.tickerLabelKr')
+      showMessage(t('dialog.errors.unknownCoin', { label }), 'error')
       return
     }
   }
@@ -374,13 +369,15 @@ const save = async () => {
   try {
     const { data: { session } } = await supabase.auth.getSession()
     const user = session?.user
-    if (!user) { showMessage('로그인이 필요합니다.', 'error'); return }
+    if (!user) { showMessage(t('dialog.errors.loginRequired'), 'error'); return }
 
     let portfolioId = selectedPortfolioId.value
 
     // 새 종목 먼저 등록
     if (isNewPortfolio.value) {
-      const tickerToSave = newAssetType.value === '현금' ? 'CASH' : newTicker.value.trim().toUpperCase()
+      const cls = newAssetClass.value as AssetClass
+      const mkt = cls === 'stock' ? newMarket.value : null
+      const tickerToSave = newTicker.value.trim().toUpperCase()
       const accountNameToSave = newAccountName.value.trim() || '미지정'
       const { data: existing } = await supabase
         .from('portfolios')
@@ -390,8 +387,7 @@ const save = async () => {
         .eq('account_name', accountNameToSave)
         .maybeSingle()
       if (existing) {
-        const displayName = getTickerDisplayName(tickerToSave)
-        showMessage(`${displayName} 종목이 이미 등록되어 있습니다. (계좌: ${accountNameToSave})`, 'warning')
+        showMessage(t('dialog.errors.duplicateInAccount', { name: getTickerDisplayName(tickerToSave), account: accountNameToSave }), 'warning')
         saving.value = false
         return
       }
@@ -401,10 +397,10 @@ const save = async () => {
         .insert({
           user_id: user.id,
           ticker: tickerToSave,
-          asset_type: newAssetType.value,
-          // 전환기 dual-write: asset_type과 새 체계를 함께 기록 (GLOBALIZATION.md 단계 A)
-          asset_class: assetTypeToClass(newAssetType.value),
-          market: assetTypeToMarket(newAssetType.value, newCurrency.value),
+          // 전환기 dual-write: asset_type(레거시)과 새 체계를 함께 기록 (GLOBALIZATION.md 단계 A/사용자 단계 6 이전까지)
+          asset_type: classMarketToAssetType(cls, mkt),
+          asset_class: cls,
+          market: mkt,
           currency: newCurrency.value,
           account_name: accountNameToSave,
           quantity: 0,
@@ -434,7 +430,7 @@ const save = async () => {
         })
         .eq('id', props.initialData.id)
       if (error) throw error
-      showMessage('거래내역이 수정되었습니다.', 'success')
+      showMessage(t('dialog.errors.txEditSuccess'), 'success')
     } else {
       const { error } = await supabase.from('transactions').insert({
         user_id: user.id,
@@ -448,7 +444,7 @@ const save = async () => {
         base_currency: baseCurrency.value,
       })
       if (error) throw error
-      showMessage('거래내역이 등록되었습니다.', 'success')
+      showMessage(t('dialog.errors.txAddSuccess'), 'success')
     }
 
     // 거래 추가/수정 시 DB 트리거가 portfolios.quantity/avg_price를 재계산하므로 캐시 무효화
@@ -459,7 +455,7 @@ const save = async () => {
     reset()
   } catch (e) {
     console.error(e)
-    showMessage('저장 중 오류가 발생했습니다.', 'error')
+    showMessage(t('dialog.errors.saveError'), 'error')
   } finally {
     saving.value = false
   }
@@ -475,7 +471,8 @@ const reset = (closeDialog = true) => {
   newTicker.value = ''
   krSearchQuery.value = ''
   selectedKrStock.value = null
-  newAssetType.value = ''
+  newAssetClass.value = ''
+  newMarket.value = locale.value === 'ko' ? 'KR' : 'US'
   newCurrency.value = 'KRW'
   newAccountName.value = '미지정'
   selectedAccountFilter.value = null
@@ -488,7 +485,7 @@ const reset = (closeDialog = true) => {
     <v-card rounded="xl" class="glass-dialog" style="overflow: hidden; display: flex; flex-direction: column; max-height: 90dvh">
       <!-- 컬러 헤더 -->
       <div class="dialog-header" :class="txType === 'BUY' ? 'header-buy' : 'header-sell'">
-        <div class="font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">{{ isEditMode ? '거래 수정' : '거래 추가' }}</div>
+        <div class="font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">{{ isEditMode ? $t('dialog.editTx') : $t('dialog.addTx') }}</div>
         <div class="type-toggle mt-3">
           <button
             class="toggle-btn"
@@ -496,7 +493,7 @@ const reset = (closeDialog = true) => {
             @click="txType = 'BUY'"
           >
             <v-icon size="16" class="mr-1">mdi-arrow-down-bold</v-icon>
-            매수
+            {{ $t('transactions.buy') }}
           </button>
           <button
             class="toggle-btn"
@@ -504,7 +501,7 @@ const reset = (closeDialog = true) => {
             @click="txType = 'SELL'"
           >
             <v-icon size="16" class="mr-1">mdi-arrow-up-bold</v-icon>
-            매도
+            {{ $t('transactions.sell') }}
           </button>
         </div>
       </div>
@@ -516,7 +513,7 @@ const reset = (closeDialog = true) => {
             class="account-chip"
             :class="{ 'account-chip-active': selectedAccountFilter === null }"
             @click="selectedAccountFilter = null"
-          >전체</button>
+          >{{ $t('transactions.all') }}</button>
           <button
             v-for="acc in accountOptions"
             :key="acc"
@@ -530,15 +527,15 @@ const reset = (closeDialog = true) => {
         <v-select
           v-model="selectedPortfolioId"
           :items="portfolioItems"
-          label="종목 선택"
+          :label="$t('dialog.selectTicker')"
           prepend-inner-icon="mdi-finance"
           variant="outlined"
           density="compact"
           rounded="lg"
           :loading="loadingPortfolios"
           :disabled="isEditMode"
-          no-data-text="등록된 포트폴리오가 없습니다"
-          :hint="isEditMode ? '종목은 수정할 수 없습니다' : ''"
+          :no-data-text="$t('dialog.noPortfolios')"
+          :hint="isEditMode ? $t('dialog.portfolioLocked') : ''"
           persistent-hint
         >
           <template #item="{ item, props: itemProps }">
@@ -554,12 +551,12 @@ const reset = (closeDialog = true) => {
           <div v-if="isNewPortfolio" class="new-portfolio-panel mt-1">
             <div class="new-portfolio-label mb-2">
               <v-icon size="13" color="primary" class="mr-1">mdi-plus-circle-outline</v-icon>
-              새 종목 정보 입력
+              {{ $t('dialog.newAssetInfo') }}
             </div>
             <v-text-field
               v-model="newAccountName"
-              label="계좌명"
-              placeholder="기본"
+              :label="$t('dialog.accountNameLabel')"
+              :placeholder="$t('dialog.accountNamePlaceholder')"
               prepend-inner-icon="mdi-bank-outline"
               variant="outlined"
               density="compact"
@@ -567,33 +564,60 @@ const reset = (closeDialog = true) => {
               maxlength="20"
               class="mb-1"
             />
-            <v-select
-              v-model="newAssetType"
-              :items="assetTypes"
-              label="자산유형"
-              prepend-inner-icon="mdi-shape"
-              variant="outlined"
-              density="compact"
-              rounded="lg"
-              class="mb-1"
-            />
+
+            <!-- 자산군 -->
+            <div class="field-label mb-1">{{ $t('dialog.assetClassLabel') }}</div>
+            <div class="d-flex ga-2 mb-1">
+              <v-btn
+                v-for="c in ASSET_CLASS_OPTIONS"
+                :key="c"
+                size="small"
+                rounded="lg"
+                elevation="0"
+                :variant="newAssetClass === c ? 'flat' : 'tonal'"
+                :color="newAssetClass === c ? 'primary' : undefined"
+                @click="newAssetClass = c"
+              >
+                {{ classLabel(c) }}
+              </v-btn>
+            </div>
+
+            <!-- 시장 (주식일 때만) -->
+            <template v-if="newAssetClass === 'stock'">
+              <div class="field-label mb-1">{{ $t('dialog.marketLabel') }}</div>
+              <div class="d-flex ga-2 mb-1">
+                <v-btn
+                  v-for="m in ACTIVE_MARKETS"
+                  :key="m"
+                  size="small"
+                  rounded="lg"
+                  elevation="0"
+                  :variant="newMarket === m ? 'flat' : 'tonal'"
+                  :color="newMarket === m ? 'primary' : undefined"
+                  @click="newMarket = m"
+                >
+                  {{ marketLabel(m) }}
+                </v-btn>
+              </div>
+            </template>
+
             <!-- 국내주식: 한글명 검색 자동완성 -->
             <v-autocomplete
-              v-if="newAssetType === '국내주식'"
+              v-if="isNewKrStock"
               v-model="selectedKrStock"
               v-model:search="krSearchQuery"
               :items="filteredKrItems"
               :custom-filter="krFilter"
               item-title="name"
               return-object
-              label="종목 검색"
-              placeholder="삼성전자, 카카오 등 종목명 입력"
+              :label="$t('dialog.tickerSearchLabel')"
+              :placeholder="$t('dialog.tickerSearchPlaceholder')"
               prepend-inner-icon="mdi-magnify"
               variant="outlined"
               density="compact"
               rounded="lg"
               class="mb-1"
-              no-data-text="검색 결과가 없습니다"
+              :no-data-text="$t('etfAnalysis.noSearchResults')"
               clearable
               auto-select-first
             >
@@ -603,7 +627,7 @@ const reset = (closeDialog = true) => {
             </v-autocomplete>
             <!-- 해외주식 / 암호화폐: 기존 텍스트 입력 -->
             <v-text-field
-              v-else
+              v-else-if="newAssetClass"
               v-model="newTicker"
               :label="newTickerConfig.label"
               :placeholder="newTickerConfig.placeholder"
@@ -619,7 +643,7 @@ const reset = (closeDialog = true) => {
             <v-select
               v-model="newCurrency"
               :items="['KRW', 'USD']"
-              label="통화"
+              :label="$t('dialog.currencyLabel')"
               prepend-inner-icon="mdi-cash"
               variant="outlined"
               density="compact"
@@ -633,7 +657,7 @@ const reset = (closeDialog = true) => {
         <div class="two-col mt-3">
           <v-text-field
             v-model="quantity"
-            label="수량"
+            :label="$t('dialog.txQuantityLabel')"
             type="number"
             step="0.0001"
             min="0"
@@ -647,7 +671,7 @@ const reset = (closeDialog = true) => {
           <v-text-field
             :model-value="unitPrice"
             @update:model-value="handleUnitPrice"
-            label="거래단가"
+            :label="$t('dialog.unitPriceLabel')"
             variant="outlined"
             density="compact"
             rounded="lg"
@@ -659,7 +683,7 @@ const reset = (closeDialog = true) => {
         <!-- 거래일 -->
         <v-text-field
           v-model="txDate"
-          label="거래일"
+          :label="$t('dialog.txDateLabel')"
           type="date"
           prepend-inner-icon="mdi-calendar-outline"
           variant="outlined"
@@ -674,8 +698,8 @@ const reset = (closeDialog = true) => {
         <!-- 메모 -->
         <v-text-field
           v-model="memo"
-          label="메모 (선택)"
-          placeholder="예: 분할매수, 목표가 도달"
+          :label="$t('dialog.memoLabel')"
+          :placeholder="$t('dialog.memoPlaceholder')"
           prepend-inner-icon="mdi-note-text-outline"
           variant="outlined"
           density="compact"
@@ -690,7 +714,7 @@ const reset = (closeDialog = true) => {
           class="total-preview mt-2"
           :class="txType === 'BUY' ? 'preview-buy' : 'preview-sell'"
         >
-          <span class="total-label">총 {{ txType === 'BUY' ? '매수' : '매도' }}금액</span>
+          <span class="total-label">{{ $t('dialog.totalPrefix', { type: txType === 'BUY' ? $t('transactions.buy') : $t('transactions.sell') }) }}</span>
           <span class="total-value">{{ totalLabel }}</span>
         </div>
       </v-card-text>
@@ -698,7 +722,7 @@ const reset = (closeDialog = true) => {
       <v-divider />
 
       <v-card-actions class="px-4 py-2">
-        <v-btn variant="text" :disabled="saving" @click="reset()">취소</v-btn>
+        <v-btn variant="text" :disabled="saving" @click="reset()">{{ $t('common.cancel') }}</v-btn>
         <v-spacer />
         <v-btn
           :color="txType === 'BUY' ? 'teal' : 'error'"
@@ -709,7 +733,7 @@ const reset = (closeDialog = true) => {
           @click="save"
         >
           <v-icon start size="16">{{ txType === 'BUY' ? 'mdi-arrow-down-bold' : 'mdi-arrow-up-bold' }}</v-icon>
-          {{ isEditMode ? '수정 저장' : txType === 'BUY' ? '매수 저장' : '매도 저장' }}
+          {{ isEditMode ? $t('dialog.editSaveBtn') : txType === 'BUY' ? $t('dialog.buySaveBtn') : $t('dialog.sellSaveBtn') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -796,6 +820,12 @@ const reset = (closeDialog = true) => {
 }
 
 .new-portfolio-item { color: rgb(var(--v-theme-primary)) !important; font-weight: 600; }
+
+.field-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+}
 
 /* 새 종목 인라인 패널 */
 .new-portfolio-panel {
