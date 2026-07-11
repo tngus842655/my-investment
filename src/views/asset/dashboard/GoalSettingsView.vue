@@ -10,8 +10,11 @@ import { setBaseCurrency } from '@/composables/useBaseCurrency'
 import { getCachedRate } from '@/services/exchangeRateCache'
 import { recomputeAssetSummary } from '@/services/assetSummary'
 import type { CurrencyCode } from '@/config/marketConfig'
+import { useI18n } from 'vue-i18n'
+import { formatYearMonth, formatDuration } from '@/utils/dateFormat'
 
 const router = useRouter()
+const { t } = useI18n()
 const userDataStore = useUserDataStore()
 
 const targetAsset = ref('')
@@ -21,9 +24,9 @@ const annualReturn = ref<number | null>(null)
 // ── 기준통화 (GLOBALIZATION.md 단계 C) ─────────────
 const baseCurrencySel = ref<CurrencyCode>('KRW')
 let savedBaseCurrency: CurrencyCode = 'KRW' // 저장돼 있던 값 (변경 감지용)
-const currencyOptions: { value: CurrencyCode; label: string }[] = [
-  { value: 'KRW', label: '원화 ₩' },
-  { value: 'USD', label: '달러 $' },
+const currencyOptions: { value: CurrencyCode; labelKey: string }[] = [
+  { value: 'KRW', labelKey: 'goalSettings.currencyKRW' },
+  { value: 'USD', labelKey: 'goalSettings.currencyUSD' },
 ]
 const currencyUnit = computed(() => (baseCurrencySel.value === 'KRW' ? '원' : '$'))
 
@@ -34,19 +37,19 @@ const convertPreview = ref<{ target: number; monthly: number } | null>(null)
 
 const onSelectCurrency = async (c: CurrencyCode) => {
   if (c === baseCurrencySel.value) return
-  const t = removeComma(targetAsset.value)
-  const m = removeComma(monthlyInvestment.value)
-  if (t <= 0 && m <= 0) {
+  const tgt = removeComma(targetAsset.value)
+  const mon = removeComma(monthlyInvestment.value)
+  if (tgt <= 0 && mon <= 0) {
     baseCurrencySel.value = c
     return
   }
   try {
     const rate = await getCachedRate(baseCurrencySel.value, c)
-    convertPreview.value = { target: Math.round(t * rate), monthly: Math.round(m * rate) }
+    convertPreview.value = { target: Math.round(tgt * rate), monthly: Math.round(mon * rate) }
     pendingCurrency.value = c
     convertDialog.value = true
   } catch {
-    showMessage('환율 조회에 실패했습니다. 잠시 후 다시 시도해주세요.', 'error')
+    showMessage(t('goalSettings.fxFailed'), 'error')
   }
 }
 
@@ -127,11 +130,10 @@ const estimatedPreview = computed(() => {
   if (!isFinite(months) || months <= 0) return null
 
   const years = Math.floor(months / 12)
-  const remainMonths = months % 12
   const date = new Date()
   date.setMonth(date.getMonth() + months)
-  const dateStr = date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })
-  const durationStr = years > 0 ? `${years}년 ${remainMonths > 0 ? remainMonths + '개월' : ''}` : `${months}개월`
+  const dateStr = formatYearMonth(date.getFullYear(), date.getMonth() + 1)
+  const durationStr = formatDuration(months)
   const tooLong = years >= 50
 
   return { dateStr, durationStr, tooLong }
@@ -158,24 +160,24 @@ const loadData = async () => {
 const save = async () => {
   const targetNum = removeComma(targetAsset.value)
   if (!targetAsset.value || targetNum <= 0) {
-    showMessage('목표 자산을 입력해주세요.', 'warning')
+    showMessage(t('goalSettings.enterTarget'), 'warning')
     return
   }
   if (targetNum < MIN_TARGET.value) {
-    showMessage(`목표 자산은 최소 ${formatMoneyIn(MIN_TARGET.value, baseCurrencySel.value, 'full')} 이상 입력해주세요.`, 'warning')
+    showMessage(t('goalSettings.minTargetMsg', { amount: formatMoneyIn(MIN_TARGET.value, baseCurrencySel.value, 'full') }), 'warning')
     return
   }
   const monthlyNum = removeComma(monthlyInvestment.value)
   if (monthlyInvestment.value && monthlyNum <= 0) {
-    showMessage('월 투자금은 0보다 커야 합니다.', 'warning')
+    showMessage(t('goalSettings.monthlyPositive'), 'warning')
     return
   }
   if (monthlyNum > 0 && targetNum < monthlyNum * 12) {
-    showMessage(`목표 자산은 월 투자금의 12배(${formatMoneyIn(monthlyNum * 12, baseCurrencySel.value, 'short')}) 이상이어야 합니다.`, 'warning')
+    showMessage(t('goalSettings.target12x', { amount: formatMoneyIn(monthlyNum * 12, baseCurrencySel.value, 'short') }), 'warning')
     return
   }
   if (annualReturn.value !== null && annualReturn.value < 3) {
-    showMessage('예상 연평균 수익률은 최소 3% 이상이어야 합니다.', 'warning')
+    showMessage(t('goalSettings.minReturn'), 'warning')
     return
   }
   loading.value = true
@@ -209,11 +211,11 @@ const save = async () => {
 
     invalidateGoalCache()
     userDataStore.invalidateGoals()
-    showMessage(isEditMode.value ? '목표 정보가 수정되었습니다.' : '투자 설정이 완료되었습니다.', 'success')
+    showMessage(isEditMode.value ? t('goalSettings.savedEdit') : t('goalSettings.savedCreate'), 'success')
     router.push('/dashboard')
   } catch (error) {
     console.error(error)
-    showMessage('저장 중 오류가 발생했습니다.', 'error')
+    showMessage(t('goalSettings.saveError'), 'error')
   } finally {
     loading.value = false
   }
@@ -244,10 +246,10 @@ onMounted(loadData)
         <v-btn v-if="isEditMode" icon="mdi-arrow-left" variant="text" size="small" class="mr-2" style="color: rgb(var(--v-theme-on-surface))" @click="cancel" />
         <div>
           <div class="font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">
-            {{ isEditMode ? '목표 수정' : '투자 시작하기' }}
+            {{ isEditMode ? $t('goalSettings.editTitle') : $t('goalSettings.createTitle') }}
           </div>
           <div class="text-medium-emphasis mt-1">
-            {{ isEditMode ? 'FIRE 목표와 투자 계획을 수정합니다' : '목표 자산과 투자 계획을 설정해주세요' }}
+            {{ isEditMode ? $t('goalSettings.editSubtitle') : $t('goalSettings.createSubtitle') }}
           </div>
         </div>
       </div>
@@ -256,7 +258,7 @@ onMounted(loadData)
       <div class="glass-card pa-4 mb-3">
         <div class="field-label mb-3">
           <v-icon size="14" class="mr-1">mdi-currency-usd</v-icon>
-          기준통화
+          {{ $t('goalSettings.baseCurrency') }}
         </div>
         <div class="d-flex ga-2">
           <v-btn
@@ -269,12 +271,12 @@ onMounted(loadData)
             :color="baseCurrencySel === opt.value ? 'primary' : undefined"
             @click="onSelectCurrency(opt.value)"
           >
-            {{ opt.label }}
+            {{ $t(opt.labelKey) }}
           </v-btn>
         </div>
         <div class="field-hint mt-2">
           <v-icon size="12">mdi-information-outline</v-icon>
-          자산을 집계·표시하는 통화입니다. 변경 시 목표 금액이 현재 환율로 환산됩니다
+          {{ $t('goalSettings.baseCurrencyHint') }}
         </div>
       </div>
 
@@ -282,7 +284,7 @@ onMounted(loadData)
       <div class="glass-card pa-4 mb-3">
         <div class="field-label mb-3">
           <v-icon size="14" class="mr-1">mdi-target</v-icon>
-          목표 자산 <span class="text-error">*</span>
+          {{ $t('goalSettings.targetAsset') }} <span class="text-error">*</span>
         </div>
         <v-text-field :model-value="targetAsset" @update:model-value="handleTargetAsset" placeholder="1,000,000,000" variant="outlined" density="comfortable" hide-details :class="['glass-field', targetBelowMinimum ? 'field-error' : '']" maxlength="14">
           <template #append-inner>
@@ -293,11 +295,15 @@ onMounted(loadData)
         </v-text-field>
         <div v-if="targetBelowMinimum" class="field-hint-error mt-2">
           <v-icon size="12">mdi-alert-circle-outline</v-icon>
-          월 투자금 기준 최소 <strong>{{ formatMoneyIn(minTargetByMonthly, baseCurrencySel, 'short') }}</strong> 이상 입력해주세요
+          <i18n-t keypath="goalSettings.minInputHint" tag="span" scope="global">
+            <template #amount><strong>{{ formatMoneyIn(minTargetByMonthly, baseCurrencySel, 'short') }}</strong></template>
+          </i18n-t>
         </div>
         <div v-else-if="minTargetByMonthly > 0 && !removeComma(targetAsset)" class="field-hint mt-2">
           <v-icon size="12">mdi-information-outline</v-icon>
-          월 투자금 기준 최소 <strong>{{ formatMoneyIn(minTargetByMonthly, baseCurrencySel, 'short') }}</strong> 이상 권장
+          <i18n-t keypath="goalSettings.minRecommendHint" tag="span" scope="global">
+            <template #amount><strong>{{ formatMoneyIn(minTargetByMonthly, baseCurrencySel, 'short') }}</strong></template>
+          </i18n-t>
         </div>
       </div>
 
@@ -305,8 +311,8 @@ onMounted(loadData)
       <div class="glass-card pa-4 mb-3">
         <div class="field-label mb-3">
           <v-icon size="14" class="mr-1">mdi-cash-multiple</v-icon>
-          월 투자금
-          <span class="text-disabled ml-1">(선택)</span>
+          {{ $t('goalSettings.monthlyInvestment') }}
+          <span class="text-disabled ml-1">{{ $t('goalSettings.optional') }}</span>
         </div>
         <v-text-field :model-value="monthlyInvestment" @update:model-value="handleMonthlyInvestment" placeholder="3,000,000" variant="outlined" density="comfortable" hide-details class="glass-field" maxlength="13">
           <template #append-inner>
@@ -322,14 +328,14 @@ onMounted(loadData)
         <div class="d-flex justify-space-between align-center mb-1">
           <div class="field-label">
             <v-icon size="14" class="mr-1">mdi-trending-up</v-icon>
-            예상 연평균 수익률
+            {{ $t('goalSettings.expectedReturn') }}
           </div>
           <v-chip size="x-small" :color="annualReturn !== null ? 'primary' : 'default'" variant="tonal">
-            {{ annualReturn !== null ? annualReturn + '%' : '미설정' }}
+            {{ annualReturn !== null ? annualReturn + '%' : $t('goalSettings.notSet') }}
           </v-chip>
         </div>
 
-        <div class="text-disabled mb-3">슬라이더를 움직이면 설정됩니다</div>
+        <div class="text-disabled mb-3">{{ $t('goalSettings.sliderHint') }}</div>
 
         <v-slider v-model="sliderValue" :min="3" :max="30" :step="0.5" color="primary" track-color="grey-lighten-3" thumb-label hide-details>
           <template #thumb-label="{ modelValue }">{{ modelValue }}%</template>
@@ -346,31 +352,28 @@ onMounted(loadData)
             <v-icon size="15" :color="estimatedPreview.tooLong ? 'warning' : 'amber-darken-2'">
               {{ estimatedPreview.tooLong ? 'mdi-alert-outline' : 'mdi-rocket-launch-outline' }}
             </v-icon>
-            <div class="text-medium-emphasis">
-              목표 달성까지 약
-              <strong :style="{ color: estimatedPreview.tooLong ? 'rgb(var(--v-theme-warning))' : 'rgb(var(--v-theme-primary))' }">{{ estimatedPreview.durationStr }}</strong>
-              →
-              <strong :style="{ color: estimatedPreview.tooLong ? 'rgb(var(--v-theme-warning))' : 'rgb(var(--v-theme-primary))' }">{{ estimatedPreview.dateStr }}</strong>
-              예상
-            </div>
+            <i18n-t keypath="goalSettings.estimateLine" tag="div" class="text-medium-emphasis" scope="global">
+              <template #dur><strong :style="{ color: estimatedPreview.tooLong ? 'rgb(var(--v-theme-warning))' : 'rgb(var(--v-theme-primary))' }">{{ estimatedPreview.durationStr }}</strong></template>
+              <template #date><strong :style="{ color: estimatedPreview.tooLong ? 'rgb(var(--v-theme-warning))' : 'rgb(var(--v-theme-primary))' }">{{ estimatedPreview.dateStr }}</strong></template>
+            </i18n-t>
           </div>
           <div v-if="estimatedPreview.tooLong" class="d-flex align-center ga-1 mt-2 ml-5">
             <v-icon size="12" color="warning">mdi-information-outline</v-icon>
             <span style="color: rgb(var(--v-theme-warning))">
-              목표 달성까지 50년 이상 — 월 투자금을 늘리거나 목표 자산을 줄이는 것을 권장합니다
+              {{ $t('goalSettings.tooLongWarn') }}
             </span>
           </div>
-          <div v-else class="text-disabled mt-1 ml-5">현재 자산 미포함 · 복리 기준 단순 추정</div>
+          <div v-else class="text-disabled mt-1 ml-5">{{ $t('goalSettings.estimateNote') }}</div>
         </template>
       </div>
 
       <!-- 버튼 -->
       <v-btn color="primary" size="large" rounded="lg" block elevation="0" :loading="loading" class="mb-3" @click="save">
-        {{ isEditMode ? '수정하기' : '시작하기' }}
+        {{ isEditMode ? $t('goalSettings.editSubmit') : $t('goalSettings.createSubmit') }}
       </v-btn>
 
       <v-btn variant="tonal" block rounded="lg" style="background: rgba(0, 0, 0, 0.1); color: rgba(var(--v-theme-on-surface), 0.75)" @click="cancel">
-        {{ isEditMode ? '취소' : '로그아웃' }}
+        {{ isEditMode ? $t('goalSettings.editCancel') : $t('goalSettings.createCancel') }}
       </v-btn>
     </div>
   </div>
@@ -378,25 +381,27 @@ onMounted(loadData)
   <!-- 기준통화 변경 → 금액 환산 확인 -->
   <v-dialog v-model="convertDialog" max-width="340" persistent>
     <v-card rounded="xl" class="glass-dialog">
-      <v-card-title class="text-center pt-6">기준통화 변경</v-card-title>
+      <v-card-title class="text-center pt-6">{{ $t('goalSettings.changeCurrencyTitle') }}</v-card-title>
       <v-card-text class="text-center text-medium-emphasis">
-        입력된 금액을 현재 환율로 환산합니다.
+        {{ $t('goalSettings.changeCurrencyDesc') }}
         <template v-if="convertPreview && pendingCurrency">
-          <div class="mt-3" v-if="removeComma(targetAsset) > 0">
-            목표 자산: <strong>{{ targetAssetText }}</strong> →
-            <strong>{{ formatMoneyIn(convertPreview.target, pendingCurrency, 'short') }}</strong>
-          </div>
-          <div class="mt-1" v-if="removeComma(monthlyInvestment) > 0">
-            월 투자금: <strong>{{ monthlyInvestmentText }}</strong> →
-            <strong>{{ formatMoneyIn(convertPreview.monthly, pendingCurrency, 'short') }}</strong>
-          </div>
+          <i18n-t v-if="removeComma(targetAsset) > 0" keypath="goalSettings.convertRow" tag="div" class="mt-3" scope="global">
+            <template #label>{{ $t('goalSettings.targetAsset') }}</template>
+            <template #from><strong>{{ targetAssetText }}</strong></template>
+            <template #to><strong>{{ formatMoneyIn(convertPreview.target, pendingCurrency, 'short') }}</strong></template>
+          </i18n-t>
+          <i18n-t v-if="removeComma(monthlyInvestment) > 0" keypath="goalSettings.convertRow" tag="div" class="mt-1" scope="global">
+            <template #label>{{ $t('goalSettings.monthlyInvestment') }}</template>
+            <template #from><strong>{{ monthlyInvestmentText }}</strong></template>
+            <template #to><strong>{{ formatMoneyIn(convertPreview.monthly, pendingCurrency, 'short') }}</strong></template>
+          </i18n-t>
         </template>
       </v-card-text>
       <v-divider />
       <v-card-actions>
-        <v-btn variant="text" block @click="cancelConvert">취소</v-btn>
+        <v-btn variant="text" block @click="cancelConvert">{{ $t('common.cancel') }}</v-btn>
         <v-divider vertical />
-        <v-btn variant="text" color="primary" block @click="confirmConvert">변경</v-btn>
+        <v-btn variant="text" color="primary" block @click="confirmConvert">{{ $t('goalSettings.change') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

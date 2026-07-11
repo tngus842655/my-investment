@@ -25,12 +25,12 @@ const languageOptions: { value: SupportedLocale; label: string }[] = [
       <v-btn icon variant="text" size="small" @click="router.back()">
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
-      <div class="font-weight-bold">화면 설정</div>
+      <div class="font-weight-bold">{{ $t('displaySettings.title') }}</div>
     </div>
 
     <v-card class="glass-card pa-4">
       <div class="d-flex align-center justify-space-between mb-2">
-        <div class="font-weight-medium">글자 크기</div>
+        <div class="font-weight-medium">{{ $t('displaySettings.fontSize') }}</div>
         <div class="d-flex align-center ga-2">
           <button
             v-if="fontScale !== FONT_SCALE_DEFAULT"
@@ -38,7 +38,7 @@ const languageOptions: { value: SupportedLocale; label: string }[] = [
             @click="resetFontScale"
           >
             <v-icon size="14">mdi-restore</v-icon>
-            초기화
+            {{ $t('displaySettings.reset') }}
           </button>
           <div class="font-weight-bold text-primary">{{ percentLabel(fontScale) }}</div>
         </div>
@@ -52,18 +52,18 @@ const languageOptions: { value: SupportedLocale; label: string }[] = [
         @update:model-value="setFontScale"
       />
       <div class="d-flex justify-space-between text-medium-emphasis">
-        <span>작게 ({{ percentLabel(min) }})</span>
-        <span>크게 ({{ percentLabel(max) }})</span>
+        <span>{{ $t('displaySettings.small', { pct: percentLabel(min) }) }}</span>
+        <span>{{ $t('displaySettings.large', { pct: percentLabel(max) }) }}</span>
       </div>
     </v-card>
 
     <div class="tip-card mt-3">
       <span class="tip-emoji">⚠️</span>
-      <span class="tip-body">너무 크게 설정하면 일부 화면에서 텍스트가 겹치거나 잘려 보일 수 있어요.</span>
+      <span class="tip-body">{{ $t('displaySettings.fontTip') }}</span>
     </div>
 
     <v-card class="glass-card pa-4 mt-4">
-      <div class="font-weight-medium mb-3">언어</div>
+      <div class="font-weight-medium mb-3">{{ $t('displaySettings.language') }}</div>
       <div class="d-flex ga-2">
         <v-btn
           v-for="opt in languageOptions"
