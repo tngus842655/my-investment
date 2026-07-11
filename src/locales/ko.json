@@ -554,5 +554,37 @@
       "txEditSuccess": "거래내역이 수정되었습니다.",
       "txAddSuccess": "거래내역이 등록되었습니다."
     }
+  },
+  "hub": {
+    "assetManagement": "자산관리",
+    "budget": "가계부",
+    "service": "서비스",
+    "notices": "공지사항",
+    "feedback": "의견 관리",
+    "devNotes": "개발자 노트",
+    "settings": "설정",
+    "themeSelect": "테마 선택",
+    "displaySettings": "화면 설정",
+    "changePassword": "비밀번호 변경",
+    "logout": "로그아웃",
+    "logoutConfirm": "정말 로그아웃 하시겠습니까?",
+    "deleteAccount": "회원탈퇴",
+    "deleteConfirmTitle": "정말 탈퇴하시겠습니까?",
+    "deleteConfirmBody": "탈퇴 시 계정과 연결된 모든 데이터<br>(투자 목표, 포트폴리오, 거래 내역 등)가<br><strong>영구적으로 삭제</strong>되며 복구할 수 없습니다.",
+    "continue": "계속",
+    "finalConfirmTitle": "최종 확인",
+    "passwordConfirmBody": "본인 확인을 위해 비밀번호를 입력해주세요.",
+    "passwordLabel": "비밀번호",
+    "admin": "관리자",
+    "adminPage": "관리자 페이지",
+    "themeSheetTitle": "테마 선택",
+    "themeSheetDesc": "앱 전체에 적용되는 색상 테마를 선택하세요",
+    "errors": {
+      "logoutError": "로그아웃 중 오류가 발생했습니다.",
+      "enterPassword": "비밀번호를 입력해주세요.",
+      "wrongPassword": "비밀번호가 올바르지 않습니다.",
+      "deleted": "계정이 삭제되었습니다.",
+      "deleteError": "계정 삭제 중 오류가 발생했습니다."
+    }
   }
 }

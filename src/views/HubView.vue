@@ -8,8 +8,10 @@ import { showMessage } from '@/composables/useSnackbar'
 import { useUserDataStore } from '@/stores/userData'
 import { isAdminEmail } from '@/config/admin'
 import { serviceMenuOpen, settingsMenuOpen } from '@/composables/useHubMenuState'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
+const { t } = useI18n()
 const { themeId } = useDesignTokens()
 const { currentThemeId, themes, setTheme } = useAppTheme()
 const userDataStore = useUserDataStore()
@@ -28,7 +30,7 @@ const confirmDialog = ref(false)
 const logout = async () => {
   const { error } = await supabase.auth.signOut()
   if (error) {
-    showMessage('로그아웃 중 오류가 발생했습니다.', 'error')
+    showMessage(t('hub.errors.logoutError'), 'error')
     return
   }
   userDataStore.reset()
@@ -55,7 +57,7 @@ const closeDeleteDialog = () => {
 
 const deleteAccount = async () => {
   if (!deletePassword.value) {
-    deletePasswordError.value = '비밀번호를 입력해주세요.'
+    deletePasswordError.value = t('hub.errors.enterPassword')
     return
   }
   deleteLoading.value = true
@@ -68,7 +70,7 @@ const deleteAccount = async () => {
       password: deletePassword.value,
     })
     if (authError) {
-      deletePasswordError.value = '비밀번호가 올바르지 않습니다.'
+      deletePasswordError.value = t('hub.errors.wrongPassword')
       return
     }
 
@@ -76,10 +78,10 @@ const deleteAccount = async () => {
     if (error) throw error
     await supabase.auth.signOut()
     userDataStore.reset()
-    showMessage('계정이 삭제되었습니다.', 'success')
+    showMessage(t('hub.errors.deleted'), 'success')
     router.replace('/')
   } catch {
-    showMessage('계정 삭제 중 오류가 발생했습니다.', 'error')
+    showMessage(t('hub.errors.deleteError'), 'error')
   } finally {
     deleteLoading.value = false
   }
@@ -133,14 +135,14 @@ onMounted(async () => {
     <div class="d-flex flex-column ga-2">
       <div class="hub-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/dashboard')">
         <div class="hub-icon"><v-icon size="24" color="primary">mdi-finance</v-icon></div>
-        <div class="font-weight-medium">자산관리</div>
+        <div class="font-weight-medium">{{ $t('hub.assetManagement') }}</div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
       <div class="hub-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/budget')">
         <div class="hub-icon"><v-icon size="24" color="primary">mdi-notebook-outline</v-icon></div>
-        <div class="font-weight-medium">가계부</div>
+        <div class="font-weight-medium">{{ $t('hub.budget') }}</div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
@@ -151,19 +153,19 @@ onMounted(async () => {
       <!-- 서비스 -->
       <div class="glass-card py-2 px-4 mt-3">
         <div class="section-label-lg d-flex align-center justify-space-between cursor-pointer" @click="serviceMenuOpen = !serviceMenuOpen">
-          <span>서비스</span>
+          <span>{{ $t('hub.service') }}</span>
           <v-icon size="18" class="collapse-icon" :class="{ 'collapse-icon-open': serviceMenuOpen }">mdi-chevron-down</v-icon>
         </div>
         <div v-if="serviceMenuOpen" class="mt-2">
           <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-bullhorn-outline" class="mb-2" @click="router.push('/notices')">
-            공지사항
+            {{ $t('hub.notices') }}
           </v-btn>
           <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-message-text-outline" class="mb-2" @click="router.push('/feedback')">
-            의견 관리
+            {{ $t('hub.feedback') }}
             <v-badge v-if="!isAdmin && unreadFeedbackCount > 0" dot color="error" inline class="ml-2" />
           </v-btn>
           <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-notebook-edit-outline" @click="router.push('/release-notes')">
-            개발자 노트
+            {{ $t('hub.devNotes') }}
           </v-btn>
         </div>
       </div>
@@ -171,37 +173,37 @@ onMounted(async () => {
       <!-- 설정 -->
       <div class="glass-card py-2 px-4 mt-3">
         <div class="section-label-lg d-flex align-center justify-space-between cursor-pointer" @click="settingsMenuOpen = !settingsMenuOpen">
-          <span>설정</span>
+          <span>{{ $t('hub.settings') }}</span>
           <v-icon size="18" class="collapse-icon" :class="{ 'collapse-icon-open': settingsMenuOpen }">mdi-chevron-down</v-icon>
         </div>
         <div v-if="settingsMenuOpen" class="mt-2">
           <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-palette-outline" class="mb-2" @click="themeSheet = true">
-            테마 선택
+            {{ $t('hub.themeSelect') }}
           </v-btn>
           <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-cellphone-cog" class="mb-2" @click="router.push('/display-settings')">
-            화면 설정
+            {{ $t('hub.displaySettings') }}
           </v-btn>
           <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-lock-reset" @click="router.push('/change-password')">
-            비밀번호 변경
+            {{ $t('hub.changePassword') }}
           </v-btn>
         </div>
       </div>
 
       <!-- 로그아웃 -->
       <v-btn variant="tonal" color="error" rounded="lg" block prepend-icon="mdi-logout" class="mt-3" @click="confirmDialog = true">
-        로그아웃
+        {{ $t('hub.logout') }}
       </v-btn>
 
       <!-- 회원탈퇴 -->
       <div class="text-center mt-3">
-        <span class="delete-account-btn" @click="openDeleteDialog">회원탈퇴</span>
+        <span class="delete-account-btn" @click="openDeleteDialog">{{ $t('hub.deleteAccount') }}</span>
       </div>
 
       <!-- 관리자 -->
       <div v-if="isAdmin" class="glass-card pa-4 mt-3">
-        <div class="section-label mb-3">관리자</div>
+        <div class="section-label mb-3">{{ $t('hub.admin') }}</div>
         <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-shield-crown-outline" @click="router.push('/admin')">
-          관리자 페이지
+          {{ $t('hub.adminPage') }}
           <v-badge v-if="unreadFeedbackCount > 0" :content="unreadFeedbackCount" color="error" inline class="ml-2" />
         </v-btn>
       </div>
@@ -210,12 +212,12 @@ onMounted(async () => {
     <!-- 로그아웃 확인 -->
     <v-dialog v-model="confirmDialog" max-width="320">
       <v-card rounded="xl" class="glass-dialog">
-        <v-card-title class="text-center pt-6">로그아웃</v-card-title>
-        <v-card-text class="text-center text-medium-emphasis">정말 로그아웃 하시겠습니까?</v-card-text>
+        <v-card-title class="text-center pt-6">{{ $t('hub.logout') }}</v-card-title>
+        <v-card-text class="text-center text-medium-emphasis">{{ $t('hub.logoutConfirm') }}</v-card-text>
         <v-divider />
         <v-card-actions>
-          <v-btn variant="text" block @click="confirmDialog = false">취소</v-btn>
-          <v-btn color="error" block @click="logout">로그아웃</v-btn>
+          <v-btn variant="text" block @click="confirmDialog = false">{{ $t('common.cancel') }}</v-btn>
+          <v-btn color="error" block @click="logout">{{ $t('hub.logout') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -223,20 +225,16 @@ onMounted(async () => {
     <!-- 회원탈퇴 1단계 -->
     <v-dialog :model-value="deleteStep === 1" max-width="320" @update:model-value="closeDeleteDialog">
       <v-card rounded="xl" class="glass-dialog">
-        <v-card-title class="text-center pt-6 text-error">회원탈퇴</v-card-title>
+        <v-card-title class="text-center pt-6 text-error">{{ $t('hub.deleteAccount') }}</v-card-title>
         <v-card-text class="text-center">
           <v-icon color="error" size="40" class="mb-3">mdi-alert-circle-outline</v-icon>
-          <div class="mb-2 font-weight-medium">정말 탈퇴하시겠습니까?</div>
-          <div class="text-medium-emphasis">
-            탈퇴 시 계정과 연결된 모든 데이터<br>
-            (투자 목표, 포트폴리오, 거래 내역 등)가<br>
-            <strong>영구적으로 삭제</strong>되며 복구할 수 없습니다.
-          </div>
+          <div class="mb-2 font-weight-medium">{{ $t('hub.deleteConfirmTitle') }}</div>
+          <div class="text-medium-emphasis" v-html="$t('hub.deleteConfirmBody')"></div>
         </v-card-text>
         <v-divider />
         <v-card-actions>
-          <v-btn variant="text" block @click="closeDeleteDialog">취소</v-btn>
-          <v-btn color="error" block @click="deleteStep = 2">계속</v-btn>
+          <v-btn variant="text" block @click="closeDeleteDialog">{{ $t('common.cancel') }}</v-btn>
+          <v-btn color="error" block @click="deleteStep = 2">{{ $t('hub.continue') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -244,7 +242,7 @@ onMounted(async () => {
     <!-- 회원탈퇴 2단계 -->
     <v-dialog :model-value="deleteStep === 2" max-width="320" @update:model-value="closeDeleteDialog">
       <v-card rounded="xl" class="glass-dialog">
-        <v-card-title class="text-center pt-6 text-error">최종 확인</v-card-title>
+        <v-card-title class="text-center pt-6 text-error">{{ $t('hub.finalConfirmTitle') }}</v-card-title>
         <v-card-text>
           <form @submit.prevent="deleteAccount">
             <input
@@ -257,13 +255,13 @@ onMounted(async () => {
               aria-hidden="true"
             />
             <div class="text-medium-emphasis text-center mb-4">
-              본인 확인을 위해 비밀번호를 입력해주세요.
+              {{ $t('hub.passwordConfirmBody') }}
             </div>
             <v-text-field
               v-model="deletePassword"
               type="password"
               autocomplete="current-password"
-              label="비밀번호"
+              :label="$t('hub.passwordLabel')"
               variant="outlined"
               density="compact"
               rounded="lg"
@@ -275,8 +273,8 @@ onMounted(async () => {
         </v-card-text>
         <v-divider />
         <v-card-actions>
-          <v-btn type="button" variant="text" block :disabled="deleteLoading" @click="closeDeleteDialog">취소</v-btn>
-          <v-btn type="button" color="error" block :loading="deleteLoading" @click="deleteAccount">탈퇴</v-btn>
+          <v-btn type="button" variant="text" block :disabled="deleteLoading" @click="closeDeleteDialog">{{ $t('common.cancel') }}</v-btn>
+          <v-btn type="button" color="error" block :loading="deleteLoading" @click="deleteAccount">{{ $t('common.delete') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -287,8 +285,8 @@ onMounted(async () => {
         <div class="sheet-handle" />
 
         <div class="px-5 pb-2 pt-1">
-          <div class="sheet-title">테마 선택</div>
-          <div class="sheet-desc">앱 전체에 적용되는 색상 테마를 선택하세요</div>
+          <div class="sheet-title">{{ $t('hub.themeSheetTitle') }}</div>
+          <div class="sheet-desc">{{ $t('hub.themeSheetDesc') }}</div>
         </div>
 
         <div class="theme-grid px-5 pb-6">

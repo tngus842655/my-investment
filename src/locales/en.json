@@ -554,5 +554,37 @@
       "txEditSuccess": "Transaction updated.",
       "txAddSuccess": "Transaction added."
     }
+  },
+  "hub": {
+    "assetManagement": "Assets",
+    "budget": "Budget",
+    "service": "Service",
+    "notices": "Notices",
+    "feedback": "Feedback",
+    "devNotes": "Dev Notes",
+    "settings": "Settings",
+    "themeSelect": "Theme",
+    "displaySettings": "Display Settings",
+    "changePassword": "Change Password",
+    "logout": "Log out",
+    "logoutConfirm": "Are you sure you want to log out?",
+    "deleteAccount": "Delete Account",
+    "deleteConfirmTitle": "Are you sure you want to delete your account?",
+    "deleteConfirmBody": "All data linked to your account<br>(goals, portfolio, transactions, etc.) will be<br><strong>permanently deleted</strong> and cannot be recovered.",
+    "continue": "Continue",
+    "finalConfirmTitle": "Final Confirmation",
+    "passwordConfirmBody": "Please enter your password to confirm.",
+    "passwordLabel": "Password",
+    "admin": "Admin",
+    "adminPage": "Admin Page",
+    "themeSheetTitle": "Choose a Theme",
+    "themeSheetDesc": "Select a color theme applied across the app",
+    "errors": {
+      "logoutError": "An error occurred while logging out.",
+      "enterPassword": "Please enter your password.",
+      "wrongPassword": "Incorrect password.",
+      "deleted": "Account deleted.",
+      "deleteError": "An error occurred while deleting your account."
+    }
   }
 }
