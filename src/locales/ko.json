@@ -19,7 +19,16 @@
     "yearMonth": "{year}년 {month}월",
     "durationYM": "{years}년 {months}개월",
     "durationY": "{years}년",
-    "durationM": "{months}개월"
+    "durationM": "{months}개월",
+    "weekdays": [
+      "일",
+      "월",
+      "화",
+      "수",
+      "목",
+      "금",
+      "토"
+    ]
   },
   "dashboard": {
     "title": "대시보드",
@@ -334,5 +343,24 @@
     "loadError": "데이터를 불러오는 중 오류가 발생했습니다.",
     "insufficientData": "데이터가 부족합니다.",
     "profitInline": "수익 {sign}{amount}"
+  },
+  "dividend": {
+    "title": "배당 캘린더",
+    "subtitle": "보유 종목 배당락일 및 예상 배당금",
+    "emptyTitle": "보유 종목이 없어요.",
+    "emptyHint": "포트폴리오에 종목을 추가하면 배당 일정을 확인할 수 있어요.",
+    "annualExpected": "연간 예상 배당",
+    "thisMonth": "이번 달 배당",
+    "thisMonthPayout": "이번 달 지급",
+    "count": "{n}건",
+    "scheduleTitle": "{date} 배당 일정",
+    "noScheduleThisMonth": "이번 달 배당 일정이 없어요.",
+    "upcoming": "예정",
+    "amountTBD": "금액 미정",
+    "noDivInfo": "배당 정보 없음: {tickers}",
+    "disclaimer": "* 배당락일은 과거 기반 예상치로 실제와 다를 수 있습니다.",
+    "exDivTitle": "{date} 배당락",
+    "sharesMultiply": "× {n}주",
+    "loadError": "배당 데이터를 불러오는 중 오류가 발생했습니다."
   }
 }

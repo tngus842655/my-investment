@@ -19,7 +19,16 @@
     "yearMonth": "{monthShort} {year}",
     "durationYM": "{years}y {months}mo",
     "durationY": "{years}y",
-    "durationM": "{months}mo"
+    "durationM": "{months}mo",
+    "weekdays": [
+      "Sun",
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat"
+    ]
   },
   "dashboard": {
     "title": "Dashboard",
@@ -334,5 +343,24 @@
     "loadError": "An error occurred while loading data.",
     "insufficientData": "Not enough data.",
     "profitInline": "Return {sign}{amount}"
+  },
+  "dividend": {
+    "title": "Dividend Calendar",
+    "subtitle": "Ex-dates and estimated dividends for your holdings",
+    "emptyTitle": "No holdings.",
+    "emptyHint": "Add holdings to your portfolio to see the dividend schedule.",
+    "annualExpected": "Annual estimate",
+    "thisMonth": "This month",
+    "thisMonthPayout": "Payouts this month",
+    "count": "{n}",
+    "scheduleTitle": "{date} dividends",
+    "noScheduleThisMonth": "No dividends this month.",
+    "upcoming": "Upcoming",
+    "amountTBD": "TBD",
+    "noDivInfo": "No dividend info: {tickers}",
+    "disclaimer": "* Ex-dates are estimates based on past data and may differ from actual dates.",
+    "exDivTitle": "{date} ex-dividend",
+    "sharesMultiply": "× {n} sh",
+    "loadError": "An error occurred while loading dividend data."
   }
 }

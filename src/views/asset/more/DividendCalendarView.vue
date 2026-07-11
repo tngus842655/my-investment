@@ -6,6 +6,7 @@ import { showMessage } from '@/composables/useSnackbar'
 import { getTickerDisplayName } from '@/utils/tickerNames'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { useI18n } from 'vue-i18n'
 import { convertMoney } from '@/utils/portfolioMath'
 import { isCash, isCrypto, type AssetClass, type MarketCode } from '@/config/marketConfig'
 import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
@@ -13,6 +14,7 @@ import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 const router = useRouter()
 const loading = ref(true)
 const { baseCurrency, moneyOr } = useBaseCurrency()
+const { t, tm, rt } = useI18n()
 
 interface Portfolio {
   ticker: string
@@ -145,7 +147,7 @@ const loadData = async () => {
 
     calendarEvents.value = sanitized.sort((a, b) => a.date.localeCompare(b.date))
   } catch {
-    showMessage('배당 데이터를 불러오는 중 오류가 발생했습니다.', 'error')
+    showMessage(t('dividend.loadError'), 'error')
   } finally {
     loading.value = false
   }
@@ -366,7 +368,7 @@ function formatKrw(v: number) {
   })
 }
 
-const weekdays = ['일', '월', '화', '수', '목', '금', '토']
+const weekdays = computed(() => (tm('date.weekdays') as unknown[]).map((w) => rt(w as string)))
 
 const refreshData = async () => {
   if (activeCacheKey.value) localStorage.removeItem(activeCacheKey.value)
@@ -384,8 +386,8 @@ const refreshData = async () => {
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <div>
-        <div class="font-weight-bold">배당 캘린더</div>
-        <div class="text-medium-emphasis">보유 종목 배당락일 및 예상 배당금</div>
+        <div class="font-weight-bold">{{ $t('dividend.title') }}</div>
+        <div class="text-medium-emphasis">{{ $t('dividend.subtitle') }}</div>
       </div>
       <v-spacer />
       <CurrencyToggle class="mr-1" />
@@ -402,29 +404,29 @@ const refreshData = async () => {
       <div v-if="!portfolios.filter(p => !isCash(p) && !isCrypto(p)).length"
         class="text-center py-12 text-medium-emphasis">
         <v-icon size="48" class="mb-3">mdi-calendar-blank</v-icon>
-        <div>보유 종목이 없어요.</div>
-        <div class="mt-1">포트폴리오에 종목을 추가하면 배당 일정을 확인할 수 있어요.</div>
+        <div>{{ $t('dividend.emptyTitle') }}</div>
+        <div class="mt-1">{{ $t('dividend.emptyHint') }}</div>
       </div>
 
       <template v-else>
         <!-- 요약 카드 -->
         <div class="d-flex ga-3 mb-4">
           <v-card rounded="xl" class="summary-card flex-1 pa-4 text-center">
-            <div class="text-medium-emphasis mb-1">연간 예상 배당</div>
+            <div class="text-medium-emphasis mb-1">{{ $t('dividend.annualExpected') }}</div>
             <div class="font-weight-bold text-primary">
               {{ annualTotalKrw > 0 ? formatKrw(annualTotalKrw) : '-' }}
             </div>
           </v-card>
           <v-card rounded="xl" class="summary-card flex-1 pa-4 text-center">
-            <div class="text-medium-emphasis mb-1">이번 달 배당</div>
+            <div class="text-medium-emphasis mb-1">{{ $t('dividend.thisMonth') }}</div>
             <div class="font-weight-bold" :class="monthTotalKrw > 0 ? 'text-success' : ''">
               {{ monthTotalKrw > 0 ? formatKrw(monthTotalKrw) : '-' }}
             </div>
           </v-card>
           <v-card rounded="xl" class="summary-card flex-1 pa-4 text-center">
-            <div class="text-medium-emphasis mb-1">이번 달 지급</div>
+            <div class="text-medium-emphasis mb-1">{{ $t('dividend.thisMonthPayout') }}</div>
             <div class="font-weight-bold">
-              {{ currentMonthEvents.length > 0 ? currentMonthEvents.length + '건' : '-' }}
+              {{ currentMonthEvents.length > 0 ? $t('dividend.count', { n: currentMonthEvents.length }) : '-' }}
             </div>
           </v-card>
         </div>
@@ -447,9 +449,9 @@ const refreshData = async () => {
           <!-- 요일 헤더 -->
           <div class="cal-grid mb-1">
             <div
-              v-for="wd in weekdays" :key="wd"
+              v-for="(wd, wi) in weekdays" :key="wi"
               class="cal-weekday"
-              :class="wd === '일' ? 'text-error' : wd === '토' ? 'text-primary' : ''"
+              :class="wi === 0 ? 'text-error' : wi === 6 ? 'text-primary' : ''"
             >{{ wd }}</div>
           </div>
           <!-- 날짜 -->
@@ -477,10 +479,10 @@ const refreshData = async () => {
         <!-- 이번 달 전체 일정 -->
         <v-card rounded="xl" class="pa-4 mb-4">
           <div class="font-weight-medium mb-3">
-            {{ selectedYear }}.{{ String(selectedMonth).padStart(2, '0') }} 배당 일정
+            {{ $t('dividend.scheduleTitle', { date: selectedYear + '.' + String(selectedMonth).padStart(2, '0') }) }}
           </div>
           <div v-if="!currentMonthEvents.length" class="text-center text-medium-emphasis py-4">
-            이번 달 배당 일정이 없어요.
+            {{ $t('dividend.noScheduleThisMonth') }}
           </div>
           <div
             v-for="(ev, i) in currentMonthEvents"
@@ -492,12 +494,12 @@ const refreshData = async () => {
             <div class="event-ticker">
               <div class="d-flex align-center ga-1" style="min-width: 0">
                 <span class="font-weight-medium event-ticker-name">{{ getTickerDisplayName(ev.ticker) }}</span>
-                <v-chip v-if="ev.isNext" size="x-small" color="warning" variant="tonal" class="flex-shrink-0">예정</v-chip>
+                <v-chip v-if="ev.isNext" size="x-small" color="warning" variant="tonal" class="flex-shrink-0">{{ $t('dividend.upcoming') }}</v-chip>
               </div>
             </div>
             <div class="text-right">
               <div class="font-weight-bold" :class="ev.isNext ? 'text-warning' : 'text-primary'">
-                {{ ev.totalAmountKrw > 0 ? formatKrw(ev.totalAmountKrw) : '금액 미정' }}
+                {{ ev.totalAmountKrw > 0 ? formatKrw(ev.totalAmountKrw) : $t('dividend.amountTBD') }}
               </div>
             </div>
           </div>
@@ -505,11 +507,11 @@ const refreshData = async () => {
 
         <!-- 배당 정보 없는 종목 안내 -->
         <div v-if="noDividendTickers.length" class="text-medium-emphasis text-center">
-          배당 정보 없음: {{ noDividendTickers.join(', ') }}
+          {{ $t('dividend.noDivInfo', { tickers: noDividendTickers.join(', ') }) }}
         </div>
 
         <div class="notice-text text-medium-emphasis mt-2">
-          <div>* 배당락일은 과거 기반 예상치로 실제와 다를 수 있습니다.</div>
+          <div>{{ $t('dividend.disclaimer') }}</div>
         </div>
       </template>
     </template>
@@ -520,9 +522,9 @@ const refreshData = async () => {
     <v-card rounded="t-xl" class="pa-5">
       <div class="d-flex align-center ga-2 mb-4">
         <div class="font-weight-bold">
-          {{ selectedDate?.replace(/-/g, '.') }} 배당락
+          {{ $t('dividend.exDivTitle', { date: selectedDate?.replace(/-/g, '.') }) }}
         </div>
-        <v-chip v-if="selectedDateEvents.some(e => e.isNext)" size="x-small" color="warning" variant="tonal">예정</v-chip>
+        <v-chip v-if="selectedDateEvents.some(e => e.isNext)" size="x-small" color="warning" variant="tonal">{{ $t('dividend.upcoming') }}</v-chip>
         <v-spacer />
         <v-btn icon size="x-small" variant="text" @click="showSheet = false">
           <v-icon size="18">mdi-close</v-icon>
@@ -537,16 +539,16 @@ const refreshData = async () => {
         <div class="event-ticker">
           <div class="d-flex align-center ga-1">
             <span class="font-weight-medium">{{ getTickerDisplayName(ev.ticker) }}</span>
-            <v-chip v-if="ev.isNext" size="x-small" color="warning" variant="tonal">예정</v-chip>
+            <v-chip v-if="ev.isNext" size="x-small" color="warning" variant="tonal">{{ $t('dividend.upcoming') }}</v-chip>
           </div>
           <div class="text-medium-emphasis">{{ ev.ticker }}</div>
         </div>
         <div class="text-right">
           <div class="font-weight-bold" :class="ev.isNext ? 'text-warning' : 'text-primary'">
-            {{ ev.totalAmountKrw > 0 ? formatKrw(ev.totalAmountKrw) : '금액 미정' }}
+            {{ ev.totalAmountKrw > 0 ? formatKrw(ev.totalAmountKrw) : $t('dividend.amountTBD') }}
           </div>
           <div class="text-medium-emphasis">
-            {{ ev.currency === 'USD' ? '$' : '₩' }}{{ formatAmountPerShare(ev) }} × {{ ev.quantity }}주
+            {{ ev.currency === 'USD' ? '$' : '₩' }}{{ formatAmountPerShare(ev) }} {{ $t('dividend.sharesMultiply', { n: ev.quantity }) }}
           </div>
         </div>
       </div>
