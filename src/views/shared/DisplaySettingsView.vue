@@ -1,13 +1,22 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useFontScale } from '@/composables/useFontScale'
+import { useLocale } from '@/composables/useLocale'
 import { FONT_SCALE_DEFAULT } from '@/design'
+import type { LocaleCode } from '@/config/marketConfig'
 
 const router = useRouter()
 const { fontScale, min, max, setFontScale } = useFontScale()
+const { locale, setLocale } = useLocale()
 
 const percentLabel = (v: number) => `${Math.round(v * 100)}%`
 const resetFontScale = () => setFontScale(FONT_SCALE_DEFAULT)
+
+// 1차 오픈 대상 언어만 노출 (일본어/중국어는 GLOBALIZATION.md 단계 D 확장 시 추가)
+const languageOptions: { value: LocaleCode; label: string }[] = [
+  { value: 'ko', label: '한국어' },
+  { value: 'en', label: 'English' },
+]
 </script>
 
 <template>
@@ -52,6 +61,24 @@ const resetFontScale = () => setFontScale(FONT_SCALE_DEFAULT)
       <span class="tip-emoji">⚠️</span>
       <span class="tip-body">너무 크게 설정하면 일부 화면에서 텍스트가 겹치거나 잘려 보일 수 있어요.</span>
     </div>
+
+    <v-card class="glass-card pa-4 mt-4">
+      <div class="font-weight-medium mb-3">언어</div>
+      <div class="d-flex ga-2">
+        <v-btn
+          v-for="opt in languageOptions"
+          :key="opt.value"
+          size="small"
+          rounded="lg"
+          elevation="0"
+          :variant="locale === opt.value ? 'flat' : 'tonal'"
+          :color="locale === opt.value ? 'primary' : undefined"
+          @click="setLocale(opt.value)"
+        >
+          {{ opt.label }}
+        </v-btn>
+      </div>
+    </v-card>
   </v-container>
 </template>
 

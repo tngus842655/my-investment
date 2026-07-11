@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/services/supabase'
 import { setBaseCurrency } from '@/composables/useBaseCurrency'
-import type { CurrencyCode } from '@/config/marketConfig'
+import { setLocale } from '@/composables/useLocale'
+import { LOCALE_STORAGE_KEY } from '@/plugins/i18n'
+import type { CurrencyCode, LocaleCode } from '@/config/marketConfig'
 
 export interface InvestmentGoal {
   id: string
@@ -15,7 +17,7 @@ export interface InvestmentGoal {
   hide_asset: boolean
   include_cash: boolean
   base_currency: CurrencyCode
-  locale: string
+  locale: LocaleCode
   created_at: string
   updated_at: string
 }
@@ -69,6 +71,11 @@ export const useUserDataStore = defineStore('userData', {
       this.goalsLoaded = true
       // 기준통화 동기화 — 금액 집계/표시가 이 값을 따른다 (GLOBALIZATION.md 단계 C)
       setBaseCurrency(data?.base_currency ?? 'KRW')
+      // 표시 언어 동기화 — 로그인 계정의 저장값이 로컬스토리지(비로그인 추정값)보다 우선 (단계 D)
+      if (data?.locale) {
+        setLocale(data.locale)
+        localStorage.setItem(LOCALE_STORAGE_KEY, data.locale)
+      }
       return this.goals
     },
 
