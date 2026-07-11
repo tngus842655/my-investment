@@ -43,5 +43,51 @@
     "cashHolding": "보유현금",
     "loadError": "데이터를 불러오는 중 오류가 발생했습니다.",
     "noticeTest": "테스트"
+  },
+  "portfolio": {
+    "title": "보유자산",
+    "headerAlt": "자산",
+    "savingOrder": "저장 중...",
+    "addAsset": "자산 추가",
+    "emptyTitle": "자산이 없습니다",
+    "emptyHint": "자산 추가 버튼으로 첫 자산을 등록하세요.",
+    "cost": "매입금액",
+    "profit": "평가손익",
+    "evalAmount": "평가금액",
+    "returnRate": "수익률",
+    "filterAll": "전체",
+    "totalCount": "총 {n}건",
+    "priceInfoTitle": "자산군별 시세 갱신 안내",
+    "registerTickerName": "미국주식 한글표기명 등록요청",
+    "appliedRate": "적용환율 {rate}원 (전일 기준)",
+    "sort": "정렬",
+    "shares": "{n}주",
+    "krBadge": "국",
+    "swipeHint": "← 카드를 왼쪽으로 밀면 수정/삭제할 수 있어요",
+    "deleteTitle": "자산 삭제",
+    "deleteConfirm": "{name}을(를) 삭제하시겠습니까?",
+    "deleteCascade": "해당 자산의 거래내역도 모두 함께 삭제됩니다.",
+    "deleteIrreversible": "이 작업은 되돌릴 수 없습니다.",
+    "loadError": "보유자산 조회 중 오류가 발생했습니다.",
+    "saveOrderError": "순서 저장 중 오류가 발생했습니다.",
+    "deleteSuccess": "자산이 삭제되었습니다.",
+    "deleteError": "자산 삭제 중 오류가 발생했습니다.",
+    "sortOptions": {
+      "custom": "직접 정렬",
+      "eval": "평가금액순",
+      "profit": "손익순",
+      "rate": "수익률순",
+      "name": "이름순"
+    },
+    "priceInfo": {
+      "kr": "국내주식",
+      "overseas": "해외주식",
+      "crypto": "암호화폐",
+      "fx": "환율",
+      "krDesc": "약 15~20분 지연",
+      "overseasDesc": "약 15분 내외 지연",
+      "cryptoDesc": "실시간에 가까움",
+      "fxDesc": "전일 종가 기준 (하루 1회 갱신)"
+    }
   }
 }

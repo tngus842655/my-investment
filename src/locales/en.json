@@ -43,5 +43,51 @@
     "cashHolding": "Cash",
     "loadError": "An error occurred while loading data.",
     "noticeTest": "Test"
+  },
+  "portfolio": {
+    "title": "Holdings",
+    "headerAlt": "Assets",
+    "savingOrder": "Saving...",
+    "addAsset": "Add asset",
+    "emptyTitle": "No holdings yet",
+    "emptyHint": "Tap the Add asset button to register your first holding.",
+    "cost": "Cost",
+    "profit": "Gain/Loss",
+    "evalAmount": "Value",
+    "returnRate": "Return",
+    "filterAll": "All",
+    "totalCount": "{n} total",
+    "priceInfoTitle": "Price update timing by asset type",
+    "registerTickerName": "Request US stock name mapping",
+    "appliedRate": "FX {rate} (prev. close)",
+    "sort": "Sort",
+    "shares": "{n} sh",
+    "krBadge": "KR",
+    "swipeHint": "← Swipe a card left to edit/delete",
+    "deleteTitle": "Delete asset",
+    "deleteConfirm": "Delete {name}?",
+    "deleteCascade": "All transactions for this asset will also be deleted.",
+    "deleteIrreversible": "This action cannot be undone.",
+    "loadError": "An error occurred while loading holdings.",
+    "saveOrderError": "An error occurred while saving the order.",
+    "deleteSuccess": "Asset deleted.",
+    "deleteError": "An error occurred while deleting the asset.",
+    "sortOptions": {
+      "custom": "Manual",
+      "eval": "By value",
+      "profit": "By gain",
+      "rate": "By return",
+      "name": "By name"
+    },
+    "priceInfo": {
+      "kr": "KR stocks",
+      "overseas": "Overseas stocks",
+      "crypto": "Crypto",
+      "fx": "FX rate",
+      "krDesc": "~15-20 min delay",
+      "overseasDesc": "~15 min delay",
+      "cryptoDesc": "near real-time",
+      "fxDesc": "prev. close (daily)"
+    }
   }
 }
