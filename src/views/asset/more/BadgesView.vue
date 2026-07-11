@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { formatShortMoney } from '@/utils/numberFormat'
+import { formatMoneyIn } from '@/utils/numberFormat'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { useUserDataStore } from '@/stores/userData'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
+const { baseCurrency } = useBaseCurrency()
 const loading = ref(true)
 const targetAsset = ref(0)
 const currentAsset = ref(0)
@@ -149,10 +151,10 @@ onMounted(loadData)
 
         <div class="asset-summary mt-3">
           <span class="text-medium-emphasis">현재 자산</span>
-          <span class="font-weight-bold">{{ formatShortMoney(currentAsset) }}</span>
+          <span class="font-weight-bold">{{ formatMoneyIn(currentAsset, baseCurrency, 'bare') }}</span>
           <span class="text-medium-emphasis mx-1">/</span>
           <span class="text-medium-emphasis">목표</span>
-          <span class="font-weight-medium">{{ formatShortMoney(targetAsset) }}</span>
+          <span class="font-weight-medium">{{ formatMoneyIn(targetAsset, baseCurrency, 'bare') }}</span>
         </div>
       </div>
 

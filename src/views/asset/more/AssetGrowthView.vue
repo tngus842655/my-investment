@@ -4,18 +4,17 @@ import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { useUserDataStore } from '@/stores/userData'
-import { formatShortMoney } from '@/utils/numberFormat'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
-import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import { convertMoney } from '@/utils/portfolioMath'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
 const loading = ref(true)
 const exchangeRate = ref(1350)
-const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
-const formatMoney = (v: number) =>
-  displayCurrency.value === 'USD' ? formatUsdWithRate(v, exchangeRate.value) : formatShortMoney(v)
+const { baseCurrency, money, moneyOr } = useBaseCurrency()
+const formatMoney = (v: number) => money(v, exchangeRate.value, 'bare')
 
 interface HistoryPoint {
   recorded_at: string
@@ -31,14 +30,18 @@ const annualReturn = ref<number | null>(null)
 onMounted(async () => {
   try {
     const [histRes, goal, summary, rate] = await Promise.all([
-      supabase.from('asset_history').select('recorded_at, current_asset').order('recorded_at', { ascending: true }),
+      supabase.from('asset_history').select('recorded_at, current_asset, base_currency').order('recorded_at', { ascending: true }),
       userDataStore.ensureGoals(),
       userDataStore.ensureAssetSummary(),
       getCachedExchangeRate(),
     ])
     if (histRes.error) throw histRes.error
     exchangeRate.value = rate
-    history.value = histRes.data ?? []
+    // 기준통화 변경 이전의 스냅샷은 행별 통화가 다를 수 있어 표시 시점 환율로 환산 (GLOBALIZATION.md 2-4 정책)
+    history.value = (histRes.data ?? []).map((p: HistoryPoint & { base_currency?: string }) => ({
+      ...p,
+      current_asset: Math.round(convertMoney(p.current_asset, p.base_currency ?? 'KRW', baseCurrency.value, rate)),
+    }))
     monthlyInvestment.value = goal?.monthly_investment ?? 0
     annualReturn.value = goal?.annual_return ?? null
     currentAssetNow.value = summary?.current_asset ?? 0
@@ -208,7 +211,10 @@ const bestMonth = computed(() => {
 const profitAmount = computed(() => latestAsset.value - investmentPrincipal.value)
 
 function formatShort(v: number) {
-  if (displayCurrency.value === 'USD') return formatUsdWithRate(v, exchangeRate.value)
+  return moneyOr(v, exchangeRate.value, formatShortKrw)
+}
+
+function formatShortKrw(v: number) {
   const abs = Math.abs(v)
   const sign = v < 0 ? '-' : ''
   if (abs >= 100_000_000) return `${sign}${(abs / 100_000_000).toFixed(1)}억`
@@ -218,8 +224,7 @@ function formatShort(v: number) {
 }
 
 function formatFull(v: number) {
-  if (displayCurrency.value === 'USD') return formatUsdWithRate(v, exchangeRate.value)
-  return Math.round(v).toLocaleString('ko-KR') + '원'
+  return money(v, exchangeRate.value, 'full')
 }
 </script>
 

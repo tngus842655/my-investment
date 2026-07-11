@@ -5,16 +5,16 @@ import { supabase } from '@/services/supabase'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getStockPrice } from '@/services/market'
 import { getTickerDisplayName } from '@/utils/tickerNames'
-import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
+import { convertMoney } from '@/utils/portfolioMath'
 import { useDesignTokens } from '@/composables/useDesignTokens'
-import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { getAssetClass, getMarket, isCash, classMarketToAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
 import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const { chart } = useDesignTokens()
-const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
+const { baseCurrency, money } = useBaseCurrency()
 
 const loading = ref(true)
 const viewMode = ref<'type' | 'ticker' | 'compare'>('type')
@@ -34,8 +34,7 @@ const assetTypeLabel = (p: PortfolioRow): string =>
   classMarketToAssetType(getAssetClass(p), getMarket(p))
 const portfolioRows = ref<PortfolioRow[]>([])
 const exchangeRate = ref(1350)
-const formatMoney = (v: number) =>
-  displayCurrency.value === 'USD' ? formatUsdWithRate(v, exchangeRate.value) : formatShortMoney(v)
+const formatMoney = (v: number) => money(v, exchangeRate.value, 'bare')
 
 interface Seg {
   key: string
@@ -78,7 +77,7 @@ const segments = computed<Seg[]>(() => {
   for (const p of portfolioRows.value) {
     const key = viewMode.value === 'type' ? assetTypeLabel(p) : p.ticker
     const label = viewMode.value === 'type' ? assetTypeLabel(p) : getTickerDisplayName(p.ticker)
-    const val = p.currency === 'USD' ? p.avg_price * p.quantity * exchangeRate.value : p.avg_price * p.quantity
+    const val = convertMoney(p.avg_price * p.quantity, p.currency, baseCurrency.value, exchangeRate.value)
     const existing = map.get(key)
     if (existing) existing.valueKrw += val
     else map.set(key, { label, valueKrw: val })
@@ -116,7 +115,7 @@ const segments = computed<Seg[]>(() => {
   })
 })
 
-const totalKrw = computed(() => portfolioRows.value.reduce((s, p) => s + (p.currency === 'USD' ? p.avg_price * p.quantity * exchangeRate.value : p.avg_price * p.quantity), 0))
+const totalKrw = computed(() => portfolioRows.value.reduce((s, p) => s + convertMoney(p.avg_price * p.quantity, p.currency, baseCurrency.value, exchangeRate.value), 0))
 
 const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.value) ?? null)
 
@@ -167,8 +166,8 @@ const holdings = computed<Holding[]>(() => {
     assetClass: v.assetClass,
     currency: v.currency,
     quantity: v.quantity,
-    // 암호화폐+KRW는 avg_price가 사용자가 직접 입력한 KRW 원가라 변환이 필요 없음
-    costKrw: v.currency === 'USD' ? v.costNative * exchangeRate.value : v.costNative,
+    // 암호화폐+KRW는 avg_price가 사용자가 직접 입력한 KRW 원가라 변환이 필요 없음 (costNative는 종목 통화 단위)
+    costKrw: convertMoney(v.costNative, v.currency, baseCurrency.value, exchangeRate.value),
   }))
 })
 
@@ -225,12 +224,14 @@ const compareRows = computed<CompareRow[]>(() => {
     const h = holdings.value.find((x) => x.ticker === ticker)!
     const price = priceCache.value[ticker]
     const hasPrice = price !== undefined && price > 0
-    // 암호화폐 + KRW: 시세 API가 USD(바이낸스)로 반환하므로 환율 곱해서 KRW 현재가로 변환
-    const isCryptoKrw = h.assetClass === 'crypto' && h.currency === 'KRW'
-    const priceInCurrency = hasPrice ? (isCryptoKrw ? price * exchangeRate.value : price) : null
+    // 암호화폐 시세는 USD로 오므로, 통화가 USD가 아닌 종목은 종목 통화로 먼저 환산
+    const isCryptoNonUsd = h.assetClass === 'crypto' && h.currency !== 'USD'
+    const priceInCurrency = hasPrice
+      ? (isCryptoNonUsd ? convertMoney(price, 'USD', h.currency, exchangeRate.value) : price)
+      : null
     const evaluationAmount = priceInCurrency !== null ? priceInCurrency * h.quantity : null
     const evalKrw = evaluationAmount !== null
-      ? (h.currency === 'USD' && !isCryptoKrw ? evaluationAmount * exchangeRate.value : evaluationAmount)
+      ? convertMoney(evaluationAmount, h.currency, baseCurrency.value, exchangeRate.value)
       : null
     const profitRate = evalKrw !== null && h.costKrw > 0 ? ((evalKrw - h.costKrw) / h.costKrw) * 100 : null
     return {

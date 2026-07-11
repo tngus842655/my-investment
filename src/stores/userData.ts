@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/services/supabase'
+import { setBaseCurrency } from '@/composables/useBaseCurrency'
+import type { CurrencyCode } from '@/config/marketConfig'
 
 export interface InvestmentGoal {
   id: string
@@ -12,6 +14,8 @@ export interface InvestmentGoal {
   portfolio_sort: string
   hide_asset: boolean
   include_cash: boolean
+  base_currency: CurrencyCode
+  locale: string
   created_at: string
   updated_at: string
 }
@@ -63,6 +67,8 @@ export const useUserDataStore = defineStore('userData', {
         .maybeSingle()
       this.goals = data
       this.goalsLoaded = true
+      // 기준통화 동기화 — 금액 집계/표시가 이 값을 따른다 (GLOBALIZATION.md 단계 C)
+      setBaseCurrency(data?.base_currency ?? 'KRW')
       return this.goals
     },
 
@@ -115,6 +121,7 @@ export const useUserDataStore = defineStore('userData', {
       this.goalsLoaded = false
       this.assetSummaryLoaded = false
       this.portfoliosLoaded = false
+      setBaseCurrency('KRW')
     },
   },
 })

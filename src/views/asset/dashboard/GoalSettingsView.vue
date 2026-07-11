@@ -3,9 +3,13 @@ import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { invalidateGoalCache } from '@/router'
-import { formatShortMoney } from '@/utils/numberFormat'
+import { formatMoneyIn } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
 import { useUserDataStore } from '@/stores/userData'
+import { setBaseCurrency } from '@/composables/useBaseCurrency'
+import { getCachedRate } from '@/services/exchangeRateCache'
+import { recomputeAssetSummary } from '@/services/assetSummary'
+import type { CurrencyCode } from '@/config/marketConfig'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
@@ -13,6 +17,52 @@ const userDataStore = useUserDataStore()
 const targetAsset = ref('')
 const monthlyInvestment = ref('')
 const annualReturn = ref<number | null>(null)
+
+// ── 기준통화 (GLOBALIZATION.md 단계 C) ─────────────
+const baseCurrencySel = ref<CurrencyCode>('KRW')
+let savedBaseCurrency: CurrencyCode = 'KRW' // 저장돼 있던 값 (변경 감지용)
+const currencyOptions: { value: CurrencyCode; label: string }[] = [
+  { value: 'KRW', label: '원화 ₩' },
+  { value: 'USD', label: '달러 $' },
+]
+const currencyUnit = computed(() => (baseCurrencySel.value === 'KRW' ? '원' : '$'))
+
+// 기준통화 변경 시 목표 금액을 현재 환율로 1회 환산 (확인 다이얼로그 필수 — 2-4 정책)
+const convertDialog = ref(false)
+const pendingCurrency = ref<CurrencyCode | null>(null)
+const convertPreview = ref<{ target: number; monthly: number } | null>(null)
+
+const onSelectCurrency = async (c: CurrencyCode) => {
+  if (c === baseCurrencySel.value) return
+  const t = removeComma(targetAsset.value)
+  const m = removeComma(monthlyInvestment.value)
+  if (t <= 0 && m <= 0) {
+    baseCurrencySel.value = c
+    return
+  }
+  try {
+    const rate = await getCachedRate(baseCurrencySel.value, c)
+    convertPreview.value = { target: Math.round(t * rate), monthly: Math.round(m * rate) }
+    pendingCurrency.value = c
+    convertDialog.value = true
+  } catch {
+    showMessage('환율 조회에 실패했습니다. 잠시 후 다시 시도해주세요.', 'error')
+  }
+}
+
+const confirmConvert = () => {
+  if (!pendingCurrency.value || !convertPreview.value) return
+  targetAsset.value = convertPreview.value.target > 0 ? addComma(String(convertPreview.value.target)) : ''
+  monthlyInvestment.value = convertPreview.value.monthly > 0 ? addComma(String(convertPreview.value.monthly)) : ''
+  baseCurrencySel.value = pendingCurrency.value
+  convertDialog.value = false
+  pendingCurrency.value = null
+}
+
+const cancelConvert = () => {
+  convertDialog.value = false
+  pendingCurrency.value = null
+}
 
 const loading = ref(false)
 const isEditMode = ref(false)
@@ -25,15 +75,17 @@ const addComma = (value: string) => {
 
 const removeComma = (value: string) => Number(value.replace(/,/g, '')) || 0
 
-const MAX_ASSET = 100_000_000_000 // 1000억
-const MAX_MONTHLY = 100_000_000 // 1억
+// 입력 상한/하한: KRW 1000억·1억·1만 / USD $1억·$10만·$10
+const MAX_ASSET = computed(() => (baseCurrencySel.value === 'KRW' ? 100_000_000_000 : 100_000_000))
+const MAX_MONTHLY = computed(() => (baseCurrencySel.value === 'KRW' ? 100_000_000 : 100_000))
+const MIN_TARGET = computed(() => (baseCurrencySel.value === 'KRW' ? 10_000 : 10))
 
 const handleTargetAsset = (value: string) => {
-  const num = Math.min(Number(value.replace(/,/g, '')) || 0, MAX_ASSET)
+  const num = Math.min(Number(value.replace(/,/g, '')) || 0, MAX_ASSET.value)
   targetAsset.value = addComma(String(num))
 }
 const handleMonthlyInvestment = (value: string) => {
-  const num = Math.min(Number(value.replace(/,/g, '')) || 0, MAX_MONTHLY)
+  const num = Math.min(Number(value.replace(/,/g, '')) || 0, MAX_MONTHLY.value)
   monthlyInvestment.value = addComma(String(num))
 }
 
@@ -44,8 +96,8 @@ const sliderValue = computed({
   },
 })
 
-const targetAssetText = computed(() => formatShortMoney(removeComma(targetAsset.value)) + '원')
-const monthlyInvestmentText = computed(() => formatShortMoney(removeComma(monthlyInvestment.value)) + '원')
+const targetAssetText = computed(() => formatMoneyIn(removeComma(targetAsset.value), baseCurrencySel.value, 'short'))
+const monthlyInvestmentText = computed(() => formatMoneyIn(removeComma(monthlyInvestment.value), baseCurrencySel.value, 'short'))
 
 // 월 투자금이 입력된 경우 목표 자산 최소값 (월 투자금 × 12 = 1년치)
 const minTargetByMonthly = computed(() => {
@@ -95,6 +147,8 @@ const loadData = async () => {
   }
 
   isEditMode.value = true
+  baseCurrencySel.value = goal.base_currency ?? 'KRW'
+  savedBaseCurrency = baseCurrencySel.value
   targetAsset.value = addComma(String(goal.target_asset ?? ''))
   monthlyInvestment.value = addComma(String(goal.monthly_investment ?? ''))
   annualReturn.value = Math.max(goal.annual_return ?? 7, 3)
@@ -107,8 +161,8 @@ const save = async () => {
     showMessage('목표 자산을 입력해주세요.', 'warning')
     return
   }
-  if (targetNum < 10000) {
-    showMessage('목표 자산은 최소 10,000원 이상 입력해주세요.', 'warning')
+  if (targetNum < MIN_TARGET.value) {
+    showMessage(`목표 자산은 최소 ${formatMoneyIn(MIN_TARGET.value, baseCurrencySel.value, 'full')} 이상 입력해주세요.`, 'warning')
     return
   }
   const monthlyNum = removeComma(monthlyInvestment.value)
@@ -117,7 +171,7 @@ const save = async () => {
     return
   }
   if (monthlyNum > 0 && targetNum < monthlyNum * 12) {
-    showMessage(`목표 자산은 월 투자금의 12배(${formatShortMoney(monthlyNum * 12)}원) 이상이어야 합니다.`, 'warning')
+    showMessage(`목표 자산은 월 투자금의 12배(${formatMoneyIn(monthlyNum * 12, baseCurrencySel.value, 'short')}) 이상이어야 합니다.`, 'warning')
     return
   }
   if (annualReturn.value !== null && annualReturn.value < 3) {
@@ -137,6 +191,7 @@ const save = async () => {
         target_asset: removeComma(targetAsset.value),
         monthly_investment: removeComma(monthlyInvestment.value),
         annual_return: annualReturn.value,
+        base_currency: baseCurrencySel.value,
       },
       { onConflict: 'user_id' },
     )
@@ -145,6 +200,12 @@ const save = async () => {
       showMessage(error.message, 'error')
       return
     }
+
+    const baseChanged = baseCurrencySel.value !== savedBaseCurrency
+    savedBaseCurrency = baseCurrencySel.value
+    setBaseCurrency(baseCurrencySel.value)
+    // 기준통화 변경 시 asset_summary를 새 통화로 즉시 재계산 (2-4 정책, 백그라운드)
+    if (baseChanged) recomputeAssetSummary(user.id)
 
     invalidateGoalCache()
     userDataStore.invalidateGoals()
@@ -191,6 +252,32 @@ onMounted(loadData)
         </div>
       </div>
 
+      <!-- 기준통화 -->
+      <div class="glass-card pa-4 mb-3">
+        <div class="field-label mb-3">
+          <v-icon size="14" class="mr-1">mdi-currency-usd</v-icon>
+          기준통화
+        </div>
+        <div class="d-flex ga-2">
+          <v-btn
+            v-for="opt in currencyOptions"
+            :key="opt.value"
+            size="small"
+            rounded="lg"
+            elevation="0"
+            :variant="baseCurrencySel === opt.value ? 'flat' : 'tonal'"
+            :color="baseCurrencySel === opt.value ? 'primary' : undefined"
+            @click="onSelectCurrency(opt.value)"
+          >
+            {{ opt.label }}
+          </v-btn>
+        </div>
+        <div class="field-hint mt-2">
+          <v-icon size="12">mdi-information-outline</v-icon>
+          자산을 집계·표시하는 통화입니다. 변경 시 목표 금액이 현재 환율로 환산됩니다
+        </div>
+      </div>
+
       <!-- 목표 자산 -->
       <div class="glass-card pa-4 mb-3">
         <div class="field-label mb-3">
@@ -200,17 +287,17 @@ onMounted(loadData)
         <v-text-field :model-value="targetAsset" @update:model-value="handleTargetAsset" placeholder="1,000,000,000" variant="outlined" density="comfortable" hide-details :class="['glass-field', targetBelowMinimum ? 'field-error' : '']" maxlength="14">
           <template #append-inner>
             <span class="font-weight-bold" style="color: rgb(var(--v-theme-primary)); white-space: nowrap">
-              {{ targetAsset ? targetAssetText : '원' }}
+              {{ targetAsset ? targetAssetText : currencyUnit }}
             </span>
           </template>
         </v-text-field>
         <div v-if="targetBelowMinimum" class="field-hint-error mt-2">
           <v-icon size="12">mdi-alert-circle-outline</v-icon>
-          월 투자금 기준 최소 <strong>{{ formatShortMoney(minTargetByMonthly) }}원</strong> 이상 입력해주세요
+          월 투자금 기준 최소 <strong>{{ formatMoneyIn(minTargetByMonthly, baseCurrencySel, 'short') }}</strong> 이상 입력해주세요
         </div>
         <div v-else-if="minTargetByMonthly > 0 && !removeComma(targetAsset)" class="field-hint mt-2">
           <v-icon size="12">mdi-information-outline</v-icon>
-          월 투자금 기준 최소 <strong>{{ formatShortMoney(minTargetByMonthly) }}원</strong> 이상 권장
+          월 투자금 기준 최소 <strong>{{ formatMoneyIn(minTargetByMonthly, baseCurrencySel, 'short') }}</strong> 이상 권장
         </div>
       </div>
 
@@ -224,7 +311,7 @@ onMounted(loadData)
         <v-text-field :model-value="monthlyInvestment" @update:model-value="handleMonthlyInvestment" placeholder="3,000,000" variant="outlined" density="comfortable" hide-details class="glass-field" maxlength="13">
           <template #append-inner>
             <span class="font-weight-bold" style="color: rgb(var(--v-theme-primary)); white-space: nowrap">
-              {{ monthlyInvestment ? monthlyInvestmentText : '원' }}
+              {{ monthlyInvestment ? monthlyInvestmentText : currencyUnit }}
             </span>
           </template>
         </v-text-field>
@@ -287,6 +374,32 @@ onMounted(loadData)
       </v-btn>
     </div>
   </div>
+
+  <!-- 기준통화 변경 → 금액 환산 확인 -->
+  <v-dialog v-model="convertDialog" max-width="340" persistent>
+    <v-card rounded="xl" class="glass-dialog">
+      <v-card-title class="text-center pt-6">기준통화 변경</v-card-title>
+      <v-card-text class="text-center text-medium-emphasis">
+        입력된 금액을 현재 환율로 환산합니다.
+        <template v-if="convertPreview && pendingCurrency">
+          <div class="mt-3" v-if="removeComma(targetAsset) > 0">
+            목표 자산: <strong>{{ targetAssetText }}</strong> →
+            <strong>{{ formatMoneyIn(convertPreview.target, pendingCurrency, 'short') }}</strong>
+          </div>
+          <div class="mt-1" v-if="removeComma(monthlyInvestment) > 0">
+            월 투자금: <strong>{{ monthlyInvestmentText }}</strong> →
+            <strong>{{ formatMoneyIn(convertPreview.monthly, pendingCurrency, 'short') }}</strong>
+          </div>
+        </template>
+      </v-card-text>
+      <v-divider />
+      <v-card-actions>
+        <v-btn variant="text" block @click="cancelConvert">취소</v-btn>
+        <v-divider vertical />
+        <v-btn variant="text" color="primary" block @click="confirmConvert">변경</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <style scoped>

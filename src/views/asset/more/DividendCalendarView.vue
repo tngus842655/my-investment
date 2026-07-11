@@ -5,13 +5,14 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { getTickerDisplayName } from '@/utils/tickerNames'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
-import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { convertMoney } from '@/utils/portfolioMath'
 import { isCash, isCrypto, type AssetClass, type MarketCode } from '@/config/marketConfig'
 import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const loading = ref(true)
-const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
+const { baseCurrency, moneyOr } = useBaseCurrency()
 
 interface Portfolio {
   ticker: string
@@ -110,8 +111,7 @@ const loadData = async () => {
       if (!port) continue
       // 과거 배당 이력만 추가 (next는 우리가 직접 예측으로 대체)
       for (const div of td.dividends.filter((d) => d.type === 'ex')) {
-        const totalUsd = div.amount * port.quantity
-        const totalKrw = port.currency === 'USD' ? totalUsd * rate : totalUsd
+        const totalKrw = convertMoney(div.amount * port.quantity, port.currency, baseCurrency.value, rate)
         // Yahoo Finance가 UTC 기준이라 주말로 잡힐 수 있음 → 영업일로 보정
         const adjustedDate = toNearestBusinessDay(new Date(div.date)).toISOString().slice(0, 10)
         events.push({
@@ -319,7 +319,7 @@ function predictFutureDividends(
     const dateStr = candidate.toISOString().slice(0, 10)
     if (seen.has(dateStr)) return
     seen.add(dateStr)
-    const totalKrw = currency === 'USD' ? avgAmount * quantity * rate : avgAmount * quantity
+    const totalKrw = convertMoney(avgAmount * quantity, currency, baseCurrency.value, rate)
     predictions.push({ date: dateStr, ticker, amountPerShare: avgAmount, totalAmountKrw: Math.round(totalKrw), currency, quantity, isNext: true })
   }
 
@@ -359,10 +359,11 @@ const noDividendTickers = computed(() => {
 })
 
 function formatKrw(v: number) {
-  if (displayCurrency.value === 'USD') return formatUsdWithRate(v, exchangeRate.value)
-  if (v >= 100_000_000) return `${(v / 100_000_000).toFixed(1)}억원`
-  if (v >= 10_000) return `${Math.round(v / 10_000).toLocaleString()}만원`
-  return v.toLocaleString() + '원'
+  return moneyOr(v, exchangeRate.value, (x) => {
+    if (x >= 100_000_000) return `${(x / 100_000_000).toFixed(1)}억원`
+    if (x >= 10_000) return `${Math.round(x / 10_000).toLocaleString()}만원`
+    return x.toLocaleString() + '원'
+  })
 }
 
 const weekdays = ['일', '월', '화', '수', '목', '금', '토']

@@ -2,7 +2,7 @@ import { supabase } from '@/services/supabase'
 import { getStockPrice } from '@/services/market'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { useUserDataStore } from '@/stores/userData'
-import { evaluateItemKrw, simpleCostKrw } from '@/utils/portfolioMath'
+import { evaluateItemBase, simpleCostBase } from '@/utils/portfolioMath'
 import { isCash } from '@/config/marketConfig'
 
 // PortfolioView.vue와 동일한 portfolioMath 공식을 사용한다 (src/utils/portfolioMath.ts).
@@ -10,6 +10,7 @@ import { isCash } from '@/config/marketConfig'
 // 자산 탭을 열지 않고도 asset_summary를 재계산해서 저장한다.
 export const recomputeAssetSummary = async (userId: string): Promise<void> => {
   try {
+    const userDataStore = useUserDataStore()
     const { data, error } = await supabase
       .from('portfolios')
       .select('*')
@@ -17,6 +18,9 @@ export const recomputeAssetSummary = async (userId: string): Promise<void> => {
     if (error) throw error
 
     const items = data ?? []
+    // 기준통화: 사용자 목표 설정을 따른다 (GLOBALIZATION.md 단계 C)
+    const goal = await userDataStore.ensureGoals()
+    const base = goal?.base_currency ?? 'KRW'
     const rate = await getCachedExchangeRate()
     const prices = await Promise.all(
       items.map((item) =>
@@ -32,10 +36,10 @@ export const recomputeAssetSummary = async (userId: string): Promise<void> => {
       if (isCash(item)) return
 
       const currentPrice = prices[i] && prices[i]! > 0 ? prices[i] : null
-      const { evaluationAmountKrw } = evaluateItemKrw(item, currentPrice, rate)
+      const { evaluationAmountBase } = evaluateItemBase(item, currentPrice, rate, base)
 
-      totalEval += evaluationAmountKrw
-      totalCost += simpleCostKrw(item, rate)
+      totalEval += evaluationAmountBase
+      totalCost += simpleCostBase(item, rate, base)
     })
 
     const { error: upsertError } = await supabase.from('asset_summary').upsert(
@@ -43,12 +47,12 @@ export const recomputeAssetSummary = async (userId: string): Promise<void> => {
         user_id: userId,
         current_asset: Math.round(totalEval),
         investment_principal: Math.round(totalCost),
+        base_currency: base,
       },
       { onConflict: 'user_id' },
     )
     if (upsertError) throw upsertError
 
-    const userDataStore = useUserDataStore()
     userDataStore.portfolios = items
     userDataStore.portfoliosLoaded = true
     userDataStore.invalidateAssetSummary()

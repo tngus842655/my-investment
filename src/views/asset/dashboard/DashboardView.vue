@@ -2,13 +2,13 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
-import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel } from '@/utils/tickerNames'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
-import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { convertMoney } from '@/utils/portfolioMath'
 import { getAssetClass, getMarket, isCash as isCashItem, isCrypto as isCryptoItem, classMarketToAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
 import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
@@ -45,9 +45,11 @@ const setIncludeCash = (v: boolean) => {
   })
 }
 
-const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
+const { baseCurrency, money } = useBaseCurrency()
 const exchangeRate = ref(1350)
-const formatUsd = (krwValue: number) => formatUsdWithRate(krwValue, exchangeRate.value)
+// 기준통화 금액을 표시통화(기준통화 또는 미리보기)로 포맷
+const fmtShort = (v: number) => money(v, exchangeRate.value, 'short')
+const fmtFull = (v: number) => money(v, exchangeRate.value, 'full')
 
 const targetAsset = ref(0)
 const currentAsset = ref(0)
@@ -182,16 +184,15 @@ const loadDashboard = async (force = false) => {
 
     const cashRows = portfolios.filter((p) => isCashItem(p))
     cashTotalKrw.value = Math.round(
-      cashRows.reduce((sum, c) => {
-        const amount = c.avg_price * c.quantity
-        return sum + (c.currency === 'USD' ? amount * rate : amount)
-      }, 0),
+      cashRows.reduce(
+        (sum, c) => sum + convertMoney(c.avg_price * c.quantity, c.currency, baseCurrency.value, rate),
+        0,
+      ),
     )
 
     topPortfolios.value = portfolios.slice(0, 4).map((p) => {
-      const eval_ = p.avg_price * p.quantity
-      const evalKrw = p.currency === 'USD' ? eval_ * rate : eval_
-      return { ...p, evaluationKrw: Math.round(evalKrw) }
+      const evalBase = convertMoney(p.avg_price * p.quantity, p.currency, baseCurrency.value, rate)
+      return { ...p, evaluationKrw: Math.round(evalBase) }
     })
   } catch (error) {
     console.error(error)
@@ -259,12 +260,12 @@ onUnmounted(clearPullToRefresh)
         </div>
         <div class="hero-amount font-weight-bold mb-1 text-center">
           <span v-if="hideAsset" class="asset-hidden">금액 숨김</span>
-          <span v-else-if="displayedCurrentAsset > 0">{{ displayCurrency === 'USD' ? formatUsd(displayedCurrentAsset) : Math.round(displayedCurrentAsset).toLocaleString('ko-KR') + '원' }}</span>
+          <span v-else-if="displayedCurrentAsset > 0">{{ fmtFull(displayedCurrentAsset) }}</span>
           <span v-else>-</span>
         </div>
         <div class="text-center" style="color: rgba(var(--v-theme-on-surface), 0.45)">
           <template v-if="displayedCurrentAsset > 0">
-            목표 자산 <span v-if="hideAsset" class="asset-hidden-sm">금액 숨김</span><span v-else>{{ displayCurrency === 'USD' ? formatUsd(targetAsset) : formatShortMoney(targetAsset) + '원' }}</span>
+            목표 자산 <span v-if="hideAsset" class="asset-hidden-sm">금액 숨김</span><span v-else>{{ fmtShort(targetAsset) }}</span>
           </template>
           <template v-else>
             <span
@@ -331,7 +332,7 @@ onUnmounted(clearPullToRefresh)
             </template>
             <template v-else>
               <div class="fire-info-sub mb-1">목표까지</div>
-              <div class="fire-info-main">{{ displayCurrency === 'USD' ? formatUsd(remainingAsset) : formatShortMoney(remainingAsset) + '원' }} 남음</div>
+              <div class="fire-info-main">{{ fmtShort(remainingAsset) }} 남음</div>
               <div class="fire-divider my-2" />
               <div class="fire-info-sub mb-1">예상 달성일</div>
               <template v-if="estimatedDate">
@@ -357,7 +358,7 @@ onUnmounted(clearPullToRefresh)
         <div class="stat-card">
           <div class="stat-label">월 투자금</div>
           <div class="stat-value">
-            {{ monthlyInvestment > 0 ? (displayCurrency === 'USD' ? formatUsd(monthlyInvestment) : formatShortMoney(monthlyInvestment) + '원') : '-' }}
+            {{ monthlyInvestment > 0 ? fmtShort(monthlyInvestment) : '-' }}
           </div>
         </div>
         <div class="stat-card">
@@ -423,7 +424,7 @@ onUnmounted(clearPullToRefresh)
 
             <!-- 금액 -->
             <div class="text-right">
-              <div class="mini-amount">{{ displayCurrency === 'USD' ? formatUsd(item.evaluationKrw) : item.evaluationKrw.toLocaleString('ko-KR') + '원' }}</div>
+              <div class="mini-amount">{{ fmtFull(item.evaluationKrw) }}</div>
             </div>
           </div>
         </template>

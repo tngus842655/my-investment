@@ -1,21 +1,19 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
-import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
 const loading = ref(true)
 const exchangeRate = ref(1350)
-const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
-const formatMoney = (v: number) =>
-  displayCurrency.value === 'USD' ? formatUsdWithRate(v, exchangeRate.value) : formatShortMoney(v) + '원'
+const { money } = useBaseCurrency()
+const formatMoney = (v: number) => money(v, exchangeRate.value, 'short')
 
 const targetAsset = ref(0)
 const currentAsset = ref(0)

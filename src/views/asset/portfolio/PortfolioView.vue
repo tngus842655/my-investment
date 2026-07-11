@@ -9,12 +9,12 @@ import { showMessage } from '@/composables/useSnackbar'
 import { getStockPrice } from '@/services/market'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel, isEtfTicker, getTickerDisplayName, TICKER_NAMES } from '@/utils/tickerNames'
-import { evaluateItemKrw, simpleCostKrw } from '@/utils/portfolioMath'
+import { evaluateItemBase, simpleCostBase, convertMoney } from '@/utils/portfolioMath'
 import { getAssetClass, getMarket, isCash as isCashItem } from '@/config/marketConfig'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
 import { useFontScale } from '@/composables/useFontScale'
-import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
@@ -24,9 +24,9 @@ const loading = ref(false)
 interface PortfolioViewItem extends PortfolioAsset {
   currentPrice?: number
   evaluationAmount?: number
-  evaluationAmountKrw?: number
-  costKrw?: number
-  profitAmountKrw?: number
+  evaluationAmountBase?: number
+  costBase?: number
+  profitAmountBase?: number
   profitRate?: number
   isPriceFallback?: boolean // 현재가 조회 실패 시 true
 }
@@ -34,6 +34,7 @@ interface PortfolioViewItem extends PortfolioAsset {
 const portfolios = ref<PortfolioViewItem[]>([])
 const logoMap = ref<Record<string, string | null>>({})
 const exchangeRate = ref<number | null>(null)
+const { baseCurrency, displayCurrency, money, moneyOr } = useBaseCurrency()
 
 // ── 스와이프 상태 ─────────────────────────────────
 const swipedId = ref<string | null>(null)
@@ -55,24 +56,24 @@ const fetchExchangeRate = async (): Promise<number> => {
   return rate
 }
 
-const totalEvaluationAmountKrw = computed(() =>
+const totalEvaluationAmountBase = computed(() =>
   portfolios.value
     .filter((item) => !isCashItem(item))
-    .reduce((sum, item) => sum + (item.evaluationAmountKrw ?? 0), 0),
+    .reduce((sum, item) => sum + (item.evaluationAmountBase ?? 0), 0),
 )
-const totalProfitAmountKrw = computed(() =>
+const totalProfitAmountBase = computed(() =>
   portfolios.value
     .filter((item) => !isCashItem(item))
-    .reduce((sum, item) => sum + (item.profitAmountKrw ?? 0), 0),
+    .reduce((sum, item) => sum + (item.profitAmountBase ?? 0), 0),
 )
-const totalCostKrw = computed(() =>
+const totalCostBase = computed(() =>
   portfolios.value
     .filter((item) => !isCashItem(item))
-    .reduce((sum, item) => sum + (item.costKrw ?? 0), 0),
+    .reduce((sum, item) => sum + (item.costBase ?? 0), 0),
 )
 const totalProfitRate = computed(() => {
-  if (totalCostKrw.value === 0) return 0
-  return (totalProfitAmountKrw.value / totalCostKrw.value) * 100
+  if (totalCostBase.value === 0) return 0
+  return (totalProfitAmountBase.value / totalCostBase.value) * 100
 })
 const hasUSD = computed(() => portfolios.value.some((item) => item.currency === 'USD'))
 
@@ -127,22 +128,20 @@ const loadPortfolios = async () => {
       ),
     ])
 
-    // 포트폴리오 currency 맵 (costKrwMap 계산에 활용)
+    // 포트폴리오 currency 맵 (costBaseMap 계산에 활용)
     const portfolioCurrencyMap = new Map(items.map((item) => [item.id, item.currency]))
 
-    // 포트폴리오별 KRW 원가 계산 (USD만 환율 적용)
+    // 포트폴리오별 기준통화 원가 계산
     const txRows = txResult.data ?? []
-    const costKrwMap = new Map<string, number>()
+    const costBaseMap = new Map<string, number>()
     for (const tx of txRows) {
       const currency = portfolioCurrencyMap.get(tx.portfolio_id) ?? 'KRW'
-      const isUsd = currency === 'USD'
-      const txRate = isUsd ? rate : 1
-      const krwAmount = tx.unit_price * tx.quantity * txRate
-      const prev = costKrwMap.get(tx.portfolio_id) ?? 0
+      const baseAmount = convertMoney(tx.unit_price * tx.quantity, currency, baseCurrency.value, rate)
+      const prev = costBaseMap.get(tx.portfolio_id) ?? 0
       if (tx.transaction_type === 'BUY' || tx.transaction_type === 'INITIAL') {
-        costKrwMap.set(tx.portfolio_id, prev + krwAmount)
+        costBaseMap.set(tx.portfolio_id, prev + baseAmount)
       } else if (tx.transaction_type === 'SELL') {
-        costKrwMap.set(tx.portfolio_id, prev - krwAmount)
+        costBaseMap.set(tx.portfolio_id, prev - baseAmount)
       }
     }
 
@@ -152,25 +151,25 @@ const loadPortfolios = async () => {
       // 현금은 현재가 API 조회 불필요, avg_price 그대로 사용
       const currentPrice = isCash ? null : prices[i] && prices[i]! > 0 ? prices[i] : null
 
-      const { currentPriceInCurrency, evaluationAmount, evaluationAmountKrw } =
-        evaluateItemKrw(item, currentPrice, rate)
+      const { currentPriceInCurrency, evaluationAmount, evaluationAmountBase } =
+        evaluateItemBase(item, currentPrice, rate, baseCurrency.value)
       const isPriceFallback = !isCash && currentPriceInCurrency === null
 
-      // 저장된 거래별 환율로 계산한 KRW 원가 (없으면 현재 환율 fallback)
-      const costKrw = costKrwMap.get(item.id) ?? simpleCostKrw(item, rate)
+      // 거래 내역 기준으로 계산한 기준통화 원가 (없으면 평균단가 근사치 fallback)
+      const costBase = costBaseMap.get(item.id) ?? simpleCostBase(item, rate, baseCurrency.value)
 
       // 현금은 손익 표시 안 함
-      const profitAmountKrw = isPriceFallback || isCash ? 0 : evaluationAmountKrw - costKrw
+      const profitAmountBase = isPriceFallback || isCash ? 0 : evaluationAmountBase - costBase
       const profitRate =
-        isPriceFallback || isCash || costKrw === 0 ? 0 : (profitAmountKrw / costKrw) * 100
+        isPriceFallback || isCash || costBase === 0 ? 0 : (profitAmountBase / costBase) * 100
 
       return {
         ...item,
         currentPrice: currentPriceInCurrency ?? undefined,
         evaluationAmount,
-        evaluationAmountKrw,
-        costKrw,
-        profitAmountKrw,
+        evaluationAmountBase,
+        costBase,
+        profitAmountBase,
         profitRate,
         isPriceFallback,
       }
@@ -179,10 +178,10 @@ const loadPortfolios = async () => {
     // 평가금액 합산 후 asset_summary에 저장 (현금 제외 — FIRE 예측은 투자자산 기준)
     const totalEval = portfolios.value
       .filter((item) => !isCashItem(item))
-      .reduce((sum, item) => sum + (item.evaluationAmountKrw ?? 0), 0)
+      .reduce((sum, item) => sum + (item.evaluationAmountBase ?? 0), 0)
     const totalCost = portfolios.value
       .filter((item) => !isCashItem(item))
-      .reduce((sum, item) => sum + simpleCostKrw(item, rate), 0)
+      .reduce((sum, item) => sum + simpleCostBase(item, rate, baseCurrency.value), 0)
     const roundedEval = Math.round(totalEval)
     supabase
       .from('asset_summary')
@@ -191,6 +190,7 @@ const loadPortfolios = async () => {
           user_id: user.id,
           current_asset: roundedEval,
           investment_principal: Math.round(totalCost),
+          base_currency: baseCurrency.value,
         },
         { onConflict: 'user_id' },
       )
@@ -413,14 +413,17 @@ const deletePortfolio = async () => {
 }
 
 // ── 포맷 유틸 ─────────────────────────────────────
-const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
-const formatUsd = (v: number) => formatUsdWithRate(v, exchangeRate.value ?? 1350)
 const formatKrw = (v: number) => Math.round(v).toLocaleString('ko-KR')
 
-// 보유자산 카드 평가금액/손익 — 토글에 따라 원화 또는 달러로 표시
-const displayEval = (v: number) => (displayCurrency.value === 'USD' ? formatUsd(v) : formatKrw(v) + '원')
-const displayProfit = (v: number) =>
-  displayCurrency.value === 'USD' ? (v > 0 ? '+' : '') + formatUsd(v) : formatProfit(v) + '원'
+// 보유자산 카드 평가금액/손익 — 표시통화(기준통화 또는 미리보기)로 포맷
+const displayEval = (v: number) => money(v, exchangeRate.value ?? 1350, 'full')
+const displayProfit = (v: number) => (v > 0 ? '+' : '') + displayEval(v)
+
+// 현금 카드: 보유 통화 그대로 표기 (기준통화 병기용)
+const formatNative = (item: PortfolioViewItem) =>
+  (item.currency === 'USD' ? '$' : '') +
+  formatPrice(item.avg_price * item.quantity, item.currency) +
+  (item.currency === 'KRW' ? '원' : '')
 
 // 화면 너비 감지 — 360px 미만(폴드 등 좁은 화면)이면 한글 축약
 const windowWidth = ref(window.innerWidth)
@@ -442,17 +445,15 @@ const formatKrwShort = (v: number): string => {
   return `${sign}${Math.round(abs).toLocaleString()}`
 }
 
-// 총합 카드용 — 달러 모드면 환산, 원화면 좁은 화면일 때만 한글 축약
-const formatSummaryKrw = (v: number) => {
-  if (displayCurrency.value === 'USD') return formatUsd(v)
-  return isNarrowScreen.value ? formatKrwShort(v) : formatKrw(v)
-}
-const formatSummaryProfit = (v: number) => {
-  if (displayCurrency.value === 'USD') return (v > 0 ? '+' : '') + formatUsd(v)
-  return isNarrowScreen.value
-    ? (v > 0 ? '+' : '') + formatKrwShort(v)
-    : formatProfit(v)
-}
+// 총합 카드용 — 기준통화가 원화면 좁은 화면일 때만 한글 축약, 그 외/미리보기는 통화 포맷
+const formatSummaryKrw = (v: number) =>
+  moneyOr(v, exchangeRate.value ?? 1350, (x) => (isNarrowScreen.value ? formatKrwShort(x) : formatKrw(x)))
+const formatSummaryProfit = (v: number) =>
+  moneyOr(
+    v,
+    exchangeRate.value ?? 1350,
+    (x) => (isNarrowScreen.value ? (x > 0 ? '+' : '') + formatKrwShort(x) : formatProfit(x)),
+  )
 
 // 평균단가/현재가 표시 — KRW는 금액이 크면 축약, USD는 소수점 처리
 const formatPrice = (v: number, currency: string) => {
@@ -501,9 +502,9 @@ const checkSummaryOverflow = () => {
 
 const summaryMeasureKey = computed(() =>
   [
-    formatSummaryKrw(totalCostKrw.value),
-    formatSummaryProfit(totalProfitAmountKrw.value),
-    formatSummaryKrw(totalEvaluationAmountKrw.value),
+    formatSummaryKrw(totalCostBase.value),
+    formatSummaryProfit(totalProfitAmountBase.value),
+    formatSummaryKrw(totalEvaluationAmountBase.value),
     formatPercent(totalProfitRate.value),
     fontScale.value,
   ].join('|'),
@@ -560,8 +561,8 @@ const sortedPortfolios = computed(() => {
     if (sortKey.value === 'custom') return portfolios.value
     const list = [...portfolios.value]
     switch (sortKey.value) {
-      case 'eval':   return list.sort((a, b) => (b.evaluationAmountKrw ?? 0) - (a.evaluationAmountKrw ?? 0))
-      case 'profit': return list.sort((a, b) => (b.profitAmountKrw ?? 0) - (a.profitAmountKrw ?? 0))
+      case 'eval':   return list.sort((a, b) => (b.evaluationAmountBase ?? 0) - (a.evaluationAmountBase ?? 0))
+      case 'profit': return list.sort((a, b) => (b.profitAmountBase ?? 0) - (a.profitAmountBase ?? 0))
       case 'rate':   return list.sort((a, b) => (b.profitRate ?? 0) - (a.profitRate ?? 0))
       case 'name': {
         const getName = (ticker: string) => TICKER_NAMES[ticker.toUpperCase()] ?? ticker
@@ -665,18 +666,18 @@ onUnmounted(() => {
         <div class="summary-grid">
           <div class="summary-row" :class="{ 'summary-row--stacked': summaryStacked }">
             <span class="text-medium-emphasis">매입금액</span>
-            <span class="font-weight-medium">{{ formatSummaryKrw(totalCostKrw) }}</span>
+            <span class="font-weight-medium">{{ formatSummaryKrw(totalCostBase) }}</span>
           </div>
           <div class="summary-row" :class="{ 'summary-row--stacked': summaryStacked }">
             <span class="text-medium-emphasis">평가손익</span>
             <span
               class="font-weight-medium"
-              :class="totalProfitAmountKrw >= 0 ? 'text-success' : 'text-error'"
-            >{{ formatSummaryProfit(totalProfitAmountKrw) }}</span>
+              :class="totalProfitAmountBase >= 0 ? 'text-success' : 'text-error'"
+            >{{ formatSummaryProfit(totalProfitAmountBase) }}</span>
           </div>
           <div class="summary-row" :class="{ 'summary-row--stacked': summaryStacked }">
             <span class="text-medium-emphasis">평가금액</span>
-            <span class="font-weight-medium">{{ formatSummaryKrw(totalEvaluationAmountKrw) }}</span>
+            <span class="font-weight-medium">{{ formatSummaryKrw(totalEvaluationAmountBase) }}</span>
           </div>
           <div class="summary-row" :class="{ 'summary-row--stacked': summaryStacked }">
             <span class="text-medium-emphasis">수익률</span>
@@ -691,13 +692,13 @@ onUnmounted(() => {
         <!-- 측정 전용 사본 — 화면에 안 보임, 실제로 넘치는지 측정만 함 -->
         <div ref="summaryMeasureRef" class="summary-grid summary-grid--measure" aria-hidden="true">
           <div class="summary-row summary-row--measure">
-            <span>매입금액</span><span>{{ formatSummaryKrw(totalCostKrw) }}</span>
+            <span>매입금액</span><span>{{ formatSummaryKrw(totalCostBase) }}</span>
           </div>
           <div class="summary-row summary-row--measure">
-            <span>평가손익</span><span>{{ formatSummaryProfit(totalProfitAmountKrw) }}</span>
+            <span>평가손익</span><span>{{ formatSummaryProfit(totalProfitAmountBase) }}</span>
           </div>
           <div class="summary-row summary-row--measure">
-            <span>평가금액</span><span>{{ formatSummaryKrw(totalEvaluationAmountKrw) }}</span>
+            <span>평가금액</span><span>{{ formatSummaryKrw(totalEvaluationAmountBase) }}</span>
           </div>
           <div class="summary-row summary-row--measure">
             <span>수익률</span><span>{{ formatPercent(totalProfitRate) }}</span>
@@ -819,7 +820,7 @@ onUnmounted(() => {
           >
             <div
               class="glass-card asset-card pa-2"
-              :class="isCashItem(item) ? 'border-cash-left' : (item.profitAmountKrw ?? 0) >= 0 ? 'border-success-left' : 'border-error-left'"
+              :class="isCashItem(item) ? 'border-cash-left' : (item.profitAmountBase ?? 0) >= 0 ? 'border-success-left' : 'border-error-left'"
             >
               <!-- 상단: 종목명 + 수익률 + 드래그 핸들 -->
               <div class="d-flex justify-space-between align-center mb-1" style="gap: 6px">
@@ -911,17 +912,12 @@ onUnmounted(() => {
               <!-- 현금 카드 -->
               <template v-if="isCashItem(item)">
                 <div class="card-amount text-primary mt-1">
-                  <template v-if="displayCurrency === 'USD'">
-                    {{ displayEval(item.evaluationAmountKrw ?? 0) }}
-                  </template>
-                  <template v-else-if="item.currency === 'USD'">
-                    ${{ formatPrice(item.avg_price * item.quantity, 'USD') }}
+                  <template v-if="displayCurrency === baseCurrency && item.currency !== baseCurrency">
+                    {{ formatNative(item) }}
                     <span class="compact-sep ml-1">·</span>
-                    <span class="compact-label ml-1"
-                      >{{ formatKrw(item.evaluationAmountKrw ?? 0) }}원</span
-                    >
+                    <span class="compact-label ml-1">{{ displayEval(item.evaluationAmountBase ?? 0) }}</span>
                   </template>
-                  <template v-else> {{ formatKrw(item.evaluationAmountKrw ?? 0) }}원 </template>
+                  <template v-else> {{ displayEval(item.evaluationAmountBase ?? 0) }} </template>
                 </div>
               </template>
 
@@ -933,15 +929,15 @@ onUnmounted(() => {
                     <span class="compact-label">{{ item.quantity }}주</span>
                     <span class="compact-sep mx-1">·</span>
                     <span class="card-amount text-primary" style="white-space: nowrap">
-                      {{ displayEval(item.evaluationAmountKrw ?? 0) }}
+                      {{ displayEval(item.evaluationAmountBase ?? 0) }}
                     </span>
                   </div>
                   <div
                     class="card-amount"
-                    :class="(item.profitAmountKrw ?? 0) >= 0 ? 'text-success' : 'text-error'"
+                    :class="(item.profitAmountBase ?? 0) >= 0 ? 'text-success' : 'text-error'"
                     style="flex-shrink: 0; white-space: nowrap"
                   >
-                    {{ displayProfit(item.profitAmountKrw ?? 0) }}
+                    {{ displayProfit(item.profitAmountBase ?? 0) }}
                   </div>
                 </div>
               </template>

@@ -7,7 +7,9 @@ import { getTickerDisplayName } from '@/utils/tickerNames'
 import { recomputeAssetSummary } from '@/services/assetSummary'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
-import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { convertMoney } from '@/utils/portfolioMath'
+import { formatMoneyIn } from '@/utils/numberFormat'
 import { getAssetClass, getMarket, isCash as isCashItem, classMarketToAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
 import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 import TransactionAddDialog from './TransactionAddDialog.vue'
@@ -318,25 +320,18 @@ const grouped = computed(() => {
 
 const usdToKrw = ref(0)
 
-const totalBuy = computed(() => {
-  const krw = totalsData.value
-    .filter((t) => t.transaction_type === 'BUY' && t.portfolios?.currency === 'KRW')
-    .reduce((s, t) => s + t.quantity * t.unit_price, 0)
-  const usd = totalsData.value
-    .filter((t) => t.transaction_type === 'BUY' && t.portfolios?.currency === 'USD')
-    .reduce((s, t) => s + t.quantity * t.unit_price, 0)
-  return krw + usd * (usdToKrw.value || 1)
-})
+// 거래통화별 금액을 기준통화로 환산해 합산
+const sumInBase = (type: string) =>
+  totalsData.value
+    .filter((t) => t.transaction_type === type)
+    .reduce(
+      (s, t) =>
+        s + convertMoney(t.quantity * t.unit_price, t.portfolios?.currency ?? 'KRW', baseCurrency.value, usdToKrw.value || 1),
+      0,
+    )
 
-const totalSell = computed(() => {
-  const krw = totalsData.value
-    .filter((t) => t.transaction_type === 'SELL' && t.portfolios?.currency === 'KRW')
-    .reduce((s, t) => s + t.quantity * t.unit_price, 0)
-  const usd = totalsData.value
-    .filter((t) => t.transaction_type === 'SELL' && t.portfolios?.currency === 'USD')
-    .reduce((s, t) => s + t.quantity * t.unit_price, 0)
-  return krw + usd * (usdToKrw.value || 1)
-})
+const totalBuy = computed(() => sumInBase('BUY'))
+const totalSell = computed(() => sumInBase('SELL'))
 
 
 
@@ -372,9 +367,10 @@ const formatAmount = (t: Transaction) => {
   return formatKrwValue(total)
 }
 
-const formatAmountKrw = (t: Transaction) => {
-  const total = t.quantity * t.unit_price * usdToKrw.value
-  return `(${formatKrwValue(total)})`
+// 기준통화 병기 (거래통화 ≠ 기준통화인 거래 카드 아래에 표시)
+const formatAmountBase = (t: Transaction) => {
+  const total = convertMoney(t.quantity * t.unit_price, t.portfolios?.currency ?? 'KRW', baseCurrency.value, usdToKrw.value)
+  return `(${baseCurrency.value === 'KRW' ? formatKrwValue(total) : formatMoneyIn(total, baseCurrency.value, 'full')})`
 }
 
 const formatUnitPrice = (t: Transaction) => {
@@ -398,23 +394,22 @@ const formatStatAmount = (v: number) => {
   return v.toLocaleString()
 }
 
-// ── 원화/달러 토글 (화면 간 공유) ─────────────────
-const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
-const formatUsd = (krwValue: number) => formatUsdWithRate(krwValue, usdToKrw.value || 1350)
+// ── 통화 토글 (기준통화 ↔ 미리보기, 화면 간 공유) ─────────────────
+const { baseCurrency, displayCurrency, isPreview, money } = useBaseCurrency()
+// stat 카드가 기존 원화 축약 표기(억/만 + '원' 단위)를 쓰는 조건
+const statUsesKrwStyle = computed(() => baseCurrency.value === 'KRW' && displayCurrency.value === 'KRW')
 
+// 기준통화 표시 모드면 거래통화 그대로, 미리보기 모드면 표시통화로 환산
 const formatAmountDisplay = (t: Transaction) => {
-  if (displayCurrency.value !== 'USD') return formatAmount(t)
-  const total = t.quantity * t.unit_price
-  const cur = t.portfolios?.currency ?? 'KRW'
-  const totalKrw = cur === 'USD' ? total * (usdToKrw.value || 1) : total
-  return formatUsd(totalKrw)
+  if (!isPreview.value) return formatAmount(t)
+  const total = convertMoney(t.quantity * t.unit_price, t.portfolios?.currency ?? 'KRW', displayCurrency.value, usdToKrw.value || 1350)
+  return formatMoneyIn(total, displayCurrency.value, 'full')
 }
 
 const formatUnitPriceDisplay = (t: Transaction) => {
-  if (displayCurrency.value !== 'USD') return formatUnitPrice(t)
-  const cur = t.portfolios?.currency ?? 'KRW'
-  const priceKrw = cur === 'USD' ? t.unit_price * (usdToKrw.value || 1) : t.unit_price
-  return formatUsd(priceKrw)
+  if (!isPreview.value) return formatUnitPrice(t)
+  const price = convertMoney(t.unit_price, t.portfolios?.currency ?? 'KRW', displayCurrency.value, usdToKrw.value || 1350)
+  return formatMoneyIn(price, displayCurrency.value, 'full')
 }
 
 const assetTypeColor = (p: Transaction['portfolios'] | null | undefined): string => {
@@ -557,7 +552,7 @@ onUnmounted(() => {
             <span class="stat-label">총 매수</span>
           </div>
           <div class="stat-value">
-            {{ displayCurrency === 'USD' ? formatUsd(totalBuy) : formatStatAmount(totalBuy) }}<span v-if="displayCurrency !== 'USD'" class="stat-unit">원</span>
+            {{ statUsesKrwStyle ? formatStatAmount(totalBuy) : money(totalBuy, usdToKrw || 1350, 'full') }}<span v-if="statUsesKrwStyle" class="stat-unit">원</span>
           </div>
           <div class="text-disabled">
             {{ totalsData.filter((t) => t.transaction_type === 'BUY').length }}건
@@ -569,7 +564,7 @@ onUnmounted(() => {
             <span class="stat-label">총 매도</span>
           </div>
           <div class="stat-value">
-            {{ displayCurrency === 'USD' ? formatUsd(totalSell) : formatStatAmount(totalSell) }}<span v-if="displayCurrency !== 'USD'" class="stat-unit">원</span>
+            {{ statUsesKrwStyle ? formatStatAmount(totalSell) : money(totalSell, usdToKrw || 1350, 'full') }}<span v-if="statUsesKrwStyle" class="stat-unit">원</span>
           </div>
           <div class="text-disabled">
             {{ totalsData.filter((t) => t.transaction_type === 'SELL').length }}건
@@ -720,7 +715,7 @@ onUnmounted(() => {
                       <span class="tx-detail">{{ item.quantity % 1 === 0 ? item.quantity : Number(item.quantity).toFixed(4) }}주 × {{ formatUnitPriceDisplay(item) }}</span>
                       <span class="tx-amount" :class="item.transaction_type === 'BUY' ? 'amount-plus' : 'amount-minus'">
                         {{ item.transaction_type === 'BUY' ? '+' : '-' }}{{ formatAmountDisplay(item) }}
-                        <span v-if="displayCurrency !== 'USD' && item.portfolios?.currency === 'USD' && usdToKrw" class="tx-amount-krw">{{ formatAmountKrw(item) }}</span>
+                        <span v-if="!isPreview && item.portfolios?.currency !== baseCurrency && usdToKrw" class="tx-amount-krw">{{ formatAmountBase(item) }}</span>
                       </span>
                     </div>
                   </div>

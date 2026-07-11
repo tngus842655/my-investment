@@ -134,6 +134,8 @@ VITE_SUPABASE_ANON_KEY=
 - **스낵바 알림**: `src/composables/useSnackbar.ts`의 `showMessage(text, color)` 함수를 직접 import해서 사용 (Pinia 스토어가 아닌 모듈 레벨 ref)
 - **테마**: `src/composables/useAppTheme.ts`의 `useAppTheme()` - localStorage에 `my-investment-theme` 키로 저장, 초기값은 시스템 설정 따라감
 - **티커 한글명**: `src/utils/tickerNames.ts`의 `TICKER_NAMES` 매핑 테이블 - 없는 티커는 그대로 표시
+- **시장/자산군 분류**: `src/config/marketConfig.ts` - 시장(KR/US/JP/CN)·자산군(stock/etf/crypto/cash)·통화 상수의 단일 소스. `asset_type` 한글 리터럴을 직접 비교하지 말고 `getAssetClass`/`getMarket`/`isCash`/`isCrypto` 접근자를 쓸 것
+- **기준통화**: `src/composables/useBaseCurrency.ts` - 모든 금액은 기준통화(`investment_goals.base_currency`) 단위로 집계·저장하고 `money()`/`moneyOr()`로 포맷. 통화 간 환산은 `src/utils/portfolioMath.ts`의 `convertMoney`, 환율은 `src/services/exchangeRateCache.ts`의 `getCachedRate(from, to)`(USD 허브·1시간 캐시)
 - **경로 alias**: `@` → `src/`
 
 ### 상태관리

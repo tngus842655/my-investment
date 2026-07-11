@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
 
-const { displayCurrency, setDisplayCurrency } = useDisplayCurrency()
+const { displayCurrency, setDisplayCurrency } = useBaseCurrency()
 </script>
 
 <template>

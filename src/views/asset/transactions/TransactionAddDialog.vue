@@ -2,7 +2,8 @@
 import { ref, computed, watch } from 'vue'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
-import { getCachedExchangeRate } from '@/services/exchangeRateCache'
+import { getCachedRate } from '@/services/exchangeRateCache'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { getTickerDisplayName, TICKER_NAMES } from '@/utils/tickerNames'
 import { KR_STOCK_NAMES, KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 import { getStockPrice } from '@/services/market'
@@ -15,9 +16,11 @@ import {
   getMarket,
   type AssetClass,
   type MarketCode,
+  type CurrencyCode,
 } from '@/config/marketConfig'
 
 const userDataStore = useUserDataStore()
+const { baseCurrency } = useBaseCurrency()
 
 const krStockItems = Object.entries({ ...KR_STOCK_NAMES, ...KR_ETF_NAMES }).map(([code, name]) => ({
   title: `${name} (${code})`,
@@ -413,9 +416,10 @@ const save = async () => {
       portfolioId = newPortfolio.id
     }
 
-    // USD 거래 시 현재 환율 자동 저장
-    const isUsd = effectiveCurrency.value === 'USD'
-    const exchangeRate = isUsd ? await getCachedExchangeRate() : null
+    // 거래통화 ≠ 기준통화면 거래 시점 환율(거래통화→기준통화)을 기록 (GLOBALIZATION.md 단계 C)
+    const exchangeRate = effectiveCurrency.value !== baseCurrency.value
+      ? await getCachedRate(effectiveCurrency.value as CurrencyCode, baseCurrency.value)
+      : null
 
     if (isEditMode.value && props.initialData) {
       const { error } = await supabase
@@ -426,7 +430,7 @@ const save = async () => {
           unit_price: removeComma(unitPrice.value),
           transaction_date: txDate.value,
           memo: memo.value || null,
-          ...(isUsd && { exchange_rate: exchangeRate }),
+          ...(exchangeRate !== null && { exchange_rate: exchangeRate, base_currency: baseCurrency.value }),
         })
         .eq('id', props.initialData.id)
       if (error) throw error
@@ -441,6 +445,7 @@ const save = async () => {
         transaction_date: txDate.value,
         memo: memo.value || null,
         exchange_rate: exchangeRate,
+        base_currency: baseCurrency.value,
       })
       if (error) throw error
       showMessage('거래내역이 등록되었습니다.', 'success')

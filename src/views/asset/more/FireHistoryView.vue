@@ -5,14 +5,15 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { useUserDataStore } from '@/stores/userData'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
-import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import { convertMoney } from '@/utils/portfolioMath'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
 const userDataStore = useUserDataStore()
 const loading = ref(true)
 const exchangeRate = ref(1350)
-const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
+const { baseCurrency, moneyOr } = useBaseCurrency()
 
 interface HistoryPoint {
   recorded_at: string
@@ -38,13 +39,17 @@ onMounted(async () => {
   try {
     await supabase.rpc('save_daily_asset_snapshot')
     const [historyResult, summary, rate] = await Promise.all([
-      supabase.from('asset_history').select('recorded_at, current_asset, progress_pct').order('recorded_at', { ascending: true }),
+      supabase.from('asset_history').select('recorded_at, current_asset, progress_pct, base_currency').order('recorded_at', { ascending: true }),
       userDataStore.ensureAssetSummary(),
       getCachedExchangeRate(),
     ])
     if (historyResult.error) throw historyResult.error
     exchangeRate.value = rate
-    history.value = historyResult.data ?? []
+    // 기준통화 변경 이전의 스냅샷은 행별 통화가 다를 수 있어 표시 시점 환율로 환산 (GLOBALIZATION.md 2-4 정책)
+    history.value = (historyResult.data ?? []).map((p: HistoryPoint & { base_currency?: string }) => ({
+      ...p,
+      current_asset: Math.round(convertMoney(p.current_asset, p.base_currency ?? 'KRW', baseCurrency.value, rate)),
+    }))
     currentAsset.value = summary?.current_asset ?? 0
   } catch {
     showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
@@ -112,12 +117,12 @@ const pctChange = computed(() => {
   return lastPt.value.progress_pct - firstPt.value.progress_pct
 })
 
-const formatAsset = (v: number) => {
-  if (displayCurrency.value === 'USD') return formatUsdWithRate(v, exchangeRate.value)
-  if (v >= 100_000_000) return `${(v / 100_000_000).toFixed(1)}억`
-  if (v >= 10_000) return `${Math.round(v / 10_000).toLocaleString()}만`
-  return v.toLocaleString()
-}
+const formatAsset = (v: number) =>
+  moneyOr(v, exchangeRate.value, (x) => {
+    if (x >= 100_000_000) return `${(x / 100_000_000).toFixed(1)}억`
+    if (x >= 10_000) return `${Math.round(x / 10_000).toLocaleString()}만`
+    return x.toLocaleString()
+  })
 
 // 차트 터치/클릭으로 툴팁
 const svgRef = ref<SVGSVGElement | null>(null)
