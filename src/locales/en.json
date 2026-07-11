@@ -291,5 +291,48 @@
         "desc": "Financial independence!"
       }
     }
+  },
+  "portfolioAnalysis": {
+    "title": "Portfolio Analysis",
+    "subtitle": "Weight by holding",
+    "emptyTitle": "No holdings yet",
+    "emptyHint": "Add assets to your portfolio",
+    "byType": "By type",
+    "byTicker": "By ticker",
+    "compare": "Compare",
+    "selectToCompare": "Select holdings to compare",
+    "noCompareTargets": "No holdings available to compare",
+    "selectAtLeast2": "Select at least 2 holdings to compare",
+    "priceFailed": "Failed to fetch price",
+    "shareNote": "Weight based on the total value of selected holdings",
+    "totalAsset": "Total assets",
+    "costBasisNote": "Value at cost basis",
+    "maxCompare": "You can select up to {n}."
+  },
+  "assetGrowth": {
+    "title": "Asset Growth Report",
+    "subtitle": "Monthly asset growth trend",
+    "period6M": "6M",
+    "period1Y": "1Y",
+    "periodAll": "All",
+    "empty": "No records yet.",
+    "emptyHint": "Monthly trends appear as asset data accumulates.",
+    "currentAsset": "Current assets",
+    "periodChange": "Period change",
+    "avgMonthly": "Avg monthly growth",
+    "bestMonth": "Best month",
+    "principalVsProfit": "Principal vs Return",
+    "principal": "Principal {amount}",
+    "profit": "Return {amount}",
+    "thisYearGoalChart": "This year {amount}",
+    "currentAssetChart": "Current {amount}",
+    "baseMonth": "Base month",
+    "dailyDetailTitle": "{month} daily detail",
+    "monthlyDetailTitle": "Monthly detail",
+    "tapHint": "👆 Tap a bar to see daily changes",
+    "noMonthData": "No data for this month.",
+    "loadError": "An error occurred while loading data.",
+    "insufficientData": "Not enough data.",
+    "profitInline": "Return {sign}{amount}"
   }
 }

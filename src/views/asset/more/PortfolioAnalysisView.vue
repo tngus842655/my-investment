@@ -11,10 +11,12 @@ import { useDesignTokens } from '@/composables/useDesignTokens'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { getAssetClass, getMarket, isCash, classMarketToAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
 import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
 const { chart } = useDesignTokens()
 const { baseCurrency, displayCurrency, money } = useBaseCurrency()
+const { t } = useI18n()
 
 const loading = ref(true)
 const viewMode = ref<'type' | 'ticker' | 'compare'>('type')
@@ -204,7 +206,7 @@ const toggleCompareTicker = (ticker: string) => {
     return
   }
   if (compareTickers.value.length >= COMPARE_MAX) {
-    showMessage(`최대 ${COMPARE_MAX}개까지 선택할 수 있어요.`, 'error')
+    showMessage(t('portfolioAnalysis.maxCompare', { n: COMPARE_MAX }), 'error')
     return
   }
   compareTickers.value = [...compareTickers.value, ticker]
@@ -259,8 +261,8 @@ const compareRows = computed<CompareRow[]>(() => {
       <div class="d-flex align-center ga-2">
         <v-btn icon="mdi-arrow-left" variant="text" size="small" class="mr-1" style="color: rgb(var(--v-theme-on-surface))" @click="router.back()" />
         <div>
-          <div class="font-weight-bold">포트폴리오 분석</div>
-          <div class="text-medium-emphasis">종목별 비중 분석</div>
+          <div class="font-weight-bold">{{ $t('portfolioAnalysis.title') }}</div>
+          <div class="text-medium-emphasis">{{ $t('portfolioAnalysis.subtitle') }}</div>
         </div>
       </div>
       <CurrencyToggle />
@@ -274,24 +276,24 @@ const compareRows = computed<CompareRow[]>(() => {
     <template v-else-if="segments.length === 0">
       <div class="empty-state">
         <v-icon size="56" color="primary" class="mb-3" style="opacity:0.4">mdi-chart-donut</v-icon>
-        <div class="font-weight-medium mb-1">보유 자산이 없습니다</div>
-        <div class="text-medium-emphasis">포트폴리오에 자산을 추가해 보세요</div>
+        <div class="font-weight-medium mb-1">{{ $t('portfolioAnalysis.emptyTitle') }}</div>
+        <div class="text-medium-emphasis">{{ $t('portfolioAnalysis.emptyHint') }}</div>
       </div>
     </template>
 
     <template v-else>
       <!-- 뷰 모드 토글 -->
       <div class="toggle-row mb-4">
-        <button class="toggle-btn" :class="{ active: viewMode === 'type' }" @click="viewMode = 'type'">자산군별</button>
-        <button class="toggle-btn" :class="{ active: viewMode === 'ticker' }" @click="viewMode = 'ticker'">종목별</button>
-        <button class="toggle-btn" :class="{ active: viewMode === 'compare' }" @click="viewMode = 'compare'; loadAllPrices()">종목 비교</button>
+        <button class="toggle-btn" :class="{ active: viewMode === 'type' }" @click="viewMode = 'type'">{{ $t('portfolioAnalysis.byType') }}</button>
+        <button class="toggle-btn" :class="{ active: viewMode === 'ticker' }" @click="viewMode = 'ticker'">{{ $t('portfolioAnalysis.byTicker') }}</button>
+        <button class="toggle-btn" :class="{ active: viewMode === 'compare' }" @click="viewMode = 'compare'; loadAllPrices()">{{ $t('portfolioAnalysis.compare') }}</button>
       </div>
 
       <!-- 종목 비교 -->
       <template v-if="viewMode === 'compare'">
         <div class="compare-card mb-4">
           <div class="d-flex align-center justify-space-between mb-3">
-            <div class="font-weight-medium">비교할 종목 선택</div>
+            <div class="font-weight-medium">{{ $t('portfolioAnalysis.selectToCompare') }}</div>
             <div class="text-medium-emphasis">{{ compareTickers.length }} / {{ COMPARE_MAX }}</div>
           </div>
           <div class="compare-chip-wrap">
@@ -307,12 +309,12 @@ const compareRows = computed<CompareRow[]>(() => {
 
         <div v-if="holdings.length === 0" class="empty-state">
           <v-icon size="48" color="primary" class="mb-3" style="opacity:0.4">mdi-compare-horizontal</v-icon>
-          <div class="text-medium-emphasis">비교할 수 있는 보유 종목이 없어요</div>
+          <div class="text-medium-emphasis">{{ $t('portfolioAnalysis.noCompareTargets') }}</div>
         </div>
 
         <div v-else-if="compareRows.length < 2" class="empty-state">
           <v-icon size="48" color="primary" class="mb-3" style="opacity:0.4">mdi-compare-horizontal</v-icon>
-          <div class="text-medium-emphasis">비교할 종목을 2개 이상 선택해주세요</div>
+          <div class="text-medium-emphasis">{{ $t('portfolioAnalysis.selectAtLeast2') }}</div>
         </div>
 
         <div v-else class="compare-card">
@@ -333,11 +335,11 @@ const compareRows = computed<CompareRow[]>(() => {
               <v-skeleton-loader type="text" width="140" />
             </template>
             <template v-else-if="row.evalKrw === null">
-              <div class="text-medium-emphasis">현재가 조회 실패</div>
+              <div class="text-medium-emphasis">{{ $t('portfolioAnalysis.priceFailed') }}</div>
             </template>
             <template v-else>
               <div class="mb-1">
-                <span class="text-medium-emphasis">{{ formatMoney(row.evalKrw) }}{{ displayCurrency === 'USD' ? '' : '원' }}</span>
+                <span class="text-medium-emphasis">{{ formatMoney(row.evalKrw) }}{{ displayCurrency === 'USD' ? '' : $t('currency.wonUnit') }}</span>
                 <span
                   v-if="row.profitRate !== null"
                   class="font-weight-medium ml-1"
@@ -353,7 +355,7 @@ const compareRows = computed<CompareRow[]>(() => {
               </div>
             </template>
           </div>
-          <div class="text-medium-emphasis text-center mt-3" style="opacity:0.6">선택한 종목 평가금액 합계를 100%로 한 비중</div>
+          <div class="text-medium-emphasis text-center mt-3" style="opacity:0.6">{{ $t('portfolioAnalysis.shareNote') }}</div>
         </div>
       </template>
 
@@ -382,7 +384,7 @@ const compareRows = computed<CompareRow[]>(() => {
 
               <!-- 중앙 텍스트 -->
               <text x="120" y="108" text-anchor="middle" class="center-label">
-                {{ hovered ? hovered.label : '총 자산' }}
+                {{ hovered ? hovered.label : $t('portfolioAnalysis.totalAsset') }}
               </text>
               <text x="120" y="130" text-anchor="middle" class="center-value">
                 {{ hovered ? hovered.pct.toFixed(1) + '%' : formatMoney(totalKrw) }}
@@ -419,7 +421,7 @@ const compareRows = computed<CompareRow[]>(() => {
           </div>
         </div>
 
-        <div class="text-medium-emphasis text-center mt-3" style="opacity:0.6">취득가 기준 평가금액</div>
+        <div class="text-medium-emphasis text-center mt-3" style="opacity:0.6">{{ $t('portfolioAnalysis.costBasisNote') }}</div>
       </template>
     </template>
   </v-container>

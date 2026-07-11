@@ -8,8 +8,10 @@ import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { convertMoney } from '@/utils/portfolioMath'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
+const { t } = useI18n()
 const userDataStore = useUserDataStore()
 const loading = ref(true)
 const exchangeRate = ref(1350)
@@ -47,7 +49,7 @@ onMounted(async () => {
     currentAssetNow.value = summary?.current_asset ?? 0
     investmentPrincipal.value = summary?.investment_principal ?? 0
   } catch {
-    showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
+    showMessage(t('assetGrowth.loadError'), 'error')
   } finally {
     loading.value = false
   }
@@ -99,9 +101,9 @@ const monthlyData = computed<MonthlyPoint[]>(() => {
 
 const selectedPeriod = ref<'6M' | '1Y' | 'ALL'>('1Y')
 const periods = [
-  { label: '6개월', value: '6M' },
-  { label: '1년', value: '1Y' },
-  { label: '전체', value: 'ALL' },
+  { labelKey: 'assetGrowth.period6M', value: '6M' },
+  { labelKey: 'assetGrowth.period1Y', value: '1Y' },
+  { labelKey: 'assetGrowth.periodAll', value: 'ALL' },
 ] as const
 
 const filteredData = computed(() => {
@@ -237,8 +239,8 @@ function formatFull(v: number) {
           <v-icon>mdi-arrow-left</v-icon>
         </v-btn>
         <div>
-          <div class="font-weight-bold">자산 성장 리포트</div>
-          <div class="text-medium-emphasis">월별 자산 증가 추이</div>
+          <div class="font-weight-bold">{{ $t('assetGrowth.title') }}</div>
+          <div class="text-medium-emphasis">{{ $t('assetGrowth.subtitle') }}</div>
         </div>
       </div>
       <CurrencyToggle />
@@ -251,19 +253,19 @@ function formatFull(v: number) {
     <template v-else>
       <div v-if="monthlyData.length < 1" class="text-center py-12 text-medium-emphasis">
         <v-icon size="48" class="mb-3">mdi-chart-bar</v-icon>
-        <div>아직 기록이 없어요.</div>
-        <div class="mt-1">자산 데이터가 쌓이면 월별 추이를 확인할 수 있어요.</div>
+        <div>{{ $t('assetGrowth.empty') }}</div>
+        <div class="mt-1">{{ $t('assetGrowth.emptyHint') }}</div>
       </div>
 
       <template v-else>
         <!-- 요약 카드 4개 -->
         <div class="summary-grid mb-4">
           <v-card rounded="xl" class="summary-card pa-4 text-center">
-            <div class="text-medium-emphasis mb-1">현재 자산</div>
+            <div class="text-medium-emphasis mb-1">{{ $t('assetGrowth.currentAsset') }}</div>
             <div class="font-weight-bold text-primary">{{ formatShort(latestAsset) }}</div>
           </v-card>
           <v-card rounded="xl" class="summary-card pa-4 text-center">
-            <div class="text-medium-emphasis mb-1">기간 증감</div>
+            <div class="text-medium-emphasis mb-1">{{ $t('assetGrowth.periodChange') }}</div>
             <div
               v-if="totalGrowth"
               class="font-weight-bold"
@@ -274,7 +276,7 @@ function formatFull(v: number) {
             <div v-else class="font-weight-bold text-medium-emphasis">-</div>
           </v-card>
           <v-card rounded="xl" class="summary-card pa-4 text-center">
-            <div class="text-medium-emphasis mb-1">월 평균 증가</div>
+            <div class="text-medium-emphasis mb-1">{{ $t('assetGrowth.avgMonthly') }}</div>
             <div
               class="font-weight-bold"
               :class="avgMonthlyGrowth >= 0 ? 'text-success' : 'text-error'"
@@ -283,7 +285,7 @@ function formatFull(v: number) {
             </div>
           </v-card>
           <v-card rounded="xl" class="summary-card pa-4 text-center">
-            <div class="text-medium-emphasis mb-1">최고 증가월</div>
+            <div class="text-medium-emphasis mb-1">{{ $t('assetGrowth.bestMonth') }}</div>
             <div v-if="bestMonth" class="font-weight-bold text-success">
               {{ bestMonth.label }}
             </div>
@@ -294,9 +296,9 @@ function formatFull(v: number) {
         <!-- 원금 vs 수익 바 -->
         <v-card v-if="investmentPrincipal > 0" rounded="xl" class="pa-4 mb-4">
           <div class="d-flex justify-space-between align-center mb-2">
-            <div class="font-weight-medium">원금 vs 수익</div>
+            <div class="font-weight-medium">{{ $t('assetGrowth.principalVsProfit') }}</div>
             <div :class="profitAmount >= 0 ? 'text-success' : 'text-error'">
-              수익 {{ profitAmount >= 0 ? '+' : '' }}{{ formatShort(profitAmount) }}
+              {{ $t('assetGrowth.profitInline', { sign: profitAmount >= 0 ? '+' : '', amount: formatShort(profitAmount) }) }}
             </div>
           </div>
           <div class="profit-bar-wrap">
@@ -313,11 +315,11 @@ function formatFull(v: number) {
           <div class="d-flex ga-3 mt-2">
             <div class="d-flex align-center ga-1">
               <span class="legend-dot principal" />
-              <span class="text-medium-emphasis">원금 {{ formatShort(investmentPrincipal) }}</span>
+              <span class="text-medium-emphasis">{{ $t('assetGrowth.principal', { amount: formatShort(investmentPrincipal) }) }}</span>
             </div>
             <div class="d-flex align-center ga-1">
               <span class="legend-dot profit" />
-              <span class="text-medium-emphasis">수익 {{ formatShort(Math.max(profitAmount, 0)) }}</span>
+              <span class="text-medium-emphasis">{{ $t('assetGrowth.profit', { amount: formatShort(Math.max(profitAmount, 0)) }) }}</span>
             </div>
           </div>
         </v-card>
@@ -331,14 +333,14 @@ function formatFull(v: number) {
             :class="{ active: selectedPeriod === p.value }"
             @click="selectedPeriod = p.value; tooltip = null; selectedMonth = null"
           >
-            {{ p.label }}
+            {{ $t(p.labelKey) }}
           </button>
         </div>
 
         <!-- 바 차트 -->
         <v-card rounded="xl" class="pa-4 mb-4">
           <div v-if="!chartData || filteredData.length < 1" class="text-center text-medium-emphasis py-6">
-            데이터가 부족합니다.
+            {{ $t('assetGrowth.insufficientData') }}
           </div>
           <svg
             v-else
@@ -370,7 +372,7 @@ function formatFull(v: number) {
               <text
                 :x="PAD.left" :y="chartData.targetY - 4"
                 font-size="8" fill="rgb(var(--v-theme-primary))"
-              >올해 목표 {{ formatMoney(thisYearTarget) }}</text>
+              >{{ $t('assetGrowth.thisYearGoalChart', { amount: formatMoney(thisYearTarget) }) }}</text>
             </template>
             <!-- 현재 자산 (현재 평가 자산) -->
             <text
@@ -378,7 +380,7 @@ function formatFull(v: number) {
               :x="VW - PAD.right" :y="PAD.top - 8"
               text-anchor="end" font-size="8"
               fill="rgba(var(--v-theme-on-surface), 0.5)"
-            >현재 자산 {{ formatMoney(currentAssetNow) }}</text>
+            >{{ $t('assetGrowth.currentAssetChart', { amount: formatMoney(currentAssetNow) }) }}</text>
 
             <!-- 바 -->
             <g
@@ -435,7 +437,7 @@ function formatFull(v: number) {
                 <text
                   x="8" y="42" font-size="9"
                   :fill="tooltip.pt.change > 0 ? 'rgb(var(--v-theme-success))' : tooltip.pt.change < 0 ? 'rgb(var(--v-theme-error))' : 'rgba(var(--v-theme-on-surface),0.4)'"
-                >{{ tooltip.pt.change === 0 ? '기준월' : (tooltip.pt.change > 0 ? '+' : '') + formatShort(tooltip.pt.change) }}</text>
+                >{{ tooltip.pt.change === 0 ? $t('assetGrowth.baseMonth') : (tooltip.pt.change > 0 ? '+' : '') + formatShort(tooltip.pt.change) }}</text>
               </g>
             </template>
           </svg>
@@ -449,11 +451,11 @@ function formatFull(v: number) {
               <v-btn icon size="x-small" variant="text" class="mr-1" @click="selectedMonth = null; tooltip = null">
                 <v-icon size="16">mdi-arrow-left</v-icon>
               </v-btn>
-              <div class="font-weight-medium">{{ selectedMonth }} 일별 상세</div>
+              <div class="font-weight-medium">{{ $t('assetGrowth.dailyDetailTitle', { month: selectedMonth }) }}</div>
             </template>
-            <div v-else class="font-weight-medium">월별 상세</div>
+            <div v-else class="font-weight-medium">{{ $t('assetGrowth.monthlyDetailTitle') }}</div>
             <v-spacer />
-            <div v-if="!selectedMonth" class="text-medium-emphasis">👆 막대를 눌러 일별 증감 보기</div>
+            <div v-if="!selectedMonth" class="text-medium-emphasis">{{ $t('assetGrowth.tapHint') }}</div>
           </div>
 
           <!-- 월별 뷰 -->
@@ -478,7 +480,7 @@ function formatFull(v: number) {
           <!-- 일별 뷰 -->
           <template v-else>
             <div v-if="!dailyDetail.length" class="text-center text-medium-emphasis py-4">
-              해당 월 데이터가 없습니다.
+              {{ $t('assetGrowth.noMonthData') }}
             </div>
             <div
               v-for="(pt, i) in dailyDetail"
