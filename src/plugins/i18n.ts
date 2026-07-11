@@ -21,6 +21,8 @@ const detectInitialLocale = (): SupportedLocale => {
 
 export const i18n = createI18n({
   legacy: false,
+  // 템플릿에서 useI18n() 없이 $t를 직접 쓸 수 있도록 전역 주입 활성화
+  globalInjection: true,
   locale: detectInitialLocale(),
   fallbackLocale: 'ko',
   messages: { ko, en },

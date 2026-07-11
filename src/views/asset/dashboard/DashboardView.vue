@@ -7,12 +7,15 @@ import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel } from '@/utils/tickerNames'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
+import { useI18n } from 'vue-i18n'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { convertMoney } from '@/utils/portfolioMath'
+import { formatYearMonth, formatDuration } from '@/utils/dateFormat'
 import { getAssetClass, getMarket, isCash as isCashItem, isCrypto as isCryptoItem, classMarketToAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
 import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
+const { t } = useI18n()
 const userDataStore = useUserDataStore()
 const loading = ref(true)
 const hideAsset = ref(localStorage.getItem('firepath-hide-asset') === 'true')
@@ -109,14 +112,11 @@ const estimatedDate = computed(() => {
   }
   if (!isFinite(months) || months <= 0) return null
 
-  const years = Math.floor(months / 12)
-  const remainMonths = months % 12
   const date = new Date()
   date.setMonth(date.getMonth() + months)
 
-  const dateStr = `${date.getFullYear()}년 ${date.getMonth() + 1}월`
-  const durationStr =
-    years > 0 ? `${years}년 ${remainMonths > 0 ? remainMonths + '개월' : ''}` : `${months}개월`
+  const dateStr = formatYearMonth(date.getFullYear(), date.getMonth() + 1)
+  const durationStr = formatDuration(months)
 
   return { dateStr, durationStr }
 })
@@ -196,7 +196,7 @@ const loadDashboard = async (force = false) => {
     })
   } catch (error) {
     console.error(error)
-    showMessage('데이터를 불러오는 중 오류가 발생했습니다.', 'error')
+    showMessage(t('dashboard.loadError'), 'error')
   } finally {
     loading.value = false
   }
@@ -215,8 +215,8 @@ onUnmounted(clearPullToRefresh)
     <!-- 헤더 -->
     <div class="d-flex justify-space-between align-center mb-2">
       <div class="d-flex align-center ga-2">
-        <img src="/icons/icon-dashboard.png" class="header-icon" alt="대시보드" />
-        <div class="font-weight-bold text-h6">대시보드</div>
+        <img src="/icons/icon-dashboard.png" class="header-icon" :alt="$t('dashboard.title')" />
+        <div class="font-weight-bold text-h6">{{ $t('dashboard.title') }}</div>
       </div>
       <div class="d-flex align-center ga-1">
         <button class="icon-btn" @click="router.push('/hub')">
@@ -237,11 +237,11 @@ onUnmounted(clearPullToRefresh)
       <!-- 현재 자산 카드 -->
       <div class="glass-card pa-4 mb-2">
         <div class="d-flex align-center justify-space-between mb-1">
-          <div class="field-label">현재 자산</div>
+          <div class="field-label">{{ $t('dashboard.currentAsset') }}</div>
           <div class="d-flex align-center" style="gap: 22px">
             <CurrencyToggle />
             <div v-if="cashTotalKrw > 0" class="cash-toggle-row">
-              <span class="cash-toggle-label">현금 포함</span>
+              <span class="cash-toggle-label">{{ $t('dashboard.includeCash') }}</span>
               <button
                 type="button"
                 class="toggle-switch"
@@ -259,13 +259,13 @@ onUnmounted(clearPullToRefresh)
           </div>
         </div>
         <div class="hero-amount font-weight-bold mb-1 text-center">
-          <span v-if="hideAsset" class="asset-hidden">금액 숨김</span>
+          <span v-if="hideAsset" class="asset-hidden">{{ $t('dashboard.hideAmount') }}</span>
           <span v-else-if="displayedCurrentAsset > 0">{{ fmtFull(displayedCurrentAsset) }}</span>
           <span v-else>-</span>
         </div>
         <div class="text-center" style="color: rgba(var(--v-theme-on-surface), 0.45)">
           <template v-if="displayedCurrentAsset > 0">
-            목표 자산 <span v-if="hideAsset" class="asset-hidden-sm">금액 숨김</span><span v-else>{{ fmtShort(targetAsset) }}</span>
+            {{ $t('dashboard.targetAssetPrefix') }} <span v-if="hideAsset" class="asset-hidden-sm">{{ $t('dashboard.hideAmount') }}</span><span v-else>{{ fmtShort(targetAsset) }}</span>
           </template>
           <template v-else>
             <span
@@ -274,7 +274,7 @@ onUnmounted(clearPullToRefresh)
               @click="router.push('/portfolio')"
             >
               <v-icon size="13">mdi-plus-circle-outline</v-icon>
-              보유자산을 추가하면 현재 자산이 집계됩니다
+              {{ $t('dashboard.addAssetHint') }}
             </span>
           </template>
         </div>
@@ -282,7 +282,7 @@ onUnmounted(clearPullToRefresh)
 
       <!-- FIRE 달성률 카드 (도넛 차트) -->
       <div class="glass-card pa-4 mb-2">
-        <div class="field-label mb-2">FIRE 달성률</div>
+        <div class="field-label mb-2">{{ $t('dashboard.fireRate') }}</div>
         <div class="fire-rate-layout">
           <div class="donut-wrap">
             <svg
@@ -327,17 +327,17 @@ onUnmounted(clearPullToRefresh)
 
           <div class="fire-info">
             <template v-if="isGoalAchieved">
-              <div class="fire-info-main" style="color: rgb(var(--v-theme-primary))">🎉 목표 달성!</div>
-              <div class="fire-info-sub mt-1">목표금액을 재설정하세요</div>
+              <div class="fire-info-main" style="color: rgb(var(--v-theme-primary))">{{ $t('dashboard.goalAchieved') }}</div>
+              <div class="fire-info-sub mt-1">{{ $t('dashboard.resetGoalAmount') }}</div>
             </template>
             <template v-else>
-              <div class="fire-info-sub mb-1">목표까지</div>
-              <div class="fire-info-main">{{ fmtShort(remainingAsset) }} 남음</div>
+              <div class="fire-info-sub mb-1">{{ $t('dashboard.untilGoal') }}</div>
+              <div class="fire-info-main">{{ $t('dashboard.remaining', { amount: fmtShort(remainingAsset) }) }}</div>
               <div class="fire-divider my-2" />
-              <div class="fire-info-sub mb-1">예상 달성일</div>
+              <div class="fire-info-sub mb-1">{{ $t('dashboard.estimatedDate') }}</div>
               <template v-if="estimatedDate">
                 <div class="fire-info-date">{{ estimatedDate.dateStr }}</div>
-                <div class="fire-info-sub mt-1">약 {{ estimatedDate.durationStr }} 후</div>
+                <div class="fire-info-sub mt-1">{{ $t('dashboard.approxAfter', { duration: estimatedDate.durationStr }) }}</div>
               </template>
               <template v-else>
                 <div
@@ -345,7 +345,7 @@ onUnmounted(clearPullToRefresh)
                   style="cursor: pointer; color: rgb(var(--v-theme-primary))"
                   @click="router.push('/goalSettings')"
                 >
-                  수익률을 설정해주세요
+                  {{ $t('dashboard.setReturnRate') }}
                 </div>
               </template>
             </template>
@@ -356,13 +356,13 @@ onUnmounted(clearPullToRefresh)
       <!-- 스탯 2개 -->
       <div class="stat-grid mb-2">
         <div class="stat-card">
-          <div class="stat-label">월 투자금</div>
+          <div class="stat-label">{{ $t('dashboard.monthlyInvestment') }}</div>
           <div class="stat-value">
             {{ monthlyInvestment > 0 ? fmtShort(monthlyInvestment) : '-' }}
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">연평균 수익률</div>
+          <div class="stat-label">{{ $t('dashboard.annualReturn') }}</div>
           <div class="stat-value">
             {{ annualReturn !== null ? annualReturn + '%' : '-' }}
           </div>
@@ -372,12 +372,12 @@ onUnmounted(clearPullToRefresh)
       <!-- 투자 현황 미니 리스트 -->
       <div class="glass-card pa-4">
         <div class="d-flex justify-space-between align-center mb-3">
-          <span class="field-label" style="font-size: 0.8125rem">투자 현황</span>
+          <span class="field-label" style="font-size: 0.8125rem">{{ $t('dashboard.investmentStatus') }}</span>
           <span
             class="see-all"
             @click="router.push('/portfolio')"
           >
-            전체 보기 <v-icon size="13">mdi-chevron-right</v-icon>
+            {{ $t('dashboard.seeAll') }} <v-icon size="13">mdi-chevron-right</v-icon>
           </span>
         </div>
 
@@ -385,7 +385,7 @@ onUnmounted(clearPullToRefresh)
         <template v-if="topPortfolios.length === 0">
           <div class="text-center py-6">
             <v-icon size="36" color="primary" style="opacity: 0.35" class="mb-2">mdi-chart-line-variant</v-icon>
-            <div class="text-medium-emphasis">보유 자산이 없습니다</div>
+            <div class="text-medium-emphasis">{{ $t('dashboard.noAssets') }}</div>
           </div>
         </template>
 
@@ -408,7 +408,7 @@ onUnmounted(clearPullToRefresh)
               <!-- 종목명 -->
               <div class="mini-info-text">
                 <div class="mini-ticker">
-                  <template v-if="isCashItem(item)">보유현금</template>
+                  <template v-if="isCashItem(item)">{{ $t('dashboard.cashHolding') }}</template>
                   <template v-else-if="getTickerLabel(item.ticker).showTicker">
                     {{ getTickerLabel(item.ticker).name }}
                     <span v-if="item.currency === 'USD'" class="mini-ticker-sub">{{ item.ticker }}</span>
@@ -438,11 +438,11 @@ onUnmounted(clearPullToRefresh)
       <v-card-title class="d-flex align-center ga-2 pt-5 px-5">
         <v-icon color="primary" size="20">mdi-bullhorn-outline</v-icon>
         <span class="font-weight-bold">{{ latestNotice.title }}</span>
-        <v-chip v-if="latestNotice.is_test" size="x-small" color="warning" variant="tonal">테스트</v-chip>
+        <v-chip v-if="latestNotice.is_test" size="x-small" color="warning" variant="tonal">{{ $t('dashboard.noticeTest') }}</v-chip>
       </v-card-title>
       <v-card-text class="px-5 notice-popup-content">{{ latestNotice.content }}</v-card-text>
       <v-card-actions class="px-5 pb-4">
-        <v-btn color="primary" variant="flat" rounded="lg" block @click="closeNoticeDialog">확인</v-btn>
+        <v-btn color="primary" variant="flat" rounded="lg" block @click="closeNoticeDialog">{{ $t('common.confirm') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

@@ -100,11 +100,11 @@ watch(() => route.path, async () => {
 })
 
 const tabs = [
-  { label: '홈', icon: null, activeIcon: null, route: '/dashboard', img: '/icons/icon-dashboard.png' },
-  { label: '자산', icon: null, activeIcon: null, route: '/portfolio', img: '/icons/icon-asset.png' },
-  { label: '기록', icon: null, activeIcon: null, route: '/transactions', img: '/icons/icon-record.png' },
-  { label: '예측', icon: null, activeIcon: null, route: '/analysis', img: '/icons/icon-predict.png' },
-  { label: '더보기', icon: 'mdi-dots-horizontal', activeIcon: 'mdi-dots-horizontal', route: '/more', img: '/icons/icon-more.png' },
+  { labelKey: 'nav.home', icon: null, activeIcon: null, route: '/dashboard', img: '/icons/icon-dashboard.png' },
+  { labelKey: 'nav.assets', icon: null, activeIcon: null, route: '/portfolio', img: '/icons/icon-asset.png' },
+  { labelKey: 'nav.records', icon: null, activeIcon: null, route: '/transactions', img: '/icons/icon-record.png' },
+  { labelKey: 'nav.forecast', icon: null, activeIcon: null, route: '/analysis', img: '/icons/icon-predict.png' },
+  { labelKey: 'nav.more', icon: 'mdi-dots-horizontal', activeIcon: 'mdi-dots-horizontal', route: '/more', img: '/icons/icon-more.png' },
 ]
 
 const isActive = (tabRoute: string) => route.path === tabRoute
@@ -143,11 +143,11 @@ const isActive = (tabRoute: string) => route.path === tabRoute
         @click="router.push(tab.route)"
       >
         <div class="tab-icon-wrap" :class="{ 'tab-icon-active': isActive(tab.route) }" style="position:relative">
-          <img v-if="tab.img" :src="tab.img" class="tab-png-icon" :class="{ 'tab-png-active': isActive(tab.route) }" :alt="tab.label" />
+          <img v-if="tab.img" :src="tab.img" class="tab-png-icon" :class="{ 'tab-png-active': isActive(tab.route) }" :alt="$t(tab.labelKey)" />
           <v-icon v-else size="26">{{ isActive(tab.route) ? tab.activeIcon : tab.icon }}</v-icon>
           <span v-if="tab.route === '/more' && unreadFeedbackCount > 0" class="nav-unread-dot" />
         </div>
-        <span class="bottom-nav-label">{{ tab.label }}</span>
+        <span class="bottom-nav-label">{{ $t(tab.labelKey) }}</span>
       </button>
     </nav>
   </div>

@@ -6,5 +6,42 @@
     "edit": "수정",
     "confirm": "확인",
     "back": "뒤로"
+  },
+  "nav": {
+    "home": "홈",
+    "assets": "자산",
+    "records": "기록",
+    "forecast": "예측",
+    "more": "더보기"
+  },
+  "date": {
+    "yearMonth": "{year}년 {month}월",
+    "durationYM": "{years}년 {months}개월",
+    "durationY": "{years}년",
+    "durationM": "{months}개월"
+  },
+  "dashboard": {
+    "title": "대시보드",
+    "currentAsset": "현재 자산",
+    "includeCash": "현금 포함",
+    "hideAmount": "금액 숨김",
+    "targetAssetPrefix": "목표 자산",
+    "addAssetHint": "보유자산을 추가하면 현재 자산이 집계됩니다",
+    "fireRate": "FIRE 달성률",
+    "goalAchieved": "🎉 목표 달성!",
+    "resetGoalAmount": "목표금액을 재설정하세요",
+    "untilGoal": "목표까지",
+    "remaining": "{amount} 남음",
+    "estimatedDate": "예상 달성일",
+    "approxAfter": "약 {duration} 후",
+    "setReturnRate": "수익률을 설정해주세요",
+    "monthlyInvestment": "월 투자금",
+    "annualReturn": "연평균 수익률",
+    "investmentStatus": "투자 현황",
+    "seeAll": "전체 보기",
+    "noAssets": "보유 자산이 없습니다",
+    "cashHolding": "보유현금",
+    "loadError": "데이터를 불러오는 중 오류가 발생했습니다.",
+    "noticeTest": "테스트"
   }
 }

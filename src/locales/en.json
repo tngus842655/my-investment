@@ -6,5 +6,42 @@
     "edit": "Edit",
     "confirm": "Confirm",
     "back": "Back"
+  },
+  "nav": {
+    "home": "Home",
+    "assets": "Assets",
+    "records": "Records",
+    "forecast": "Forecast",
+    "more": "More"
+  },
+  "date": {
+    "yearMonth": "{monthShort} {year}",
+    "durationYM": "{years}y {months}mo",
+    "durationY": "{years}y",
+    "durationM": "{months}mo"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "currentAsset": "Current Assets",
+    "includeCash": "Include cash",
+    "hideAmount": "Hidden",
+    "targetAssetPrefix": "Target",
+    "addAssetHint": "Add holdings to see your current assets",
+    "fireRate": "FIRE Progress",
+    "goalAchieved": "🎉 Goal reached!",
+    "resetGoalAmount": "Set a new target amount",
+    "untilGoal": "To goal",
+    "remaining": "{amount} left",
+    "estimatedDate": "Est. completion",
+    "approxAfter": "in ~{duration}",
+    "setReturnRate": "Please set a return rate",
+    "monthlyInvestment": "Monthly Investment",
+    "annualReturn": "Annual Return",
+    "investmentStatus": "Holdings",
+    "seeAll": "See all",
+    "noAssets": "No holdings yet",
+    "cashHolding": "Cash",
+    "loadError": "An error occurred while loading data.",
+    "noticeTest": "Test"
   }
 }
