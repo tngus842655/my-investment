@@ -9,6 +9,7 @@ import { formatShortMoney } from '@/utils/numberFormat'
 import { showMessage } from '@/composables/useSnackbar'
 import { useDesignTokens } from '@/composables/useDesignTokens'
 import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import { getAssetClass, getMarket, isCash, classMarketToAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
 import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
@@ -21,10 +22,16 @@ const hoveredKey = ref<string | null>(null)
 interface PortfolioRow {
   ticker: string
   asset_type: string
+  asset_class?: AssetClass
+  market?: MarketCode | null
   currency: 'KRW' | 'USD'
   avg_price: number
   quantity: number
 }
+
+// 유형별 보기의 그룹 키/라벨 (테마 typeColors 키와 동일한 기존 한글 명칭 유지)
+const assetTypeLabel = (p: PortfolioRow): string =>
+  classMarketToAssetType(getAssetClass(p), getMarket(p))
 const portfolioRows = ref<PortfolioRow[]>([])
 const exchangeRate = ref(1350)
 const formatMoney = (v: number) =>
@@ -67,14 +74,14 @@ function buildPath(start: number, end: number): string {
 }
 
 const segments = computed<Seg[]>(() => {
-  const map = new Map<string, { label: string; valueKrw: number; assetType: string }>()
+  const map = new Map<string, { label: string; valueKrw: number }>()
   for (const p of portfolioRows.value) {
-    const key = viewMode.value === 'type' ? p.asset_type : p.ticker
-    const label = viewMode.value === 'type' ? p.asset_type : getTickerDisplayName(p.ticker)
+    const key = viewMode.value === 'type' ? assetTypeLabel(p) : p.ticker
+    const label = viewMode.value === 'type' ? assetTypeLabel(p) : getTickerDisplayName(p.ticker)
     const val = p.currency === 'USD' ? p.avg_price * p.quantity * exchangeRate.value : p.avg_price * p.quantity
     const existing = map.get(key)
     if (existing) existing.valueKrw += val
-    else map.set(key, { label, valueKrw: val, assetType: p.asset_type })
+    else map.set(key, { label, valueKrw: val })
   }
 
   const total = [...map.values()].reduce((s, v) => s + v.valueKrw, 0)
@@ -134,7 +141,7 @@ const COMPARE_MAX = 4
 interface Holding {
   ticker: string
   label: string
-  assetType: string
+  assetClass: AssetClass
   currency: 'KRW' | 'USD'
   quantity: number
   costKrw: number
@@ -142,22 +149,22 @@ interface Holding {
 
 // 계좌가 달라도 같은 종목이면 수량·원가를 합산해 하나로 집계 (현금 제외)
 const holdings = computed<Holding[]>(() => {
-  const map = new Map<string, { quantity: number; costNative: number; currency: 'KRW' | 'USD'; assetType: string }>()
+  const map = new Map<string, { quantity: number; costNative: number; currency: 'KRW' | 'USD'; assetClass: AssetClass }>()
   for (const p of portfolioRows.value) {
-    if (p.asset_type === '현금') continue
+    if (isCash(p)) continue
     const existing = map.get(p.ticker)
     const costNative = p.avg_price * p.quantity
     if (existing) {
       existing.quantity += p.quantity
       existing.costNative += costNative
     } else {
-      map.set(p.ticker, { quantity: p.quantity, costNative, currency: p.currency, assetType: p.asset_type })
+      map.set(p.ticker, { quantity: p.quantity, costNative, currency: p.currency, assetClass: getAssetClass(p) })
     }
   }
   return [...map.entries()].map(([ticker, v]) => ({
     ticker,
     label: getTickerDisplayName(ticker),
-    assetType: v.assetType,
+    assetClass: v.assetClass,
     currency: v.currency,
     quantity: v.quantity,
     // 암호화폐+KRW는 avg_price가 사용자가 직접 입력한 KRW 원가라 변환이 필요 없음
@@ -219,7 +226,7 @@ const compareRows = computed<CompareRow[]>(() => {
     const price = priceCache.value[ticker]
     const hasPrice = price !== undefined && price > 0
     // 암호화폐 + KRW: 시세 API가 USD(바이낸스)로 반환하므로 환율 곱해서 KRW 현재가로 변환
-    const isCryptoKrw = h.assetType === '암호화폐' && h.currency === 'KRW'
+    const isCryptoKrw = h.assetClass === 'crypto' && h.currency === 'KRW'
     const priceInCurrency = hasPrice ? (isCryptoKrw ? price * exchangeRate.value : price) : null
     const evaluationAmount = priceInCurrency !== null ? priceInCurrency * h.quantity : null
     const evalKrw = evaluationAmount !== null

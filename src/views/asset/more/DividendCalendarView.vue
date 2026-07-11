@@ -6,6 +6,7 @@ import { showMessage } from '@/composables/useSnackbar'
 import { getTickerDisplayName } from '@/utils/tickerNames'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import { isCash, isCrypto, type AssetClass, type MarketCode } from '@/config/marketConfig'
 import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
@@ -15,6 +16,8 @@ const { displayCurrency, formatUsd: formatUsdWithRate } = useDisplayCurrency()
 interface Portfolio {
   ticker: string
   asset_type: string
+  asset_class?: AssetClass
+  market?: MarketCode | null
   currency: string
   quantity: number
 }
@@ -55,7 +58,7 @@ const loadData = async () => {
 
     const [portRes, rate] = await Promise.all([
       supabase.from('portfolios')
-        .select('ticker, asset_type, currency, quantity')
+        .select('ticker, asset_type, asset_class, market, currency, quantity')
         .eq('user_id', user.id),
       getCachedExchangeRate(),
     ])
@@ -67,7 +70,7 @@ const loadData = async () => {
     // 현금 제외, 배당 가능 종목만. 계좌가 달라도 같은 종목이면 수량을 합산해 하나로 집계
     const targetsByTicker = new Map<string, Portfolio>()
     for (const p of portfolios.value) {
-      if (p.asset_type === '현금' || p.asset_type === '암호화폐') continue
+      if (isCash(p) || isCrypto(p)) continue
       const existing = targetsByTicker.get(p.ticker)
       if (existing) existing.quantity += p.quantity
       else targetsByTicker.set(p.ticker, { ...p })
@@ -350,7 +353,7 @@ function formatAmountPerShare(ev: CalendarEvent) {
 const noDividendTickers = computed(() => {
   const withDividend = new Set(calendarEvents.value.map((e) => e.ticker))
   const tickers = portfolios.value
-    .filter((p) => p.asset_type !== '현금' && p.asset_type !== '암호화폐' && !withDividend.has(p.ticker))
+    .filter((p) => !isCash(p) && !isCrypto(p) && !withDividend.has(p.ticker))
     .map((p) => p.ticker)
   return [...new Set(tickers)]
 })
@@ -395,7 +398,7 @@ const refreshData = async () => {
     </div>
 
     <template v-else>
-      <div v-if="!portfolios.filter(p => p.asset_type !== '현금' && p.asset_type !== '암호화폐').length"
+      <div v-if="!portfolios.filter(p => !isCash(p) && !isCrypto(p)).length"
         class="text-center py-12 text-medium-emphasis">
         <v-icon size="48" class="mb-3">mdi-calendar-blank</v-icon>
         <div>보유 종목이 없어요.</div>

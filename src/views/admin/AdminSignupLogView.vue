@@ -7,6 +7,7 @@ import { isAdminEmail } from '@/config/admin'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerDisplayName } from '@/utils/tickerNames'
 import { getStockPrice } from '@/services/market'
+import { isCrypto as isCryptoItem } from '@/config/marketConfig'
 const router = useRouter()
 const loading = ref(true)
 const isAdmin = ref(false)
@@ -34,6 +35,8 @@ interface PortfolioItem {
   avg_price: number
   currency: string
   asset_type: string
+  asset_class?: import('@/config/marketConfig').AssetClass
+  market?: import('@/config/marketConfig').MarketCode | null
   evaluationAmountKrw?: number
   profitRate?: number | null
 }
@@ -86,7 +89,7 @@ const openDetail = async (log: SignupLog) => {
       const [goalRes, assetRes, portRes, accessRes, rate] = await Promise.all([
         supabase.from('investment_goals').select('target_asset, monthly_investment, annual_return').eq('user_id', userId).maybeSingle(),
         supabase.from('asset_summary').select('current_asset, investment_principal').eq('user_id', userId).maybeSingle(),
-        supabase.from('portfolios').select('ticker, quantity, avg_price, currency, asset_type').eq('user_id', userId).order('sort_order'),
+        supabase.from('portfolios').select('ticker, quantity, avg_price, currency, asset_type, asset_class, market').eq('user_id', userId).order('sort_order'),
         supabase.from('access_log').select('accessed_at').eq('user_id', userId).order('accessed_at', { ascending: true }),
         getCachedExchangeRate(),
       ])
@@ -111,7 +114,7 @@ const openDetail = async (log: SignupLog) => {
         const isCash = p.ticker === 'CASH_KRW' || p.ticker === 'CASH_USD'
         const rawPrice = isCash ? null : prices[i]
         // 암호화폐 + KRW: Finnhub은 USD로 반환하므로 환율 곱해서 KRW 현재가로 변환
-        const isCryptoKrw = p.asset_type === '암호화폐' && p.currency === 'KRW'
+        const isCryptoKrw = isCryptoItem(p) && p.currency === 'KRW'
         const currentPrice = rawPrice ? (isCryptoKrw ? rawPrice * rate : rawPrice) : null
         const price = currentPrice ?? p.avg_price
         const evalAmount = price * p.quantity

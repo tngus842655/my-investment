@@ -8,6 +8,7 @@ import { recomputeAssetSummary } from '@/services/assetSummary'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
 import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import { getAssetClass, getMarket, isCash as isCashItem, classMarketToAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
 import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 import TransactionAddDialog from './TransactionAddDialog.vue'
 
@@ -27,6 +28,8 @@ interface Transaction {
   portfolios: {
     ticker: string
     asset_type: string
+    asset_class?: AssetClass
+    market?: MarketCode | null
     currency: string
     account_name: string | null
   }
@@ -125,7 +128,7 @@ let userId = ''
 async function buildQuery(from: number, to: number) {
   let q = supabase
     .from('transactions')
-    .select('*, portfolios(ticker, asset_type, currency, account_name)')
+    .select('*, portfolios(ticker, asset_type, asset_class, market, currency, account_name)')
     .eq('user_id', userId)
     .neq('transaction_type', 'INITIAL')
     .order('transaction_date', { ascending: false })
@@ -164,7 +167,7 @@ const loadPage = async (pageNum: number) => {
     if (error) throw error
 
     const rows = (data ?? []).filter(
-      (tx) => (tx.portfolios as { asset_type: string } | null)?.asset_type !== '현금',
+      (tx) => !tx.portfolios || !isCashItem(tx.portfolios),
     ) as Transaction[]
 
     if (pageNum === 0) transactions.value = rows
@@ -414,9 +417,19 @@ const formatUnitPriceDisplay = (t: Transaction) => {
   return formatUsd(priceKrw)
 }
 
-const assetTypeColor = (type: string) =>
-  ({ 국내주식: 'blue', 해외주식: 'purple', ETF: 'teal', 암호화폐: 'amber', 현금: 'green' })[type] ??
-  'grey'
+const assetTypeColor = (p: Transaction['portfolios'] | null | undefined): string => {
+  if (!p) return 'grey'
+  switch (getAssetClass(p)) {
+    case 'stock': return getMarket(p) === 'KR' ? 'blue' : 'purple'
+    case 'etf': return 'teal'
+    case 'crypto': return 'amber'
+    case 'cash': return 'green'
+    default: return 'grey'
+  }
+}
+
+const assetTypeLabel = (p: Transaction['portfolios'] | null | undefined): string =>
+  p ? classMarketToAssetType(getAssetClass(p), getMarket(p)) : ''
 
 // ── 스와이프 ──────────────────────────────────────
 const onSwipeTouchStart = (e: TouchEvent) => {
@@ -689,7 +702,7 @@ onUnmounted(() => {
                       <div class="d-flex align-center ga-1 flex-grow-1 min-width-0">
                         <span class="tx-name">{{ getTickerDisplayName(item.portfolios?.ticker) }}</span>
                         <span v-if="getTickerDisplayName(item.portfolios?.ticker) !== item.portfolios?.ticker" class="tx-ticker flex-shrink-0">{{ item.portfolios?.ticker }}</span>
-                        <span class="asset-badge flex-shrink-0" :style="`color: rgb(var(--v-theme-${assetTypeColor(item.portfolios?.asset_type)}))`">{{ item.portfolios?.asset_type }}</span>
+                        <span class="asset-badge flex-shrink-0" :style="`color: rgb(var(--v-theme-${assetTypeColor(item.portfolios)}))`">{{ assetTypeLabel(item.portfolios) }}</span>
                         <span v-if="item.portfolios?.account_name && item.portfolios.account_name !== '미지정'" class="account-tag flex-shrink-0">{{ truncateAccount(item.portfolios.account_name) }}</span>
                         <span class="tx-type-badge flex-shrink-0" :class="item.transaction_type === 'BUY' ? 'badge-buy' : 'badge-sell'">{{ item.transaction_type === 'BUY' ? '매수' : '매도' }}</span>
                       </div>

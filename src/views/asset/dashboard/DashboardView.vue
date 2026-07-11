@@ -9,6 +9,7 @@ import { getTickerLabel } from '@/utils/tickerNames'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
 import { useDisplayCurrency } from '@/composables/useDisplayCurrency'
+import { getAssetClass, getMarket, isCash as isCashItem, isCrypto as isCryptoItem, classMarketToAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
 import CurrencyToggle from '@/components/common/CurrencyToggle.vue'
 
 const router = useRouter()
@@ -62,6 +63,8 @@ interface MiniPortfolio {
   id: string
   ticker: string
   asset_type: string
+  asset_class?: AssetClass
+  market?: MarketCode | null
   currency: string
   quantity: number
   avg_price: number
@@ -116,8 +119,18 @@ const estimatedDate = computed(() => {
   return { dateStr, durationStr }
 })
 
-const assetTypeColor = (type: string) =>
-  ({ 국내주식: 'blue', 해외주식: 'purple', ETF: 'teal', 암호화폐: 'amber', 현금: 'green' })[type] ?? 'grey'
+const assetTypeColor = (item: MiniPortfolio): string => {
+  switch (getAssetClass(item)) {
+    case 'stock': return getMarket(item) === 'KR' ? 'blue' : 'purple'
+    case 'etf': return 'teal'
+    case 'crypto': return 'amber'
+    case 'cash': return 'green'
+    default: return 'grey'
+  }
+}
+
+const assetTypeLabel = (item: MiniPortfolio): string =>
+  classMarketToAssetType(getAssetClass(item), getMarket(item))
 
 // ── 공지사항 팝업 (신규 공지 최초 1회 노출, 유저별로 구분) ─────────────
 const LAST_SEEN_NOTICE_KEY_PREFIX = 'firepath-last-seen-notice-id'
@@ -167,7 +180,7 @@ const loadDashboard = async (force = false) => {
     currentAsset.value = summary?.current_asset ?? 0
     exchangeRate.value = rate
 
-    const cashRows = portfolios.filter((p) => p.asset_type === '현금')
+    const cashRows = portfolios.filter((p) => isCashItem(p))
     cashTotalKrw.value = Math.round(
       cashRows.reduce((sum, c) => {
         const amount = c.avg_price * c.quantity
@@ -385,16 +398,16 @@ onUnmounted(clearPullToRefresh)
           >
             <div class="d-flex align-center ga-2 mini-info-row">
               <!-- 아이콘 -->
-              <div class="mini-icon" :class="`bg-${assetTypeColor(item.asset_type)}`">
+              <div class="mini-icon" :class="`bg-${assetTypeColor(item)}`">
                 <v-icon size="14" color="white">
-                  {{ item.asset_type === '현금' ? 'mdi-cash' : item.asset_type === '암호화폐' ? 'mdi-bitcoin' : 'mdi-chart-line' }}
+                  {{ isCashItem(item) ? 'mdi-cash' : isCryptoItem(item) ? 'mdi-bitcoin' : 'mdi-chart-line' }}
                 </v-icon>
               </div>
 
               <!-- 종목명 -->
               <div class="mini-info-text">
                 <div class="mini-ticker">
-                  <template v-if="item.asset_type === '현금'">보유현금</template>
+                  <template v-if="isCashItem(item)">보유현금</template>
                   <template v-else-if="getTickerLabel(item.ticker).showTicker">
                     {{ getTickerLabel(item.ticker).name }}
                     <span v-if="item.currency === 'USD'" class="mini-ticker-sub">{{ item.ticker }}</span>
@@ -402,7 +415,7 @@ onUnmounted(clearPullToRefresh)
                   <template v-else>{{ item.ticker }}</template>
                 </div>
                 <div class="mini-asset-type">
-                  {{ item.asset_type }}
+                  {{ assetTypeLabel(item) }}
                   <span v-if="item.account_name && item.account_name !== '미지정'" class="mini-account-tag">{{ item.account_name }}</span>
                 </div>
               </div>
