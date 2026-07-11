@@ -151,8 +151,8 @@
     "diffShorter": "{n}개월 단축({date})",
     "diffLonger": "{n}개월 증가({date})",
     "tipTitle": "FIRE Tip",
-    "tipInvest": "월 투자금을 <strong>{amount}</strong> 늘리면 목표 달성이 약 <strong>{duration}</strong> 빨라집니다.",
-    "tipRate": "연평균 수익률이 <strong>1%</strong> 높아지면 목표 달성이 약 <strong>{duration}</strong> 앞당겨집니다.",
+    "tipInvest": "월 투자금을 {amount} 늘리면 목표 달성이 약 {duration} 빨라집니다.",
+    "tipRate": "연평균 수익률이 1% 높아지면 목표 달성이 약 {duration} 앞당겨집니다.",
     "yearlyTitle": "연도별 예상자산 추이",
     "thisYearGoal": "올해 목표 {amount}",
     "totalFire": "전체 FIRE {rate}%",
@@ -570,7 +570,6 @@
     "logoutConfirm": "정말 로그아웃 하시겠습니까?",
     "deleteAccount": "회원탈퇴",
     "deleteConfirmTitle": "정말 탈퇴하시겠습니까?",
-    "deleteConfirmBody": "탈퇴 시 계정과 연결된 모든 데이터<br>(투자 목표, 포트폴리오, 거래 내역 등)가<br><strong>영구적으로 삭제</strong>되며 복구할 수 없습니다.",
     "continue": "계속",
     "finalConfirmTitle": "최종 확인",
     "passwordConfirmBody": "본인 확인을 위해 비밀번호를 입력해주세요.",
@@ -585,7 +584,11 @@
       "wrongPassword": "비밀번호가 올바르지 않습니다.",
       "deleted": "계정이 삭제되었습니다.",
       "deleteError": "계정 삭제 중 오류가 발생했습니다."
-    }
+    },
+    "deleteConfirmLine1": "탈퇴 시 계정과 연결된 모든 데이터",
+    "deleteConfirmLine2": "(투자 목표, 포트폴리오, 거래 내역 등)가",
+    "deleteConfirmPermanent": "영구적으로 삭제",
+    "deleteConfirmLine3": "되며 복구할 수 없습니다."
   },
   "changePassword": {
     "title": "비밀번호 변경",

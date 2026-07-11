@@ -238,12 +238,15 @@ const fireTip = computed(() => {
   // 더 임팩트 큰 팁 선택
   if (investDiff !== null && investDiff > 0 && (rateDiff === null || investDiff >= rateDiff)) {
     return {
-      body: t('analysis.tipInvest', { amount: formatMoney(INVEST_BUMP), duration: formatDuration(investDiff) }),
+      key: 'analysis.tipInvest',
+      amount: formatMoney(INVEST_BUMP),
+      duration: formatDuration(investDiff),
     }
   }
   if (rateDiff !== null && rateDiff > 0) {
     return {
-      body: t('analysis.tipRate', { duration: formatDuration(rateDiff) }),
+      key: 'analysis.tipRate',
+      duration: formatDuration(rateDiff),
     }
   }
   return null
@@ -497,7 +500,10 @@ onUnmounted(clearPullToRefresh)
       <div v-if="fireTip" class="tip-card mb-3">
         <span class="tip-emoji">💡</span>
         <span class="tip-title">{{ $t('analysis.tipTitle') }}</span>
-        <span class="tip-body ml-1" v-html="fireTip.body"></span>
+        <i18n-t :keypath="fireTip.key" tag="span" class="tip-body ml-1" scope="global">
+          <template v-if="'amount' in fireTip" #amount><strong>{{ fireTip.amount }}</strong></template>
+          <template #duration><strong>{{ fireTip.duration }}</strong></template>
+        </i18n-t>
       </div>
 
       <!-- 연도별 예상자산 추이 -->

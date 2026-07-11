@@ -229,7 +229,11 @@ onMounted(async () => {
         <v-card-text class="text-center">
           <v-icon color="error" size="40" class="mb-3">mdi-alert-circle-outline</v-icon>
           <div class="mb-2 font-weight-medium">{{ $t('hub.deleteConfirmTitle') }}</div>
-          <div class="text-medium-emphasis" v-html="$t('hub.deleteConfirmBody')"></div>
+          <div class="text-medium-emphasis">
+            {{ $t('hub.deleteConfirmLine1') }}<br>
+            {{ $t('hub.deleteConfirmLine2') }}<br>
+            <strong>{{ $t('hub.deleteConfirmPermanent') }}</strong>{{ $t('hub.deleteConfirmLine3') }}
+          </div>
         </v-card-text>
         <v-divider />
         <v-card-actions>

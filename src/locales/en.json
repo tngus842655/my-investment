@@ -151,8 +151,8 @@
     "diffShorter": "{n}mo sooner ({date})",
     "diffLonger": "{n}mo later ({date})",
     "tipTitle": "FIRE Tip",
-    "tipInvest": "Investing <strong>{amount}</strong> more per month brings your goal ~<strong>{duration}</strong> closer.",
-    "tipRate": "A <strong>1%</strong> higher annual return brings your goal ~<strong>{duration}</strong> closer.",
+    "tipInvest": "Investing {amount} more per month brings your goal ~{duration} closer.",
+    "tipRate": "A 1% higher annual return brings your goal ~{duration} closer.",
     "yearlyTitle": "Projected Assets by Year",
     "thisYearGoal": "This year {amount}",
     "totalFire": "Total FIRE {rate}%",
@@ -570,7 +570,6 @@
     "logoutConfirm": "Are you sure you want to log out?",
     "deleteAccount": "Delete Account",
     "deleteConfirmTitle": "Are you sure you want to delete your account?",
-    "deleteConfirmBody": "All data linked to your account<br>(goals, portfolio, transactions, etc.) will be<br><strong>permanently deleted</strong> and cannot be recovered.",
     "continue": "Continue",
     "finalConfirmTitle": "Final Confirmation",
     "passwordConfirmBody": "Please enter your password to confirm.",
@@ -585,7 +584,11 @@
       "wrongPassword": "Incorrect password.",
       "deleted": "Account deleted.",
       "deleteError": "An error occurred while deleting your account."
-    }
+    },
+    "deleteConfirmLine1": "All data linked to your account",
+    "deleteConfirmLine2": "(goals, portfolio, transactions, etc.) will be",
+    "deleteConfirmPermanent": "permanently deleted",
+    "deleteConfirmLine3": " and cannot be recovered."
   },
   "changePassword": {
     "title": "Change Password",
