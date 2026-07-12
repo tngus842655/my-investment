@@ -246,7 +246,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   cursor: pointer;
   color: rgba(var(--v-theme-on-surface), 0.35);
   transition: color 0.15s ease;
-  padding: 0 4px 8px;
+  padding: 6px 4px;
 }
 
 .bottom-nav-item.active {
