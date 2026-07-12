@@ -199,7 +199,7 @@ const formatScenarioDiff = (months: number | null, baseMonths: number | null, is
   if (months === 0) return t('analysis.reached')
   const d = new Date()
   d.setMonth(d.getMonth() + months)
-  const dateStr = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}`
+  const dateStr = formatYearMonth(d.getFullYear(), d.getMonth() + 1)
   const diff = Math.abs(baseMonths - months)
   return t(isOptimistic ? 'analysis.diffShorter' : 'analysis.diffLonger', { n: diff, date: dateStr })
 }
