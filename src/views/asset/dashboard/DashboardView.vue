@@ -11,7 +11,7 @@ import { useI18n } from 'vue-i18n'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { convertMoney } from '@/utils/portfolioMath'
 import { formatYearMonth, formatDuration } from '@/utils/dateFormat'
-import { getAssetClass, getMarket, isCash as isCashItem, isCrypto as isCryptoItem, classMarketToAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
+import { getAssetClass, getMarket, isCash as isCashItem, isCrypto as isCryptoItem, classMarketToAssetType, displayAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -413,7 +413,7 @@ onUnmounted(clearPullToRefresh)
                   <template v-else>{{ item.ticker }}</template>
                 </div>
                 <div class="mini-asset-type">
-                  {{ assetTypeLabel(item) }}
+                  {{ displayAssetType(assetTypeLabel(item)) }}
                   <span v-if="item.account_name && item.account_name !== '미지정'" class="mini-account-tag">{{ item.account_name }}</span>
                 </div>
               </div>

@@ -131,6 +131,13 @@
     "wonUnit": "",
     "krwUnit": "KRW"
   },
+  "assetType": {
+    "국내주식": "KR Stocks",
+    "해외주식": "Overseas Stocks",
+    "ETF": "ETF",
+    "암호화폐": "Crypto",
+    "현금": "Cash"
+  },
   "analysis": {
     "title": "Forecast",
     "headerAlt": "Forecast",
@@ -308,20 +315,20 @@
   },
   "portfolioAnalysis": {
     "title": "Portfolio Analysis",
-    "subtitle": "Weight by holding",
+    "subtitle": "Portfolio Allocation",
     "emptyTitle": "No holdings yet",
     "emptyHint": "Add assets to your portfolio",
-    "byType": "By type",
-    "byTicker": "By ticker",
+    "byType": "By Asset Type",
+    "byTicker": "By Ticker",
     "compare": "Compare",
     "selectToCompare": "Select holdings to compare",
     "noCompareTargets": "No holdings available to compare",
-    "selectAtLeast2": "Select at least 2 holdings to compare",
+    "selectAtLeast2": "Select at least two holdings to compare.",
     "priceFailed": "Failed to fetch price",
-    "shareNote": "Weight based on the total value of selected holdings",
-    "totalAsset": "Total assets",
-    "costBasisNote": "Value at cost basis",
-    "maxCompare": "You can select up to {n}."
+    "shareNote": "Allocation based on the total value of the selected holdings.",
+    "totalAsset": "Total Assets",
+    "costBasisNote": "Values are based on cost basis.",
+    "maxCompare": "You can select up to {n} holdings."
   },
   "assetGrowth": {
     "title": "Asset Growth Report",

@@ -13,7 +13,7 @@ import { formatMoneyIn } from '@/utils/numberFormat'
 import { isKoLocale } from '@/plugins/i18n'
 import { displayAccountName } from '@/utils/accountName'
 import { useI18n } from 'vue-i18n'
-import { getAssetClass, getMarket, isCash as isCashItem, classMarketToAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
+import { getAssetClass, getMarket, isCash as isCashItem, classMarketToAssetType, displayAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
 import TransactionAddDialog from './TransactionAddDialog.vue'
 
 const userDataStore = useUserDataStore()
@@ -702,7 +702,7 @@ onUnmounted(() => {
                       <div class="d-flex align-center ga-1 flex-grow-1 min-width-0">
                         <span class="tx-name">{{ getTickerDisplayName(item.portfolios?.ticker) }}</span>
                         <span v-if="getTickerDisplayName(item.portfolios?.ticker) !== item.portfolios?.ticker" class="tx-ticker flex-shrink-0">{{ item.portfolios?.ticker }}</span>
-                        <span class="asset-badge flex-shrink-0" :style="`color: rgb(var(--v-theme-${assetTypeColor(item.portfolios)}))`">{{ assetTypeLabel(item.portfolios) }}</span>
+                        <span class="asset-badge flex-shrink-0" :style="`color: rgb(var(--v-theme-${assetTypeColor(item.portfolios)}))`">{{ displayAssetType(assetTypeLabel(item.portfolios)) }}</span>
                         <span v-if="item.portfolios?.account_name && item.portfolios.account_name !== '미지정'" class="account-tag flex-shrink-0">{{ truncateAccount(item.portfolios.account_name) }}</span>
                         <span class="tx-type-badge flex-shrink-0" :class="item.transaction_type === 'BUY' ? 'badge-buy' : 'badge-sell'">{{ item.transaction_type === 'BUY' ? $t('transactions.buy') : $t('transactions.sell') }}</span>
                       </div>

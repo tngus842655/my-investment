@@ -1,6 +1,8 @@
 // 시장/통화별 상수의 단일 소스 (GLOBALIZATION.md 단계 A 참고)
 // 국가 추가 = 이 파일에 항목 추가 + DB CHECK 제약 수정. 그 외 코드는 이 설정만 참조할 것.
 
+import { i18n } from '@/plugins/i18n'
+
 export type MarketCode = 'KR' | 'US' | 'JP' | 'CN'
 export type AssetClass = 'stock' | 'etf' | 'crypto' | 'cash'
 export type CurrencyCode = 'KRW' | 'USD' | 'JPY' | 'CNY'
@@ -73,6 +75,8 @@ export const ASSET_CLASSES: Record<AssetClass, { label: Record<LocaleCode, strin
 
 // 새 체계(asset_class/market) → 한글 자산유형 라벨. 화면 표시·테마 색상 키가 아직 한글
 // 자산유형 기준이라 접근자로 재구성한다 (DB asset_type 컬럼과는 무관 — 컬럼은 사용자 단계 6로 제거됨).
+// 주의: 이 값은 테마 typeColors 팔레트 키로도 쓰이는 내부 식별자라 로케일과 무관하게 한글 고정.
+// 화면 표시용 문자열이 필요하면 displayAssetType()으로 감싸서 쓸 것.
 export const classMarketToAssetType = (assetClass: AssetClass, market: MarketCode | null): string => {
   switch (assetClass) {
     case 'stock':
@@ -85,6 +89,10 @@ export const classMarketToAssetType = (assetClass: AssetClass, market: MarketCod
       return '현금'
   }
 }
+
+// classMarketToAssetType()의 내부 한글 키를 현재 로케일 표시용 문자열로 변환
+export const displayAssetType = (assetType: string): string =>
+  assetType ? i18n.global.t(`assetType.${assetType}`) : ''
 
 // ── 접근자: DB 행에서 자산군/시장 읽기 ─────────────────────────
 // portfolios.asset_class(NOT NULL) / market(crypto·cash는 NULL) 컬럼을 읽는다.
