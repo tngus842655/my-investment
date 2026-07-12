@@ -17,6 +17,7 @@
   },
   "date": {
     "yearMonth": "{year}년 {month}월",
+    "fullDate": "{year}년 {month}월 {day}일",
     "durationYM": "{years}년 {months}개월",
     "durationY": "{years}년",
     "durationM": "{months}개월",
