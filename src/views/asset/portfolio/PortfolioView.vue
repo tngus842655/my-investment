@@ -15,6 +15,8 @@ import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
 import { useFontScale } from '@/composables/useFontScale'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { formatMoneyIn } from '@/utils/numberFormat'
+import { isKoLocale } from '@/plugins/i18n'
 import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
@@ -421,10 +423,12 @@ const displayEval = (v: number) => money(v, exchangeRate.value ?? 1350, 'full')
 const displayProfit = (v: number) => (v > 0 ? '+' : '') + displayEval(v)
 
 // 현금 카드: 보유 통화 그대로 표기 (기준통화 병기용)
-const formatNative = (item: PortfolioViewItem) =>
-  (item.currency === 'USD' ? '$' : '') +
-  formatPrice(item.avg_price * item.quantity, item.currency) +
-  (item.currency === 'KRW' ? '원' : '')
+const formatNative = (item: PortfolioViewItem) => {
+  const v = item.avg_price * item.quantity
+  // ko 외 로케일 KRW: 한글 단위(억/만) 대신 국제 표기 (1억 미만은 콤마 전체, 이상은 축약)
+  if (item.currency === 'KRW' && !isKoLocale()) return formatMoneyIn(v, 'KRW', v >= 100000000 ? 'short' : 'full')
+  return (item.currency === 'USD' ? '$' : '') + formatPrice(v, item.currency) + (item.currency === 'KRW' ? '원' : '')
+}
 
 // 화면 너비 감지 — 360px 미만(폴드 등 좁은 화면)이면 한글 축약
 const windowWidth = ref(window.innerWidth)

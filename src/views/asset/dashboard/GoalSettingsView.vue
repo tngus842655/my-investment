@@ -10,6 +10,7 @@ import { setBaseCurrency } from '@/composables/useBaseCurrency'
 import { getCachedRate } from '@/services/exchangeRateCache'
 import { recomputeAssetSummary } from '@/services/assetSummary'
 import type { CurrencyCode } from '@/config/marketConfig'
+import { isKoLocale } from '@/plugins/i18n'
 import { useI18n } from 'vue-i18n'
 import { formatYearMonth, formatDuration } from '@/utils/dateFormat'
 
@@ -28,7 +29,7 @@ const currencyOptions: { value: CurrencyCode; labelKey: string }[] = [
   { value: 'KRW', labelKey: 'goalSettings.currencyKRW' },
   { value: 'USD', labelKey: 'goalSettings.currencyUSD' },
 ]
-const currencyUnit = computed(() => (baseCurrencySel.value === 'KRW' ? '원' : '$'))
+const currencyUnit = computed(() => (baseCurrencySel.value === 'KRW' ? (isKoLocale() ? '원' : '₩') : '$'))
 
 // 기준통화 변경 시 목표 금액을 현재 환율로 1회 환산 (확인 다이얼로그 필수 — 2-4 정책)
 const convertDialog = ref(false)

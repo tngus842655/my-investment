@@ -6,6 +6,8 @@ import { getCachedRate } from '@/services/exchangeRateCache'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { useLocale } from '@/composables/useLocale'
 import { useI18n } from 'vue-i18n'
+import { formatMoneyIn } from '@/utils/numberFormat'
+import { isKoLocale } from '@/plugins/i18n'
 import { getTickerDisplayName, isKnownTicker } from '@/utils/tickerNames'
 import { KR_STOCK_NAMES, KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 import { getStockPrice } from '@/services/market'
@@ -187,6 +189,8 @@ const totalLabel = computed(() => {
       ? v.toLocaleString('en-US')
       : v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
   }
+  // ko 외 로케일은 한글 단위 대신 국제 축약 표기
+  if (!isKoLocale()) return formatMoneyIn(v, 'KRW', 'short')
   if (v >= 100000000) return `${Math.floor(v / 100000000)}억원`
   if (v >= 10000) return `${Math.round(v / 10000).toLocaleString()}만원`
   return `${Math.round(v).toLocaleString()}원`

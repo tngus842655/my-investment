@@ -7,6 +7,8 @@ import { getTickerDisplayName } from '@/utils/tickerNames'
 import { KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 import { useI18n } from 'vue-i18n'
 import { formatYearMonth } from '@/utils/dateFormat'
+import { formatMoneyIn } from '@/utils/numberFormat'
+import { isKoLocale } from '@/plugins/i18n'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -128,6 +130,8 @@ const fmt = {
   aum: (v: number | null, currency: string) => {
     if (v == null) return '-'
     if (currency === 'KRW') {
+      // ko 외 로케일은 한글 단위(조/억) 대신 국제 축약 표기 (₩1.5T / ₩123B)
+      if (!isKoLocale()) return formatMoneyIn(v, 'KRW', 'short')
       if (v >= 1e12) return `₩${(v / 1e12).toFixed(1)}조`
       return `₩${(v / 1e8).toFixed(0)}억`
     }

@@ -124,10 +124,12 @@
     "deleteIrreversible": "이 작업은 되돌릴 수 없습니다.",
     "loadError": "거래내역 조회 중 오류가 발생했습니다.",
     "deleteSuccess": "거래내역이 삭제되었습니다.",
-    "deleteError": "삭제 중 오류가 발생했습니다."
+    "deleteError": "삭제 중 오류가 발생했습니다.",
+    "txCount": "{n}건"
   },
   "currency": {
-    "wonUnit": "원"
+    "wonUnit": "원",
+    "krwUnit": "원"
   },
   "analysis": {
     "title": "미래 예측",
@@ -482,7 +484,8 @@
       "mdd": "최대 낙폭(Max Drawdown). 투자 기간 중 고점 대비 최대로 하락한 비율. 절대값이 작을수록 리스크가 낮습니다.",
       "totalReturn": "투자 원금 대비 현재 평가금액의 총 수익률입니다."
     },
-    "subtitle": "과거 {dca} 투자 수익률 시뮬레이션"
+    "subtitle": "과거 {dca} 투자 수익률 시뮬레이션",
+    "monthlyHint": "{amount}/월"
   },
   "ticker": {
     "cash": "보유현금",

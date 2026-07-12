@@ -6,6 +6,8 @@ import { showMessage } from '@/composables/useSnackbar'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { useI18n } from 'vue-i18n'
 import { formatYearMonth, formatDuration } from '@/utils/dateFormat'
+import { formatMoneyIn } from '@/utils/numberFormat'
+import { isKoLocale } from '@/plugins/i18n'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -214,6 +216,8 @@ const fmtMoney = (v: number, currency: string) => {
 const fmtMoneyKrw = (v: number, currency: string): string | null => {
   if (currency !== 'USD') return null
   const krw = Math.round(v * exchangeRate.value)
+  // ko 외 로케일은 한글 단위(억/만) 대신 국제 축약 표기
+  if (!isKoLocale()) return `≈ ${formatMoneyIn(krw, 'KRW', 'short')}`
   if (krw >= 1e8) return `≈ ₩${(krw / 1e8).toFixed(1)}억`
   if (krw >= 1e4) return `≈ ₩${Math.round(krw / 1e4).toLocaleString()}만`
   return `≈ ₩${krw.toLocaleString()}`
@@ -502,13 +506,13 @@ const yearlyRows = computed(() =>
           min="1"
           :disabled="loading"
           :error-messages="monthlyAmountError"
-          :hint="!monthlyAmountError && result?.currency !== 'KRW' && monthlyAmount && monthlyAmount > 0 ? `${fmtMoneyKrw(monthlyAmount, 'USD')}/월` : ''"
+          :hint="!monthlyAmountError && result?.currency !== 'KRW' && monthlyAmount && monthlyAmount > 0 ? $t('etfBacktest.monthlyHint', { amount: fmtMoneyKrw(monthlyAmount, 'USD') }) : ''"
           persistent-hint
           @keyup.enter="run"
         >
           <template #append-inner>
             <span class="text-medium-emphasis">
-              {{ result?.currency === 'KRW' ? $t('currency.wonUnit') : 'USD' }}
+              {{ result?.currency === 'KRW' ? $t('currency.krwUnit') : 'USD' }}
             </span>
           </template>
         </v-text-field>

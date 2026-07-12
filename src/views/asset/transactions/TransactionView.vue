@@ -10,6 +10,7 @@ import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/useP
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { convertMoney } from '@/utils/portfolioMath'
 import { formatMoneyIn } from '@/utils/numberFormat'
+import { isKoLocale } from '@/plugins/i18n'
 import { useI18n } from 'vue-i18n'
 import { getAssetClass, getMarket, isCash as isCashItem, classMarketToAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
 import TransactionAddDialog from './TransactionAddDialog.vue'
@@ -343,6 +344,8 @@ const formatDate = (d: string) => {
 }
 
 const formatKrwValue = (total: number) => {
+  // ko 외 로케일은 한글 단위 대신 국제 축약 표기 (₩9.7M)
+  if (!isKoLocale()) return formatMoneyIn(total, 'KRW', 'short')
   if (total >= 100000000) {
     const eok = Math.floor(total / 100000000)
     const rem = Math.round((total % 100000000) / 10000000)
@@ -383,6 +386,8 @@ const formatUnitPrice = (t: Transaction) => {
         : p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
     )
   }
+  // ko 외 로케일: 단가는 정밀도 유지를 위해 1억 미만은 콤마 전체 표기, 이상은 국제 축약
+  if (!isKoLocale()) return formatMoneyIn(p, 'KRW', p >= 100000000 ? 'short' : 'full')
   if (p >= 10000) return `${Math.round(p / 10000).toLocaleString()}만`
   return Math.round(p).toLocaleString()
 }
@@ -396,8 +401,8 @@ const formatStatAmount = (v: number) => {
 // ── 통화 토글 (기준통화 ↔ 미리보기, 화면 간 공유) ─────────────────
 const { baseCurrency, displayCurrency, isPreview, money } = useBaseCurrency()
 const { t } = useI18n()
-// stat 카드가 기존 원화 축약 표기(억/만 + '원' 단위)를 쓰는 조건
-const statUsesKrwStyle = computed(() => baseCurrency.value === 'KRW' && displayCurrency.value === 'KRW')
+// stat 카드가 기존 원화 축약 표기(억/만 + '원' 단위)를 쓰는 조건 — ko 로케일 한정
+const statUsesKrwStyle = computed(() => baseCurrency.value === 'KRW' && displayCurrency.value === 'KRW' && isKoLocale())
 
 // 기준통화 표시 모드면 거래통화 그대로, 미리보기 모드면 표시통화로 환산
 const formatAmountDisplay = (t: Transaction) => {
@@ -551,10 +556,10 @@ onUnmounted(() => {
             <span class="stat-label">{{ $t('transactions.totalBuy') }}</span>
           </div>
           <div class="stat-value">
-            {{ statUsesKrwStyle ? formatStatAmount(totalBuy) : money(totalBuy, usdToKrw || 1350, 'full') }}<span v-if="statUsesKrwStyle" class="stat-unit">{{ $t('currency.wonUnit') }}</span>
+            {{ statUsesKrwStyle ? formatStatAmount(totalBuy) : money(totalBuy, usdToKrw || 1350, 'short') }}<span v-if="statUsesKrwStyle" class="stat-unit">{{ $t('currency.wonUnit') }}</span>
           </div>
           <div class="text-disabled">
-            {{ totalsData.filter((t) => t.transaction_type === 'BUY').length }}건
+            {{ $t('transactions.txCount', { n: totalsData.filter((t) => t.transaction_type === 'BUY').length }) }}
           </div>
         </div>
         <div class="stat-card">
@@ -563,10 +568,10 @@ onUnmounted(() => {
             <span class="stat-label">{{ $t('transactions.totalSell') }}</span>
           </div>
           <div class="stat-value">
-            {{ statUsesKrwStyle ? formatStatAmount(totalSell) : money(totalSell, usdToKrw || 1350, 'full') }}<span v-if="statUsesKrwStyle" class="stat-unit">{{ $t('currency.wonUnit') }}</span>
+            {{ statUsesKrwStyle ? formatStatAmount(totalSell) : money(totalSell, usdToKrw || 1350, 'short') }}<span v-if="statUsesKrwStyle" class="stat-unit">{{ $t('currency.wonUnit') }}</span>
           </div>
           <div class="text-disabled">
-            {{ totalsData.filter((t) => t.transaction_type === 'SELL').length }}건
+            {{ $t('transactions.txCount', { n: totalsData.filter((t) => t.transaction_type === 'SELL').length }) }}
           </div>
         </div>
       </div>
