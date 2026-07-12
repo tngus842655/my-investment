@@ -228,7 +228,7 @@ const quantityError = computed(() => {
 
 // 보유수량 초과 매도 여부 (좁은 필드 error 슬롯 대신 전체 폭 배너로 별도 표시)
 const sellExceedsHoldingError = computed(() => {
-  if (!quantity.value || isNewPortfolio.value || txType.value !== 'SELL') return ''
+  if (!quantity.value || !selectedPortfolio.value || isNewPortfolio.value || txType.value !== 'SELL') return ''
   const q = Number(quantity.value)
   if (q <= 0 || q <= availableForSell.value) return ''
   return t('dialog.errors.qtySellExceedsHolding', { held: availableForSell.value.toLocaleString() })
