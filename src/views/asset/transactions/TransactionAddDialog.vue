@@ -565,6 +565,8 @@ const reset = (closeDialog = true) => {
               rounded="lg"
               maxlength="20"
               class="mb-1"
+              @focus="() => { if (newAccountName.trim() === displayAccountName(UNASSIGNED_ACCOUNT)) newAccountName = '' }"
+              @blur="() => { if (!newAccountName.trim()) newAccountName = displayAccountName(UNASSIGNED_ACCOUNT) }"
             />
 
             <!-- 자산군 -->

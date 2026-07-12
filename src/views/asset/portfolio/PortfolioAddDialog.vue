@@ -465,6 +465,7 @@ const reset = (closeDialog = true) => {
           maxlength="20"
           :placeholder="$t('dialog.accountUnassigned')"
           :hint="$t('dialog.accountHint')"
+          @focus="() => { if (accountName.trim() === displayAccountName(UNASSIGNED_ACCOUNT)) accountName = '' }"
           @blur="() => { if (!accountName.trim()) accountName = displayAccountName(UNASSIGNED_ACCOUNT) }"
         />
 
