@@ -221,12 +221,17 @@ const quantityError = computed(() => {
   const q = Number(quantity.value)
   if (q <= 0) return t('dialog.errors.qtyPositive')
   if (q > maxQuantity.value) return t('dialog.errors.qtyMax', { max: maxQuantity.value.toLocaleString() })
-  if (txType.value === 'SELL' && !isNewPortfolio.value && q > availableForSell.value) {
-    return t('dialog.errors.qtySellExceedsHolding', { held: availableForSell.value.toLocaleString() })
-  }
   const decStr = String(quantity.value).split('.')[1] ?? ''
   if (decStr.length > 8) return t('dialog.errors.qtyDecimals')
   return ''
+})
+
+// 보유수량 초과 매도 여부 (좁은 필드 error 슬롯 대신 전체 폭 배너로 별도 표시)
+const sellExceedsHoldingError = computed(() => {
+  if (!quantity.value || isNewPortfolio.value || txType.value !== 'SELL') return ''
+  const q = Number(quantity.value)
+  if (q <= 0 || q <= availableForSell.value) return ''
+  return t('dialog.errors.qtySellExceedsHolding', { held: availableForSell.value.toLocaleString() })
 })
 
 const unitPriceError = computed(() => {
@@ -263,6 +268,7 @@ const isValid = computed(() =>
   removeComma(unitPrice.value) > 0 &&
   txDate.value &&
   !quantityError.value &&
+  !sellExceedsHoldingError.value &&
   !unitPriceError.value &&
   !txDateError.value,
 )
@@ -683,6 +689,7 @@ const reset = (closeDialog = true) => {
             variant="outlined"
             density="compact"
             rounded="lg"
+            :error="!!sellExceedsHoldingError"
             :error-messages="quantityError"
           />
           <v-text-field
@@ -695,6 +702,12 @@ const reset = (closeDialog = true) => {
             :prepend-inner-icon="effectiveCurrency === 'USD' ? 'mdi-currency-usd' : 'mdi-currency-krw'"
             :error-messages="unitPriceError"
           />
+        </div>
+
+        <!-- 매도 가능 수량 초과 안내 (좁은 필드 error 슬롯 대신 전체 폭 배너) -->
+        <div v-if="sellExceedsHoldingError" class="sell-limit-banner mt-1">
+          <v-icon size="15" class="mr-1">mdi-alert-circle-outline</v-icon>
+          {{ sellExceedsHoldingError }}
         </div>
 
         <!-- 거래일 -->
@@ -863,6 +876,18 @@ const reset = (closeDialog = true) => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+
+.sell-limit-banner {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(211, 47, 47, 0.08);
+  border: 1px solid rgba(211, 47, 47, 0.2);
+  color: rgb(var(--v-theme-error));
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .total-preview {
