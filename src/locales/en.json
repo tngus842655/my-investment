@@ -255,7 +255,7 @@
   },
   "fireHistory": {
     "title": "FIRE Progress",
-    "subtitle": "History of your progress rate",
+    "subtitle": "Track your FIRE progress over time.",
     "period1M": "1M",
     "period3M": "3M",
     "period6M": "6M",
@@ -263,9 +263,9 @@
     "periodAll": "All",
     "empty": "No records yet.",
     "emptyHint": "You'll see progress changes starting tomorrow.",
-    "currentRate": "Current rate",
-    "periodChange": "Period change",
-    "currentAsset": "Current assets",
+    "currentRate": "Current Progress",
+    "periodChange": "Period Change",
+    "currentAsset": "Current Assets",
     "loadError": "An error occurred while loading data.",
     "chartHint": "The chart appears once you have 2+ days of data."
   },
