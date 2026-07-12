@@ -40,6 +40,11 @@ const paymentMethodId = ref<string | null>(null)
 const addingPaymentMethod = ref(false)
 const newPaymentMethodName = ref('')
 const memo = ref('')
+const memoSearch = ref('')
+const memoSuggestions = ref<string[]>([])
+const filteredMemoSuggestions = computed(() =>
+  (memoSearch.value ?? '').trim().length === 0 ? [] : memoSuggestions.value,
+)
 const entryDate = ref(new Date().toISOString().slice(0, 10))
 const saving = ref(false)
 const favoritesMenu = ref(false)
@@ -180,6 +185,17 @@ const addPaymentMethod = async () => {
   newPaymentMethodName.value = ''
 }
 
+const fetchMemoSuggestions = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const { data } = await supabase
+    .from('budget_entries')
+    .select('memo')
+    .eq('user_id', user.id)
+    .not('memo', 'is', null)
+  memoSuggestions.value = [...new Set((data ?? []).map((d) => d.memo as string))]
+}
+
 const fetchFavorites = async () => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
@@ -219,6 +235,7 @@ watch(dialog, async (open) => {
   await fetchCategories()
   await fetchPaymentMethods()
   await fetchFavorites()
+  await fetchMemoSuggestions()
   addingPaymentMethod.value = false
   newPaymentMethodName.value = ''
   favoritesMenu.value = false
@@ -229,6 +246,7 @@ watch(dialog, async (open) => {
     amount.value = addComma(String(props.initialData.amount))
     paymentMethodId.value = props.initialData.payment_method_id
     memo.value = props.initialData.memo ?? ''
+    memoSearch.value = memo.value
     entryDate.value = props.initialData.entry_date
   } else {
     entryType.value = 'EXPENSE'
@@ -236,6 +254,7 @@ watch(dialog, async (open) => {
     amount.value = ''
     paymentMethodId.value = paymentMethods.value[0]?.id ?? null
     memo.value = ''
+    memoSearch.value = ''
     entryDate.value = props.defaultDate ?? new Date().toISOString().slice(0, 10)
   }
 })
@@ -418,9 +437,11 @@ const save = async () => {
           </div>
         </v-expand-transition>
 
-        <v-text-field
+        <v-combobox
           ref="memoFieldRef"
           v-model="memo"
+          v-model:search="memoSearch"
+          :items="filteredMemoSuggestions"
           label="내용"
           prepend-inner-icon="mdi-note-outline"
           variant="outlined"
@@ -430,6 +451,8 @@ const save = async () => {
           maxlength="30"
           counter
           autocomplete="off"
+          hide-no-data
+          menu-icon=""
           @focus="dateCalendarOpen = false; categoryPickerOpen = false; amountKeypadOpen = false"
         />
       </v-card-text>

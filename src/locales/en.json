@@ -577,6 +577,7 @@
       "tickerLettersOnly": "Letters only. (e.g. AAPL)",
       "qtyPositive": "Quantity must be greater than 0.",
       "qtyMax": "Quantity must be {max} or less.",
+      "qtySellExceedsHolding": "Cannot sell more than your holding ({held}).",
       "qtyDecimals": "Up to 8 decimal places allowed.",
       "pricePositive": "Price must be greater than 0.",
       "priceMax": "Price must be {amount} or less.",
