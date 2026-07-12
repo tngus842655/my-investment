@@ -449,7 +449,7 @@
     "baseTickerLabel": "Base ticker (e.g. QQQ)",
     "compareTickerLabel": "Compare ticker (optional, e.g. SPY)",
     "monthlyAmount": "Monthly investment",
-    "quickSelect": "Quick start date",
+    "quickSelect": "Quick Start",
     "startYear": "Start year",
     "startMonth": "Start month",
     "yearOption": "{y}",
@@ -458,7 +458,7 @@
     "run": "Run Backtest",
     "disclaimer": "* For overseas ETFs/stocks only · Approximate, includes dividend reinvestment · Excludes taxes and fees",
     "finalValue": "Final value",
-    "peakLine": "Peak {amount} · {date}",
+    "peakLine": "Peak Value: {amount} ({date})",
     "totalProfit": "Total profit",
     "totalReturn": "Total return",
     "principal": "Principal",
@@ -485,11 +485,11 @@
     "maxKrw": "You can enter up to ₩{amount}.",
     "maxUsd": "You can enter up to ${amount}.",
     "amountPositive": "Please enter an amount greater than 0.",
-    "collapsedSince": "{year}–",
-    "summaryIntro": "If you invested {amount} in {ticker} every month starting {date},",
+    "collapsedSince": "Since {year}",
+    "summaryIntro": "If you had invested {amount} in {ticker} every month since {date},",
     "summaryInvested": "you would have invested a total of {amount},",
-    "summaryEval": "which is now worth {amount},",
-    "summaryReturns": "for a total return of {rate} and an annualized return of {cagr}.",
+    "summaryEval": "it would now be worth {amount},",
+    "summaryReturns": "resulting in a total return of {rate} and an annualized CAGR of {cagr}.",
     "quick": {
       "y1": "1Y",
       "y3": "3Y",
@@ -503,7 +503,7 @@
       "mdd": "Max Drawdown. The largest drop from a peak during the period. Smaller absolute value means lower risk.",
       "totalReturn": "Total return of the current value versus the invested principal."
     },
-    "subtitle": "Historical {dca} return simulation",
+    "subtitle": "Historical {dca} Return Simulation",
     "monthlyHint": "{amount}/mo"
   },
   "ticker": {

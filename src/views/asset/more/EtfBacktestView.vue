@@ -444,7 +444,7 @@ const yearlyRows = computed(() =>
         class="collapse-header"
         @click="inputCollapsed = !inputCollapsed"
       >
-        <div class="font-weight-bold">{{ $t('etfBacktest.conditions') }}</div>
+        <div class="font-weight-bold">{{ $t('etfBacktest.conditions') }}:</div>
         <div class="d-flex align-center ga-2 text-medium-emphasis">
           <span>{{ tickerInput }}{{ compareInput ? ` vs ${compareInput}` : '' }}{{ startYm ? ` · ${$t('etfBacktest.collapsedSince', { year: startYm.slice(0, 4) })}` : '' }}</span>
           <v-icon size="18">{{ inputCollapsed ? 'mdi-chevron-down' : 'mdi-chevron-up' }}</v-icon>
