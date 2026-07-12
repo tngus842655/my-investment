@@ -32,8 +32,8 @@ const toggleExcludeTestEmail = () => {
   localStorage.setItem(EXCLUDE_TEST_EMAIL_KEY, String(excludeTestEmail.value))
 }
 
-const parseDateInput = (val: string) => {
-  const v = val.replace(/-/g, '').trim()
+const parseDateInput = (val: string | null) => {
+  const v = (val ?? '').replace(/-/g, '').trim()
   if (v.length === 6) return `${v.slice(0, 4)}-${v.slice(4, 6)}`
   if (v.length === 8) return `${v.slice(0, 4)}-${v.slice(4, 6)}-${v.slice(6, 8)}`
   return null
@@ -61,8 +61,8 @@ const search = async () => {
         .order('login_at', { ascending: false })
         .limit(100)
 
-      if (emailSearch.value.trim())
-        query = query.ilike('email', `%${emailSearch.value.trim()}%`)
+      if ((emailSearch.value ?? '').trim())
+        query = query.ilike('email', `%${(emailSearch.value ?? '').trim()}%`)
 
       if (excludeTestEmail.value)
         query = query.neq('email', TEST_EMAIL)
@@ -82,8 +82,8 @@ const search = async () => {
         .order('accessed_at', { ascending: false })
         .limit(100)
 
-      if (emailSearch.value.trim())
-        query = query.ilike('email', `%${emailSearch.value.trim()}%`)
+      if ((emailSearch.value ?? '').trim())
+        query = query.ilike('email', `%${(emailSearch.value ?? '').trim()}%`)
 
       if (pageSearch.value)
         query = query.eq('page', pageSearch.value)
@@ -107,8 +107,8 @@ const search = async () => {
         .order('accessed_at', { ascending: false })
         .limit(1000)
 
-      if (emailSearch.value.trim())
-        query = query.ilike('email', `%${emailSearch.value.trim()}%`)
+      if ((emailSearch.value ?? '').trim())
+        query = query.ilike('email', `%${(emailSearch.value ?? '').trim()}%`)
 
       if (excludeTestEmail.value)
         query = query.neq('email', TEST_EMAIL)

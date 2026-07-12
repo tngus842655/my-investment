@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import type { CurrencyCode } from '@/config/marketConfig'
 import { formatMoneyIn, type MoneyStyle } from '@/utils/numberFormat'
+import { isKoLocale } from '@/plugins/i18n'
 
 // 기준통화(base currency): 자산을 집계·표시하는 통화 (GLOBALIZATION.md 단계 C).
 // 원본은 investment_goals.base_currency이며, userData 스토어가 goals 로드/초기화 시
@@ -44,12 +45,13 @@ export const useBaseCurrency = () => {
   const money = (vBase: number, usdKrw: number, style: MoneyStyle = 'short'): string =>
     formatMoneyIn(toDisplay(vBase, usdKrw), displayCurrency.value, style)
 
-  // KRW 전용 커스텀 축약 표기를 유지해야 하는 화면용:
-  // 기준·표시가 모두 KRW면 기존 커스텀 포맷, 그 외에는 표시통화 기본 포맷.
+  // KRW 전용 커스텀 축약 표기(억/만)를 유지해야 하는 화면용:
+  // ko 로케일 + 기준·표시 모두 KRW면 기존 커스텀 포맷, 그 외에는 표시통화 기본 포맷.
+  // (ko 외 로케일은 한글 단위 노출 방지를 위해 국제 축약 표기 'short'로 폴백 — USD는 short=full이라 영향 없음)
   const moneyOr = (vBase: number, usdKrw: number, customKrw: (v: number) => string): string =>
-    baseCurrency.value === 'KRW' && displayCurrency.value === 'KRW'
+    baseCurrency.value === 'KRW' && displayCurrency.value === 'KRW' && isKoLocale()
       ? customKrw(vBase)
-      : money(vBase, usdKrw, 'full')
+      : money(vBase, usdKrw, isKoLocale() ? 'full' : 'short')
 
   return { baseCurrency, displayCurrency, isPreview, setDisplayCurrency, money, moneyOr }
 }

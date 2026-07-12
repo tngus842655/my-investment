@@ -27,3 +27,7 @@ export const i18n = createI18n({
   fallbackLocale: 'ko',
   messages: { ko, en },
 })
+
+// 한글 단위(억/만) 금액 표기 여부 판단용 — ko 외 로케일은 국제 표기(₩972.17M)를 쓴다.
+// i18n.global.locale이 ref라 computed 안에서 호출하면 언어 변경에 반응한다.
+export const isKoLocale = () => i18n.global.locale.value === 'ko'

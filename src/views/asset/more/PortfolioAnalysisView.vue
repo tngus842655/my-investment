@@ -9,7 +9,7 @@ import { showMessage } from '@/composables/useSnackbar'
 import { convertMoney } from '@/utils/portfolioMath'
 import { useDesignTokens } from '@/composables/useDesignTokens'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
-import { getAssetClass, getMarket, isCash, classMarketToAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
+import { getAssetClass, getMarket, isCash, classMarketToAssetType, displayAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
 import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
@@ -76,7 +76,7 @@ const segments = computed<Seg[]>(() => {
   const map = new Map<string, { label: string; valueKrw: number }>()
   for (const p of portfolioRows.value) {
     const key = viewMode.value === 'type' ? assetTypeLabel(p) : p.ticker
-    const label = viewMode.value === 'type' ? assetTypeLabel(p) : getTickerDisplayName(p.ticker)
+    const label = viewMode.value === 'type' ? displayAssetType(assetTypeLabel(p)) : getTickerDisplayName(p.ticker)
     const val = convertMoney(p.avg_price * p.quantity, p.currency, baseCurrency.value, exchangeRate.value)
     const existing = map.get(key)
     if (existing) existing.valueKrw += val

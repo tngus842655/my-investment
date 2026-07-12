@@ -9,6 +9,7 @@ import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { useI18n } from 'vue-i18n'
 import { convertMoney } from '@/utils/portfolioMath'
 import { isCash, isCrypto, type AssetClass, type MarketCode } from '@/config/marketConfig'
+import { formatYearMonth, formatFullDateStr } from '@/utils/dateFormat'
 
 const router = useRouter()
 const loading = ref(true)
@@ -434,7 +435,7 @@ const refreshData = async () => {
             <v-icon>mdi-chevron-left</v-icon>
           </v-btn>
           <div class="font-weight-bold">
-            {{ selectedYear }}.{{ String(selectedMonth).padStart(2, '0') }}
+            {{ formatYearMonth(selectedYear, selectedMonth) }}
           </div>
           <v-btn icon size="small" variant="text" @click="nextMonth">
             <v-icon>mdi-chevron-right</v-icon>
@@ -476,7 +477,7 @@ const refreshData = async () => {
         <!-- 이번 달 전체 일정 -->
         <v-card rounded="xl" class="pa-4 mb-4">
           <div class="font-weight-medium mb-3">
-            {{ $t('dividend.scheduleTitle', { date: selectedYear + '.' + String(selectedMonth).padStart(2, '0') }) }}
+            {{ $t('dividend.scheduleTitle', { date: formatYearMonth(selectedYear, selectedMonth) }) }}
           </div>
           <div v-if="!currentMonthEvents.length" class="text-center text-medium-emphasis py-4">
             {{ $t('dividend.noScheduleThisMonth') }}
@@ -519,7 +520,7 @@ const refreshData = async () => {
     <v-card rounded="t-xl" class="pa-5">
       <div class="d-flex align-center ga-2 mb-4">
         <div class="font-weight-bold">
-          {{ $t('dividend.exDivTitle', { date: selectedDate?.replace(/-/g, '.') }) }}
+          {{ $t('dividend.exDivTitle', { date: selectedDate ? formatFullDateStr(selectedDate) : '' }) }}
         </div>
         <v-chip v-if="selectedDateEvents.some(e => e.isNext)" size="x-small" color="warning" variant="tonal">{{ $t('dividend.upcoming') }}</v-chip>
         <v-spacer />

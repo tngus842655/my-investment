@@ -23,10 +23,10 @@ const editName = ref('')
 const saving = ref(false)
 
 const filteredTickers = computed(() => {
-  const q = search.value.trim().toUpperCase()
+  const q = (search.value ?? '').trim().toUpperCase()
   if (!q) return tickers.value
   return tickers.value.filter(
-    (t) => t.ticker.includes(q) || t.name.includes(search.value.trim()),
+    (t) => t.ticker.includes(q) || t.name.includes((search.value ?? '').trim()),
   )
 })
 

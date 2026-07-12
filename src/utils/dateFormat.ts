@@ -12,6 +12,16 @@ const t = i18n.global.t
 export const formatYearMonth = (year: number, month: number): string =>
   t('date.yearMonth', { year, month, monthShort: MONTHS_EN[month - 1] ?? String(month) })
 
+// year + month(1~12) + day → 로케일 표기 (ko: "2027년 9월 5일", en: "Sep 5, 2027")
+export const formatFullDate = (year: number, month: number, day: number): string =>
+  t('date.fullDate', { year, month, day, monthShort: MONTHS_EN[month - 1] ?? String(month) })
+
+// "YYYY-MM-DD" 문자열 → formatFullDate
+export const formatFullDateStr = (dateStr: string): string => {
+  const parts = dateStr.split('-')
+  return formatFullDate(Number(parts[0]), Number(parts[1]), Number(parts[2]))
+}
+
 // 개월 수 → 기간 표기 (ko: "3년 2개월"/"5개월", en: "3y 2mo"/"5mo")
 export const formatDuration = (totalMonths: number): string => {
   const years = Math.floor(totalMonths / 12)

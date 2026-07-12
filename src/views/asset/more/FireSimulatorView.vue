@@ -261,7 +261,7 @@ onMounted(loadData)
           <div class="d-flex justify-space-between mt-1">
             <span class="slider-hint">{{ $t('fireSim.sliderMin') }}</span>
             <span class="slider-hint">
-              기준 <span class="base-mark">{{ formatMoney(baseMonthly) }}</span>
+              {{ $t('fireSim.baseLabel') }} <span class="base-mark">{{ formatMoney(baseMonthly) }}</span>
             </span>
             <span class="slider-hint">{{ $t('fireSim.sliderMax') }}</span>
           </div>
@@ -277,7 +277,7 @@ onMounted(loadData)
           <div class="d-flex justify-space-between mt-1">
             <span class="slider-hint">1%</span>
             <span class="slider-hint">
-              기준 <span class="base-mark">{{ baseReturn }}%</span>
+              {{ $t('fireSim.baseLabel') }} <span class="base-mark">{{ baseReturn }}%</span>
             </span>
             <span class="slider-hint">{{ Math.max(25, Math.ceil(baseReturn + 20)) }}%</span>
           </div>

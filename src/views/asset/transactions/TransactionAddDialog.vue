@@ -6,6 +6,9 @@ import { getCachedRate } from '@/services/exchangeRateCache'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { useLocale } from '@/composables/useLocale'
 import { useI18n } from 'vue-i18n'
+import { formatMoneyIn } from '@/utils/numberFormat'
+import { isKoLocale } from '@/plugins/i18n'
+import { displayAccountName, normalizeAccountName, UNASSIGNED_ACCOUNT } from '@/utils/accountName'
 import { getTickerDisplayName, isKnownTicker } from '@/utils/tickerNames'
 import { KR_STOCK_NAMES, KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 import { getStockPrice } from '@/services/market'
@@ -100,7 +103,7 @@ const newTicker = ref('')
 const newAssetClass = ref<AssetClass | ''>('')
 const newMarket = ref<MarketCode>('KR')
 const newCurrency = ref('KRW')
-const newAccountName = ref('미지정')
+const newAccountName = ref(displayAccountName(UNASSIGNED_ACCOUNT))
 
 const isNewKrStock = computed(() => newAssetClass.value === 'stock' && newMarket.value === 'KR')
 const isNewUsStock = computed(() => newAssetClass.value === 'stock' && newMarket.value === 'US')
@@ -187,6 +190,8 @@ const totalLabel = computed(() => {
       ? v.toLocaleString('en-US')
       : v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
   }
+  // ko 외 로케일은 한글 단위 대신 국제 축약 표기
+  if (!isKoLocale()) return formatMoneyIn(v, 'KRW', 'short')
   if (v >= 100000000) return `${Math.floor(v / 100000000)}억원`
   if (v >= 10000) return `${Math.round(v / 10000).toLocaleString()}만원`
   return `${Math.round(v).toLocaleString()}원`
@@ -218,7 +223,7 @@ const unitPriceError = computed(() => {
   if (p > maxPrice.value) {
     const isUsStock = effectiveAssetClass.value === 'stock' && effectiveMarket.value === 'US'
     const unit = isUsStock ? '$' : ''
-    const suffix = isUsStock ? '' : '원'
+    const suffix = isUsStock ? '' : (isKoLocale() ? '원' : 'KRW')
     return t('dialog.errors.priceMax', { amount: `${unit}${maxPrice.value.toLocaleString()}${suffix}` })
   }
   return ''
@@ -288,7 +293,7 @@ const loadPortfolios = async () => {
 watch(selectedAccountFilter, (acc) => {
   selectedPortfolioId.value = ''
   // 새 종목 패널이 열려있지 않을 때만 계좌명 자동 세팅 (직접 입력값 덮어쓰기 방지)
-  if (!isNewPortfolio.value) newAccountName.value = acc ?? '미지정'
+  if (!isNewPortfolio.value) newAccountName.value = displayAccountName(acc ?? UNASSIGNED_ACCOUNT)
 })
 
 watch(dialog, async (opened) => {
@@ -305,7 +310,7 @@ watch(dialog, async (opened) => {
     reset(false)
     if (props.initialAccount) {
       selectedAccountFilter.value = props.initialAccount
-      newAccountName.value = props.initialAccount
+      newAccountName.value = displayAccountName(props.initialAccount)
     }
   }
 })
@@ -377,7 +382,7 @@ const save = async () => {
       const cls = newAssetClass.value as AssetClass
       const mkt = cls === 'stock' ? newMarket.value : null
       const tickerToSave = newTicker.value.trim().toUpperCase()
-      const accountNameToSave = newAccountName.value.trim() || '미지정'
+      const accountNameToSave = normalizeAccountName(newAccountName.value)
       const { data: existing } = await supabase
         .from('portfolios')
         .select('id')
@@ -386,7 +391,7 @@ const save = async () => {
         .eq('account_name', accountNameToSave)
         .maybeSingle()
       if (existing) {
-        showMessage(t('dialog.errors.duplicateInAccount', { name: getTickerDisplayName(tickerToSave), account: accountNameToSave }), 'warning')
+        showMessage(t('dialog.errors.duplicateInAccount', { name: getTickerDisplayName(tickerToSave), account: displayAccountName(accountNameToSave) }), 'warning')
         saving.value = false
         return
       }
@@ -471,7 +476,7 @@ const reset = (closeDialog = true) => {
   newAssetClass.value = ''
   newMarket.value = locale.value === 'ko' ? 'KR' : 'US'
   newCurrency.value = 'KRW'
-  newAccountName.value = '미지정'
+  newAccountName.value = displayAccountName(UNASSIGNED_ACCOUNT)
   selectedAccountFilter.value = null
   if (closeDialog) dialog.value = false
 }
@@ -517,7 +522,7 @@ const reset = (closeDialog = true) => {
             class="account-chip"
             :class="{ 'account-chip-active': selectedAccountFilter === acc }"
             @click="selectedAccountFilter = acc"
-          >{{ acc }}</button>
+          >{{ displayAccountName(acc) }}</button>
         </div>
 
         <!-- 종목 선택 -->
@@ -560,6 +565,8 @@ const reset = (closeDialog = true) => {
               rounded="lg"
               maxlength="20"
               class="mb-1"
+              @focus="() => { if (newAccountName.trim() === displayAccountName(UNASSIGNED_ACCOUNT)) newAccountName = '' }"
+              @blur="() => { if (!newAccountName.trim()) newAccountName = displayAccountName(UNASSIGNED_ACCOUNT) }"
             />
 
             <!-- 자산군 -->

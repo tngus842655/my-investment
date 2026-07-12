@@ -37,6 +37,7 @@ import AdminAccessHistoryView from '@/views/admin/AdminAccessHistoryView.vue'
 import AdminNoticesView from '@/views/admin/AdminNoticesView.vue'
 import NoticesView from '@/views/shared/NoticesView.vue'
 import PrivacyPolicyView from '@/views/shared/PrivacyPolicyView.vue'
+import ResetPasswordView from '@/views/auth/ResetPasswordView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -50,6 +51,11 @@ const router = createRouter({
       path: '/privacy-policy',
       name: 'privacyPolicy',
       component: PrivacyPolicyView,
+    },
+    {
+      path: '/reset-password',
+      name: 'resetPassword',
+      component: ResetPasswordView,
     },
     {
       path: '/hub',

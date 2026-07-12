@@ -7,6 +7,8 @@ import { getTickerDisplayName } from '@/utils/tickerNames'
 import { KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 import { useI18n } from 'vue-i18n'
 import { formatYearMonth } from '@/utils/dateFormat'
+import { formatMoneyIn } from '@/utils/numberFormat'
+import { isKoLocale } from '@/plugins/i18n'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -91,8 +93,8 @@ const isEmptyResult = (info: EtfInfo) =>
   info.currentPrice == null && info.totalAssets == null && info.cagr == null && info.mdd == null
 
 const fetchInfo = async () => {
-  const tA = inputA.value.trim().toUpperCase()
-  const tB = inputB.value.trim().toUpperCase()
+  const tA = (inputA.value ?? '').trim().toUpperCase()
+  const tB = (inputB.value ?? '').trim().toUpperCase()
   if (!tA) { showMessage(t('etfAnalysis.enterTicker'), 'warning'); return }
   if (tB && tA === tB) { showMessage(t('etfAnalysis.sameTickers'), 'warning'); return }
 
@@ -128,6 +130,8 @@ const fmt = {
   aum: (v: number | null, currency: string) => {
     if (v == null) return '-'
     if (currency === 'KRW') {
+      // ko 외 로케일은 한글 단위(조/억) 대신 국제 축약 표기 (₩1.5T / ₩123B)
+      if (!isKoLocale()) return formatMoneyIn(v, 'KRW', 'short')
       if (v >= 1e12) return `₩${(v / 1e12).toFixed(1)}조`
       return `₩${(v / 1e8).toFixed(0)}억`
     }
@@ -362,7 +366,7 @@ const aiData = computed(() => {
             item-title="name"
             return-object
             :label="$t('etfAnalysis.searchDomestic')"
-            placeholder="TIGER 미국S&P500 등 종목명 입력"
+            :placeholder="$t('etfAnalysis.searchDomesticPlaceholder')"
             prepend-inner-icon="mdi-magnify"
             variant="outlined"
             density="compact"
@@ -417,7 +421,7 @@ const aiData = computed(() => {
             item-title="name"
             return-object
             :label="$t('etfAnalysis.searchDomestic')"
-            placeholder="TIGER 미국S&P500 등 종목명 입력"
+            :placeholder="$t('etfAnalysis.searchDomesticPlaceholder')"
             prepend-inner-icon="mdi-magnify"
             variant="outlined"
             density="compact"
@@ -479,13 +483,20 @@ const aiData = computed(() => {
       icon="mdi-magnify-close"
     >
       <template v-if="notFoundA && notFoundB">
-        <strong>{{ inputA.trim().toUpperCase() }}</strong>, <strong>{{ inputB.trim().toUpperCase() }}</strong> 모두 찾을 수 없는 티커입니다.
+        <i18n-t keypath="etfAnalysis.notFoundBoth" tag="span" scope="global">
+          <template #tickerA><strong>{{ (inputA ?? '').trim().toUpperCase() }}</strong></template>
+          <template #tickerB><strong>{{ (inputB ?? '').trim().toUpperCase() }}</strong></template>
+        </i18n-t>
       </template>
       <template v-else-if="notFoundA">
-        <strong>{{ inputA.trim().toUpperCase() }}</strong> 티커를 찾을 수 없습니다.
+        <i18n-t keypath="etfAnalysis.notFoundA" tag="span" scope="global">
+          <template #ticker><strong>{{ (inputA ?? '').trim().toUpperCase() }}</strong></template>
+        </i18n-t>
       </template>
       <template v-else>
-        <strong>{{ inputB.trim().toUpperCase() }}</strong> 티커를 찾을 수 없습니다.
+        <i18n-t keypath="etfAnalysis.notFoundB" tag="span" scope="global">
+          <template #ticker><strong>{{ (inputB ?? '').trim().toUpperCase() }}</strong></template>
+        </i18n-t>
       </template>
       <div class="mt-1 opacity-80">{{ $t('etfAnalysis.notFoundHint') }}</div>
     </v-alert>

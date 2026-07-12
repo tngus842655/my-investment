@@ -6,6 +6,8 @@ import { showMessage } from '@/composables/useSnackbar'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { useI18n } from 'vue-i18n'
 import { formatYearMonth, formatDuration } from '@/utils/dateFormat'
+import { formatMoneyIn } from '@/utils/numberFormat'
+import { isKoLocale } from '@/plugins/i18n'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -100,11 +102,13 @@ const startMonth = ref(new Date().getMonth() + 1)
 const yearOptions = computed(() => {
   const end = new Date().getFullYear()
   const opts = []
-  for (let y = end; y >= 1990; y--) opts.push({ title: `${y}년`, value: y })
+  for (let y = end; y >= 1990; y--) opts.push({ title: t('etfBacktest.yearOption', { y }), value: y })
   return opts
 })
 
-const monthOptions = Array.from({ length: 12 }, (_, i) => ({ title: `${i + 1}월`, value: i + 1 }))
+const monthOptions = computed(() =>
+  Array.from({ length: 12 }, (_, i) => ({ title: t('etfBacktest.monthOption', { m: i + 1 }), value: i + 1 }))
+)
 
 const applyQuickPeriod = (p: QuickPeriod) => {
   activePeriod.value = p
@@ -151,9 +155,9 @@ const MAX_KRW = 100_000_000  // 1억원
 const monthlyAmountError = computed(() => {
   const v = monthlyAmount.value
   if (v === null || v === undefined || String(v) === '') return ''
-  if (!Number.isFinite(v) || v <= 0) return '0보다 큰 금액을 입력해주세요.'
+  if (!Number.isFinite(v) || v <= 0) return t('etfBacktest.amountPositive')
   if (!Number.isInteger(v)) return t('etfBacktest.integerOnly')
-  if (isUsdMode.value && v > MAX_USD) return `최대 $${MAX_USD.toLocaleString()}까지 입력 가능합니다.`
+  if (isUsdMode.value && v > MAX_USD) return t('etfBacktest.maxUsd', { amount: MAX_USD.toLocaleString() })
   if (!isUsdMode.value && v > MAX_KRW) return t('etfBacktest.maxKrw', { amount: MAX_KRW.toLocaleString() })
   return ''
 })
@@ -214,6 +218,8 @@ const fmtMoney = (v: number, currency: string) => {
 const fmtMoneyKrw = (v: number, currency: string): string | null => {
   if (currency !== 'USD') return null
   const krw = Math.round(v * exchangeRate.value)
+  // ko 외 로케일은 한글 단위(억/만) 대신 국제 축약 표기
+  if (!isKoLocale()) return `≈ ${formatMoneyIn(krw, 'KRW', 'short')}`
   if (krw >= 1e8) return `≈ ₩${(krw / 1e8).toFixed(1)}억`
   if (krw >= 1e4) return `≈ ₩${Math.round(krw / 1e4).toLocaleString()}만`
   return `≈ ₩${krw.toLocaleString()}`
@@ -232,10 +238,10 @@ const summaryText = computed(() => {
   const r = result.value; if (!r) return null
   const s = r.summary
   return {
-    intro: `${fmtYm(s.startYm)}부터 매월 ${fmtMoney(monthlyAmount.value ?? 0, r.currency)}씩 ${r.ticker}에 투자했다면`,
-    invested: `총 ${fmtMoney(s.totalInvested, r.currency)}를 투자하여`,
-    eval: `현재 ${fmtMoney(s.evalAmount, r.currency)}가 되었으며`,
-    returns: `총 수익률은 ${fmtPct(s.totalReturn)}, 연평균 수익률은 ${fmtPct(s.cagr)}입니다.`,
+    intro: t('etfBacktest.summaryIntro', { date: fmtYm(s.startYm), amount: fmtMoney(monthlyAmount.value ?? 0, r.currency), ticker: r.ticker }),
+    invested: t('etfBacktest.summaryInvested', { amount: fmtMoney(s.totalInvested, r.currency) }),
+    eval: t('etfBacktest.summaryEval', { amount: fmtMoney(s.evalAmount, r.currency) }),
+    returns: t('etfBacktest.summaryReturns', { rate: fmtPct(s.totalReturn), cagr: fmtPct(s.cagr) }),
   }
 })
 
@@ -438,9 +444,9 @@ const yearlyRows = computed(() =>
         class="collapse-header"
         @click="inputCollapsed = !inputCollapsed"
       >
-        <div class="font-weight-bold">{{ $t('etfBacktest.conditions') }}</div>
+        <div class="font-weight-bold">{{ $t('etfBacktest.conditions') }}:</div>
         <div class="d-flex align-center ga-2 text-medium-emphasis">
-          <span>{{ tickerInput }}{{ compareInput ? ` vs ${compareInput}` : '' }}{{ startYm ? ` · ${startYm.slice(0, 4)}년~` : '' }}</span>
+          <span>{{ tickerInput }}{{ compareInput ? ` vs ${compareInput}` : '' }}{{ startYm ? ` · ${$t('etfBacktest.collapsedSince', { year: startYm.slice(0, 4) })}` : '' }}</span>
           <v-icon size="18">{{ inputCollapsed ? 'mdi-chevron-down' : 'mdi-chevron-up' }}</v-icon>
         </div>
       </div>
@@ -502,13 +508,13 @@ const yearlyRows = computed(() =>
           min="1"
           :disabled="loading"
           :error-messages="monthlyAmountError"
-          :hint="!monthlyAmountError && result?.currency !== 'KRW' && monthlyAmount && monthlyAmount > 0 ? `${fmtMoneyKrw(monthlyAmount, 'USD')}/월` : ''"
+          :hint="!monthlyAmountError && result?.currency !== 'KRW' && monthlyAmount && monthlyAmount > 0 ? $t('etfBacktest.monthlyHint', { amount: fmtMoneyKrw(monthlyAmount, 'USD') }) : ''"
           persistent-hint
           @keyup.enter="run"
         >
           <template #append-inner>
             <span class="text-medium-emphasis">
-              {{ result?.currency === 'KRW' ? $t('currency.wonUnit') : 'USD' }}
+              {{ result?.currency === 'KRW' ? $t('currency.krwUnit') : 'USD' }}
             </span>
           </template>
         </v-text-field>
@@ -557,11 +563,11 @@ const yearlyRows = computed(() =>
         </div>
 
         <v-btn color="primary" rounded="lg" :disabled="!canRun || loading" :loading="loading" @click="run">
-          백테스트 실행
+          {{ $t('etfBacktest.run') }}
         </v-btn>
       </div>
       <div class="text-medium-emphasis mt-3">
-        * 해외 ETF/주식 전용 · 배당 재투자 포함 근사치 · 세금/수수료 미포함
+        {{ $t('etfBacktest.disclaimer') }}
       </div>
       </div><!-- /v-show -->
     </v-card>
@@ -571,12 +577,10 @@ const yearlyRows = computed(() =>
       <!-- 상장일 안내 배너 -->
       <div v-if="result.summary.startYm > queriedStartYm" class="inception-banner mb-3">
         <v-icon size="14" color="warning">mdi-information-outline</v-icon>
-        <span>
-          입력하신 시작일({{ fmtYm(queriedStartYm) }})보다 상장일이 늦어
-          <i18n-t keypath="etfBacktest.startNote" tag="span" scope="global">
-            <template #date><strong>{{ fmtYm(result.summary.startYm) }}</strong></template>
-          </i18n-t>
-        </span>
+        <i18n-t keypath="etfBacktest.inceptionNote" tag="span" scope="global">
+          <template #queried>{{ fmtYm(queriedStartYm) }}</template>
+          <template #date><strong>{{ fmtYm(result.summary.startYm) }}</strong></template>
+        </i18n-t>
       </div>
 
       <!-- 기간 헤더 -->

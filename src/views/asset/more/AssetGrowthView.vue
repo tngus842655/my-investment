@@ -8,6 +8,7 @@ import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { convertMoney } from '@/utils/portfolioMath'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { useI18n } from 'vue-i18n'
+import { formatYearMonth } from '@/utils/dateFormat'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -158,6 +159,12 @@ const chartData = computed(() => {
 // 툴팁 + 선택된 월
 const tooltip = ref<{ x: number; y: number; pt: MonthlyPoint } | null>(null)
 const selectedMonth = ref<string | null>(null)
+// 일별 상세 헤더 표시용 — selectedMonth("YYYY-MM")를 로케일 표기로 변환
+const selectedMonthLabel = computed(() => {
+  if (!selectedMonth.value) return ''
+  const [y, m] = selectedMonth.value.split('-')
+  return formatYearMonth(Number(y), Number(m))
+})
 
 const onChartClick = (pt: MonthlyPoint, x: number, y: number) => {
   if (tooltip.value?.pt.month === pt.month) {
@@ -449,7 +456,7 @@ function formatFull(v: number) {
               <v-btn icon size="x-small" variant="text" class="mr-1" @click="selectedMonth = null; tooltip = null">
                 <v-icon size="16">mdi-arrow-left</v-icon>
               </v-btn>
-              <div class="font-weight-medium">{{ $t('assetGrowth.dailyDetailTitle', { month: selectedMonth }) }}</div>
+              <div class="font-weight-medium">{{ $t('assetGrowth.dailyDetailTitle', { month: selectedMonthLabel }) }}</div>
             </template>
             <div v-else class="font-weight-medium">{{ $t('assetGrowth.monthlyDetailTitle') }}</div>
             <v-spacer />

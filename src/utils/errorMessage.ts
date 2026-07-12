@@ -1,21 +1,22 @@
-export const getErrorMessage = (code?: string) => {
+// Supabase 인증 에러 코드 → i18n 메시지 키. 호출부에서 t()로 번역한다.
+export const getErrorMessageKey = (code?: string): string => {
   switch (code) {
     case 'invalid_credentials':
-      return '가입되지 않은 계정이거나 비밀번호가 올바르지 않습니다.'
+      return 'auth.errors.invalidCredentials'
 
     case 'email_not_confirmed':
-      return '이메일 인증이 완료되지 않았습니다. 메일함을 확인해주세요.'
+      return 'auth.errors.emailNotConfirmed'
 
     case 'user_already_exists':
-      return '이미 가입된 이메일입니다.'
+      return 'auth.errors.userAlreadyExists'
 
     case 'weak_password':
-      return '비밀번호는 6자 이상 입력해주세요.'
+      return 'auth.errors.weakPassword'
 
     case 'over_email_send_rate_limit':
-      return '인증 메일 발송 횟수가 초과되었습니다. 잠시 후 다시 시도해주세요.'
+      return 'auth.errors.overEmailSendRateLimit'
 
     default:
-      return '오류가 발생했습니다.'
+      return 'auth.errors.generic'
   }
 }

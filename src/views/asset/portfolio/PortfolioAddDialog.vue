@@ -7,6 +7,9 @@ import { getCachedRate } from '@/services/exchangeRateCache'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { useLocale } from '@/composables/useLocale'
 import { useI18n } from 'vue-i18n'
+import { formatMoneyIn } from '@/utils/numberFormat'
+import { isKoLocale } from '@/plugins/i18n'
+import { displayAccountName, normalizeAccountName, UNASSIGNED_ACCOUNT } from '@/utils/accountName'
 import { isKnownTicker, getTickerDisplayName } from '@/utils/tickerNames'
 import { KR_STOCK_NAMES, KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 import { getStockPrice } from '@/services/market'
@@ -27,7 +30,7 @@ const krStockItems = Object.entries({ ...KR_STOCK_NAMES, ...KR_ETF_NAMES }).map(
 }))
 
 const filteredKrItems = computed(() =>
-  krSearchQuery.value.trim().length === 0 ? [] : krStockItems,
+  (krSearchQuery.value ?? '').trim().length === 0 ? [] : krStockItems,
 )
 
 const krFilter = (_value: string, query: string, item?: { raw: { title: string } }) => {
@@ -53,7 +56,7 @@ const isEditMode = computed(() => !!props.initialData)
 const ticker = ref('')
 const krSearchQuery = ref('')  // 국내주식 한글 검색어
 const selectedKrStock = ref<{ value: string; name: string } | null>(null)
-const accountName = ref('미지정')
+const accountName = ref(displayAccountName(UNASSIGNED_ACCOUNT))
 
 watch(selectedKrStock, (v) => { ticker.value = v?.value ?? '' })
 
@@ -113,6 +116,8 @@ const totalInitialAmount = computed(() => {
         : v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
     )
   }
+  // ko 외 로케일은 한글 단위 대신 국제 축약 표기
+  if (!isKoLocale()) return formatMoneyIn(v, 'KRW', 'short')
   if (v >= 100000000) return `${Math.floor(v / 100000000)}억원`
   if (v >= 10000) return `${Math.round(v / 10000).toLocaleString()}만원`
   return `${Math.round(v).toLocaleString()}원`
@@ -175,11 +180,11 @@ watch(dialog, async (opened) => {
       krSearchQuery.value = ''
     }
     currency.value = props.initialData.currency
-    accountName.value = props.initialData.account_name ?? '미지정'
+    accountName.value = displayAccountName(props.initialData.account_name ?? UNASSIGNED_ACCOUNT)
     await loadInitialTx(props.initialData.id)
   } else {
     reset(false)
-    if (props.initialAccount) accountName.value = props.initialAccount
+    if (props.initialAccount) accountName.value = displayAccountName(props.initialAccount)
   }
 })
 
@@ -238,7 +243,7 @@ const avgPriceError = computed(() => {
   if (initAvgPrice.value && p <= 0) return t('dialog.errors.pricePositive')
   if (initAvgPrice.value && p > maxPrice.value) {
     const unit = isUsStock.value ? '$' : ''
-    const suffix = isUsStock.value ? '' : '원'
+    const suffix = isUsStock.value ? '' : (isKoLocale() ? '원' : 'KRW')
     return t('dialog.errors.priceMax', { amount: `${unit}${maxPrice.value.toLocaleString()}${suffix}` })
   }
   return ''
@@ -291,9 +296,9 @@ const save = async () => {
     }
 
     if (isEditMode.value && props.initialData) {
-      const newAccountName = accountName.value.trim() || '미지정'
+      const newAccountName = normalizeAccountName(accountName.value)
       // 계좌명 변경 시 중복 체크
-      if (newAccountName !== (props.initialData.account_name ?? '미지정')) {
+      if (newAccountName !== (props.initialData.account_name ?? UNASSIGNED_ACCOUNT)) {
         const { data: dup } = await supabase
           .from('portfolios')
           .select('id')
@@ -302,7 +307,7 @@ const save = async () => {
           .eq('account_name', newAccountName)
           .maybeSingle()
         if (dup) {
-          showMessage(t('dialog.errors.duplicateInAccount', { name: getTickerDisplayName(props.initialData.ticker), account: newAccountName }), 'error')
+          showMessage(t('dialog.errors.duplicateInAccount', { name: getTickerDisplayName(props.initialData.ticker), account: displayAccountName(newAccountName) }), 'error')
           saving.value = false
           return
         }
@@ -366,7 +371,7 @@ const save = async () => {
             ? 'CASH_USD'
             : 'CASH_KRW'
           : (ticker.value?.trim() ?? '').toUpperCase()
-      const accountNameToSave = accountName.value.trim() || '미지정'
+      const accountNameToSave = normalizeAccountName(accountName.value)
       const { data: existing } = await supabase
         .from('portfolios')
         .select('id')
@@ -375,7 +380,7 @@ const save = async () => {
         .eq('account_name', accountNameToSave)
         .maybeSingle()
       if (existing) {
-        showMessage(t('dialog.errors.duplicateInAccount', { name: getTickerDisplayName(tickerToSave), account: accountNameToSave }), 'warning')
+        showMessage(t('dialog.errors.duplicateInAccount', { name: getTickerDisplayName(tickerToSave), account: displayAccountName(accountNameToSave) }), 'warning')
         saving.value = false
         return
       }
@@ -434,7 +439,7 @@ const reset = (closeDialog = true) => {
   assetClass.value = ''
   market.value = locale.value === 'ko' ? 'KR' : 'US'
   currency.value = 'KRW'
-  accountName.value = '미지정'
+  accountName.value = displayAccountName(UNASSIGNED_ACCOUNT)
   initQuantity.value = ''
   initAvgPrice.value = ''
   existingInitialTxId.value = null
@@ -458,9 +463,10 @@ const reset = (closeDialog = true) => {
           variant="outlined"
           density="compact"
           maxlength="20"
-          placeholder="미지정"
+          :placeholder="$t('dialog.accountUnassigned')"
           :hint="$t('dialog.accountHint')"
-          @blur="() => { if (!accountName.trim()) accountName = '미지정' }"
+          @focus="() => { if (accountName.trim() === displayAccountName(UNASSIGNED_ACCOUNT)) accountName = '' }"
+          @blur="() => { if (!accountName.trim()) accountName = displayAccountName(UNASSIGNED_ACCOUNT) }"
         />
 
         <!-- 자산군 -->
@@ -594,7 +600,7 @@ const reset = (closeDialog = true) => {
             rounded="lg"
             :prepend-inner-icon="currency === 'USD' ? 'mdi-currency-usd' : 'mdi-currency-krw'"
             placeholder="0"
-            :suffix="currency === 'USD' ? 'USD' : '원'"
+            :suffix="currency === 'USD' ? 'USD' : (isKoLocale() ? '원' : 'KRW')"
             :disabled="loadingInitial"
             :error-messages="avgPriceError"
           />
