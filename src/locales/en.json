@@ -651,7 +651,7 @@
     "emailLabel": "Email",
     "passwordLabel": "Password",
     "passwordConfirmLabel": "Confirm Password",
-    "emailPlaceholder": "example@email.com",
+    "emailPlaceholder": "example{'@'}email.com",
     "passwordPlaceholder": "At least 6 characters",
     "passwordConfirmPlaceholder": "Re-enter password",
     "login": "Log in",

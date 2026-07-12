@@ -651,7 +651,7 @@
     "emailLabel": "이메일",
     "passwordLabel": "비밀번호",
     "passwordConfirmLabel": "비밀번호 확인",
-    "emailPlaceholder": "example@email.com",
+    "emailPlaceholder": "example{'@'}email.com",
     "passwordPlaceholder": "6자 이상 입력",
     "passwordConfirmPlaceholder": "비밀번호 재입력",
     "login": "로그인",
