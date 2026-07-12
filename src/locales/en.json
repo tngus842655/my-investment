@@ -232,7 +232,7 @@
   },
   "displaySettings": {
     "title": "Display Settings",
-    "fontSize": "Font size",
+    "fontSize": "Font Size",
     "reset": "Reset",
     "small": "Small ({pct})",
     "large": "Large ({pct})",
@@ -622,7 +622,7 @@
     "newPassword": "New Password",
     "confirmPassword": "Confirm New Password",
     "sameAsCurrentError": "Same as your current password.",
-    "minLengthHint": "At least 6 characters",
+    "minLengthHint": "Minimum 6 characters",
     "mismatchError": "Passwords do not match.",
     "submit": "Change Password",
     "errors": {
@@ -635,7 +635,7 @@
   },
   "feedback": {
     "title": "Feedback",
-    "subtitle": "Let us know about issues or ideas for improvement.",
+    "subtitle": "Report bugs or share ideas to help improve FIREPATH.",
     "newFeedback": "New Feedback",
     "category": "Category",
     "catBug": "Bug Report",
@@ -644,7 +644,7 @@
     "titleLabel": "Title",
     "titlePlaceholder": "Enter a title",
     "contentLabel": "Content",
-    "contentPlaceholder": "Describe the details",
+    "contentPlaceholder": "Describe your feedback.",
     "sending": "Sending...",
     "send": "Send Feedback",
     "myFeedback": "My Feedback",
