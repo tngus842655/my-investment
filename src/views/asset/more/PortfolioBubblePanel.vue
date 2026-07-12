@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getStockQuote } from '@/services/market'
@@ -8,11 +7,8 @@ import { getTickerDisplayName } from '@/utils/tickerNames'
 import { convertMoney } from '@/utils/portfolioMath'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { getAssetClass, isCash, type AssetClass, type MarketCode } from '@/config/marketConfig'
-import { useI18n } from 'vue-i18n'
 
-const router = useRouter()
 const { baseCurrency, money } = useBaseCurrency()
-const { t } = useI18n()
 
 const loading = ref(true)
 
@@ -215,21 +211,17 @@ onMounted(loadData)
 </script>
 
 <template>
-  <div class="bubble-page">
-    <!-- 헤더 -->
-    <div class="bubble-header">
-      <v-btn icon="mdi-arrow-left" variant="text" size="small" style="color: #fff" @click="router.back()" />
-      <div class="header-title">{{ $t('assetBubble.title') }}</div>
-      <div class="header-total" v-if="!loading && bubbles.length">
-        <div class="total-label">{{ $t('assetBubble.totalAsset') }}</div>
-        <div class="total-value">{{ money(totalBase, exchangeRate) }}</div>
-        <div
-          v-if="dayChange"
-          class="total-change"
-          :class="dayChange.diff >= 0 ? 'chg-up' : 'chg-down'"
-        >{{ dayChange.diff >= 0 ? '+' : '-' }}{{ money(Math.abs(dayChange.diff), exchangeRate) }} ({{ dayChange.rate >= 0 ? '+' : '' }}{{ dayChange.rate.toFixed(2) }}%)</div>
-        <div class="total-date">{{ asOfDate }} {{ $t('assetBubble.asOf') }}</div>
-      </div>
+  <div class="bubble-panel">
+    <!-- 총 평가금액 + 전일 대비 -->
+    <div class="bubble-header" v-if="!loading && bubbles.length">
+      <div class="total-label">{{ $t('assetBubble.totalAsset') }}</div>
+      <div class="total-value">{{ money(totalBase, exchangeRate) }}</div>
+      <div
+        v-if="dayChange"
+        class="total-change"
+        :class="dayChange.diff >= 0 ? 'chg-up' : 'chg-down'"
+      >{{ dayChange.diff >= 0 ? '+' : '-' }}{{ money(Math.abs(dayChange.diff), exchangeRate) }} ({{ dayChange.rate >= 0 ? '+' : '' }}{{ dayChange.rate.toFixed(2) }}%)</div>
+      <div class="total-date">{{ asOfDate }} {{ $t('assetBubble.asOf') }}</div>
     </div>
 
     <template v-if="loading">
@@ -332,22 +324,20 @@ onMounted(loadData)
 </template>
 
 <style scoped>
-.bubble-page {
+.bubble-panel {
   position: relative;
   display: flex;
   flex-direction: column;
-  /* 부모(.app-content)는 스크롤 컨테이너라 height:100%가 안 먹음 —
-     뷰포트에서 하단 탭바 영역을 뺀 높이로 직접 계산해 화면을 꽉 채움 */
-  height: calc(100dvh - 72px - env(safe-area-inset-bottom));
+  height: 100%;
   min-height: 0;
-  /* 목업과 동일한 우주 느낌 다크 배경 (테마와 무관하게 이 화면은 다크 고정) */
+  /* 목업과 동일한 우주 느낌 다크 배경 (테마와 무관하게 이 패널은 다크 고정) */
   background:
     radial-gradient(ellipse 120% 80% at 50% 22%, #1a2942 0%, #0e1830 42%, #070c18 100%);
   overflow: hidden;
 }
 
 /* 은은한 별빛 */
-.bubble-page::before {
+.bubble-panel::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -362,28 +352,10 @@ onMounted(loadData)
     radial-gradient(1.2px 1.2px at 52% 82%, rgba(255,255,255,0.4), transparent),
     radial-gradient(1px 1px at 8% 55%, rgba(255,255,255,0.3), transparent);
 }
-.bubble-page > * { position: relative; z-index: 1; }
-
-/* 홈 화면 추가(PWA) 모드는 하단 탭바가 더 큼 (AssetLayout과 동일 값) */
-@media (display-mode: standalone) {
-  .bubble-page {
-    height: calc(100dvh - 82px - env(safe-area-inset-bottom));
-  }
-}
+.bubble-panel > * { position: relative; z-index: 1; }
 
 .bubble-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 12px 12px 4px;
-}
-.header-title {
-  font-weight: 700;
-  padding-top: 6px;
-  color: rgba(255, 255, 255, 0.95);
-}
-.header-total {
-  margin-left: auto;
+  padding: 12px 16px 4px;
   text-align: right;
 }
 .total-label {
@@ -499,7 +471,7 @@ onMounted(loadData)
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 8px 16px calc(10px + env(safe-area-inset-bottom));
+  padding: 8px 16px 12px;
   flex-wrap: wrap;
 }
 .legend-item {

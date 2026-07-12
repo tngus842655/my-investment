@@ -226,7 +226,6 @@
     "history": "Progress History",
     "badges": "Achievement Badges",
     "portfolioAnalysis": "Portfolio Analysis",
-    "assetBubble": "Asset Composition",
     "assetGrowth": "Growth Report",
     "etfAnalysis": "ETF Analysis & Comparison",
     "etfBacktest": "ETF Backtest",
@@ -318,12 +317,8 @@
   },
   "portfolioAnalysis": {
     "title": "Portfolio Analysis",
-    "subtitle": "Portfolio Allocation",
     "emptyTitle": "No holdings yet",
     "emptyHint": "Add assets to your portfolio",
-    "byType": "By Asset Type",
-    "byTicker": "By Ticker",
-    "compare": "Compare",
     "selectToCompare": "Select holdings to compare",
     "noCompareTargets": "No holdings available to compare",
     "selectAtLeast2": "Select at least two holdings to compare.",
@@ -334,7 +329,6 @@
     "maxCompare": "You can select up to {n} holdings."
   },
   "assetBubble": {
-    "title": "Asset Composition",
     "totalAsset": "Total Value",
     "asOf": "",
     "empty": "No holdings yet.",

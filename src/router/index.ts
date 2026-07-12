@@ -18,7 +18,6 @@ import BadgesView from '@/views/asset/more/BadgesView.vue'
 import FireSimulatorView from '@/views/asset/more/FireSimulatorView.vue'
 import FireHistoryView from '@/views/asset/more/FireHistoryView.vue'
 import AssetGrowthView from '@/views/asset/more/AssetGrowthView.vue'
-import AssetBubbleView from '@/views/asset/more/AssetBubbleView.vue'
 import DividendCalendarView from '@/views/asset/more/DividendCalendarView.vue'
 import EtfAnalysisView from '@/views/asset/more/EtfAnalysisView.vue'
 import EtfBacktestView from '@/views/asset/more/EtfBacktestView.vue'
@@ -201,12 +200,6 @@ const router = createRouter({
           name: 'portfolioAnalysis',
           component: PortfolioAnalysisView,
           meta: { label: '포트폴리오 분석' },
-        },
-        {
-          path: 'asset-bubble',
-          name: 'assetBubble',
-          component: AssetBubbleView,
-          meta: { label: '자산 구성' },
         },
         {
           path: 'badges',

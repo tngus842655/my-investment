@@ -226,7 +226,6 @@
     "history": "진행 기록",
     "badges": "목표 달성 배지",
     "portfolioAnalysis": "포트폴리오 분석",
-    "assetBubble": "자산 구성",
     "assetGrowth": "자산 성장 리포트",
     "etfAnalysis": "ETF 분석&비교",
     "etfBacktest": "ETF 백테스트",
@@ -318,12 +317,8 @@
   },
   "portfolioAnalysis": {
     "title": "포트폴리오 분석",
-    "subtitle": "종목별 비중 분석",
     "emptyTitle": "보유 자산이 없습니다",
     "emptyHint": "포트폴리오에 자산을 추가해 보세요",
-    "byType": "자산군별",
-    "byTicker": "종목별",
-    "compare": "종목 비교",
     "selectToCompare": "비교할 종목 선택",
     "noCompareTargets": "비교할 수 있는 보유 종목이 없어요",
     "selectAtLeast2": "비교할 종목을 2개 이상 선택해주세요",
@@ -334,7 +329,6 @@
     "maxCompare": "최대 {n}개까지 선택할 수 있어요."
   },
   "assetBubble": {
-    "title": "자산 구성",
     "totalAsset": "총 평가금액",
     "asOf": "기준",
     "empty": "보유 자산이 없습니다.",
