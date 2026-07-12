@@ -40,6 +40,7 @@ const paymentMethodId = ref<string | null>(null)
 const addingPaymentMethod = ref(false)
 const newPaymentMethodName = ref('')
 const memo = ref('')
+const memoSuggestions = ref<string[]>([])
 const entryDate = ref(new Date().toISOString().slice(0, 10))
 const saving = ref(false)
 const favoritesMenu = ref(false)
@@ -180,6 +181,17 @@ const addPaymentMethod = async () => {
   newPaymentMethodName.value = ''
 }
 
+const fetchMemoSuggestions = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const { data } = await supabase
+    .from('budget_entries')
+    .select('memo')
+    .eq('user_id', user.id)
+    .not('memo', 'is', null)
+  memoSuggestions.value = [...new Set((data ?? []).map((d) => d.memo as string))]
+}
+
 const fetchFavorites = async () => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
@@ -219,6 +231,7 @@ watch(dialog, async (open) => {
   await fetchCategories()
   await fetchPaymentMethods()
   await fetchFavorites()
+  await fetchMemoSuggestions()
   addingPaymentMethod.value = false
   newPaymentMethodName.value = ''
   favoritesMenu.value = false
@@ -418,9 +431,10 @@ const save = async () => {
           </div>
         </v-expand-transition>
 
-        <v-text-field
+        <v-combobox
           ref="memoFieldRef"
           v-model="memo"
+          :items="memoSuggestions"
           label="내용"
           prepend-inner-icon="mdi-note-outline"
           variant="outlined"
@@ -430,6 +444,8 @@ const save = async () => {
           maxlength="30"
           counter
           autocomplete="off"
+          hide-no-data
+          menu-icon=""
           @focus="dateCalendarOpen = false; categoryPickerOpen = false; amountKeypadOpen = false"
         />
       </v-card-text>
