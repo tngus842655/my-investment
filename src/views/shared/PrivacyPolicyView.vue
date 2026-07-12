@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { formatFullDate } from '@/utils/dateFormat'
 import PrivacyPolicyContentKo from './PrivacyPolicyContentKo.vue'
 import PrivacyPolicyContentEn from './PrivacyPolicyContentEn.vue'
 
@@ -9,7 +8,6 @@ const router = useRouter()
 const { locale, t } = useI18n()
 
 // 국가별로 법률 문서 전문이 달라 컴포넌트 자체를 분기한다 (i18n 키 조각화 대신).
-const effectiveDate = formatFullDate(2026, 7, 8)
 </script>
 
 <template>
@@ -20,7 +18,7 @@ const effectiveDate = formatFullDate(2026, 7, 8)
       </button>
       <div>
         <div class="font-weight-bold">{{ t('privacyPolicy.title') }}</div>
-        <div class="text-medium-emphasis">{{ t('privacyPolicy.effectiveDate', { date: effectiveDate }) }}</div>
+        <div class="text-medium-emphasis">{{ t('privacyPolicy.effectiveDate') }}</div>
       </div>
     </div>
 
