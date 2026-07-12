@@ -21,15 +21,7 @@
     "durationYM": "{years}y {months}mo",
     "durationY": "{years}y",
     "durationM": "{months}mo",
-    "weekdays": [
-      "Sun",
-      "Mon",
-      "Tue",
-      "Wed",
-      "Thu",
-      "Fri",
-      "Sat"
-    ]
+    "weekdays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
   },
   "dashboard": {
     "title": "Dashboard",
@@ -328,7 +320,7 @@
     "priceFailed": "Failed to fetch price",
     "shareNote": "Allocation based on the total value of the selected holdings.",
     "totalAsset": "Total Assets",
-    "costBasisNote": "Values are based on cost basis.",
+    "costBasisNote": "Asset Allocation.",
     "maxCompare": "You can select up to {n} holdings."
   },
   "assetBubble": {

@@ -21,15 +21,7 @@
     "durationYM": "{years}년 {months}개월",
     "durationY": "{years}년",
     "durationM": "{months}개월",
-    "weekdays": [
-      "일",
-      "월",
-      "화",
-      "수",
-      "목",
-      "금",
-      "토"
-    ]
+    "weekdays": ["일", "월", "화", "수", "목", "금", "토"]
   },
   "dashboard": {
     "title": "대시보드",
@@ -328,7 +320,7 @@
     "priceFailed": "현재가 조회 실패",
     "shareNote": "선택한 종목 평가금액 합계를 100%로 한 비중",
     "totalAsset": "총 자산",
-    "costBasisNote": "취득가 기준 평가금액",
+    "costBasisNote": "평가금액 기준 비중",
     "maxCompare": "최대 {n}개까지 선택할 수 있어요."
   },
   "assetBubble": {
