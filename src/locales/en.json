@@ -675,6 +675,10 @@
     "title": "Dev Notes",
     "subtitle": "Update history"
   },
+  "privacyPolicy": {
+    "title": "Privacy Policy",
+    "effectiveDate": "Effective {date}"
+  },
   "auth": {
     "emailLabel": "Email",
     "passwordLabel": "Password",

@@ -675,6 +675,10 @@
     "title": "개발자 노트",
     "subtitle": "업데이트 내역"
   },
+  "privacyPolicy": {
+    "title": "개인정보처리방침",
+    "effectiveDate": "시행일자 {date}"
+  },
   "auth": {
     "emailLabel": "이메일",
     "passwordLabel": "비밀번호",
