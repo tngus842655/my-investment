@@ -21,15 +21,7 @@
     "durationYM": "{years}y {months}mo",
     "durationY": "{years}y",
     "durationM": "{months}mo",
-    "weekdays": [
-      "Sun",
-      "Mon",
-      "Tue",
-      "Wed",
-      "Thu",
-      "Fri",
-      "Sat"
-    ]
+    "weekdays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
   },
   "dashboard": {
     "title": "Dashboard",
@@ -317,20 +309,35 @@
   },
   "portfolioAnalysis": {
     "title": "Portfolio Analysis",
-    "subtitle": "Portfolio Allocation",
+    "pageAssetClass": "Allocation",
+    "pageBubble": "Holdings",
+    "pageCompare": "Compare",
     "emptyTitle": "No holdings yet",
     "emptyHint": "Add assets to your portfolio",
-    "byType": "By Asset Type",
-    "byTicker": "By Ticker",
-    "compare": "Compare",
     "selectToCompare": "Select holdings to compare",
     "noCompareTargets": "No holdings available to compare",
     "selectAtLeast2": "Select at least two holdings to compare.",
     "priceFailed": "Failed to fetch price",
     "shareNote": "Allocation based on the total value of the selected holdings.",
     "totalAsset": "Total Assets",
-    "costBasisNote": "Values are based on cost basis.",
+    "costBasisNote": "Asset Allocation.",
     "maxCompare": "You can select up to {n} holdings."
+  },
+  "assetBubble": {
+    "totalAsset": "Total Value",
+    "asOf": "",
+    "empty": "No holdings yet.",
+    "up": "Up",
+    "down": "Down",
+    "flat": "Flat",
+    "sizeNote": "※ Circle size = value weight",
+    "dayChange": "1D",
+    "weight": "Weight",
+    "pl": "P/L",
+    "returnRate": "Return",
+    "avgPrice": "Avg Price",
+    "currentPrice": "Price",
+    "quantity": "Qty"
   },
   "assetGrowth": {
     "title": "Asset Growth Report",

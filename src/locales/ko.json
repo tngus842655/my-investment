@@ -21,15 +21,7 @@
     "durationYM": "{years}년 {months}개월",
     "durationY": "{years}년",
     "durationM": "{months}개월",
-    "weekdays": [
-      "일",
-      "월",
-      "화",
-      "수",
-      "목",
-      "금",
-      "토"
-    ]
+    "weekdays": ["일", "월", "화", "수", "목", "금", "토"]
   },
   "dashboard": {
     "title": "대시보드",
@@ -317,20 +309,35 @@
   },
   "portfolioAnalysis": {
     "title": "포트폴리오 분석",
-    "subtitle": "종목별 비중 분석",
+    "pageAssetClass": "자산분포",
+    "pageBubble": "종목구성",
+    "pageCompare": "종목비교",
     "emptyTitle": "보유 자산이 없습니다",
     "emptyHint": "포트폴리오에 자산을 추가해 보세요",
-    "byType": "자산군별",
-    "byTicker": "종목별",
-    "compare": "종목 비교",
     "selectToCompare": "비교할 종목 선택",
     "noCompareTargets": "비교할 수 있는 보유 종목이 없어요",
     "selectAtLeast2": "비교할 종목을 2개 이상 선택해주세요",
     "priceFailed": "현재가 조회 실패",
     "shareNote": "선택한 종목 평가금액 합계를 100%로 한 비중",
     "totalAsset": "총 자산",
-    "costBasisNote": "취득가 기준 평가금액",
+    "costBasisNote": "평가금액 기준 비중",
     "maxCompare": "최대 {n}개까지 선택할 수 있어요."
+  },
+  "assetBubble": {
+    "totalAsset": "총 평가금액",
+    "asOf": "기준",
+    "empty": "보유 자산이 없습니다.",
+    "up": "상승",
+    "down": "하락",
+    "flat": "보합",
+    "sizeNote": "※ 원 크기 = 평가 비중",
+    "dayChange": "전일 대비",
+    "weight": "비중",
+    "pl": "평가손익",
+    "returnRate": "수익률",
+    "avgPrice": "평균단가",
+    "currentPrice": "현재가",
+    "quantity": "보유수량"
   },
   "assetGrowth": {
     "title": "자산 성장 리포트",
