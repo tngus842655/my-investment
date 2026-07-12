@@ -201,7 +201,8 @@ const formatScenarioDiff = (months: number | null, baseMonths: number | null, is
   d.setMonth(d.getMonth() + months)
   const dateStr = formatYearMonth(d.getFullYear(), d.getMonth() + 1)
   const diff = Math.abs(baseMonths - months)
-  return t(isOptimistic ? 'analysis.diffShorter' : 'analysis.diffLonger', { n: diff, date: dateStr })
+  // 세 번째 인자는 vue-i18n 복수형 선택용 카운트 (en은 1개월/N개월 구분, ko는 단일형)
+  return t(isOptimistic ? 'analysis.diffShorter' : 'analysis.diffLonger', { n: diff, date: dateStr }, diff)
 }
 
 // ── FIRE Tip ─────────────────────────────────────
