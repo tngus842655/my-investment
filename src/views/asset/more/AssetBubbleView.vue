@@ -33,7 +33,9 @@ interface Bubble {
   x: number
   y: number
   r: number
-  color: string
+  color: string           // 기본 채움색
+  stroke: string          // 밝은 테두리
+  glow: string            // 외곽 발광색
 }
 
 const bubbles = ref<Bubble[]>([])
@@ -43,19 +45,25 @@ const totalBase = computed(() => bubbles.value.reduce((s, b) => s + b.valueBase,
 const maxR = computed(() => bubbles.value.reduce((m, b) => Math.max(m, b.r), 0))
 const asOfDate = new Date().toISOString().slice(0, 10).replace(/-/g, '.')
 
-// 등락률 → 색상 (한국식: 상승 빨강 / 하락 파랑 / 보합·미조회 회색), 변동폭이 클수록 진하게
-const bubbleColor = (cr: number | null): string => {
-  if (cr === null || Math.abs(cr) < 0.005) return 'hsl(220, 6%, 55%)'
-  const mag = Math.min(Math.abs(cr) / 3, 1) // 3% 이상이면 최대 채도
-  const hue = cr > 0 ? 4 : 214
-  const sat = 55 + mag * 22
-  const light = 60 - mag * 12
-  return `hsl(${hue}, ${sat}%, ${light}%)`
+// 등락률 → 색상 (한국식: 상승 빨강 / 하락 파랑 / 보합·미조회 회색), 변동폭이 클수록 진하게.
+// 기본 채움 + 밝은 테두리 + 외곽 발광색을 함께 산출해 입체감을 준다.
+const colorParts = (cr: number | null): { color: string; stroke: string; glow: string } => {
+  const neutral = cr === null || Math.abs(cr) < 0.005
+  const mag = neutral ? 0 : Math.min(Math.abs(cr) / 3, 1) // 3% 이상이면 최대 채도
+  const hue = neutral ? 220 : cr! > 0 ? 4 : 212
+  const sat = neutral ? 8 : 62 + mag * 20
+  const light = neutral ? 52 : 58 - mag * 10
+  return {
+    color: `hsl(${hue}, ${sat}%, ${light}%)`,
+    stroke: `hsl(${hue}, ${sat}%, ${light + 16}%)`,
+    glow: `hsla(${hue}, ${sat}%, ${light + 12}%, 0.55)`,
+  }
 }
 
 // 종목명·등락률 텍스트를 넣기에 충분히 큰 원만 텍스트 표시 (작은 원은 생략)
-const showText = (b: Bubble) => b.r >= maxR.value * 0.34
-const showChange = (b: Bubble) => b.r >= maxR.value * 0.28
+const showText = (b: Bubble) => b.r >= maxR.value * 0.3
+const showChange = (b: Bubble) => b.r >= maxR.value * 0.26
+const showName = (b: Bubble) => b.r >= maxR.value * 0.55 && b.label !== b.ticker
 const fmtChange = (cr: number | null) => cr === null ? '-' : `${cr >= 0 ? '+' : ''}${cr.toFixed(2)}%`
 
 // ── 골든앵글 스파이럴 패킹 (D3 없이 경량 구현) ─────────────
@@ -155,7 +163,7 @@ const loadData = async () => {
       r: radii[i]!,
       x: positions[i]!.x,
       y: positions[i]!.y,
-      color: bubbleColor(b.changeRate),
+      ...colorParts(b.changeRate),
     }))
 
     // viewBox를 전체 버블 경계에 맞춰 자동 설정 (화면 꽉 채우기)
@@ -183,7 +191,7 @@ onMounted(loadData)
   <div class="bubble-page">
     <!-- 헤더 -->
     <div class="bubble-header">
-      <v-btn icon="mdi-arrow-left" variant="text" size="small" style="color: rgb(var(--v-theme-on-surface))" @click="router.back()" />
+      <v-btn icon="mdi-arrow-left" variant="text" size="small" style="color: #fff" @click="router.back()" />
       <div class="header-title">{{ $t('assetBubble.title') }}</div>
       <div class="header-total" v-if="!loading && bubbles.length">
         <div class="total-label">{{ $t('assetBubble.totalAsset') }}</div>
@@ -201,23 +209,50 @@ onMounted(loadData)
     <template v-else-if="bubbles.length === 0">
       <div class="center-state">
         <v-icon size="56" color="primary" class="mb-3" style="opacity:0.4">mdi-chart-bubble</v-icon>
-        <div class="text-medium-emphasis">{{ $t('assetBubble.empty') }}</div>
+        <div style="color: rgba(255,255,255,0.6)">{{ $t('assetBubble.empty') }}</div>
       </div>
     </template>
 
     <template v-else>
       <div class="bubble-stage">
         <svg :viewBox="viewBox" class="bubble-svg" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <!-- 구체 광택: 좌상단 하이라이트 + 하단 가장자리 음영 -->
+            <radialGradient id="bubbleGlass" cx="38%" cy="30%" r="72%">
+              <stop offset="0%" stop-color="#fff" stop-opacity="0.4" />
+              <stop offset="42%" stop-color="#fff" stop-opacity="0.05" />
+              <stop offset="78%" stop-color="#000" stop-opacity="0.02" />
+              <stop offset="100%" stop-color="#000" stop-opacity="0.28" />
+            </radialGradient>
+          </defs>
           <g
             v-for="(b, i) in bubbles"
             :key="b.ticker"
             class="bubble-g"
             :style="{ '--delay': `${i * 0.04}s` }"
           >
-            <circle :cx="b.x" :cy="b.y" :r="b.r" :fill="b.color" fill-opacity="0.9" :stroke="b.color" :stroke-width="b.r * 0.03" />
+            <!-- 발광 + 기본 채움 -->
+            <circle
+              :cx="b.x" :cy="b.y" :r="b.r"
+              :fill="b.color"
+              :stroke="b.stroke"
+              :stroke-width="b.r * 0.02"
+              :style="{ filter: `drop-shadow(0 0 ${b.r * 0.16}px ${b.glow})` }"
+            />
+            <!-- 광택 오버레이 -->
+            <circle :cx="b.x" :cy="b.y" :r="b.r" fill="url(#bubbleGlass)" pointer-events="none" />
+
             <template v-if="showText(b)">
-              <text :x="b.x" :y="b.y - (showChange(b) ? b.r * 0.08 : 0)" text-anchor="middle" class="bubble-ticker" :style="{ fontSize: `${b.r * 0.36}px` }">{{ b.ticker }}</text>
-              <text v-if="showChange(b)" :x="b.x" :y="b.y + b.r * 0.34" text-anchor="middle" class="bubble-change" :style="{ fontSize: `${b.r * 0.24}px` }">{{ fmtChange(b.changeRate) }}</text>
+              <!-- 이름 서브라벨이 있으면 3줄, 없으면 2줄로 세로 정렬 -->
+              <template v-if="showName(b)">
+                <text :x="b.x" :y="b.y - b.r * 0.2" text-anchor="middle" class="bubble-ticker" :style="{ fontSize: `${b.r * 0.3}px` }">{{ b.ticker }}</text>
+                <text :x="b.x" :y="b.y + b.r * 0.04" text-anchor="middle" class="bubble-name" :style="{ fontSize: `${b.r * 0.15}px` }">{{ b.label }}</text>
+                <text v-if="showChange(b)" :x="b.x" :y="b.y + b.r * 0.34" text-anchor="middle" class="bubble-change" :style="{ fontSize: `${b.r * 0.2}px` }">{{ fmtChange(b.changeRate) }}</text>
+              </template>
+              <template v-else>
+                <text :x="b.x" :y="b.y - (showChange(b) ? b.r * 0.06 : -b.r * 0.12)" text-anchor="middle" class="bubble-ticker" :style="{ fontSize: `${b.r * 0.34}px` }">{{ b.ticker }}</text>
+                <text v-if="showChange(b)" :x="b.x" :y="b.y + b.r * 0.34" text-anchor="middle" class="bubble-change" :style="{ fontSize: `${b.r * 0.22}px` }">{{ fmtChange(b.changeRate) }}</text>
+              </template>
             </template>
           </g>
         </svg>
@@ -225,9 +260,9 @@ onMounted(loadData)
 
       <!-- 범례 -->
       <div class="bubble-legend">
-        <span class="legend-item"><span class="legend-dot" style="background: hsl(4, 70%, 54%)" />{{ $t('assetBubble.up') }}</span>
-        <span class="legend-item"><span class="legend-dot" style="background: hsl(214, 70%, 54%)" />{{ $t('assetBubble.down') }}</span>
-        <span class="legend-item"><span class="legend-dot" style="background: hsl(220, 6%, 55%)" />{{ $t('assetBubble.flat') }}</span>
+        <span class="legend-item"><span class="legend-dot" style="background: hsl(4, 72%, 55%)" />{{ $t('assetBubble.up') }}</span>
+        <span class="legend-item"><span class="legend-dot" style="background: hsl(212, 72%, 55%)" />{{ $t('assetBubble.down') }}</span>
+        <span class="legend-item"><span class="legend-dot" style="background: hsl(220, 8%, 52%)" />{{ $t('assetBubble.flat') }}</span>
         <span class="legend-note">{{ $t('assetBubble.sizeNote') }}</span>
       </div>
     </template>
@@ -236,11 +271,34 @@ onMounted(loadData)
 
 <style scoped>
 .bubble-page {
+  position: relative;
   display: flex;
   flex-direction: column;
-  height: 100dvh;
-  background: var(--fp-bg, #080f1e);
+  height: 100%;
+  min-height: 0;
+  /* 목업과 동일한 우주 느낌 다크 배경 (테마와 무관하게 이 화면은 다크 고정) */
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 22%, #1a2942 0%, #0e1830 42%, #070c18 100%);
+  overflow: hidden;
 }
+
+/* 은은한 별빛 */
+.bubble-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 78% 12%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 33% 42%, rgba(255,255,255,0.35), transparent),
+    radial-gradient(1.4px 1.4px at 62% 33%, rgba(255,255,255,0.45), transparent),
+    radial-gradient(1px 1px at 88% 62%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 22% 72%, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1.2px 1.2px at 52% 82%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 8% 55%, rgba(255,255,255,0.3), transparent);
+}
+.bubble-page > * { position: relative; z-index: 1; }
 
 .bubble-header {
   display: flex;
@@ -251,6 +309,7 @@ onMounted(loadData)
 .header-title {
   font-weight: 700;
   padding-top: 6px;
+  color: rgba(255, 255, 255, 0.95);
 }
 .header-total {
   margin-left: auto;
@@ -258,16 +317,16 @@ onMounted(loadData)
 }
 .total-label {
   font-size: 0.6875rem;
-  color: rgba(var(--v-theme-on-surface), 0.5);
+  color: rgba(255, 255, 255, 0.5);
 }
 .total-value {
   font-size: 1.125rem;
   font-weight: 700;
-  color: rgb(var(--v-theme-on-surface));
+  color: #fff;
 }
 .total-date {
   font-size: 0.625rem;
-  color: rgba(var(--v-theme-on-surface), 0.4);
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .bubble-stage {
@@ -296,9 +355,16 @@ onMounted(loadData)
   font-weight: 700;
   font-family: inherit;
   pointer-events: none;
+  paint-order: stroke;
+}
+.bubble-name {
+  fill: rgba(255, 255, 255, 0.72);
+  font-weight: 500;
+  font-family: inherit;
+  pointer-events: none;
 }
 .bubble-change {
-  fill: rgba(255, 255, 255, 0.9);
+  fill: rgba(255, 255, 255, 0.92);
   font-weight: 600;
   font-family: inherit;
   pointer-events: none;
@@ -316,7 +382,7 @@ onMounted(loadData)
   align-items: center;
   gap: 5px;
   font-size: 0.75rem;
-  color: rgba(var(--v-theme-on-surface), 0.7);
+  color: rgba(255, 255, 255, 0.72);
 }
 .legend-dot {
   width: 10px;
@@ -326,7 +392,7 @@ onMounted(loadData)
 .legend-note {
   margin-left: auto;
   font-size: 0.6875rem;
-  color: rgba(var(--v-theme-on-surface), 0.4);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .center-state {
