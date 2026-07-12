@@ -226,6 +226,7 @@
     "history": "Progress History",
     "badges": "Achievement Badges",
     "portfolioAnalysis": "Portfolio Analysis",
+    "assetBubble": "Asset Composition",
     "assetGrowth": "Growth Report",
     "etfAnalysis": "ETF Analysis & Comparison",
     "etfBacktest": "ETF Backtest",
@@ -331,6 +332,16 @@
     "totalAsset": "Total Assets",
     "costBasisNote": "Values are based on cost basis.",
     "maxCompare": "You can select up to {n} holdings."
+  },
+  "assetBubble": {
+    "title": "Asset Composition",
+    "totalAsset": "Total Value",
+    "asOf": "",
+    "empty": "No holdings yet.",
+    "up": "Up",
+    "down": "Down",
+    "flat": "Flat",
+    "sizeNote": "※ Circle size = value weight"
   },
   "assetGrowth": {
     "title": "Asset Growth Report",

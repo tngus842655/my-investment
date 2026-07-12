@@ -68,6 +68,15 @@ const router = useRouter()
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
       </div>
 
+      <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/asset-bubble')">
+        <div class="menu-icon"><v-icon size="18" color="primary">mdi-chart-bubble</v-icon></div>
+        <div>
+          <div class="font-weight-medium">{{ $t('more.assetBubble') }}</div>
+        </div>
+        <v-spacer />
+        <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
+      </div>
+
       <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/asset-growth')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-chart-bar</v-icon></div>
         <div>

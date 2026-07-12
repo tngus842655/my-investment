@@ -226,6 +226,7 @@
     "history": "진행 기록",
     "badges": "목표 달성 배지",
     "portfolioAnalysis": "포트폴리오 분석",
+    "assetBubble": "자산 구성",
     "assetGrowth": "자산 성장 리포트",
     "etfAnalysis": "ETF 분석&비교",
     "etfBacktest": "ETF 백테스트",
@@ -331,6 +332,16 @@
     "totalAsset": "총 자산",
     "costBasisNote": "취득가 기준 평가금액",
     "maxCompare": "최대 {n}개까지 선택할 수 있어요."
+  },
+  "assetBubble": {
+    "title": "자산 구성",
+    "totalAsset": "총 평가금액",
+    "asOf": "기준",
+    "empty": "보유 자산이 없습니다.",
+    "up": "상승",
+    "down": "하락",
+    "flat": "보합",
+    "sizeNote": "※ 원 크기 = 평가 비중"
   },
   "assetGrowth": {
     "title": "자산 성장 리포트",

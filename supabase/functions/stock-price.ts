@@ -18,25 +18,34 @@ const isKoreanStock = (ticker: string, assetType: string, currency: string): boo
   return assetType === '국내주식' || (assetType === 'ETF' && currency === 'KRW') || /^\d{6}$/.test(ticker)
 }
 
-const fetchYahooPrice = async (ticker: string, suffixes: string[]): Promise<number> => {
-  const tryFetch = async (symbol: string): Promise<number | null> => {
+// 현재가 + 전일종가. previousClose를 못 구하면 null (등락률 계산 불가 → 프론트에서 보합 처리)
+interface Quote {
+  price: number
+  previousClose: number | null
+}
+
+const fetchYahooPrice = async (ticker: string, suffixes: string[]): Promise<Quote> => {
+  const tryFetch = async (symbol: string): Promise<Quote | null> => {
     const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`, { headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' } })
     if (!res.ok) return null
     const data = await res.json()
-    const price = data?.chart?.result?.[0]?.meta?.regularMarketPrice
-    return price && price > 0 ? price : null
+    const meta = data?.chart?.result?.[0]?.meta
+    const price = meta?.regularMarketPrice
+    if (!price || price <= 0) return null
+    const prev = meta?.chartPreviousClose ?? meta?.previousClose
+    return { price, previousClose: prev && prev > 0 ? prev : null }
   }
 
   // 서픽스 순서대로 시도 (KR: KOSPI 실패 시 KOSDAQ 재시도)
   for (const suffix of suffixes) {
-    const price = await tryFetch(`${ticker}${suffix}`)
-    if (price) return price
+    const quote = await tryFetch(`${ticker}${suffix}`)
+    if (quote) return quote
   }
 
   throw new Error(`Yahoo Finance: price not found for ${ticker}`)
 }
 
-const fetchFinnhubPrice = async (ticker: string, isCrypto: boolean): Promise<number> => {
+const fetchFinnhubPrice = async (ticker: string, isCrypto: boolean): Promise<Quote> => {
   const apiKey = Deno.env.get('FINNHUB_API_KEY')
   if (!apiKey) throw new Error('FINNHUB_API_KEY not found')
 
@@ -47,7 +56,8 @@ const fetchFinnhubPrice = async (ticker: string, isCrypto: boolean): Promise<num
   const data = await res.json()
   if (!data.c || data.c <= 0) throw new Error(`Finnhub: invalid price for ${symbol}`)
 
-  return data.c
+  // Finnhub quote: c=현재가, pc=전일종가
+  return { price: data.c, previousClose: data.pc && data.pc > 0 ? data.pc : null }
 }
 
 Deno.serve(async (req) => {
@@ -70,9 +80,15 @@ Deno.serve(async (req) => {
     const suffixes = resolvedMarket ? MARKET_SUFFIXES[resolvedMarket] ?? [] : []
 
     // 서픽스가 있는 시장(KR/JP/CN)은 Yahoo, 그 외(US 주식·ETF, 암호화폐)는 Finnhub
-    const price = !isCrypto && suffixes.length > 0 ? await fetchYahooPrice(ticker, suffixes) : await fetchFinnhubPrice(ticker, isCrypto)
+    const quote = !isCrypto && suffixes.length > 0 ? await fetchYahooPrice(ticker, suffixes) : await fetchFinnhubPrice(ticker, isCrypto)
 
-    return new Response(JSON.stringify({ ticker, price }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    // 등락률(%) = (현재가 - 전일종가) / 전일종가 * 100. 전일종가 없으면 null
+    const changeRate = quote.previousClose ? ((quote.price - quote.previousClose) / quote.previousClose) * 100 : null
+
+    return new Response(
+      JSON.stringify({ ticker, price: quote.price, previousClose: quote.previousClose, changeRate }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    )
   } catch (error) {
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown Error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   }
