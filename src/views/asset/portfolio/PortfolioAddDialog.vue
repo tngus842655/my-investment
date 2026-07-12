@@ -30,7 +30,7 @@ const krStockItems = Object.entries({ ...KR_STOCK_NAMES, ...KR_ETF_NAMES }).map(
 }))
 
 const filteredKrItems = computed(() =>
-  krSearchQuery.value.trim().length === 0 ? [] : krStockItems,
+  (krSearchQuery.value ?? '').trim().length === 0 ? [] : krStockItems,
 )
 
 const krFilter = (_value: string, query: string, item?: { raw: { title: string } }) => {

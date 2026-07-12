@@ -93,8 +93,8 @@ const isEmptyResult = (info: EtfInfo) =>
   info.currentPrice == null && info.totalAssets == null && info.cagr == null && info.mdd == null
 
 const fetchInfo = async () => {
-  const tA = inputA.value.trim().toUpperCase()
-  const tB = inputB.value.trim().toUpperCase()
+  const tA = (inputA.value ?? '').trim().toUpperCase()
+  const tB = (inputB.value ?? '').trim().toUpperCase()
   if (!tA) { showMessage(t('etfAnalysis.enterTicker'), 'warning'); return }
   if (tB && tA === tB) { showMessage(t('etfAnalysis.sameTickers'), 'warning'); return }
 
@@ -484,18 +484,18 @@ const aiData = computed(() => {
     >
       <template v-if="notFoundA && notFoundB">
         <i18n-t keypath="etfAnalysis.notFoundBoth" tag="span" scope="global">
-          <template #tickerA><strong>{{ inputA.trim().toUpperCase() }}</strong></template>
-          <template #tickerB><strong>{{ inputB.trim().toUpperCase() }}</strong></template>
+          <template #tickerA><strong>{{ (inputA ?? '').trim().toUpperCase() }}</strong></template>
+          <template #tickerB><strong>{{ (inputB ?? '').trim().toUpperCase() }}</strong></template>
         </i18n-t>
       </template>
       <template v-else-if="notFoundA">
         <i18n-t keypath="etfAnalysis.notFoundA" tag="span" scope="global">
-          <template #ticker><strong>{{ inputA.trim().toUpperCase() }}</strong></template>
+          <template #ticker><strong>{{ (inputA ?? '').trim().toUpperCase() }}</strong></template>
         </i18n-t>
       </template>
       <template v-else>
         <i18n-t keypath="etfAnalysis.notFoundB" tag="span" scope="global">
-          <template #ticker><strong>{{ inputB.trim().toUpperCase() }}</strong></template>
+          <template #ticker><strong>{{ (inputB ?? '').trim().toUpperCase() }}</strong></template>
         </i18n-t>
       </template>
       <div class="mt-1 opacity-80">{{ $t('etfAnalysis.notFoundHint') }}</div>

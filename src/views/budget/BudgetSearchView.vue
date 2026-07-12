@@ -45,7 +45,7 @@ const fetchEntries = async () => {
 onMounted(fetchEntries)
 
 const results = computed(() => {
-  const q = query.value.trim().toLowerCase()
+  const q = (query.value ?? '').trim().toLowerCase()
   if (!q) return []
   return entries.value.filter((e) =>
     (e.memo ?? '').toLowerCase().includes(q) ||
@@ -175,13 +175,14 @@ const onContainerClick = (e: MouseEvent) => {
       hide-details
       autofocus
       class="mb-4"
+      @click:clear="query = ''"
     />
 
     <div v-if="loading" class="d-flex justify-center py-8">
       <v-progress-circular indeterminate color="primary" size="28" />
     </div>
 
-    <div v-else-if="!query.trim()" class="text-center text-medium-emphasis py-8">
+    <div v-else-if="!(query ?? '').trim()" class="text-center text-medium-emphasis py-8">
       검색어를 입력해주세요.
     </div>
 
