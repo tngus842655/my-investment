@@ -76,7 +76,30 @@ const switchMode = (target: 'login' | 'signup' | 'forgot') => {
   passwordConfirm.value = ''
   showPassword.value = false
   showPasswordConfirm.value = false
+  forgotEmail.value = ''
+  forgotSent.value = false
   form.value?.resetValidation()
+}
+
+// ── 비밀번호 재설정 요청 ────────────────────────────
+const forgotEmail = ref('')
+const forgotSent = ref(false)
+const forgotLoading = ref(false)
+const forgotFormRef = ref()
+
+const sendResetEmail = async () => {
+  const { valid } = await forgotFormRef.value.validate()
+  if (!valid) return
+  forgotLoading.value = true
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail.value, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    if (error) { showMessage(t(getErrorMessageKey(error.code)), 'warning'); return }
+    forgotSent.value = true
+  } finally {
+    forgotLoading.value = false
+  }
 }
 
 const signUp = async () => {
@@ -246,19 +269,56 @@ onUnmounted(() => {
       <!-- 폼 카드 -->
       <div class="login-card">
 
-        <!-- 비밀번호 찾기 안내 -->
+        <!-- 비밀번호 찾기 -->
         <template v-if="isForgot">
-          <div class="forgot-wrap">
-            <v-icon size="40" color="primary" class="mb-4">mdi-lock-question</v-icon>
-            <div class="forgot-title">{{ $t('auth.forgotTitle') }}</div>
-            <div class="forgot-desc mt-3">
-              {{ $t('auth.forgotDesc') }}
-              <div class="forgot-desc-note mt-3">{{ $t('auth.forgotEmailNote') }}</div>
+          <template v-if="!forgotSent">
+            <div class="forgot-wrap">
+              <v-icon size="40" color="primary" class="mb-4">mdi-lock-question</v-icon>
+              <div class="forgot-title">{{ $t('auth.forgotTitle') }}</div>
+              <div class="forgot-desc mt-3">{{ $t('auth.forgotDesc') }}</div>
             </div>
-            <a href="mailto:tngus842655@gmail.com" class="forgot-email mt-4">
-              tngus842655@gmail.com
-            </a>
-          </div>
+            <v-form ref="forgotFormRef" class="mt-4" @keydown.enter="sendResetEmail">
+              <v-text-field
+                v-model="forgotEmail"
+                type="email"
+                :rules="emailRules"
+                :placeholder="$t('auth.emailPlaceholder')"
+                variant="outlined"
+                density="comfortable"
+                hide-details="auto"
+                autocomplete="email"
+                maxlength="254"
+                bg-color="transparent"
+              />
+            </v-form>
+            <v-btn
+              color="primary"
+              size="large"
+              rounded="lg"
+              block
+              elevation="0"
+              :loading="forgotLoading"
+              class="mt-4"
+              style="font-weight: 700; letter-spacing: 0.03em"
+              @click="sendResetEmail"
+            >
+              {{ $t('auth.sendResetLink') }}
+            </v-btn>
+          </template>
+          <template v-else>
+            <div class="forgot-wrap">
+              <v-icon size="40" color="success" class="mb-4">mdi-email-check-outline</v-icon>
+              <div class="forgot-title">{{ $t('auth.resetEmailSentTitle') }}</div>
+              <div class="forgot-desc mt-3">{{ $t('auth.resetEmailSentDesc', { email: forgotEmail }) }}</div>
+            </div>
+          </template>
+
+          <v-divider class="my-4" opacity="0.1" />
+          <div class="forgot-desc-note text-center">{{ $t('auth.forgotEmailNote') }}</div>
+          <a href="mailto:tngus842655@gmail.com" class="forgot-email mt-2 d-block text-center">
+            tngus842655@gmail.com
+          </a>
+
           <v-btn
             variant="text"
             block

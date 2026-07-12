@@ -693,8 +693,11 @@
     "signupLink": "Sign up",
     "backToLogin": "Back to Log in",
     "forgotTitle": "Forgot your password?",
-    "forgotDesc": "Contact us at the email below and we'll help you quickly.",
-    "forgotEmailNote": "Please contact us using the email address you registered with so we can assist you.",
+    "forgotDesc": "Enter your email and we'll send you a link to reset your password.",
+    "sendResetLink": "Send Reset Link",
+    "resetEmailSentTitle": "Check your email",
+    "resetEmailSentDesc": "We've sent a password reset link to {email}. Please check your inbox (including spam).",
+    "forgotEmailNote": "Didn't receive the email? Contact us at the address below.",
     "signupEmailSent": "A confirmation email has been sent. Please check your inbox to complete verification.",
     "alreadyRegistered": "This email is already registered.",
     "signupError": "An error occurred during sign up.",
@@ -721,5 +724,19 @@
       "overEmailSendRateLimit": "Too many verification emails sent. Please try again later.",
       "generic": "An error occurred."
     }
+  },
+  "resetPassword": {
+    "title": "Reset Password",
+    "subtitle": "Enter your new password.",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "minLengthHint": "Minimum 6 characters",
+    "mismatchError": "Passwords do not match.",
+    "submit": "Change Password",
+    "success": "Your password has been changed. Please log in with your new password.",
+    "failed": "An error occurred while changing your password.",
+    "invalidLinkTitle": "Link Expired",
+    "invalidLinkDesc": "This password reset link has expired or is invalid. Please request a new one from the login screen.",
+    "backToLogin": "Back to Log in"
   }
 }
