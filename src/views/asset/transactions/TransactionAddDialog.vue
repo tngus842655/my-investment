@@ -75,6 +75,7 @@ interface Portfolio {
   market?: MarketCode | null
   currency: string
   account_name: string
+  quantity: number
 }
 
 const NEW_PORTFOLIO_VALUE = '__NEW__'
@@ -206,11 +207,23 @@ const newTickerError = computed(() => {
   return ''
 })
 
+// 매도 가능 수량: 현재 보유 수량 + (수정 모드에서 원래 이 거래가 SELL이었다면 그만큼 되돌려줌)
+const availableForSell = computed(() => {
+  const held = selectedPortfolio.value?.quantity ?? 0
+  const originalSellQty = (isEditMode.value && props.initialData?.transaction_type === 'SELL')
+    ? props.initialData.quantity
+    : 0
+  return held + originalSellQty
+})
+
 const quantityError = computed(() => {
   if (!quantity.value) return ''
   const q = Number(quantity.value)
   if (q <= 0) return t('dialog.errors.qtyPositive')
   if (q > maxQuantity.value) return t('dialog.errors.qtyMax', { max: maxQuantity.value.toLocaleString() })
+  if (txType.value === 'SELL' && !isNewPortfolio.value && q > availableForSell.value) {
+    return t('dialog.errors.qtySellExceedsHolding', { held: availableForSell.value.toLocaleString() })
+  }
   const decStr = String(quantity.value).split('.')[1] ?? ''
   if (decStr.length > 8) return t('dialog.errors.qtyDecimals')
   return ''
@@ -276,7 +289,7 @@ const loadPortfolios = async () => {
     if (!user) return
     const { data, error } = await supabase
       .from('portfolios')
-      .select('id, ticker, asset_class, market, currency, account_name')
+      .select('id, ticker, asset_class, market, currency, account_name, quantity')
       .eq('user_id', user.id)
       .neq('asset_class', 'cash')
       .order('sort_order', { ascending: true })

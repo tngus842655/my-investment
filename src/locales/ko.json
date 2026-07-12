@@ -577,6 +577,7 @@
       "tickerLettersOnly": "영문자만 입력해주세요. (예: AAPL)",
       "qtyPositive": "수량은 0보다 커야 합니다.",
       "qtyMax": "수량은 {max} 이하로 입력해주세요.",
+      "qtySellExceedsHolding": "보유수량({held})보다 많이 매도할 수 없습니다.",
       "qtyDecimals": "소수점 8자리까지 입력 가능합니다.",
       "pricePositive": "단가는 0보다 커야 합니다.",
       "priceMax": "단가는 {amount} 이하로 입력해주세요.",
