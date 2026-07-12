@@ -56,15 +56,16 @@ const pageNames = computed(() => [
   position: relative;
   display: flex;
   flex-direction: column;
-  /* 부모(.app-content)는 스크롤 컨테이너라 height:100%가 안 먹음 —
-     뷰포트에서 헤더·하단 탭바 영역을 뺀 높이로 직접 계산해 화면을 꽉 채움 */
-  height: calc(100dvh - 52px - 72px - env(safe-area-inset-bottom));
+  /* 부모(.app-content)는 스크롤 컨테이너(padding-bottom: 72px+safe로 탭바 자리 확보)라
+     height:100%가 안 먹음 — 뷰포트에서 탭바 영역만 뺀 높이로 채움. 헤더(52px)는
+     이 페이지 안쪽 자식이라 별도로 빼지 않는다 */
+  height: calc(100dvh - 72px - env(safe-area-inset-bottom));
 }
 
 /* 홈 화면 추가(PWA) 모드는 하단 탭바가 더 큼 (AssetLayout과 동일 값) */
 @media (display-mode: standalone) {
   .analysis-page {
-    height: calc(100dvh - 52px - 82px - env(safe-area-inset-bottom));
+    height: calc(100dvh - 82px - env(safe-area-inset-bottom));
   }
 }
 
@@ -94,7 +95,7 @@ const pageNames = computed(() => [
   justify-content: center;
   align-items: center;
   gap: 6px;
-  padding: 6px 8px calc(8px + env(safe-area-inset-bottom));
+  padding: 6px 8px 8px;
   flex-shrink: 0;
 }
 .page-tab {
