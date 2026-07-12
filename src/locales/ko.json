@@ -250,6 +250,7 @@
     "faster": "{dur} 단축",
     "slower": "{dur} 지연",
     "noDiff": "차이 없음",
+    "baseLabel": "기준",
     "loadError": "데이터를 불러오는 중 오류가 발생했습니다."
   },
   "fireHistory": {
