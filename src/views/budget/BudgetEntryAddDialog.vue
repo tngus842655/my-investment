@@ -40,7 +40,11 @@ const paymentMethodId = ref<string | null>(null)
 const addingPaymentMethod = ref(false)
 const newPaymentMethodName = ref('')
 const memo = ref('')
+const memoSearch = ref('')
 const memoSuggestions = ref<string[]>([])
+const filteredMemoSuggestions = computed(() =>
+  (memoSearch.value ?? '').trim().length === 0 ? [] : memoSuggestions.value,
+)
 const entryDate = ref(new Date().toISOString().slice(0, 10))
 const saving = ref(false)
 const favoritesMenu = ref(false)
@@ -242,6 +246,7 @@ watch(dialog, async (open) => {
     amount.value = addComma(String(props.initialData.amount))
     paymentMethodId.value = props.initialData.payment_method_id
     memo.value = props.initialData.memo ?? ''
+    memoSearch.value = memo.value
     entryDate.value = props.initialData.entry_date
   } else {
     entryType.value = 'EXPENSE'
@@ -249,6 +254,7 @@ watch(dialog, async (open) => {
     amount.value = ''
     paymentMethodId.value = paymentMethods.value[0]?.id ?? null
     memo.value = ''
+    memoSearch.value = ''
     entryDate.value = props.defaultDate ?? new Date().toISOString().slice(0, 10)
   }
 })
@@ -434,7 +440,8 @@ const save = async () => {
         <v-combobox
           ref="memoFieldRef"
           v-model="memo"
-          :items="memoSuggestions"
+          v-model:search="memoSearch"
+          :items="filteredMemoSuggestions"
           label="내용"
           prepend-inner-icon="mdi-note-outline"
           variant="outlined"
