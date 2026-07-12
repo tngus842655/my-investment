@@ -255,8 +255,8 @@ onUnmounted(() => {
               {{ $t('auth.forgotDesc') }}
               <div class="forgot-desc-note mt-3">{{ $t('auth.forgotEmailNote') }}</div>
             </div>
-            <a href="mailto:tngus842655@naver.com" class="forgot-email mt-4">
-              tngus842655@naver.com
+            <a href="mailto:tngus842655@gmail.com" class="forgot-email mt-4">
+              tngus842655@gmail.com
             </a>
           </div>
           <v-btn
