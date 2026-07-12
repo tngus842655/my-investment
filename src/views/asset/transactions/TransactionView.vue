@@ -11,6 +11,7 @@ import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { convertMoney } from '@/utils/portfolioMath'
 import { formatMoneyIn } from '@/utils/numberFormat'
 import { isKoLocale } from '@/plugins/i18n'
+import { displayAccountName } from '@/utils/accountName'
 import { useI18n } from 'vue-i18n'
 import { getAssetClass, getMarket, isCash as isCashItem, classMarketToAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
 import TransactionAddDialog from './TransactionAddDialog.vue'
@@ -604,7 +605,7 @@ onUnmounted(() => {
           class="account-chip"
           :class="{ 'account-chip-active': selectedAccount === acc }"
           @click="selectedAccount = acc; closeSwipe()"
-        >{{ acc }}</button>
+        >{{ displayAccountName(acc) }}</button>
       </div>
 
       <!-- 건수 + 날짜 드롭다운 -->

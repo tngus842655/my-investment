@@ -9,6 +9,7 @@ import { useLocale } from '@/composables/useLocale'
 import { useI18n } from 'vue-i18n'
 import { formatMoneyIn } from '@/utils/numberFormat'
 import { isKoLocale } from '@/plugins/i18n'
+import { displayAccountName, normalizeAccountName, UNASSIGNED_ACCOUNT } from '@/utils/accountName'
 import { isKnownTicker, getTickerDisplayName } from '@/utils/tickerNames'
 import { KR_STOCK_NAMES, KR_ETF_NAMES } from '@/utils/tickerNames.kr'
 import { getStockPrice } from '@/services/market'
@@ -55,7 +56,7 @@ const isEditMode = computed(() => !!props.initialData)
 const ticker = ref('')
 const krSearchQuery = ref('')  // 국내주식 한글 검색어
 const selectedKrStock = ref<{ value: string; name: string } | null>(null)
-const accountName = ref('미지정')
+const accountName = ref(displayAccountName(UNASSIGNED_ACCOUNT))
 
 watch(selectedKrStock, (v) => { ticker.value = v?.value ?? '' })
 
@@ -179,11 +180,11 @@ watch(dialog, async (opened) => {
       krSearchQuery.value = ''
     }
     currency.value = props.initialData.currency
-    accountName.value = props.initialData.account_name ?? '미지정'
+    accountName.value = displayAccountName(props.initialData.account_name ?? UNASSIGNED_ACCOUNT)
     await loadInitialTx(props.initialData.id)
   } else {
     reset(false)
-    if (props.initialAccount) accountName.value = props.initialAccount
+    if (props.initialAccount) accountName.value = displayAccountName(props.initialAccount)
   }
 })
 
@@ -295,9 +296,9 @@ const save = async () => {
     }
 
     if (isEditMode.value && props.initialData) {
-      const newAccountName = accountName.value.trim() || '미지정'
+      const newAccountName = normalizeAccountName(accountName.value)
       // 계좌명 변경 시 중복 체크
-      if (newAccountName !== (props.initialData.account_name ?? '미지정')) {
+      if (newAccountName !== (props.initialData.account_name ?? UNASSIGNED_ACCOUNT)) {
         const { data: dup } = await supabase
           .from('portfolios')
           .select('id')
@@ -306,7 +307,7 @@ const save = async () => {
           .eq('account_name', newAccountName)
           .maybeSingle()
         if (dup) {
-          showMessage(t('dialog.errors.duplicateInAccount', { name: getTickerDisplayName(props.initialData.ticker), account: newAccountName }), 'error')
+          showMessage(t('dialog.errors.duplicateInAccount', { name: getTickerDisplayName(props.initialData.ticker), account: displayAccountName(newAccountName) }), 'error')
           saving.value = false
           return
         }
@@ -370,7 +371,7 @@ const save = async () => {
             ? 'CASH_USD'
             : 'CASH_KRW'
           : (ticker.value?.trim() ?? '').toUpperCase()
-      const accountNameToSave = accountName.value.trim() || '미지정'
+      const accountNameToSave = normalizeAccountName(accountName.value)
       const { data: existing } = await supabase
         .from('portfolios')
         .select('id')
@@ -379,7 +380,7 @@ const save = async () => {
         .eq('account_name', accountNameToSave)
         .maybeSingle()
       if (existing) {
-        showMessage(t('dialog.errors.duplicateInAccount', { name: getTickerDisplayName(tickerToSave), account: accountNameToSave }), 'warning')
+        showMessage(t('dialog.errors.duplicateInAccount', { name: getTickerDisplayName(tickerToSave), account: displayAccountName(accountNameToSave) }), 'warning')
         saving.value = false
         return
       }
@@ -438,7 +439,7 @@ const reset = (closeDialog = true) => {
   assetClass.value = ''
   market.value = locale.value === 'ko' ? 'KR' : 'US'
   currency.value = 'KRW'
-  accountName.value = '미지정'
+  accountName.value = displayAccountName(UNASSIGNED_ACCOUNT)
   initQuantity.value = ''
   initAvgPrice.value = ''
   existingInitialTxId.value = null
@@ -462,9 +463,9 @@ const reset = (closeDialog = true) => {
           variant="outlined"
           density="compact"
           maxlength="20"
-          placeholder="미지정"
+          :placeholder="$t('dialog.accountUnassigned')"
           :hint="$t('dialog.accountHint')"
-          @blur="() => { if (!accountName.trim()) accountName = '미지정' }"
+          @blur="() => { if (!accountName.trim()) accountName = displayAccountName(UNASSIGNED_ACCOUNT) }"
         />
 
         <!-- 자산군 -->

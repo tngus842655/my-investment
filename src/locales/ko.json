@@ -526,6 +526,7 @@
     "newAssetInfo": "새 종목 정보 입력",
     "accountNameLabel": "계좌명",
     "accountNamePlaceholder": "기본",
+    "accountUnassigned": "미지정",
     "addNewOption": "+ 새 종목 추가",
     "txQuantityLabel": "수량",
     "unitPriceLabel": "거래단가",

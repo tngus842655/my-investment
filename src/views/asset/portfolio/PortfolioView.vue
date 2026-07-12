@@ -17,6 +17,7 @@ import { useFontScale } from '@/composables/useFontScale'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { formatMoneyIn } from '@/utils/numberFormat'
 import { isKoLocale } from '@/plugins/i18n'
+import { displayAccountName } from '@/utils/accountName'
 import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
@@ -720,7 +721,7 @@ onUnmounted(() => {
           class="account-chip"
           :class="{ 'account-chip-active': selectedAccount === acc }"
           @click="selectedAccount = acc"
-        >{{ acc }}</button>
+        >{{ displayAccountName(acc) }}</button>
       </div>
 
       <!-- 정렬 바 -->
