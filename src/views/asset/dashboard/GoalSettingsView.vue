@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { invalidateGoalCache } from '@/router'
@@ -114,6 +114,28 @@ const targetBelowMinimum = computed(() => {
   return minTargetByMonthly.value > 0 && t > 0 && t < minTargetByMonthly.value
 })
 
+// 목표 자산은 현재 보유 자산보다 낮게 설정할 수 없다. asset_summary.current_asset은
+// 최초 로드 시점의 기준통화(savedBaseCurrency) 단위로 저장돼 있어, 화면에서 기준통화를
+// 바꾸면 현재 환율로 환산해 비교 기준을 맞춘다.
+const currentAssetRaw = ref(0)
+const currentAssetConverted = ref(0)
+
+const syncCurrentAssetConverted = async () => {
+  if (currentAssetRaw.value <= 0) { currentAssetConverted.value = 0; return }
+  if (baseCurrencySel.value === savedBaseCurrency) { currentAssetConverted.value = currentAssetRaw.value; return }
+  try {
+    const rate = await getCachedRate(savedBaseCurrency, baseCurrencySel.value)
+    currentAssetConverted.value = Math.round(currentAssetRaw.value * rate)
+  } catch {
+    currentAssetConverted.value = currentAssetRaw.value
+  }
+}
+
+const targetBelowCurrentAsset = computed(() => {
+  const t = removeComma(targetAsset.value)
+  return currentAssetConverted.value > 0 && t > 0 && t < currentAssetConverted.value
+})
+
 const estimatedPreview = computed(() => {
   const T = removeComma(targetAsset.value)
   const M = removeComma(monthlyInvestment.value)
@@ -155,8 +177,15 @@ const loadData = async () => {
   targetAsset.value = addComma(String(goal.target_asset ?? ''))
   monthlyInvestment.value = addComma(String(goal.monthly_investment ?? ''))
   annualReturn.value = Math.max(goal.annual_return ?? 7, 3)
+
+  const summary = await userDataStore.ensureAssetSummary()
+  currentAssetRaw.value = summary?.current_asset ?? 0
+  await syncCurrentAssetConverted()
+
   initializing.value = false
 }
+
+watch(baseCurrencySel, syncCurrentAssetConverted)
 
 const save = async () => {
   const targetNum = removeComma(targetAsset.value)
@@ -168,9 +197,13 @@ const save = async () => {
     showMessage(t('goalSettings.minTargetMsg', { amount: formatMoneyIn(MIN_TARGET.value, baseCurrencySel.value, 'full') }), 'warning')
     return
   }
+  if (currentAssetConverted.value > 0 && targetNum < currentAssetConverted.value) {
+    showMessage(t('goalSettings.currentAssetBelowMsg', { amount: formatMoneyIn(currentAssetConverted.value, baseCurrencySel.value, 'full') }), 'warning')
+    return
+  }
   const monthlyNum = removeComma(monthlyInvestment.value)
-  if (monthlyInvestment.value && monthlyNum <= 0) {
-    showMessage(t('goalSettings.monthlyPositive'), 'warning')
+  if (!monthlyInvestment.value || monthlyNum <= 0) {
+    showMessage(t('goalSettings.enterMonthly'), 'warning')
     return
   }
   if (monthlyNum > 0 && targetNum < monthlyNum * 12) {
@@ -289,7 +322,7 @@ onMounted(loadData)
           <v-icon size="14" class="mr-1">mdi-target</v-icon>
           {{ $t('goalSettings.targetAsset') }} <span class="text-error">*</span>
         </div>
-        <v-text-field :model-value="targetAsset" @update:model-value="handleTargetAsset" placeholder="1,000,000,000" variant="outlined" density="comfortable" hide-details :class="['glass-field', targetBelowMinimum ? 'field-error' : '']" maxlength="14">
+        <v-text-field :model-value="targetAsset" @update:model-value="handleTargetAsset" placeholder="1,000,000,000" variant="outlined" density="comfortable" hide-details :class="['glass-field', (targetBelowMinimum || targetBelowCurrentAsset) ? 'field-error' : '']" maxlength="14">
           <template #append-inner>
             <span class="font-weight-bold" style="color: rgb(var(--v-theme-primary)); white-space: nowrap">
               {{ targetAsset ? targetAssetText : currencyUnit }}
@@ -300,6 +333,12 @@ onMounted(loadData)
           <v-icon size="12">mdi-alert-circle-outline</v-icon>
           <i18n-t keypath="goalSettings.minInputHint" tag="span" scope="global">
             <template #amount><strong>{{ formatMoneyIn(minTargetByMonthly, baseCurrencySel, 'short') }}</strong></template>
+          </i18n-t>
+        </div>
+        <div v-else-if="targetBelowCurrentAsset" class="field-hint-error mt-2">
+          <v-icon size="12">mdi-alert-circle-outline</v-icon>
+          <i18n-t keypath="goalSettings.currentAssetBelowHint" tag="span" scope="global">
+            <template #amount><strong>{{ formatMoneyIn(currentAssetConverted, baseCurrencySel, 'short') }}</strong></template>
           </i18n-t>
         </div>
         <div v-else-if="minTargetByMonthly > 0 && !removeComma(targetAsset)" class="field-hint mt-2">
@@ -314,8 +353,7 @@ onMounted(loadData)
       <div class="glass-card pa-4 mb-3">
         <div class="field-label mb-3">
           <v-icon size="14" class="mr-1">mdi-cash-multiple</v-icon>
-          {{ $t('goalSettings.monthlyInvestment') }}
-          <span class="text-disabled ml-1">{{ $t('goalSettings.optional') }}</span>
+          {{ $t('goalSettings.monthlyInvestment') }} <span class="text-error">*</span>
         </div>
         <v-text-field :model-value="monthlyInvestment" @update:model-value="handleMonthlyInvestment" placeholder="3,000,000" variant="outlined" density="comfortable" hide-details class="glass-field" maxlength="13">
           <template #append-inner>
