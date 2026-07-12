@@ -144,7 +144,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
       >
         <div class="tab-icon-wrap" :class="{ 'tab-icon-active': isActive(tab.route) }" style="position:relative">
           <img v-if="tab.img" :src="tab.img" class="tab-png-icon" :class="{ 'tab-png-active': isActive(tab.route) }" :alt="$t(tab.labelKey)" />
-          <v-icon v-else size="26">{{ isActive(tab.route) ? tab.activeIcon : tab.icon }}</v-icon>
+          <v-icon v-else size="31">{{ isActive(tab.route) ? tab.activeIcon : tab.icon }}</v-icon>
           <span v-if="tab.route === '/more' && unreadFeedbackCount > 0" class="nav-unread-dot" />
         </div>
         <span class="bottom-nav-label">{{ $t(tab.labelKey) }}</span>
@@ -163,14 +163,14 @@ const isActive = (tabRoute: string) => route.path === tabRoute
 
 .app-content {
   flex: 1;
-  padding-bottom: calc(60px + env(safe-area-inset-bottom));
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
   overflow-y: auto;
 }
 
 /* 홈 화면 추가(PWA) 모드에서만 하단 메뉴바 여유 추가 — 사파리 탭 모드는 그대로 유지 */
 @media (display-mode: standalone) {
   .app-content {
-    padding-bottom: calc(68px + env(safe-area-inset-bottom));
+    padding-bottom: calc(82px + env(safe-area-inset-bottom));
   }
 }
 
@@ -187,7 +187,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   bottom: 0;
   left: 0;
   right: 0;
-  height: calc(56px + env(safe-area-inset-bottom));
+  height: calc(67px + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   display: flex;
   align-items: stretch;
@@ -204,8 +204,8 @@ const isActive = (tabRoute: string) => route.path === tabRoute
 /* 홈 화면 추가(PWA) 모드에서만 하단 메뉴바 여유 추가 — 사파리 탭 모드는 그대로 유지 */
 @media (display-mode: standalone) {
   .bottom-nav {
-    height: calc(64px + env(safe-area-inset-bottom));
-    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    height: calc(77px + env(safe-area-inset-bottom));
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
   }
 }
 
@@ -246,7 +246,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   cursor: pointer;
   color: rgba(var(--v-theme-on-surface), 0.35);
   transition: color 0.15s ease;
-  padding: 6px 4px;
+  padding: 7px 5px;
 }
 
 .bottom-nav-item.active {
@@ -254,12 +254,12 @@ const isActive = (tabRoute: string) => route.path === tabRoute
 }
 
 .tab-icon-wrap {
-  width: 44px;
-  height: 34px;
+  width: 53px;
+  height: 41px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
+  border-radius: 17px;
   transition: background 0.15s ease;
   margin-bottom: 2px;
 }
@@ -269,8 +269,8 @@ const isActive = (tabRoute: string) => route.path === tabRoute
 }
 
 .tab-png-icon {
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   object-fit: contain;
   opacity: 0.35;
   transition: opacity 0.15s ease;
@@ -281,7 +281,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute
 }
 
 .bottom-nav-label {
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   line-height: 1;
@@ -289,13 +289,13 @@ const isActive = (tabRoute: string) => route.path === tabRoute
 
 .nav-unread-dot {
   position: absolute;
-  top: 3px;
-  right: 5px;
-  width: 8px;
-  height: 8px;
+  top: 4px;
+  right: 6px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: rgb(var(--v-theme-error));
-  border: 1.5px solid rgb(var(--v-theme-surface));
+  border: 2px solid rgb(var(--v-theme-surface));
 }
 
 </style>
