@@ -1,13 +1,20 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import PortfolioAssetClassPanel from './PortfolioAssetClassPanel.vue'
 import PortfolioBubblePanel from './PortfolioBubblePanel.vue'
 import PortfolioComparePanel from './PortfolioComparePanel.vue'
 
 const router = useRouter()
-// 0: 자산군별, 1: 종목별(버블, 기본 화면), 2: 종목 비교
+const { t } = useI18n()
+// 0: 자산분포(도넛), 1: 종목구성(버블, 기본 화면), 2: 종목비교(막대)
 const page = ref(1)
+const pageNames = computed(() => [
+  t('portfolioAnalysis.pageAssetClass'),
+  t('portfolioAnalysis.pageBubble'),
+  t('portfolioAnalysis.pageCompare'),
+])
 </script>
 
 <template>
@@ -29,15 +36,17 @@ const page = ref(1)
       </v-window-item>
     </v-window>
 
-    <div class="dots-bar">
+    <div class="indicator-bar">
       <button
-        v-for="i in [0, 1, 2]"
+        v-for="(name, i) in pageNames"
         :key="i"
-        class="dot"
-        :class="{ 'dot-active': page === i }"
-        :aria-label="`page-${i}`"
+        class="page-tab"
+        :class="{ 'page-tab-active': page === i }"
         @click="page = i"
-      />
+      >
+        <span class="page-name">{{ name }}</span>
+        <span class="page-underline" />
+      </button>
     </div>
   </div>
 </template>
@@ -80,27 +89,47 @@ const page = ref(1)
   height: 100%;
 }
 
-.dots-bar {
+.indicator-bar {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
-  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  gap: 6px;
+  padding: 6px 8px calc(8px + env(safe-area-inset-bottom));
   flex-shrink: 0;
 }
-.dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
+.page-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  max-width: 120px;
+  background: none;
   border: none;
-  background: rgba(var(--v-theme-on-surface), 0.2);
   cursor: pointer;
-  transition: all 0.2s ease;
-  padding: 0;
+  padding: 4px 0;
 }
-.dot-active {
-  width: 18px;
-  border-radius: 4px;
+.page-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.4);
+  transition: color 0.2s ease;
+  white-space: nowrap;
+}
+.page-underline {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(var(--v-theme-on-surface), 0.18);
+  transition: all 0.25s ease;
+}
+.page-tab-active .page-name {
+  color: rgb(var(--v-theme-primary));
+}
+.page-tab-active .page-underline {
+  width: 20px;
+  height: 3px;
+  border-radius: 2px;
   background: rgb(var(--v-theme-primary));
 }
 </style>

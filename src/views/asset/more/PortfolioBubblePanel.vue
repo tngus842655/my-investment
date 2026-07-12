@@ -25,7 +25,12 @@ interface Bubble {
   ticker: string
   label: string
   valueBase: number       // 기준통화 평가금액 (원 크기 기준)
+  costBase: number        // 기준통화 취득원가
   changeRate: number | null
+  quantity: number
+  avgPriceNative: number  // 종목 통화 기준 평균단가
+  currentPriceNative: number | null // 종목 통화 기준 현재가 (미조회 시 null)
+  currency: 'KRW' | 'USD'
   x: number
   y: number
   r: number
@@ -41,13 +46,36 @@ const totalBase = computed(() => bubbles.value.reduce((s, b) => s + b.valueBase,
 const maxR = computed(() => bubbles.value.reduce((m, b) => Math.max(m, b.r), 0))
 const asOfDate = new Date().toISOString().slice(0, 10).replace(/-/g, '.')
 
-// 버블 탭 → 하단에 상세 정보(평가금액·비중·등락률) 표시. 같은 버블 다시 탭하면 해제
+// 버블 탭 → 하단에 상세 정보 카드 표시. 같은 버블 다시 탭하면 해제
 const selected = ref<Bubble | null>(null)
+const cardExpanded = ref(false)
 const selectBubble = (b: Bubble) => {
-  selected.value = selected.value?.ticker === b.ticker ? null : b
+  if (selected.value?.ticker === b.ticker) {
+    selected.value = null
+  } else {
+    selected.value = b
+  }
 }
+const deselect = () => { selected.value = null }
 const weightPct = (b: Bubble) =>
   totalBase.value > 0 ? ((b.valueBase / totalBase.value) * 100).toFixed(1) : '0.0'
+
+// 선택 종목의 평가손익·수익률 (원가 대비)
+const detail = computed(() => {
+  const b = selected.value
+  if (!b) return null
+  const pl = b.valueBase - b.costBase
+  const plRate = b.costBase > 0 ? (pl / b.costBase) * 100 : null
+  return { pl, plRate }
+})
+
+// 종목 통화(원/달러) 기준 금액 포맷 (평균단가·현재가용)
+const fmtNative = (v: number | null, currency: 'KRW' | 'USD'): string => {
+  if (v === null) return '-'
+  if (currency === 'USD') return '$' + v.toLocaleString('en-US', { maximumFractionDigits: 2 })
+  return '₩' + Math.round(v).toLocaleString('ko-KR')
+}
+const fmtQty = (v: number): string => v.toLocaleString('en-US', { maximumFractionDigits: 8 })
 
 // 전일 대비 총 증감액·증감률 (등락률을 아는 종목만 집계 — 현금/미조회 종목은 변동 0으로 간주)
 const dayChange = computed(() => {
@@ -69,7 +97,6 @@ const dayChange = computed(() => {
 })
 
 // 등락률 → 색상 (한국식: 상승 빨강 / 하락 파랑 / 보합·미조회 회색), 변동폭이 클수록 진하게.
-// 기본 채움 + 밝은 테두리 + 외곽 발광색을 함께 산출해 입체감을 준다.
 const colorParts = (cr: number | null): { color: string; stroke: string; glow: string } => {
   const neutral = cr === null || Math.abs(cr) < 0.005
   const mag = neutral ? 0 : Math.min(Math.abs(cr) / 3, 1) // 3% 이상이면 최대 채도
@@ -79,7 +106,7 @@ const colorParts = (cr: number | null): { color: string; stroke: string; glow: s
   return {
     color: `hsl(${hue}, ${sat}%, ${light}%)`,
     stroke: `hsl(${hue}, ${sat}%, ${light + 16}%)`,
-    glow: `hsla(${hue}, ${sat}%, ${light + 12}%, 0.55)`,
+    glow: `hsla(${hue}, ${sat}%, ${light + 12}%, 0.6)`,
   }
 }
 
@@ -89,41 +116,56 @@ const showChange = (b: Bubble) => b.r >= maxR.value * 0.26
 const showName = (b: Bubble) => b.r >= maxR.value * 0.55 && b.label !== b.ticker
 const fmtChange = (cr: number | null) => cr === null ? '-' : `${cr >= 0 ? '+' : ''}${cr.toFixed(2)}%`
 
-// ── 골든앵글 스파이럴 패킹 (D3 없이 경량 구현) ─────────────
-// 큰 원부터 중심 근처에 배치하고, 이후 원은 나선을 따라 겹치지 않는 첫 지점에 놓는다.
+// ── 원 패킹: 스파이럴 초기배치 후 중력+충돌 완화로 밀집(Circle Packing 느낌) ──
+interface Node { x: number; y: number; r: number }
 function packCircles(radii: number[]): { x: number; y: number }[] {
-  const GAP = maxRadius(radii) * 0.04
-  const step = maxRadius(radii) * 0.5
+  const n = radii.length
+  const maxRad = radii.reduce((m, r) => Math.max(m, r), 0) || 1
+  const GAP = maxRad * 0.008        // 버블 간 최소 간격 (작게 → 밀집)
   const GOLDEN = 2.399963229728653
-  const placed: { x: number; y: number; r: number }[] = []
+  const step = maxRad * 0.42
+  const nodes: Node[] = radii.map((r) => ({ x: 0, y: 0, r }))
 
-  for (const r of radii) {
-    if (placed.length === 0) {
-      placed.push({ x: 0, y: 0, r })
-      continue
-    }
+  // 1) 스파이럴 초기 배치 (겹치지 않는 첫 지점)
+  const placed: Node[] = []
+  for (let k = 0; k < n; k++) {
+    const nd = nodes[k]!
+    if (k === 0) { placed.push(nd); continue }
     for (let i = 1; ; i++) {
       const rad = step * Math.sqrt(i)
       const ang = i * GOLDEN
       const x = rad * Math.cos(ang)
       const y = rad * Math.sin(ang)
-      const collides = placed.some((p) => {
-        const dx = p.x - x
-        const dy = p.y - y
-        return Math.hypot(dx, dy) < p.r + r + GAP
-      })
-      if (!collides) {
-        placed.push({ x, y, r })
-        break
+      if (!placed.some((p) => Math.hypot(p.x - x, p.y - y) < p.r + nd.r + GAP)) {
+        nd.x = x; nd.y = y; placed.push(nd); break
       }
-      if (i > 100000) { placed.push({ x, y, r }); break } // 안전장치 (사실상 도달 안 함)
+      if (i > 100000) { nd.x = x; nd.y = y; placed.push(nd); break }
     }
   }
-  return placed.map(({ x, y }) => ({ x, y }))
-}
 
-function maxRadius(radii: number[]): number {
-  return radii.reduce((m, r) => Math.max(m, r), 0) || 1
+  // 2) 완화: 매 반복마다 중심으로 살짝 당기고(중력), 겹치는 쌍은 밀어냄
+  const ITER = 160
+  for (let t = 0; t < ITER; t++) {
+    const g = 0.018
+    for (const nd of nodes) { nd.x *= (1 - g); nd.y *= (1 - g) }
+    for (let a = 0; a < n; a++) {
+      for (let b = a + 1; b < n; b++) {
+        const na = nodes[a]!, nb = nodes[b]!
+        const dx = nb.x - na.x, dy = nb.y - na.y
+        const d = Math.hypot(dx, dy)
+        const minD = na.r + nb.r + GAP
+        if (d > 0 && d < minD) {
+          const push = (minD - d) / 2
+          const ux = dx / d, uy = dy / d
+          na.x -= ux * push; na.y -= uy * push
+          nb.x += ux * push; nb.y += uy * push
+        } else if (d === 0) {
+          na.x -= 0.01; nb.x += 0.01
+        }
+      }
+    }
+  }
+  return nodes.map(({ x, y }) => ({ x, y }))
 }
 
 const loadData = async () => {
@@ -163,17 +205,27 @@ const loadData = async () => {
 
     const built = holdings.map(([ticker, h], i) => {
       const q = quotes[i]!
-      let valueNative: number
-      if (q.price !== null && q.price > 0) {
-        // 암호화폐 시세는 USD로 오므로, 통화가 USD가 아니면 종목 통화로 먼저 환산
-        const isCryptoNonUsd = h.assetClass === 'crypto' && h.currency !== 'USD'
-        const priceInCurrency = isCryptoNonUsd ? convertMoney(q.price, 'USD', h.currency, exchangeRate.value) : q.price
-        valueNative = priceInCurrency * h.quantity
-      } else {
-        valueNative = h.costNative // 시세 조회 실패·현금: 원가/잔액 기준
-      }
+      // 암호화폐 시세는 USD로 오므로, 통화가 USD가 아니면 종목 통화로 먼저 환산
+      const isCryptoNonUsd = h.assetClass === 'crypto' && h.currency !== 'USD'
+      const currentPriceNative = q.price !== null && q.price > 0
+        ? (isCryptoNonUsd ? convertMoney(q.price, 'USD', h.currency, exchangeRate.value) : q.price)
+        : null
+      const valueNative = currentPriceNative !== null
+        ? currentPriceNative * h.quantity
+        : h.costNative // 시세 조회 실패·현금: 원가/잔액 기준
       const valueBase = convertMoney(valueNative, h.currency, baseCurrency.value, exchangeRate.value)
-      return { ticker, label: getTickerDisplayName(ticker), valueBase, changeRate: q.changeRate }
+      const costBase = convertMoney(h.costNative, h.currency, baseCurrency.value, exchangeRate.value)
+      return {
+        ticker,
+        label: getTickerDisplayName(ticker),
+        valueBase,
+        costBase,
+        changeRate: q.changeRate,
+        quantity: h.quantity,
+        avgPriceNative: h.quantity > 0 ? h.costNative / h.quantity : 0,
+        currentPriceNative,
+        currency: h.currency,
+      }
     }).filter((b) => b.valueBase > 0)
 
     // 평가금액 비중 → 면적 비례(반지름 = √value)로 원 크기 산출
@@ -198,7 +250,7 @@ const loadData = async () => {
         maxX = Math.max(maxX, b.x + b.r)
         maxY = Math.max(maxY, b.y + b.r)
       }
-      const pad = (maxX - minX) * 0.04
+      const pad = (maxX - minX) * 0.03
       viewBox.value = `${minX - pad} ${minY - pad} ${maxX - minX + pad * 2} ${maxY - minY + pad * 2}`
     }
     bubbles.value = result
@@ -239,7 +291,7 @@ onMounted(loadData)
 
     <template v-else>
       <div class="bubble-stage">
-        <svg :viewBox="viewBox" class="bubble-svg" preserveAspectRatio="xMidYMid meet" @click="selected = null">
+        <svg :viewBox="viewBox" class="bubble-svg" preserveAspectRatio="xMidYMid meet" @click="deselect">
           <defs>
             <!-- 구체 광택: 좌상단 하이라이트 + 하단 가장자리 음영 -->
             <radialGradient id="bubbleGlass" cx="38%" cy="30%" r="72%">
@@ -249,66 +301,108 @@ onMounted(loadData)
               <stop offset="100%" stop-color="#000" stop-opacity="0.28" />
             </radialGradient>
           </defs>
+          <!-- 바깥 g: 첫 진입 등장 애니메이션 / 안쪽 g: 선택 확대·펄스 (충돌 방지 위해 분리) -->
           <g
             v-for="(b, i) in bubbles"
             :key="b.ticker"
-            class="bubble-g"
+            class="bubble-enter"
             :class="{ 'bubble-dim': selected && selected.ticker !== b.ticker }"
-            :style="{ '--delay': `${i * 0.04}s` }"
-            @click.stop="selectBubble(b)"
+            :style="{ '--delay': `${0.15 + i * 0.035}s` }"
           >
-            <!-- 발광 + 기본 채움 -->
-            <circle
-              :cx="b.x" :cy="b.y" :r="b.r"
-              :fill="b.color"
-              :stroke="b.stroke"
-              :stroke-width="b.r * 0.02"
-              :style="{ filter: `drop-shadow(0 0 ${b.r * 0.16}px ${b.glow})` }"
-            />
-            <!-- 광택 오버레이 -->
-            <circle :cx="b.x" :cy="b.y" :r="b.r" fill="url(#bubbleGlass)" pointer-events="none" />
-            <!-- 선택 링 -->
-            <circle
-              v-if="selected?.ticker === b.ticker"
-              :cx="b.x" :cy="b.y" :r="b.r * 1.06"
-              fill="none"
-              stroke="rgba(255,255,255,0.85)"
-              :stroke-width="b.r * 0.03"
-              pointer-events="none"
-            />
+            <g
+              class="bubble-scale"
+              :class="{ 'bubble-selected': selected?.ticker === b.ticker }"
+              @click.stop="selectBubble(b)"
+            >
+              <!-- 발광 + 기본 채움 -->
+              <circle
+                :cx="b.x" :cy="b.y" :r="b.r"
+                :fill="b.color"
+                :stroke="b.stroke"
+                :stroke-width="b.r * 0.02"
+                :style="{ filter: `drop-shadow(0 0 ${b.r * (selected?.ticker === b.ticker ? 0.34 : 0.14)}px ${b.glow})` }"
+              />
+              <!-- 광택 오버레이 -->
+              <circle :cx="b.x" :cy="b.y" :r="b.r" fill="url(#bubbleGlass)" pointer-events="none" />
+              <!-- 선택 링 -->
+              <circle
+                v-if="selected?.ticker === b.ticker"
+                :cx="b.x" :cy="b.y" :r="b.r * 1.04"
+                fill="none"
+                stroke="rgba(255,255,255,0.9)"
+                :stroke-width="b.r * 0.025"
+                pointer-events="none"
+              />
 
-            <template v-if="showText(b)">
-              <!-- 이름 서브라벨이 있으면 3줄, 없으면 2줄로 세로 정렬 -->
-              <template v-if="showName(b)">
-                <text :x="b.x" :y="b.y - b.r * 0.2" text-anchor="middle" class="bubble-ticker" :style="{ fontSize: `${b.r * 0.3}px` }">{{ b.ticker }}</text>
-                <text :x="b.x" :y="b.y + b.r * 0.04" text-anchor="middle" class="bubble-name" :style="{ fontSize: `${b.r * 0.15}px` }">{{ b.label }}</text>
-                <text v-if="showChange(b)" :x="b.x" :y="b.y + b.r * 0.34" text-anchor="middle" class="bubble-change" :style="{ fontSize: `${b.r * 0.2}px` }">{{ fmtChange(b.changeRate) }}</text>
+              <template v-if="showText(b)">
+                <!-- 이름 서브라벨이 있으면 3줄, 없으면 2줄로 세로 정렬 -->
+                <template v-if="showName(b)">
+                  <text :x="b.x" :y="b.y - b.r * 0.2" text-anchor="middle" class="bubble-ticker" :style="{ fontSize: `${b.r * 0.3}px` }">{{ b.ticker }}</text>
+                  <text :x="b.x" :y="b.y + b.r * 0.04" text-anchor="middle" class="bubble-name" :style="{ fontSize: `${b.r * 0.15}px` }">{{ b.label }}</text>
+                  <text v-if="showChange(b)" :x="b.x" :y="b.y + b.r * 0.34" text-anchor="middle" class="bubble-change" :style="{ fontSize: `${b.r * 0.2}px` }">{{ fmtChange(b.changeRate) }}</text>
+                </template>
+                <template v-else>
+                  <text :x="b.x" :y="b.y - (showChange(b) ? b.r * 0.06 : -b.r * 0.12)" text-anchor="middle" class="bubble-ticker" :style="{ fontSize: `${b.r * 0.34}px` }">{{ b.ticker }}</text>
+                  <text v-if="showChange(b)" :x="b.x" :y="b.y + b.r * 0.34" text-anchor="middle" class="bubble-change" :style="{ fontSize: `${b.r * 0.22}px` }">{{ fmtChange(b.changeRate) }}</text>
+                </template>
               </template>
-              <template v-else>
-                <text :x="b.x" :y="b.y - (showChange(b) ? b.r * 0.06 : -b.r * 0.12)" text-anchor="middle" class="bubble-ticker" :style="{ fontSize: `${b.r * 0.34}px` }">{{ b.ticker }}</text>
-                <text v-if="showChange(b)" :x="b.x" :y="b.y + b.r * 0.34" text-anchor="middle" class="bubble-change" :style="{ fontSize: `${b.r * 0.22}px` }">{{ fmtChange(b.changeRate) }}</text>
-              </template>
-            </template>
+            </g>
           </g>
         </svg>
       </div>
 
-      <!-- 선택한 버블 상세 (작아서 텍스트가 생략된 버블도 여기서 확인) -->
+      <!-- 선택한 버블 상세 (탭하면 전체 지표로 확장) -->
       <v-expand-transition>
-        <div v-if="selected" class="detail-card" @click="selected = null">
-          <div class="detail-left">
-            <div class="detail-ticker">
-              {{ selected.ticker }}
-              <span v-if="selected.label !== selected.ticker" class="detail-name">{{ selected.label }}</span>
+        <div v-if="selected && detail" class="detail-card">
+          <div class="detail-head" @click="cardExpanded = !cardExpanded">
+            <div class="detail-left">
+              <div class="detail-ticker">
+                {{ selected.ticker }}
+                <span v-if="selected.label !== selected.ticker" class="detail-name">{{ selected.label }}</span>
+              </div>
+              <div class="detail-change" :class="(selected.changeRate ?? 0) >= 0 ? 'chg-up' : 'chg-down'">
+                {{ $t('assetBubble.dayChange') }} {{ fmtChange(selected.changeRate) }}
+              </div>
             </div>
-            <div class="detail-change" :class="(selected.changeRate ?? 0) >= 0 ? 'chg-up' : 'chg-down'">
-              {{ $t('assetBubble.dayChange') }} {{ fmtChange(selected.changeRate) }}
+            <div class="detail-right">
+              <div class="detail-value">{{ money(selected.valueBase, exchangeRate) }}</div>
+              <div class="detail-weight">{{ $t('assetBubble.weight') }} {{ weightPct(selected) }}%</div>
             </div>
+            <v-icon size="20" class="detail-chevron" :class="{ 'chevron-open': cardExpanded }" style="color: rgba(255,255,255,0.6)">mdi-chevron-up</v-icon>
           </div>
-          <div class="detail-right">
-            <div class="detail-value">{{ money(selected.valueBase, exchangeRate) }}</div>
-            <div class="detail-weight">{{ $t('assetBubble.weight') }} {{ weightPct(selected) }}%</div>
-          </div>
+
+          <v-expand-transition>
+            <div v-if="cardExpanded" class="detail-grid">
+              <div class="grid-item">
+                <div class="grid-label">{{ $t('assetBubble.pl') }}</div>
+                <div class="grid-value" :class="detail.pl >= 0 ? 'chg-up' : 'chg-down'">
+                  {{ detail.pl >= 0 ? '+' : '-' }}{{ money(Math.abs(detail.pl), exchangeRate) }}
+                </div>
+              </div>
+              <div class="grid-item">
+                <div class="grid-label">{{ $t('assetBubble.returnRate') }}</div>
+                <div class="grid-value" :class="(detail.plRate ?? 0) >= 0 ? 'chg-up' : 'chg-down'">
+                  {{ detail.plRate === null ? '-' : `${detail.plRate >= 0 ? '+' : ''}${detail.plRate.toFixed(2)}%` }}
+                </div>
+              </div>
+              <div class="grid-item">
+                <div class="grid-label">{{ $t('assetBubble.avgPrice') }}</div>
+                <div class="grid-value">{{ fmtNative(selected.avgPriceNative, selected.currency) }}</div>
+              </div>
+              <div class="grid-item">
+                <div class="grid-label">{{ $t('assetBubble.currentPrice') }}</div>
+                <div class="grid-value">{{ fmtNative(selected.currentPriceNative, selected.currency) }}</div>
+              </div>
+              <div class="grid-item">
+                <div class="grid-label">{{ $t('assetBubble.quantity') }}</div>
+                <div class="grid-value">{{ fmtQty(selected.quantity) }}</div>
+              </div>
+              <div class="grid-item">
+                <div class="grid-label">{{ $t('assetBubble.totalAsset') }}</div>
+                <div class="grid-value">{{ money(selected.valueBase, exchangeRate) }}</div>
+              </div>
+            </div>
+          </v-expand-transition>
         </div>
       </v-expand-transition>
 
@@ -389,19 +483,35 @@ onMounted(loadData)
   display: block;
 }
 
-.bubble-g {
-  animation: bubbleIn 0.45s ease var(--delay, 0s) both;
-  transform-box: fill-box;
-  transform-origin: center;
-  cursor: pointer;
-  transition: opacity 0.2s ease;
+/* 첫 진입: 살짝 튀며 자리 잡는 등장 (스태거) */
+.bubble-enter {
+  animation: bubbleIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) var(--delay, 0s) both;
+  transition: opacity 0.25s ease;
 }
-.bubble-dim {
-  opacity: 0.35;
+.bubble-enter.bubble-dim {
+  opacity: 0.28;
 }
 @keyframes bubbleIn {
-  from { opacity: 0; transform: scale(0.6); }
+  from { opacity: 0; transform: scale(0.2); }
   to { opacity: 1; transform: scale(1); }
+}
+.bubble-enter,
+.bubble-scale {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* 선택 시 확대 + 글로우 펄스 */
+.bubble-scale {
+  cursor: pointer;
+  transition: transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.bubble-scale.bubble-selected {
+  animation: selPulse 1.6s ease-in-out infinite;
+}
+@keyframes selPulse {
+  0%, 100% { transform: scale(1.09); }
+  50% { transform: scale(1.14); }
 }
 
 .bubble-ticker {
@@ -425,17 +535,22 @@ onMounted(loadData)
 }
 
 .detail-card {
+  margin: 0 12px 4px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+}
+.detail-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
-  margin: 0 12px 4px;
   padding: 10px 14px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(8px);
   cursor: pointer;
+}
+.detail-left {
+  min-width: 0;
 }
 .detail-ticker {
   font-size: 0.9375rem;
@@ -454,6 +569,7 @@ onMounted(loadData)
   margin-top: 2px;
 }
 .detail-right {
+  margin-left: auto;
   text-align: right;
 }
 .detail-value {
@@ -465,6 +581,34 @@ onMounted(loadData)
   font-size: 0.6875rem;
   color: rgba(255, 255, 255, 0.55);
   margin-top: 2px;
+}
+.detail-chevron {
+  transition: transform 0.25s ease;
+}
+.chevron-open {
+  transform: rotate(180deg);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.grid-item {
+  background: rgba(10, 16, 30, 0.55);
+  padding: 10px 12px;
+}
+.grid-label {
+  font-size: 0.625rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 3px;
+}
+.grid-value {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #fff;
 }
 
 .bubble-legend {

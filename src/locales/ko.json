@@ -317,6 +317,9 @@
   },
   "portfolioAnalysis": {
     "title": "포트폴리오 분석",
+    "pageAssetClass": "자산분포",
+    "pageBubble": "종목구성",
+    "pageCompare": "종목비교",
     "emptyTitle": "보유 자산이 없습니다",
     "emptyHint": "포트폴리오에 자산을 추가해 보세요",
     "selectToCompare": "비교할 종목 선택",
@@ -337,7 +340,12 @@
     "flat": "보합",
     "sizeNote": "※ 원 크기 = 평가 비중",
     "dayChange": "전일 대비",
-    "weight": "비중"
+    "weight": "비중",
+    "pl": "평가손익",
+    "returnRate": "수익률",
+    "avgPrice": "평균단가",
+    "currentPrice": "현재가",
+    "quantity": "보유수량"
   },
   "assetGrowth": {
     "title": "자산 성장 리포트",
