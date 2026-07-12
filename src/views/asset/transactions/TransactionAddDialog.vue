@@ -223,7 +223,7 @@ const unitPriceError = computed(() => {
   if (p > maxPrice.value) {
     const isUsStock = effectiveAssetClass.value === 'stock' && effectiveMarket.value === 'US'
     const unit = isUsStock ? '$' : ''
-    const suffix = isUsStock ? '' : '원'
+    const suffix = isUsStock ? '' : (isKoLocale() ? '원' : 'KRW')
     return t('dialog.errors.priceMax', { amount: `${unit}${maxPrice.value.toLocaleString()}${suffix}` })
   }
   return ''

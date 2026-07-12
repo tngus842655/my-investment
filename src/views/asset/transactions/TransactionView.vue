@@ -717,7 +717,7 @@ onUnmounted(() => {
                     </div>
                     <!-- 2줄: 수량 × 단가 / 금액 -->
                     <div class="d-flex align-center justify-space-between">
-                      <span class="tx-detail">{{ item.quantity % 1 === 0 ? item.quantity : Number(item.quantity).toFixed(4) }}주 × {{ formatUnitPriceDisplay(item) }}</span>
+                      <span class="tx-detail">{{ $t('portfolio.shares', { n: item.quantity % 1 === 0 ? item.quantity : Number(item.quantity).toFixed(4) }) }} × {{ formatUnitPriceDisplay(item) }}</span>
                       <span class="tx-amount" :class="item.transaction_type === 'BUY' ? 'amount-plus' : 'amount-minus'">
                         {{ item.transaction_type === 'BUY' ? '+' : '-' }}{{ formatAmountDisplay(item) }}
                         <span v-if="!isPreview && item.portfolios?.currency !== baseCurrency && usdToKrw" class="tx-amount-krw">{{ formatAmountBase(item) }}</span>

@@ -89,7 +89,7 @@ const PRICE_DELAY_INFO = [
   { emoji: '💱', labelKey: 'portfolio.priceInfo.fx', descKey: 'portfolio.priceInfo.fxDesc' },
 ]
 const goToTickerNameRequest = () => {
-  router.push({ name: 'feedback', query: { category: '기능제안', title: '미국주식 한글표기명 등록요청' } })
+  router.push({ name: 'feedback', query: { category: '기능제안', title: t('portfolio.registerTickerName') } })
 }
 
 // ── 포트폴리오 로드 ───────────────────────────────
@@ -852,13 +852,13 @@ onUnmounted(() => {
                       v-if="isCashItem(item) && item.ticker === 'CASH_USD'"
                       src="/icons/icon-dollar.png"
                       class="ticker-logo"
-                      alt="달러현금"
+                      :alt="$t('ticker.cashUsd')"
                     />
                     <img
                       v-else-if="isCashItem(item)"
                       src="/icons/icon-won.png"
                       class="ticker-logo"
-                      alt="원화현금"
+                      :alt="$t('ticker.cashKrw')"
                     />
                     <img
                       v-else-if="logoMap[item.ticker]"

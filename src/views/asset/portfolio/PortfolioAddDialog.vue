@@ -243,7 +243,7 @@ const avgPriceError = computed(() => {
   if (initAvgPrice.value && p <= 0) return t('dialog.errors.pricePositive')
   if (initAvgPrice.value && p > maxPrice.value) {
     const unit = isUsStock.value ? '$' : ''
-    const suffix = isUsStock.value ? '' : '원'
+    const suffix = isUsStock.value ? '' : (isKoLocale() ? '원' : 'KRW')
     return t('dialog.errors.priceMax', { amount: `${unit}${maxPrice.value.toLocaleString()}${suffix}` })
   }
   return ''
@@ -600,7 +600,7 @@ const reset = (closeDialog = true) => {
             rounded="lg"
             :prepend-inner-icon="currency === 'USD' ? 'mdi-currency-usd' : 'mdi-currency-krw'"
             placeholder="0"
-            :suffix="currency === 'USD' ? 'USD' : '원'"
+            :suffix="currency === 'USD' ? 'USD' : (isKoLocale() ? '원' : 'KRW')"
             :disabled="loadingInitial"
             :error-messages="avgPriceError"
           />

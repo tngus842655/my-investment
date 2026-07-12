@@ -39,7 +39,7 @@ const usdRateOf = async (currency: CurrencyCode): Promise<number> => {
 
   const fallback = FALLBACK_USD_RATES[currency]
   if (fallback) return fallback
-  throw new Error(`환율 조회 실패: USD→${currency}`)
+  throw new Error(`Exchange rate fetch failed: USD→${currency}`)
 }
 
 // 통화쌍 환율: from 1단위 = to 얼마
