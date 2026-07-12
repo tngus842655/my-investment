@@ -271,38 +271,38 @@
   },
   "badges": {
     "title": "Achievement Badges",
-    "subtitle": "Milestones by FIRE progress",
+    "subtitle": "Milestones on Your FIRE Journey",
     "fireRate": "FIRE Progress",
     "badgeCount": "Badges",
-    "nextHint": "{n}% to go until {label}",
+    "nextHint": "{n}% to reach {label}",
     "allUnlocked": "All badges unlocked!",
-    "currentAsset": "Current assets",
+    "currentAsset": "Current Assets",
     "target": "Target",
-    "thresholdReached": "{n}% reached",
+    "thresholdReached": "Reached {n}%",
     "items": {
       "seed": {
         "label": "Seed",
-        "desc": "Start of the FIRE journey"
+        "desc": "The beginning of your FIRE journey."
       },
       "sprout": {
         "label": "Sprout",
-        "desc": "Past the first 10%"
+        "desc": "Past the First 10%"
       },
       "growth": {
         "label": "Growth",
-        "desc": "1/4 of the goal"
+        "desc": "1/4 of the Goal"
       },
       "halfway": {
         "label": "Halfway Miracle",
-        "desc": "Half of the goal"
+        "desc": "Half of the Goal"
       },
       "firezone": {
         "label": "Fire Zone",
-        "desc": "3/4 of the goal"
+        "desc": "3/4 of the Goal"
       },
       "fire": {
         "label": "FIRE Complete",
-        "desc": "Financial independence!"
+        "desc": "Financial Independence!"
       }
     }
   },
