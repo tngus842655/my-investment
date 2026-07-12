@@ -315,9 +315,11 @@ onUnmounted(() => {
 
           <v-divider class="my-4" opacity="0.1" />
           <div class="forgot-desc-note text-center">{{ $t('auth.forgotEmailNote') }}</div>
-          <a href="mailto:tngus842655@gmail.com" class="forgot-email mt-2 d-block text-center">
-            tngus842655@gmail.com
-          </a>
+          <div class="text-center mt-2">
+            <a href="mailto:tngus842655@gmail.com" class="forgot-email">
+              tngus842655@gmail.com
+            </a>
+          </div>
 
           <v-btn
             variant="text"
