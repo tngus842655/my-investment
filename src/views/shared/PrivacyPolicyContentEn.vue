@@ -38,5 +38,5 @@
 
   <h3>6. Contact</h3>
   <p>For questions about your personal information, please contact us using the email address below.</p>
-  <p class="font-weight-bold">tngus842655@naver.com</p>
+  <p class="font-weight-bold">tngus842655@gmail.com</p>
 </template>
