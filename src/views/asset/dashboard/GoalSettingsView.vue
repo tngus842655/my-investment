@@ -14,7 +14,7 @@ import { useI18n } from 'vue-i18n'
 import { formatYearMonth, formatDuration } from '@/utils/dateFormat'
 
 const router = useRouter()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const userDataStore = useUserDataStore()
 
 const targetAsset = ref('')
@@ -194,6 +194,8 @@ const save = async () => {
         monthly_investment: removeComma(monthlyInvestment.value),
         annual_return: annualReturn.value,
         base_currency: baseCurrencySel.value,
+        // 로그인 전 화면에서 고른 언어를 최초 목표 저장 시 함께 기록 (신규 유저 언어 유지)
+        locale: locale.value,
       },
       { onConflict: 'user_id' },
     )

@@ -646,5 +646,48 @@
   "releaseNotes": {
     "title": "개발자 노트",
     "subtitle": "업데이트 내역"
+  },
+  "auth": {
+    "emailLabel": "이메일",
+    "passwordLabel": "비밀번호",
+    "passwordConfirmLabel": "비밀번호 확인",
+    "emailPlaceholder": "example@email.com",
+    "passwordPlaceholder": "6자 이상 입력",
+    "passwordConfirmPlaceholder": "비밀번호 재입력",
+    "login": "로그인",
+    "signup": "회원가입",
+    "forgotLink": "비밀번호를 잊으셨나요?",
+    "noAccount": "계정이 없으신가요?",
+    "signupLink": "회원가입",
+    "backToLogin": "로그인으로 돌아가기",
+    "forgotTitle": "비밀번호를 잊으셨나요?",
+    "forgotDesc": "아래 이메일로 문의해 주시면 빠르게 도와드리겠습니다.",
+    "forgotEmailNote": "가입 시 등록한 이메일 주소로 문의해 주셔야 처리가 가능합니다.",
+    "signupEmailSent": "가입 확인 메일을 발송했습니다. 메일함을 확인해 인증을 완료해주세요.",
+    "alreadyRegistered": "이미 가입된 이메일입니다.",
+    "signupError": "회원가입 중 오류가 발생했습니다.",
+    "privacyPolicy": "개인정보처리방침",
+    "close": "닫기",
+    "installTitle": "홈 화면에 추가하고 앱처럼 사용해보세요",
+    "installIosDesc": "Safari 하단 공유(⬆) 버튼을 누른 뒤 '홈 화면에 추가'를 선택해주세요",
+    "installAndroidOneTap": "한 번의 탭으로 설치할 수 있어요",
+    "installAdd": "추가",
+    "installAndroidMenuDesc": "브라우저 메뉴(⋮) → '홈 화면에 추가'를 선택해주세요",
+    "rules": {
+      "emailRequired": "이메일을 입력해주세요.",
+      "emailInvalid": "올바른 이메일 형식이 아닙니다.",
+      "passwordRequired": "비밀번호를 입력해주세요.",
+      "passwordMin": "비밀번호는 6자 이상 입력해주세요.",
+      "passwordConfirmRequired": "비밀번호 확인을 입력해주세요.",
+      "passwordMismatch": "비밀번호가 일치하지 않습니다."
+    },
+    "errors": {
+      "invalidCredentials": "가입되지 않은 계정이거나 비밀번호가 올바르지 않습니다.",
+      "emailNotConfirmed": "이메일 인증이 완료되지 않았습니다. 메일함을 확인해주세요.",
+      "userAlreadyExists": "이미 가입된 이메일입니다.",
+      "weakPassword": "비밀번호는 6자 이상 입력해주세요.",
+      "overEmailSendRateLimit": "인증 메일 발송 횟수가 초과되었습니다. 잠시 후 다시 시도해주세요.",
+      "generic": "오류가 발생했습니다."
+    }
   }
 }

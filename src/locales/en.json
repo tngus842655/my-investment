@@ -646,5 +646,48 @@
   "releaseNotes": {
     "title": "Dev Notes",
     "subtitle": "Update history"
+  },
+  "auth": {
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "passwordConfirmLabel": "Confirm Password",
+    "emailPlaceholder": "example@email.com",
+    "passwordPlaceholder": "At least 6 characters",
+    "passwordConfirmPlaceholder": "Re-enter password",
+    "login": "Log in",
+    "signup": "Sign up",
+    "forgotLink": "Forgot your password?",
+    "noAccount": "Don't have an account?",
+    "signupLink": "Sign up",
+    "backToLogin": "Back to login",
+    "forgotTitle": "Forgot your password?",
+    "forgotDesc": "Contact us at the email below and we'll help you quickly.",
+    "forgotEmailNote": "Please contact us using the email address you registered with so we can assist you.",
+    "signupEmailSent": "A confirmation email has been sent. Please check your inbox to complete verification.",
+    "alreadyRegistered": "This email is already registered.",
+    "signupError": "An error occurred during sign up.",
+    "privacyPolicy": "Privacy Policy",
+    "close": "Close",
+    "installTitle": "Add to your home screen and use it like an app",
+    "installIosDesc": "Tap the Share (⬆) button at the bottom of Safari, then choose 'Add to Home Screen'",
+    "installAndroidOneTap": "Install with a single tap",
+    "installAdd": "Add",
+    "installAndroidMenuDesc": "Open the browser menu (⋮) → choose 'Add to Home Screen'",
+    "rules": {
+      "emailRequired": "Please enter your email.",
+      "emailInvalid": "Invalid email format.",
+      "passwordRequired": "Please enter your password.",
+      "passwordMin": "Password must be at least 6 characters.",
+      "passwordConfirmRequired": "Please confirm your password.",
+      "passwordMismatch": "Passwords do not match."
+    },
+    "errors": {
+      "invalidCredentials": "This account doesn't exist or the password is incorrect.",
+      "emailNotConfirmed": "Your email isn't verified yet. Please check your inbox.",
+      "userAlreadyExists": "This email is already registered.",
+      "weakPassword": "Password must be at least 6 characters.",
+      "overEmailSendRateLimit": "Too many verification emails sent. Please try again later.",
+      "generic": "An error occurred."
+    }
   }
 }
