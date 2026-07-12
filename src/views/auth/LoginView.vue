@@ -22,6 +22,15 @@ const languageOptions: { value: SupportedLocale; label: string }[] = [
   { value: 'en', label: 'English' },
 ]
 
+// 부팅 시 브라우저 언어로 자동 감지된 것과 구분하기 위해, 토글을 실제로 클릭했을 때만 표시.
+// true인 경우에만 로그인 성공 후 investment_goals.locale에 반영해 기존 DB 값을 덮어쓴다
+// (기기 단위 자동감지 값이 다른 기기에서 저장한 언어 설정을 임의로 덮어쓰지 않도록 하기 위함).
+let localeChangedManually = false
+const onLanguageClick = (loc: SupportedLocale) => {
+  localeChangedManually = true
+  setLocale(loc)
+}
+
 const LOGO_MAIN: Partial<Record<string, string>> = {
   light:  '/icons/main/logo-main-light.png',
   dark:   '/icons/main/logo-main-dark.png',
@@ -106,6 +115,12 @@ const signIn = async () => {
     if (user) { supabase.from('login_log').insert({ user_id: user.id, email: user.email }).then(() => {}) }
     if (!user) return
 
+    // 로그인 화면에서 언어를 직접 바꾼 경우에만 계정 DB에 반영 — 이후 ensureGoals()가
+    // DB 값을 로컬보다 우선 적용하므로, 여기서 먼저 써두지 않으면 로그인 직후 이전 DB 값으로 되돌아간다.
+    if (localeChangedManually) {
+      await supabase.from('investment_goals').update({ locale: locale.value }).eq('user_id', user.id)
+    }
+
     const lastModule = getLastModule()
 
     if (lastModule === 'budget') {
@@ -186,7 +201,7 @@ onUnmounted(() => {
           :key="opt.value"
           class="lang-btn"
           :class="{ 'lang-btn--active': locale === opt.value }"
-          @click="setLocale(opt.value)"
+          @click="onLanguageClick(opt.value)"
         >
           {{ opt.label }}
         </button>
