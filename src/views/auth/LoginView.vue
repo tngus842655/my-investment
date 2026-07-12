@@ -32,11 +32,11 @@ const onLanguageClick = (loc: SupportedLocale) => {
 }
 
 const LOGO_MAIN: Partial<Record<string, string>> = {
-  light:  '/icons/main/logo-main-light.png',
-  dark:   '/icons/main/logo-main-dark.png',
-  gold:   '/icons/main/logo-main-gold.png',
+  light: '/icons/main/logo-main-light.png',
+  dark: '/icons/main/logo-main-dark.png',
+  gold: '/icons/main/logo-main-gold.png',
   nature: '/icons/main/logo-main-nature.png',
-  space:  '/icons/main/logo-main-space.png',
+  space: '/icons/main/logo-main-space.png',
 }
 const logoMain = computed(() => LOGO_MAIN[themeId.value] ?? null)
 const form = ref()
@@ -55,20 +55,11 @@ const isLogin = computed(() => mode.value === 'login')
 const isSignup = computed(() => mode.value === 'signup')
 const isForgot = computed(() => mode.value === 'forgot')
 
-const emailRules = [
-  (v: string) => !!v || t('auth.rules.emailRequired'),
-  (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || t('auth.rules.emailInvalid'),
-]
+const emailRules = [(v: string) => !!v || t('auth.rules.emailRequired'), (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || t('auth.rules.emailInvalid')]
 
-const passwordRules = [
-  (v: string) => !!v || t('auth.rules.passwordRequired'),
-  (v: string) => v.length >= 6 || t('auth.rules.passwordMin'),
-]
+const passwordRules = [(v: string) => !!v || t('auth.rules.passwordRequired'), (v: string) => v.length >= 6 || t('auth.rules.passwordMin')]
 
-const passwordConfirmRules = [
-  (v: string) => !!v || t('auth.rules.passwordConfirmRequired'),
-  (v: string) => v === password.value || t('auth.rules.passwordMismatch'),
-]
+const passwordConfirmRules = [(v: string) => !!v || t('auth.rules.passwordConfirmRequired'), (v: string) => v === password.value || t('auth.rules.passwordMismatch')]
 
 const switchMode = (target: 'login' | 'signup' | 'forgot') => {
   mode.value = target
@@ -95,7 +86,10 @@ const sendResetEmail = async () => {
     const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail.value, {
       redirectTo: `${window.location.origin}/reset-password`,
     })
-    if (error) { showMessage(t(getErrorMessageKey(error.code)), 'warning'); return }
+    if (error) {
+      showMessage(t(getErrorMessageKey(error.code)), 'warning')
+      return
+    }
     forgotSent.value = true
   } finally {
     forgotLoading.value = false
@@ -108,7 +102,10 @@ const signUp = async () => {
   loading.value = true
   try {
     const { data, error } = await supabase.auth.signUp({ email: email.value, password: password.value })
-    if (error) { showMessage(t(getErrorMessageKey(error.code)), 'warning'); return }
+    if (error) {
+      showMessage(t(getErrorMessageKey(error.code)), 'warning')
+      return
+    }
 
     // 이미 가입된 이메일로 재시도하면 에러 없이 identities가 빈 배열로 반환됨 (Supabase의 사용자 열거 방지 동작)
     if (!data.user?.identities || data.user.identities.length === 0) {
@@ -118,7 +115,10 @@ const signUp = async () => {
 
     // SECURITY DEFINER RPC로 RLS 우회하여 signup_log 기록 (재가입 시 재활성화 처리 포함)
     const { error: logError } = await supabase.rpc('record_signup', { user_email: email.value })
-    if (logError) { showMessage(t('auth.signupError'), 'error'); return }
+    if (logError) {
+      showMessage(t('auth.signupError'), 'error')
+      return
+    }
     showMessage(t('auth.signupEmailSent'), 'success')
     switchMode('login')
   } finally {
@@ -132,10 +132,20 @@ const signIn = async () => {
   loading.value = true
   try {
     const { error } = await supabase.auth.signInWithPassword({ email: email.value, password: password.value })
-    if (error) { showMessage(t(getErrorMessageKey(error.code)), 'warning'); return }
+    if (error) {
+      showMessage(t(getErrorMessageKey(error.code)), 'warning')
+      return
+    }
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) { supabase.from('login_log').insert({ user_id: user.id, email: user.email }).then(() => {}) }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (user) {
+      supabase
+        .from('login_log')
+        .insert({ user_id: user.id, email: user.email })
+        .then(() => {})
+    }
     if (!user) return
 
     // 로그인 화면에서 언어를 직접 바꾼 경우에만 계정 DB에 반영 — 이후 ensureGoals()가
@@ -156,20 +166,25 @@ const signIn = async () => {
     }
 
     const { data: goal } = await supabase.from('investment_goals').select('id').eq('user_id', user.id).maybeSingle()
-    if (!goal) { router.push('/goalSettings'); return }
+    if (!goal) {
+      router.push('/goalSettings')
+      return
+    }
     router.push('/dashboard')
   } finally {
     loading.value = false
   }
 }
 
-const onKeydown = (e: KeyboardEvent) => { if (e.key === 'Enter' && isLogin.value) signIn() }
+const onKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Enter' && isLogin.value) signIn()
+}
 
 // ── 홈 화면에 추가 안내 배너 (iOS / Android 전용) ──────────────
 const A2HS_DISMISSED_KEY = 'fp-a2hs-dismissed'
 const platform = ref<'ios' | 'android' | null>(null)
 const showInstallBanner = ref(false)
-const installPromptEvent = ref<Event & { prompt: () => Promise<void>; userChoice: Promise<unknown> } | null>(null)
+const installPromptEvent = ref<(Event & { prompt: () => Promise<void>; userChoice: Promise<unknown> }) | null>(null)
 
 const detectPlatform = (): 'ios' | 'android' | null => {
   const ua = navigator.userAgent
@@ -197,9 +212,7 @@ const onBeforeInstallPrompt = (e: Event) => {
 }
 
 onMounted(() => {
-  const isStandalone =
-    window.matchMedia('(display-mode: standalone)').matches ||
-    (navigator as Navigator & { standalone?: boolean }).standalone === true
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true
   platform.value = detectPlatform()
   const dismissed = localStorage.getItem(A2HS_DISMISSED_KEY) === '1'
   showInstallBanner.value = !isStandalone && !dismissed && platform.value !== null
@@ -219,25 +232,14 @@ onUnmounted(() => {
     <div class="login-inner">
       <!-- 언어 선택 (로그인 전 전환) -->
       <div class="lang-switch mb-2">
-        <button
-          v-for="opt in languageOptions"
-          :key="opt.value"
-          class="lang-btn"
-          :class="{ 'lang-btn--active': locale === opt.value }"
-          @click="onLanguageClick(opt.value)"
-        >
+        <button v-for="opt in languageOptions" :key="opt.value" class="lang-btn" :class="{ 'lang-btn--active': locale === opt.value }" @click="onLanguageClick(opt.value)">
           {{ opt.label }}
         </button>
       </div>
 
       <!-- 브랜드 -->
       <div class="text-center mb-10">
-        <img
-          v-if="logoMain"
-          :src="logoMain"
-          class="brand-logo mx-auto mb-2"
-          alt="FIREPATH"
-        />
+        <img v-if="logoMain" :src="logoMain" class="brand-logo mx-auto mb-2" alt="FIREPATH" />
         <template v-if="!logoMain">
           <div class="brand-title">FIREPATH</div>
           <div class="brand-sub mt-2">Financial Independence, Retire Early</div>
@@ -268,7 +270,6 @@ onUnmounted(() => {
 
       <!-- 폼 카드 -->
       <div class="login-card">
-
         <!-- 비밀번호 찾기 -->
         <template v-if="isForgot">
           <template v-if="!forgotSent">
@@ -278,30 +279,9 @@ onUnmounted(() => {
               <div class="forgot-desc mt-3">{{ $t('auth.forgotDesc') }}</div>
             </div>
             <v-form ref="forgotFormRef" class="mt-4" @keydown.enter="sendResetEmail">
-              <v-text-field
-                v-model="forgotEmail"
-                type="email"
-                :rules="emailRules"
-                :placeholder="$t('auth.emailPlaceholder')"
-                variant="outlined"
-                density="comfortable"
-                hide-details="auto"
-                autocomplete="email"
-                maxlength="254"
-                bg-color="transparent"
-              />
+              <v-text-field v-model="forgotEmail" type="email" :rules="emailRules" :placeholder="$t('auth.emailPlaceholder')" variant="outlined" density="comfortable" hide-details="auto" autocomplete="email" maxlength="254" bg-color="transparent" />
             </v-form>
-            <v-btn
-              color="primary"
-              size="large"
-              rounded="lg"
-              block
-              elevation="0"
-              :loading="forgotLoading"
-              class="mt-4"
-              style="font-weight: 700; letter-spacing: 0.03em"
-              @click="sendResetEmail"
-            >
+            <v-btn color="primary" size="large" rounded="lg" block elevation="0" :loading="forgotLoading" class="mt-4" style="font-weight: 700; letter-spacing: 0.03em" @click="sendResetEmail">
               {{ $t('auth.sendResetLink') }}
             </v-btn>
           </template>
@@ -316,19 +296,10 @@ onUnmounted(() => {
           <v-divider class="my-4" opacity="0.1" />
           <div class="forgot-desc-note text-center">{{ $t('auth.forgotEmailNote') }}</div>
           <div class="text-center mt-2">
-            <a href="mailto:tngus842655@gmail.com" class="forgot-email">
-              tngus842655@gmail.com
-            </a>
+            <a href="mailto:firepath.me@gmail.com" class="forgot-email"> firepath.me@gmail.com </a>
           </div>
 
-          <v-btn
-            variant="text"
-            block
-            size="default"
-            class="mt-6"
-            style="color: rgba(var(--v-theme-on-surface), 0.5)"
-            @click="switchMode('login')"
-          >
+          <v-btn variant="text" block size="default" class="mt-6" style="color: rgba(var(--v-theme-on-surface), 0.5)" @click="switchMode('login')">
             <v-icon start size="16">mdi-arrow-left</v-icon>
             {{ $t('auth.backToLogin') }}
           </v-btn>
@@ -338,19 +309,7 @@ onUnmounted(() => {
         <template v-else>
           <v-form ref="form" @keydown="onKeydown">
             <div class="fp-label mb-2">{{ $t('auth.emailLabel') }}</div>
-            <v-text-field
-              v-model="email"
-              type="email"
-              :rules="emailRules"
-              :placeholder="$t('auth.emailPlaceholder')"
-              variant="outlined"
-              density="comfortable"
-              class="mb-4"
-              hide-details="auto"
-              autocomplete="email"
-              maxlength="254"
-              bg-color="transparent"
-            />
+            <v-text-field v-model="email" type="email" :rules="emailRules" :placeholder="$t('auth.emailPlaceholder')" variant="outlined" density="comfortable" class="mb-4" hide-details="auto" autocomplete="email" maxlength="254" bg-color="transparent" />
             <div class="fp-label mb-2">{{ $t('auth.passwordLabel') }}</div>
             <v-text-field
               v-model="password"
@@ -393,31 +352,14 @@ onUnmounted(() => {
           </div>
 
           <!-- 메인 버튼 -->
-          <v-btn
-            color="primary"
-            size="large"
-            rounded="lg"
-            block
-            elevation="0"
-            :loading="loading"
-            class="mt-6"
-            style="font-weight: 700; letter-spacing: 0.03em"
-            @click="isLogin ? signIn() : signUp()"
-          >
+          <v-btn color="primary" size="large" rounded="lg" block elevation="0" :loading="loading" class="mt-6" style="font-weight: 700; letter-spacing: 0.03em" @click="isLogin ? signIn() : signUp()">
             {{ isLogin ? $t('auth.login') : $t('auth.signup') }}
           </v-btn>
 
           <v-divider class="my-4" opacity="0.1" />
 
           <!-- 모드 전환 -->
-          <v-btn
-            variant="text"
-            block
-            size="default"
-            :disabled="loading"
-            style="color: rgba(var(--v-theme-on-surface), 0.5)"
-            @click="switchMode(isLogin ? 'signup' : 'login')"
-          >
+          <v-btn variant="text" block size="default" :disabled="loading" style="color: rgba(var(--v-theme-on-surface), 0.5)" @click="switchMode(isLogin ? 'signup' : 'login')">
             <template v-if="isLogin">
               {{ $t('auth.noAccount') }}
               <span style="color: rgb(var(--v-theme-primary)); margin-left: 4px">{{ $t('auth.signupLink') }}</span>
@@ -428,7 +370,6 @@ onUnmounted(() => {
             </template>
           </v-btn>
         </template>
-
       </div>
 
       <div class="text-center mt-4">
@@ -468,7 +409,9 @@ onUnmounted(() => {
   padding: 4px 10px;
   border-radius: 999px;
   cursor: pointer;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
 
 .lang-btn--active {
@@ -519,7 +462,6 @@ onUnmounted(() => {
   border-radius: 24px;
   padding: 28px 24px;
 }
-
 
 .install-banner {
   position: relative;
