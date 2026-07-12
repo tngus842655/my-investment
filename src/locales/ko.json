@@ -341,7 +341,9 @@
     "up": "상승",
     "down": "하락",
     "flat": "보합",
-    "sizeNote": "※ 원 크기 = 평가 비중"
+    "sizeNote": "※ 원 크기 = 평가 비중",
+    "dayChange": "전일 대비",
+    "weight": "비중"
   },
   "assetGrowth": {
     "title": "자산 성장 리포트",

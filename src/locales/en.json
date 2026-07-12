@@ -341,7 +341,9 @@
     "up": "Up",
     "down": "Down",
     "flat": "Flat",
-    "sizeNote": "※ Circle size = value weight"
+    "sizeNote": "※ Circle size = value weight",
+    "dayChange": "1D",
+    "weight": "Weight"
   },
   "assetGrowth": {
     "title": "Asset Growth Report",

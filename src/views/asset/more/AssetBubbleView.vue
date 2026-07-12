@@ -45,6 +45,33 @@ const totalBase = computed(() => bubbles.value.reduce((s, b) => s + b.valueBase,
 const maxR = computed(() => bubbles.value.reduce((m, b) => Math.max(m, b.r), 0))
 const asOfDate = new Date().toISOString().slice(0, 10).replace(/-/g, '.')
 
+// 버블 탭 → 하단에 상세 정보(평가금액·비중·등락률) 표시. 같은 버블 다시 탭하면 해제
+const selected = ref<Bubble | null>(null)
+const selectBubble = (b: Bubble) => {
+  selected.value = selected.value?.ticker === b.ticker ? null : b
+}
+const weightPct = (b: Bubble) =>
+  totalBase.value > 0 ? ((b.valueBase / totalBase.value) * 100).toFixed(1) : '0.0'
+
+// 전일 대비 총 증감액·증감률 (등락률을 아는 종목만 집계 — 현금/미조회 종목은 변동 0으로 간주)
+const dayChange = computed(() => {
+  let diff = 0
+  let hasAny = false
+  let prevTotal = 0
+  for (const b of bubbles.value) {
+    if (b.changeRate === null) {
+      prevTotal += b.valueBase
+      continue
+    }
+    const prev = b.valueBase / (1 + b.changeRate / 100)
+    diff += b.valueBase - prev
+    prevTotal += prev
+    hasAny = true
+  }
+  if (!hasAny || prevTotal <= 0) return null
+  return { diff, rate: (diff / prevTotal) * 100 }
+})
+
 // 등락률 → 색상 (한국식: 상승 빨강 / 하락 파랑 / 보합·미조회 회색), 변동폭이 클수록 진하게.
 // 기본 채움 + 밝은 테두리 + 외곽 발광색을 함께 산출해 입체감을 준다.
 const colorParts = (cr: number | null): { color: string; stroke: string; glow: string } => {
@@ -196,6 +223,11 @@ onMounted(loadData)
       <div class="header-total" v-if="!loading && bubbles.length">
         <div class="total-label">{{ $t('assetBubble.totalAsset') }}</div>
         <div class="total-value">{{ money(totalBase, exchangeRate) }}</div>
+        <div
+          v-if="dayChange"
+          class="total-change"
+          :class="dayChange.diff >= 0 ? 'chg-up' : 'chg-down'"
+        >{{ dayChange.diff >= 0 ? '+' : '-' }}{{ money(Math.abs(dayChange.diff), exchangeRate) }} ({{ dayChange.rate >= 0 ? '+' : '' }}{{ dayChange.rate.toFixed(2) }}%)</div>
         <div class="total-date">{{ asOfDate }} {{ $t('assetBubble.asOf') }}</div>
       </div>
     </div>
@@ -215,7 +247,7 @@ onMounted(loadData)
 
     <template v-else>
       <div class="bubble-stage">
-        <svg :viewBox="viewBox" class="bubble-svg" preserveAspectRatio="xMidYMid meet">
+        <svg :viewBox="viewBox" class="bubble-svg" preserveAspectRatio="xMidYMid meet" @click="selected = null">
           <defs>
             <!-- 구체 광택: 좌상단 하이라이트 + 하단 가장자리 음영 -->
             <radialGradient id="bubbleGlass" cx="38%" cy="30%" r="72%">
@@ -229,7 +261,9 @@ onMounted(loadData)
             v-for="(b, i) in bubbles"
             :key="b.ticker"
             class="bubble-g"
+            :class="{ 'bubble-dim': selected && selected.ticker !== b.ticker }"
             :style="{ '--delay': `${i * 0.04}s` }"
+            @click.stop="selectBubble(b)"
           >
             <!-- 발광 + 기본 채움 -->
             <circle
@@ -241,6 +275,15 @@ onMounted(loadData)
             />
             <!-- 광택 오버레이 -->
             <circle :cx="b.x" :cy="b.y" :r="b.r" fill="url(#bubbleGlass)" pointer-events="none" />
+            <!-- 선택 링 -->
+            <circle
+              v-if="selected?.ticker === b.ticker"
+              :cx="b.x" :cy="b.y" :r="b.r * 1.06"
+              fill="none"
+              stroke="rgba(255,255,255,0.85)"
+              :stroke-width="b.r * 0.03"
+              pointer-events="none"
+            />
 
             <template v-if="showText(b)">
               <!-- 이름 서브라벨이 있으면 3줄, 없으면 2줄로 세로 정렬 -->
@@ -258,6 +301,25 @@ onMounted(loadData)
         </svg>
       </div>
 
+      <!-- 선택한 버블 상세 (작아서 텍스트가 생략된 버블도 여기서 확인) -->
+      <v-expand-transition>
+        <div v-if="selected" class="detail-card" @click="selected = null">
+          <div class="detail-left">
+            <div class="detail-ticker">
+              {{ selected.ticker }}
+              <span v-if="selected.label !== selected.ticker" class="detail-name">{{ selected.label }}</span>
+            </div>
+            <div class="detail-change" :class="(selected.changeRate ?? 0) >= 0 ? 'chg-up' : 'chg-down'">
+              {{ $t('assetBubble.dayChange') }} {{ fmtChange(selected.changeRate) }}
+            </div>
+          </div>
+          <div class="detail-right">
+            <div class="detail-value">{{ money(selected.valueBase, exchangeRate) }}</div>
+            <div class="detail-weight">{{ $t('assetBubble.weight') }} {{ weightPct(selected) }}%</div>
+          </div>
+        </div>
+      </v-expand-transition>
+
       <!-- 범례 -->
       <div class="bubble-legend">
         <span class="legend-item"><span class="legend-dot" style="background: hsl(4, 72%, 55%)" />{{ $t('assetBubble.up') }}</span>
@@ -274,7 +336,9 @@ onMounted(loadData)
   position: relative;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  /* 부모(.app-content)는 스크롤 컨테이너라 height:100%가 안 먹음 —
+     뷰포트에서 하단 탭바 영역을 뺀 높이로 직접 계산해 화면을 꽉 채움 */
+  height: calc(100dvh - 72px - env(safe-area-inset-bottom));
   min-height: 0;
   /* 목업과 동일한 우주 느낌 다크 배경 (테마와 무관하게 이 화면은 다크 고정) */
   background:
@@ -300,6 +364,13 @@ onMounted(loadData)
 }
 .bubble-page > * { position: relative; z-index: 1; }
 
+/* 홈 화면 추가(PWA) 모드는 하단 탭바가 더 큼 (AssetLayout과 동일 값) */
+@media (display-mode: standalone) {
+  .bubble-page {
+    height: calc(100dvh - 82px - env(safe-area-inset-bottom));
+  }
+}
+
 .bubble-header {
   display: flex;
   align-items: flex-start;
@@ -324,6 +395,12 @@ onMounted(loadData)
   font-weight: 700;
   color: #fff;
 }
+.total-change {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.chg-up { color: hsl(4, 82%, 64%); }
+.chg-down { color: hsl(212, 82%, 66%); }
 .total-date {
   font-size: 0.625rem;
   color: rgba(255, 255, 255, 0.4);
@@ -344,6 +421,11 @@ onMounted(loadData)
   animation: bubbleIn 0.45s ease var(--delay, 0s) both;
   transform-box: fill-box;
   transform-origin: center;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+.bubble-dim {
+  opacity: 0.35;
 }
 @keyframes bubbleIn {
   from { opacity: 0; transform: scale(0.6); }
@@ -368,6 +450,49 @@ onMounted(loadData)
   font-weight: 600;
   font-family: inherit;
   pointer-events: none;
+}
+
+.detail-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 12px 4px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+}
+.detail-ticker {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #fff;
+}
+.detail-name {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  margin-left: 4px;
+}
+.detail-change {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.detail-right {
+  text-align: right;
+}
+.detail-value {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #fff;
+}
+.detail-weight {
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 2px;
 }
 
 .bubble-legend {
