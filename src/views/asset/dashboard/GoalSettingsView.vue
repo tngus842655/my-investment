@@ -9,7 +9,7 @@ import { useUserDataStore } from '@/stores/userData'
 import { setBaseCurrency } from '@/composables/useBaseCurrency'
 import { getCachedRate } from '@/services/exchangeRateCache'
 import { recomputeAssetSummary } from '@/services/assetSummary'
-import type { CurrencyCode } from '@/config/marketConfig'
+import { LOCALE_CURRENCY, type CurrencyCode } from '@/config/marketConfig'
 import { isKoLocale } from '@/plugins/i18n'
 import { useI18n } from 'vue-i18n'
 import { formatYearMonth, formatDuration } from '@/utils/dateFormat'
@@ -166,6 +166,9 @@ const loadData = async () => {
   const goal = await userDataStore.ensureGoals()
 
   if (!goal) {
+    // 최초 목표 설정: 저장된 기준통화가 없으니 현재 로케일의 기본 통화로 초기 선택
+    baseCurrencySel.value = LOCALE_CURRENCY[locale.value as keyof typeof LOCALE_CURRENCY] ?? 'KRW'
+    savedBaseCurrency = baseCurrencySel.value
     annualReturn.value = 7
     initializing.value = false
     return
