@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { formatBudgetAmount } from '@/utils/budgetMoney'
@@ -9,6 +10,7 @@ import { useUserDataStore } from '@/stores/userData'
 import type { BudgetType, BudgetCategory, BudgetPaymentMethod } from '@/types/budget'
 
 const router = useRouter()
+const { t } = useI18n()
 const { baseCurrency } = useBaseCurrency()
 const userDataStore = useUserDataStore()
 
@@ -116,9 +118,9 @@ const parseAmountCell = (v: unknown): number | null => {
 }
 
 const parseTypeCell = (v: unknown): BudgetType | null => {
-  const s = cellToString(v).trim()
-  if (s === '지출') return 'EXPENSE'
-  if (s === '수입') return 'INCOME'
+  const s = cellToString(v).trim().toLowerCase()
+  if (s === '지출' || s === 'expense') return 'EXPENSE'
+  if (s === '수입' || s === 'income') return 'INCOME'
   return null
 }
 
@@ -131,33 +133,41 @@ const resetResult = () => {
 
 type ColumnKey = 'date' | 'asset' | 'category' | 'memo' | 'amount' | 'type'
 
-const COLUMN_LABELS: Record<ColumnKey, string> = {
-  date: '날짜',
-  asset: '자산',
-  category: '카테고리',
-  memo: '내용',
-  amount: '금액(원)',
-  type: '수입/지출',
+const COLUMN_LABEL_KEYS: Record<ColumnKey, string> = {
+  date: 'budget.import.colDate',
+  asset: 'budget.import.colAsset',
+  category: 'budget.import.colCategory',
+  memo: 'budget.import.colMemo',
+  amount: 'budget.import.colAmount',
+  type: 'budget.import.colType',
 }
 
 // 화면 안내용 — 자산은 "자산(결제수단)"으로 더 풀어서 보여줌
-const REQUIRED_COLUMN_LABELS = ['날짜', '자산(결제수단)', '카테고리', '내용', '금액(원)', '수입/지출']
+const requiredColumnLabels = computed(() => [
+  t('budget.import.colDate'),
+  t('budget.import.colAssetFull'),
+  t('budget.import.colCategory'),
+  t('budget.import.colMemo'),
+  t('budget.import.colAmount'),
+  t('budget.import.colType'),
+])
 
-// 제목 행 문구가 조금 다르게 적혀 있어도(예: "결제수단", "금액") 인식되도록 별칭 허용
+// 제목 행 문구가 조금 다르게 적혀 있어도(예: "결제수단", "금액") 인식되도록 별칭 허용.
+// 한글/영문 별칭을 항상 함께 인식 — 로케일과 다른 언어 양식도 가져올 수 있게 (영문은 소문자 비교)
 const COLUMN_ALIASES: Record<ColumnKey, string[]> = {
-  date: ['날짜', '일자'],
-  asset: ['자산', '결제수단', '자산(결제수단)'],
-  category: ['카테고리', '분류'],
-  memo: ['내용', '메모'],
-  amount: ['금액(원)', '금액'],
-  type: ['수입/지출', '수입지출', '구분'],
+  date: ['날짜', '일자', 'date'],
+  asset: ['자산', '결제수단', '자산(결제수단)', 'asset', 'payment method', 'asset (payment method)'],
+  category: ['카테고리', '분류', 'category'],
+  memo: ['내용', '메모', 'note', 'memo', 'description'],
+  amount: ['금액(원)', '금액', 'amount', 'amount (krw)'],
+  type: ['수입/지출', '수입지출', '구분', 'income/expense', 'type'],
 }
 
 // 제목 행 텍스트로 각 열이 실제로 몇 번째 칸에 있는지 찾음 (열 순서가 바뀌어도 정상 인식되도록)
 const findColumnIndexes = (
   headerRow: unknown[],
 ): { indexes: Record<ColumnKey, number>; missing: ColumnKey[] } => {
-  const headerCells = headerRow.map((v) => cellToString(v).trim())
+  const headerCells = headerRow.map((v) => cellToString(v).trim().toLowerCase())
   const indexes = {} as Record<ColumnKey, number>
   const missing: ColumnKey[] = []
   for (const key of Object.keys(COLUMN_ALIASES) as ColumnKey[]) {
@@ -175,7 +185,7 @@ const onFileChange = async (e: Event) => {
   fileName.value = file.name
 
   if (/\.xls$/i.test(file.name)) {
-    showMessage('예전 형식(.xls)은 지원하지 않습니다. 엑셀에서 "다른 이름으로 저장" → .xlsx로 저장 후 다시 시도해주세요.', 'error')
+    showMessage(t('budget.import.xlsNotSupported'), 'error')
     resetResult()
     if (fileInput.value) fileInput.value.value = ''
     return
@@ -187,14 +197,14 @@ const onFileChange = async (e: Event) => {
     const sheets = await readXlsxFile(file)
     const data = sheets[0]?.data
     if (!data || data.length === 0) {
-      showMessage('시트를 찾을 수 없습니다.', 'error')
+      showMessage(t('budget.import.noSheet'), 'error')
       return
     }
 
     const { indexes: col, missing } = findColumnIndexes(data[0] ?? [])
     if (missing.length > 0) {
       showMessage(
-        `제목 행에서 "${missing.map((k) => COLUMN_LABELS[k]).join(', ')}" 열을 찾을 수 없습니다. 양식을 확인해주세요.`,
+        t('budget.import.missingColumns', { cols: missing.map((k) => t(COLUMN_LABEL_KEYS[k])).join(', ') }),
         'error',
       )
       resetResult()
@@ -225,21 +235,21 @@ const onFileChange = async (e: Event) => {
       const memo = cellToString(memoRaw).trim()
 
       let error: string | null = null
-      if (!entryDate) error = '날짜 형식을 확인해주세요'
-      else if (!type) error = '수입/지출 구분을 확인해주세요'
-      else if (!categoryName) error = '카테고리가 비어있습니다'
-      else if (amount === null || amount <= 0) error = '금액을 확인해주세요'
+      if (!entryDate) error = t('budget.import.errDate')
+      else if (!type) error = t('budget.import.errType')
+      else if (!categoryName) error = t('budget.import.errCategory')
+      else if (amount === null || amount <= 0) error = t('budget.import.errAmount')
 
       rows.push({ rowNumber, entryDate, paymentMethodName, categoryName, memo, amount, type, error })
     }
 
     parsedRows.value = rows
     if (rows.length === 0) {
-      showMessage('가져올 내역이 없습니다.', 'warning')
+      showMessage(t('budget.import.noRows'), 'warning')
     }
   } catch (err) {
     console.error('엑셀 파싱 오류:', err)
-    showMessage('엑셀 파일을 읽는 중 오류가 발생했습니다. .xlsx 형식이 맞는지 확인해주세요.', 'error')
+    showMessage(t('budget.import.parseFailed'), 'error')
     resetResult()
   } finally {
     parsing.value = false
@@ -257,21 +267,21 @@ const downloadTemplate = async () => {
   try {
     const { default: writeXlsxFile } = await import('write-excel-file/browser')
     const sampleRows = [
-      { date: '2026-01-15', asset: '현금', category: '식비', memo: '점심', amount: 12000, type: '지출' },
-      { date: '2026-01-25', asset: '통장', category: '월급', memo: '', amount: 3000000, type: '수입' },
+      { date: '2026-01-15', asset: t('budget.import.sampleAsset1'), category: t('budget.import.sampleCategory1'), memo: t('budget.import.sampleMemo1'), amount: 12000, type: t('budget.common.expense') },
+      { date: '2026-01-25', asset: t('budget.import.sampleAsset2'), category: t('budget.import.sampleCategory2'), memo: '', amount: 3000000, type: t('budget.common.income') },
     ]
     const columns = [
-      { header: '날짜', cell: (r: (typeof sampleRows)[number]) => ({ value: r.date }), width: 12 },
-      { header: '자산', cell: (r: (typeof sampleRows)[number]) => ({ value: r.asset }), width: 12 },
-      { header: '카테고리', cell: (r: (typeof sampleRows)[number]) => ({ value: r.category }), width: 12 },
-      { header: '내용', cell: (r: (typeof sampleRows)[number]) => ({ value: r.memo }), width: 16 },
-      { header: '금액(원)', cell: (r: (typeof sampleRows)[number]) => ({ value: r.amount, type: Number }), width: 12 },
-      { header: '수입/지출', cell: (r: (typeof sampleRows)[number]) => ({ value: r.type }), width: 10 },
+      { header: t('budget.import.colDate'), cell: (r: (typeof sampleRows)[number]) => ({ value: r.date }), width: 12 },
+      { header: t('budget.import.colAsset'), cell: (r: (typeof sampleRows)[number]) => ({ value: r.asset }), width: 12 },
+      { header: t('budget.import.colCategory'), cell: (r: (typeof sampleRows)[number]) => ({ value: r.category }), width: 12 },
+      { header: t('budget.import.colMemo'), cell: (r: (typeof sampleRows)[number]) => ({ value: r.memo }), width: 16 },
+      { header: t('budget.import.colAmount'), cell: (r: (typeof sampleRows)[number]) => ({ value: r.amount, type: Number }), width: 12 },
+      { header: t('budget.import.colType'), cell: (r: (typeof sampleRows)[number]) => ({ value: r.type }), width: 10 },
     ]
-    await writeXlsxFile(sampleRows, { columns }).toFile('가계부_엑셀양식.xlsx')
+    await writeXlsxFile(sampleRows, { columns }).toFile(t('budget.import.templateFilename'))
   } catch (err) {
     console.error('양식 다운로드 오류:', err)
-    showMessage('양식 파일을 만드는 중 오류가 발생했습니다.', 'error')
+    showMessage(t('budget.import.templateFailed'), 'error')
   } finally {
     downloadingTemplate.value = false
   }
@@ -350,11 +360,11 @@ const doImport = async () => {
       if (error) throw error
     }
 
-    showMessage(`${entries.length}건의 내역을 가져왔습니다.`, 'success')
+    showMessage(t('budget.import.importDone', { count: entries.length }), 'success')
     resetResult()
   } catch (err) {
     console.error('가져오기 오류:', err)
-    showMessage('가져오기 중 오류가 발생했습니다.', 'error')
+    showMessage(t('budget.import.importFailed'), 'error')
   } finally {
     importing.value = false
   }
@@ -368,18 +378,18 @@ const doImport = async () => {
         <v-icon size="20">mdi-arrow-left</v-icon>
       </button>
       <div>
-        <div class="font-weight-bold">엑셀 가져오기</div>
-        <div class="text-medium-emphasis">엑셀 파일로 과거 내역 일괄 등록</div>
+        <div class="font-weight-bold">{{ $t('budget.import.title') }}</div>
+        <div class="text-medium-emphasis">{{ $t('budget.import.subtitle') }}</div>
       </div>
     </div>
 
     <div class="glass-card pa-4 mb-3">
-      <div class="format-title mb-2">엑셀 양식 안내</div>
+      <div class="format-title mb-2">{{ $t('budget.import.formatTitle') }}</div>
       <div class="text-medium-emphasis mb-3" style="font-size: 0.8125rem">
-        1행은 제목 행, 2행부터 데이터를 읽습니다. 열 순서는 상관없이 아래 이름만 있으면 됩니다.
+        {{ $t('budget.import.formatDesc') }}
       </div>
       <div class="column-chip-wrap mb-3">
-        <span v-for="label in REQUIRED_COLUMN_LABELS" :key="label" class="column-chip">{{ label }}</span>
+        <span v-for="label in requiredColumnLabels" :key="label" class="column-chip">{{ label }}</span>
       </div>
       <v-btn
         block
@@ -390,13 +400,13 @@ const doImport = async () => {
         :loading="downloadingTemplate"
         @click="downloadTemplate"
       >
-        엑셀 양식 다운로드
+        {{ $t('budget.import.downloadTemplate') }}
       </v-btn>
     </div>
 
     <div class="pc-notice mb-4">
       <v-icon size="16" class="mr-1">mdi-monitor</v-icon>
-      <span>엑셀 파일 작성·업로드·양식 다운로드는 모바일보다 <b>PC 환경</b>에서 진행하시는 것을 권장합니다.</span>
+      <i18n-t tag="span" keypath="budget.import.pcNotice"><template #pc><b>{{ $t('budget.import.pcEnv') }}</b></template></i18n-t>
     </div>
 
     <input ref="fileInput" type="file" accept=".xlsx,.xls" class="d-none" @change="onFileChange" />
@@ -409,22 +419,22 @@ const doImport = async () => {
       :loading="parsing"
       @click="triggerFileSelect"
     >
-      {{ fileName || '엑셀 파일 선택' }}
+      {{ fileName || $t('budget.import.selectFile') }}
     </v-btn>
 
     <template v-if="parsedRows.length > 0">
       <div class="d-flex ga-2 mt-4 mb-3">
-        <div class="summary-chip">총 {{ parsedRows.length }}건</div>
-        <div class="summary-chip summary-chip-ok">정상 {{ validRows.length }}건</div>
-        <div v-if="errorRows.length > 0" class="summary-chip summary-chip-error">오류 {{ errorRows.length }}건</div>
+        <div class="summary-chip">{{ $t('budget.import.totalCount', { count: parsedRows.length }) }}</div>
+        <div class="summary-chip summary-chip-ok">{{ $t('budget.import.okCount', { count: validRows.length }) }}</div>
+        <div v-if="errorRows.length > 0" class="summary-chip summary-chip-error">{{ $t('budget.import.errorCount', { count: errorRows.length }) }}</div>
       </div>
 
       <div v-if="newCategoryNames.length > 0 || newPaymentMethodNames.length > 0" class="glass-card pa-3 mb-3">
         <div v-if="newCategoryNames.length > 0" class="mb-1" style="font-size: 0.8125rem">
-          <b>새 카테고리</b>: {{ newCategoryNames.map((c) => c.name).join(', ') }}
+          <b>{{ $t('budget.import.newCategories') }}</b>: {{ newCategoryNames.map((c) => c.name).join(', ') }}
         </div>
         <div v-if="newPaymentMethodNames.length > 0" style="font-size: 0.8125rem">
-          <b>새 결제수단</b>: {{ newPaymentMethodNames.join(', ') }}
+          <b>{{ $t('budget.import.newPaymentMethods') }}</b>: {{ newPaymentMethodNames.join(', ') }}
         </div>
       </div>
 
@@ -436,7 +446,7 @@ const doImport = async () => {
           :class="{ 'preview-row-error': r.error }"
         >
           <template v-if="r.error">
-            <div class="preview-error-text">{{ r.rowNumber }}행: {{ r.error }}</div>
+            <div class="preview-error-text">{{ $t('budget.import.rowError', { row: r.rowNumber, error: r.error }) }}</div>
           </template>
           <template v-else>
             <div class="preview-main">
@@ -458,7 +468,7 @@ const doImport = async () => {
         :loading="importing"
         @click="doImport"
       >
-        {{ validRows.length }}건 가져오기
+        {{ $t('budget.import.importButton', { count: validRows.length }) }}
       </v-btn>
     </template>
   </v-container>
