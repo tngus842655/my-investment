@@ -34,6 +34,16 @@
   (KRW 100억 / 그 외 1,000만). **키패드는 정수 전용 유지** — USD도 정수 달러만 입력(소수점 지원은
   스코프 밖, 필요 시 추후). 표시 규칙: 단건=기록 통화, 집계=기준통화 (BUDGET_GLOBALIZATION.md 설계 3항).
   검증: vue-tsc --build 통과. ko+KRW 경로는 포맷터 1:1 매핑으로 기존 출력과 동일(사용자 2에서 실기기 확인).
+- ✅ 사용자 단계 2 (통화 검증) — 2026-07-13 실기기 확인 완료, 기존 화면과 동일.
+- ✅ Claude 단계 3 (로케일 키 골격 + 공용 소형 컴포넌트) — 2026-07-13 완료.
+  `budget.*` 네임스페이스 신설(`common`/`nav`/`manage`/`categoryPicker` — 이후 단계에서 화면별로 확장),
+  `date` 네임스페이스에 `year`("{year}년"/"{year}")·`months`(1월~12월/Jan~Dec 배열) 추가.
+  전환: `BudgetLayout`(하단 탭 3개, labelKey 방식), `BudgetManageView`(제목/부제/탭 토글 3개),
+  `BudgetAmountKeypad`(제목/확인), `BudgetCategoryGridPicker`(제목/빈 상태/추가),
+  `BudgetMonthYearCard`(제목/이번달/년 라벨/월 그리드 — `date.months`를 tm/rt로 사용,
+  DividendCalendarView의 weekdays 패턴과 동일), `BudgetDateCalendarCard`(제목/오늘/년월 → formatYearMonth).
+  참고: 날짜 팝업 내부 `v-date-picker`(Vuetify)의 요일 헤더는 Vuetify 기본 로케일(en) 그대로 —
+  기존 한국어 화면에서도 영문 요일이었으므로 변경 없음. 검증: vue-tsc --build 통과.
 
 ---
 

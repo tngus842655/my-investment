@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 const year = defineModel<number>('year', { required: true })
 const month = defineModel<number>('month', { required: true }) // 0~11
 
 const emit = defineEmits<{ close: [] }>()
 
-const monthNames = Array.from({ length: 12 }, (_, i) => `${i + 1}월`)
+const { t, tm, rt } = useI18n()
+const monthNames = computed(() => (tm('date.months') as unknown[]).map((m) => rt(m as string)))
 
 const selectMonth = (i: number) => {
   month.value = i
@@ -22,9 +26,9 @@ const setThisMonth = () => {
 <template>
   <v-card rounded="lg" class="month-year-card">
     <div class="date-picker-topbar">
-      <span class="topbar-title">날짜</span>
+      <span class="topbar-title">{{ t('budget.common.date') }}</span>
       <div class="d-flex align-center ga-1">
-        <button class="topbar-action" @click="setThisMonth">이번달</button>
+        <button class="topbar-action" @click="setThisMonth">{{ t('budget.common.thisMonth') }}</button>
         <v-btn icon="mdi-close" variant="text" size="small" @click="emit('close')" />
       </div>
     </div>
@@ -32,7 +36,7 @@ const setThisMonth = () => {
       <button class="nav-arrow" @click="year -= 1">
         <v-icon size="20">mdi-chevron-left</v-icon>
       </button>
-      <span class="nav-label-static">{{ year }}년</span>
+      <span class="nav-label-static">{{ t('date.year', { year }) }}</span>
       <button class="nav-arrow" @click="year += 1">
         <v-icon size="20">mdi-chevron-right</v-icon>
       </button>

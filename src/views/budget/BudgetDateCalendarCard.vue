@@ -2,6 +2,7 @@
 import { ref, computed, nextTick, watch } from 'vue'
 import BudgetMonthYearCard from './BudgetMonthYearCard.vue'
 import BudgetPanelTopbar from './BudgetPanelTopbar.vue'
+import { formatYearMonth } from '@/utils/dateFormat'
 import { useFitToPanel } from '@/composables/useFitToPanel'
 
 const emit = defineEmits<{
@@ -65,14 +66,14 @@ const setToday = () => {
       class="scale-wrap"
       :style="{ transform: scale < 1 ? `scale(${scale})` : undefined, width: scale < 1 ? `${100 / scale}%` : '100%' }"
     >
-      <BudgetPanelTopbar title="날짜" @close="emit('close')">
-        <button class="topbar-action" @click="setToday">오늘</button>
+      <BudgetPanelTopbar :title="$t('budget.common.date')" @close="emit('close')">
+        <button class="topbar-action" @click="setToday">{{ $t('budget.common.today') }}</button>
       </BudgetPanelTopbar>
       <div class="date-nav-row">
         <button class="nav-arrow" @click="shiftMonth(-1)">
           <v-icon size="20">mdi-chevron-left</v-icon>
         </button>
-        <button class="nav-label" @click="monthYearOpen = true">{{ calendarYear }}년 {{ calendarMonth + 1 }}월</button>
+        <button class="nav-label" @click="monthYearOpen = true">{{ formatYearMonth(calendarYear, calendarMonth + 1) }}</button>
         <button class="nav-arrow" @click="shiftMonth(1)">
           <v-icon size="20">mdi-chevron-right</v-icon>
         </button>

@@ -18,6 +18,8 @@
   "date": {
     "yearMonth": "{monthShort} {year}",
     "fullDate": "{monthShort} {day}, {year}",
+    "year": "{year}",
+    "months": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
     "durationYM": "{years}y {months}mo",
     "durationY": "{years}y",
     "durationM": "{months}mo",
@@ -747,5 +749,33 @@
     "invalidLinkTitle": "Link Expired",
     "invalidLinkDesc": "This password reset link has expired or is invalid. Please request a new one from the login screen.",
     "backToLogin": "Back to Log in"
+  },
+  "budget": {
+    "common": {
+      "date": "Date",
+      "amount": "Amount",
+      "category": "Category",
+      "paymentMethod": "Payment Method",
+      "favorites": "Favorites",
+      "income": "Income",
+      "expense": "Expense",
+      "confirm": "OK",
+      "today": "Today",
+      "thisMonth": "This Month",
+      "add": "Add",
+      "manage": "Manage"
+    },
+    "nav": {
+      "calendar": "Calendar",
+      "stats": "Stats",
+      "more": "More"
+    },
+    "manage": {
+      "subtitle": "Manage categories, payment methods & favorites"
+    },
+    "categoryPicker": {
+      "empty": "No categories yet. Add one first.",
+      "goAdd": "Add a category"
+    }
   }
 }
