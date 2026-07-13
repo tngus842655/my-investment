@@ -67,6 +67,12 @@
   `BudgetSearchView`(제목/placeholder/빈 상태 — 삭제·스와이프 문구는 budget.calendar.* 재사용),
   `BudgetMoreView`(메뉴/데이터 관리 3종/비밀번호 재확인 — 초기화 완료 메시지는 {title} 보간,
   비밀번호 라벨은 hub.passwordLabel 재사용). 검증: vue-tsc --build 통과, 잔여 한글은 주석뿐.
+- ✅ Claude 단계 6 (기본 데이터 시딩 로케일 분기) — 2026-07-13 완료.
+  `DEFAULT_BUDGET_CATEGORIES`/`DEFAULT_BUDGET_PAYMENT_METHODS` 상수를 `getDefaultBudgetCategories()`/
+  `getDefaultBudgetPaymentMethods()` 함수로 전환 — 시딩 시점 로케일이 ko면 기존 한글, 그 외는 영어
+  (🍚 Food/🚗 Transport/… , Cash/Card). 호출부는 카테고리/결제수단 관리 화면의 "기본 추가" 버튼 2곳뿐
+  (자동 시딩 아님 — 빈 목록일 때 버튼 노출 방식). 기존 시딩 데이터는 불변.
+  검증: vue-tsc --build 통과. 실제 영어 계정 시딩 확인은 사용자 5.
 
 ---
 

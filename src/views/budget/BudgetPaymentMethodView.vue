@@ -5,7 +5,7 @@ import { supabase } from '@/services/supabase'
 import { useI18n } from 'vue-i18n'
 import { showMessage } from '@/composables/useSnackbar'
 import type { BudgetPaymentMethod } from '@/types/budget'
-import { DEFAULT_BUDGET_PAYMENT_METHODS } from '@/utils/budgetDefaultPaymentMethods'
+import { getDefaultBudgetPaymentMethods } from '@/utils/budgetDefaultPaymentMethods'
 
 
 const { t } = useI18n()
@@ -56,7 +56,7 @@ const seedDefaultPaymentMethods = async () => {
   if (!user) return
 
   seeding.value = true
-  const rows = DEFAULT_BUDGET_PAYMENT_METHODS.map((name, i) => ({ user_id: user.id, name, sort_order: i }))
+  const rows = getDefaultBudgetPaymentMethods().map((name, i) => ({ user_id: user.id, name, sort_order: i }))
   const { error } = await supabase.from('budget_payment_methods').insert(rows)
   if (error) {
     showMessage(t('budget.paymentMethods.seedFailed'), 'error')

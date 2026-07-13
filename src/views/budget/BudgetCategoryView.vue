@@ -5,7 +5,7 @@ import { supabase } from '@/services/supabase'
 import { useI18n } from 'vue-i18n'
 import { showMessage } from '@/composables/useSnackbar'
 import type { BudgetCategory, BudgetType } from '@/types/budget'
-import { DEFAULT_BUDGET_CATEGORIES } from '@/utils/budgetDefaultCategories'
+import { getDefaultBudgetCategories } from '@/utils/budgetDefaultCategories'
 
 
 const { t } = useI18n()
@@ -60,7 +60,7 @@ const seedDefaultCategories = async (type: BudgetType) => {
   if (!user) return
 
   seeding.value = true
-  const rows = DEFAULT_BUDGET_CATEGORIES
+  const rows = getDefaultBudgetCategories()
     .filter((c) => c.type === type)
     .map((c, i) => ({
       user_id: user.id,
