@@ -33,15 +33,19 @@ export const formatShortMoney = (value: number) => {
   if (!value) return '-'
 
   const rounded = Math.round(value)
-  const eok = Math.floor(rounded / 100000000)
-  const man = Math.floor((rounded % 100000000) / 10000)
+  const sign = rounded < 0 ? '-' : ''
+  const abs = Math.abs(rounded)
+  const eok = Math.floor(abs / 100000000)
+  const man = Math.floor((abs % 100000000) / 10000)
 
   if (eok > 0) {
-    if (man > 0) return `${eok}억 ${man.toLocaleString()}만`
-    return `${eok}억`
+    if (man > 0) return `${sign}${eok}억 ${man.toLocaleString()}만`
+    return `${sign}${eok}억`
   }
+  if (man > 0) return `${sign}${man.toLocaleString()}만`
 
-  return `${man.toLocaleString()}만`
+  // 1만 미만: '0만' 대신 원 단위 그대로 (전일 증감 등 소액 표시용)
+  return `${sign}${abs.toLocaleString()}`
 }
 
 export const formatCurrencyWithShort = (value: number) => {

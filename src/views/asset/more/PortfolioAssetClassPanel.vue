@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { supabase } from '@/services/supabase'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
+import { useUserDataStore } from '@/stores/userData'
 import { convertMoney } from '@/utils/portfolioMath'
 import { useDesignTokens } from '@/composables/useDesignTokens'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
@@ -9,6 +9,7 @@ import { getAssetClass, getMarket, classMarketToAssetType, displayAssetType, typ
 
 const { chart } = useDesignTokens()
 const { baseCurrency, money } = useBaseCurrency()
+const userDataStore = useUserDataStore()
 
 const loading = ref(true)
 const hoveredKey = ref<string | null>(null)
@@ -100,10 +101,8 @@ const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.v
 const loadData = async () => {
   loading.value = true
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const [portfolioResult, rate] = await Promise.all([supabase.from('portfolios').select('*').eq('user_id', user.id), getCachedExchangeRate()])
-    portfolioRows.value = portfolioResult.data ?? []
+    const [rows, rate] = await Promise.all([userDataStore.ensurePortfolios(), getCachedExchangeRate()])
+    portfolioRows.value = rows as PortfolioRow[]
     exchangeRate.value = rate
   } finally {
     loading.value = false
