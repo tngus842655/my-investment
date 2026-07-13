@@ -2,10 +2,13 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import { supabase } from '@/services/supabase'
+import { useI18n } from 'vue-i18n'
 import { showMessage } from '@/composables/useSnackbar'
 import type { BudgetCategory, BudgetType } from '@/types/budget'
 import { DEFAULT_BUDGET_CATEGORIES } from '@/utils/budgetDefaultCategories'
 
+
+const { t } = useI18n()
 const loading = ref(true)
 const categories = ref<BudgetCategory[]>([])
 const selectedType = ref<BudgetType>('EXPENSE')
@@ -23,7 +26,7 @@ const persistOrder = async () => {
   const rows = displayList.value.map((c, i) => ({ ...c, sort_order: i }))
   const { error } = await supabase.from('budget_categories').upsert(rows)
   if (error) {
-    showMessage('정렬 저장에 실패했습니다.', 'error')
+    showMessage(t('budget.common.orderSaveFailed'), 'error')
     await fetchCategories()
     return
   }
@@ -44,7 +47,7 @@ const fetchCategories = async () => {
     .order('sort_order')
 
   if (error) {
-    showMessage('카테고리를 불러오지 못했습니다.', 'error')
+    showMessage(t('budget.categories.loadFailed'), 'error')
     return
   }
 
@@ -67,7 +70,7 @@ const seedDefaultCategories = async (type: BudgetType) => {
     }))
   const { error } = await supabase.from('budget_categories').insert(rows)
   if (error) {
-    showMessage('기본 카테고리 생성에 실패했습니다.', 'error')
+    showMessage(t('budget.categories.seedFailed'), 'error')
     seeding.value = false
     return
   }
@@ -111,7 +114,7 @@ const closeDialog = () => {
 const saveCategory = async () => {
   const name = formName.value.trim()
   if (!name) {
-    showMessage('카테고리 이름을 입력해주세요.', 'warning')
+    showMessage(t('budget.categories.nameRequired'), 'warning')
     return
   }
 
@@ -123,7 +126,7 @@ const saveCategory = async () => {
         .update({ name })
         .eq('id', editingId.value)
       if (error) throw error
-      showMessage('카테고리가 수정되었습니다.', 'success')
+      showMessage(t('budget.categories.updated'), 'success')
     } else {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -135,12 +138,12 @@ const saveCategory = async () => {
         sort_order: sortOrder,
       })
       if (error) throw error
-      showMessage('카테고리가 추가되었습니다.', 'success')
+      showMessage(t('budget.categories.added'), 'success')
     }
     dialog.value = false
     await fetchCategories()
   } catch {
-    showMessage('저장 중 오류가 발생했습니다.', 'error')
+    showMessage(t('budget.common.saveFailed'), 'error')
   } finally {
     saving.value = false
   }
@@ -173,13 +176,13 @@ const confirmDeleteCategory = async () => {
   deleting.value = false
   if (error) {
     if (error.code === '23503') {
-      showMessage('이 카테고리를 사용하는 내역이 있어 삭제할 수 없습니다.', 'error')
+      showMessage(t('budget.categories.inUse'), 'error')
     } else {
-      showMessage('삭제 중 오류가 발생했습니다.', 'error')
+      showMessage(t('budget.calendar.deleteFailed'), 'error')
     }
     return
   }
-  showMessage('카테고리가 삭제되었습니다.', 'success')
+  showMessage(t('budget.categories.deleted'), 'success')
   closeDeleteDialog()
   await fetchCategories()
 }
@@ -188,8 +191,8 @@ const confirmDeleteCategory = async () => {
 <template>
   <div class="manage-tab">
     <v-btn-toggle v-model="selectedType" mandatory rounded="lg" density="comfortable" class="mb-4 w-100">
-      <v-btn value="EXPENSE" variant="tonal" class="flex-grow-1">지출</v-btn>
-      <v-btn value="INCOME" variant="tonal" class="flex-grow-1">수입</v-btn>
+      <v-btn value="EXPENSE" variant="tonal" class="flex-grow-1">{{ $t('budget.common.expense') }}</v-btn>
+      <v-btn value="INCOME" variant="tonal" class="flex-grow-1">{{ $t('budget.common.income') }}</v-btn>
     </v-btn-toggle>
 
     <div v-if="loading" class="d-flex justify-center py-8">
@@ -208,32 +211,32 @@ const confirmDeleteCategory = async () => {
         </VueDraggable>
         <div v-if="displayList.length === 0" class="text-center py-6">
           <div class="text-medium-emphasis mb-3" style="font-size: 0.875rem">
-            카테고리가 없습니다.
+            {{ $t('budget.categories.empty') }}
           </div>
           <v-btn size="small" variant="tonal" color="primary" :loading="seeding" @click="seedDefaultCategories(selectedType)">
-            기본 카테고리 추가
+            {{ $t('budget.categories.seedButton') }}
           </v-btn>
         </div>
       </div>
     </div>
 
     <v-btn block color="primary" variant="tonal" rounded="lg" class="mt-4 add-btn" prepend-icon="mdi-plus" @click="openAddDialog">
-      카테고리 추가
+      {{ $t('budget.categories.addButton') }}
     </v-btn>
 
     <v-dialog v-model="dialog" max-width="400">
       <v-card rounded="xl" class="pa-4">
-        <div class="font-weight-bold mb-4">{{ isEditMode ? '카테고리 수정' : '카테고리 추가' }}</div>
+        <div class="font-weight-bold mb-4">{{ isEditMode ? $t('budget.categories.editTitle') : $t('budget.categories.addButton') }}</div>
 
         <v-btn-toggle v-if="!isEditMode" v-model="formType" mandatory rounded="lg" density="comfortable" class="mb-4">
-          <v-btn value="EXPENSE" variant="tonal">지출</v-btn>
-          <v-btn value="INCOME" variant="tonal">수입</v-btn>
+          <v-btn value="EXPENSE" variant="tonal">{{ $t('budget.common.expense') }}</v-btn>
+          <v-btn value="INCOME" variant="tonal">{{ $t('budget.common.income') }}</v-btn>
         </v-btn-toggle>
 
         <v-text-field
           v-model="formName"
-          label="카테고리 이름"
-          placeholder="예: 🍚 식비"
+          :label="$t('budget.categories.nameLabel')"
+          :placeholder="$t('budget.categories.namePlaceholder')"
           density="compact"
           variant="outlined"
           rounded="lg"
@@ -244,22 +247,22 @@ const confirmDeleteCategory = async () => {
         />
 
         <div class="d-flex ga-2">
-          <v-btn variant="text" class="flex-1" @click="closeDialog">취소</v-btn>
-          <v-btn color="primary" variant="tonal" class="flex-1" :loading="saving" @click="saveCategory">저장</v-btn>
+          <v-btn variant="text" class="flex-1" @click="closeDialog">{{ $t('common.cancel') }}</v-btn>
+          <v-btn color="primary" variant="tonal" class="flex-1" :loading="saving" @click="saveCategory">{{ $t('common.save') }}</v-btn>
         </div>
       </v-card>
     </v-dialog>
 
     <v-dialog v-model="deleteDialog" max-width="320">
       <v-card rounded="xl" class="pa-4">
-        <div class="font-weight-bold mb-2">카테고리 삭제</div>
+        <div class="font-weight-bold mb-2">{{ $t('budget.categories.deleteTitle') }}</div>
         <div class="text-medium-emphasis mb-4" style="font-size: 0.8125rem">
-          "{{ categoryToDelete?.name }}" 카테고리를 삭제하시겠습니까?
-          <template v-if="favoriteUsageCount > 0"><br />이 카테고리를 사용하는 즐겨찾기 {{ favoriteUsageCount }}개도 함께 삭제됩니다.</template>
+          {{ $t('budget.categories.deleteConfirm', { name: categoryToDelete?.name ?? '' }) }}
+          <template v-if="favoriteUsageCount > 0"><br />{{ $t('budget.categories.deleteWithFavorites', { count: favoriteUsageCount }) }}</template>
         </div>
         <div class="d-flex ga-2">
-          <v-btn variant="text" class="flex-1" :disabled="deleting" @click="closeDeleteDialog">취소</v-btn>
-          <v-btn color="error" variant="tonal" class="flex-1" :loading="deleting" @click="confirmDeleteCategory">삭제</v-btn>
+          <v-btn variant="text" class="flex-1" :disabled="deleting" @click="closeDeleteDialog">{{ $t('common.cancel') }}</v-btn>
+          <v-btn color="error" variant="tonal" class="flex-1" :loading="deleting" @click="confirmDeleteCategory">{{ $t('common.delete') }}</v-btn>
         </div>
       </v-card>
     </v-dialog>

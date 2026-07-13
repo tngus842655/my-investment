@@ -55,6 +55,18 @@
   삭제 다이얼로그/showMessage 4곳 전환, 년월은 formatYearMonth. `BudgetStatsView`: 헤더/수입·지출
   토글/도넛 중앙(총 수입·지출)/빈 상태/'기타' 폴백/showMessage 전환. 검증: vue-tsc --build 통과,
   잔여 한글은 코드 주석뿐.
+- ✅ 사용자 단계 4 (메인 화면 중간 검증) — 2026-07-13 확인 완료. 이 시점 브랜치를 사용자가 main에
+  배포하기로 결정(영어 로케일의 미전환 화면이 일부 남은 중간 상태 허용, 한국어 화면은 영향 없음).
+- ✅ Claude 단계 5 (입력·관리·더보기 화면) — 2026-07-13 완료.
+  로케일 확장: `budget.common`(note/close/saveFailed/orderSaveFailed/noCategories/noPaymentMethods),
+  `budget.entry`/`favorites`/`categories`/`paymentMethods`/`search`/`import`(title만)/`more` 네임스페이스.
+  전환: `BudgetEntryAddDialog`(제목/즐겨찾기 메뉴/수입·지출/필드 라벨·placeholder/저장·취소·닫기/알림 4곳),
+  `BudgetFavoriteView`(목록·다이얼로그·삭제 확인·알림 8곳, "(삭제된 카테고리)" 폴백),
+  `BudgetCategoryView`(탭/빈 상태/기본 시딩 버튼/이름 검증/삭제 확인 — {name}·즐겨찾기 {count}개 보간),
+  `BudgetPaymentMethodView`(동일 패턴 + 삭제 시 "결제수단 없음" 안내),
+  `BudgetSearchView`(제목/placeholder/빈 상태 — 삭제·스와이프 문구는 budget.calendar.* 재사용),
+  `BudgetMoreView`(메뉴/데이터 관리 3종/비밀번호 재확인 — 초기화 완료 메시지는 {title} 보간,
+  비밀번호 라벨은 hub.passwordLabel 재사용). 검증: vue-tsc --build 통과, 잔여 한글은 주석뿐.
 
 ---
 

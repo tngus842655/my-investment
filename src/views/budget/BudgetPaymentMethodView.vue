@@ -2,10 +2,13 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import { supabase } from '@/services/supabase'
+import { useI18n } from 'vue-i18n'
 import { showMessage } from '@/composables/useSnackbar'
 import type { BudgetPaymentMethod } from '@/types/budget'
 import { DEFAULT_BUDGET_PAYMENT_METHODS } from '@/utils/budgetDefaultPaymentMethods'
 
+
+const { t } = useI18n()
 const loading = ref(true)
 const paymentMethods = ref<BudgetPaymentMethod[]>([])
 
@@ -19,7 +22,7 @@ const persistOrder = async () => {
   const rows = displayList.value.map((pm, i) => ({ ...pm, sort_order: i }))
   const { error } = await supabase.from('budget_payment_methods').upsert(rows)
   if (error) {
-    showMessage('정렬 저장에 실패했습니다.', 'error')
+    showMessage(t('budget.common.orderSaveFailed'), 'error')
     await fetchPaymentMethods()
     return
   }
@@ -40,7 +43,7 @@ const fetchPaymentMethods = async () => {
     .order('sort_order')
 
   if (error) {
-    showMessage('결제수단을 불러오지 못했습니다.', 'error')
+    showMessage(t('budget.paymentMethods.loadFailed'), 'error')
     return
   }
 
@@ -56,7 +59,7 @@ const seedDefaultPaymentMethods = async () => {
   const rows = DEFAULT_BUDGET_PAYMENT_METHODS.map((name, i) => ({ user_id: user.id, name, sort_order: i }))
   const { error } = await supabase.from('budget_payment_methods').insert(rows)
   if (error) {
-    showMessage('기본 결제수단 생성에 실패했습니다.', 'error')
+    showMessage(t('budget.paymentMethods.seedFailed'), 'error')
     seeding.value = false
     return
   }
@@ -97,7 +100,7 @@ const closeDialog = () => {
 const savePaymentMethod = async () => {
   const name = formName.value.trim()
   if (!name) {
-    showMessage('결제수단 이름을 입력해주세요.', 'warning')
+    showMessage(t('budget.paymentMethods.nameRequired'), 'warning')
     return
   }
 
@@ -109,7 +112,7 @@ const savePaymentMethod = async () => {
         .update({ name })
         .eq('id', editingId.value)
       if (error) throw error
-      showMessage('결제수단이 수정되었습니다.', 'success')
+      showMessage(t('budget.paymentMethods.updated'), 'success')
     } else {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -119,12 +122,12 @@ const savePaymentMethod = async () => {
         sort_order: paymentMethods.value.length,
       })
       if (error) throw error
-      showMessage('결제수단이 추가되었습니다.', 'success')
+      showMessage(t('budget.paymentMethods.added'), 'success')
     }
     dialog.value = false
     await fetchPaymentMethods()
   } catch {
-    showMessage('저장 중 오류가 발생했습니다.', 'error')
+    showMessage(t('budget.common.saveFailed'), 'error')
   } finally {
     saving.value = false
   }
@@ -150,10 +153,10 @@ const confirmDeletePaymentMethod = async () => {
   const { error } = await supabase.from('budget_payment_methods').delete().eq('id', paymentMethodToDelete.value.id)
   deleting.value = false
   if (error) {
-    showMessage('삭제 중 오류가 발생했습니다.', 'error')
+    showMessage(t('budget.calendar.deleteFailed'), 'error')
     return
   }
-  showMessage('결제수단이 삭제되었습니다. 이 결제수단을 쓰던 내역은 결제수단 없음으로 남습니다.', 'success')
+  showMessage(t('budget.paymentMethods.deleted'), 'success')
   closeDeleteDialog()
   await fetchPaymentMethods()
 }
@@ -177,27 +180,27 @@ const confirmDeletePaymentMethod = async () => {
         </VueDraggable>
         <div v-if="displayList.length === 0" class="text-center py-6">
           <div class="text-medium-emphasis mb-3" style="font-size: 0.875rem">
-            결제수단이 없습니다.
+            {{ $t('budget.paymentMethods.empty') }}
           </div>
           <v-btn size="small" variant="tonal" color="primary" :loading="seeding" @click="seedDefaultPaymentMethods">
-            기본 결제수단 추가
+            {{ $t('budget.paymentMethods.seedButton') }}
           </v-btn>
         </div>
       </div>
     </div>
 
     <v-btn block color="primary" variant="tonal" rounded="lg" class="mt-4 add-btn" prepend-icon="mdi-plus" @click="openAddDialog">
-      결제수단 추가
+      {{ $t('budget.paymentMethods.addButton') }}
     </v-btn>
 
     <v-dialog v-model="dialog" max-width="360">
       <v-card rounded="xl" class="pa-4">
-        <div class="font-weight-bold mb-4">{{ isEditMode ? '결제수단 수정' : '결제수단 추가' }}</div>
+        <div class="font-weight-bold mb-4">{{ isEditMode ? $t('budget.paymentMethods.editTitle') : $t('budget.paymentMethods.addButton') }}</div>
 
         <v-text-field
           v-model="formName"
-          label="결제수단 이름"
-          placeholder="예: 계좌이체"
+          :label="$t('budget.paymentMethods.nameLabel')"
+          :placeholder="$t('budget.paymentMethods.namePlaceholder')"
           density="compact"
           variant="outlined"
           rounded="lg"
@@ -208,21 +211,21 @@ const confirmDeletePaymentMethod = async () => {
         />
 
         <div class="d-flex ga-2">
-          <v-btn variant="text" class="flex-1" @click="closeDialog">취소</v-btn>
-          <v-btn color="primary" variant="tonal" class="flex-1" :loading="saving" @click="savePaymentMethod">저장</v-btn>
+          <v-btn variant="text" class="flex-1" @click="closeDialog">{{ $t('common.cancel') }}</v-btn>
+          <v-btn color="primary" variant="tonal" class="flex-1" :loading="saving" @click="savePaymentMethod">{{ $t('common.save') }}</v-btn>
         </div>
       </v-card>
     </v-dialog>
 
     <v-dialog v-model="deleteDialog" max-width="320">
       <v-card rounded="xl" class="pa-4">
-        <div class="font-weight-bold mb-2">결제수단 삭제</div>
+        <div class="font-weight-bold mb-2">{{ $t('budget.paymentMethods.deleteTitle') }}</div>
         <div class="text-medium-emphasis mb-4" style="font-size: 0.8125rem">
-          "{{ paymentMethodToDelete?.name }}" 결제수단을 삭제하시겠습니까?<br />이 결제수단을 쓰던 내역은 결제수단 없음으로 남습니다.
+          {{ $t('budget.paymentMethods.deleteConfirm', { name: paymentMethodToDelete?.name ?? '' }) }}<br />{{ $t('budget.paymentMethods.deleteNote') }}
         </div>
         <div class="d-flex ga-2">
-          <v-btn variant="text" class="flex-1" :disabled="deleting" @click="closeDeleteDialog">취소</v-btn>
-          <v-btn color="error" variant="tonal" class="flex-1" :loading="deleting" @click="confirmDeletePaymentMethod">삭제</v-btn>
+          <v-btn variant="text" class="flex-1" :disabled="deleting" @click="closeDeleteDialog">{{ $t('common.cancel') }}</v-btn>
+          <v-btn color="error" variant="tonal" class="flex-1" :loading="deleting" @click="confirmDeletePaymentMethod">{{ $t('common.delete') }}</v-btn>
         </div>
       </v-card>
     </v-dialog>
