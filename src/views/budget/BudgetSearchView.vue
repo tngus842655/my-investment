@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
-import { formatCurrency } from '@/utils/numberFormat'
+import { formatBudgetAmount } from '@/utils/budgetMoney'
 import type { BudgetType } from '@/types/budget'
 import type { CurrencyCode } from '@/config/marketConfig'
 import BudgetEntryAddDialog from './BudgetEntryAddDialog.vue'
@@ -226,7 +226,7 @@ const onContainerClick = (e: MouseEvent) => {
               <span v-if="e.budget_payment_methods?.name"> · {{ e.budget_payment_methods.name }}</span>
             </div>
           </div>
-          <span :class="e.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ formatCurrency(e.amount) }}원</span>
+          <span :class="e.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ formatBudgetAmount(e.amount, e.currency) }}</span>
         </div>
       </div>
       <p class="swipe-hint">← 항목을 왼쪽으로 밀면 수정/삭제할 수 있어요</p>

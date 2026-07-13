@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
-import { formatCurrency } from '@/utils/numberFormat'
+import { formatBudgetAmount } from '@/utils/budgetMoney'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { useUserDataStore } from '@/stores/userData'
 import type { BudgetType, BudgetCategory, BudgetPaymentMethod } from '@/types/budget'
@@ -444,7 +444,7 @@ const doImport = async () => {
               <div class="preview-category">{{ r.categoryName }}<span v-if="r.memo"> · {{ r.memo }}</span></div>
             </div>
             <div :class="r.type === 'INCOME' ? 'income-color' : 'expense-color'">
-              {{ formatCurrency(r.amount ?? 0) }}원
+              {{ formatBudgetAmount(r.amount ?? 0, baseCurrency) }}
             </div>
           </template>
         </div>

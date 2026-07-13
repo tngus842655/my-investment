@@ -2,7 +2,8 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
-import { formatCurrency } from '@/utils/numberFormat'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { loadRatesToBase, toBaseAmount, formatBudgetAmount, formatBudgetSumBare } from '@/utils/budgetMoney'
 import type { BudgetType } from '@/types/budget'
 import type { CurrencyCode } from '@/config/marketConfig'
 import BudgetEntryAddDialog from './BudgetEntryAddDialog.vue'
@@ -32,6 +33,14 @@ const loading = ref(true)
 const entries = ref<EntryRow[]>([])
 const yearEntries = ref<EntryRow[]>([])
 
+// 집계는 행별 통화를 기준통화로 환산 후 합산, 단건은 기록된 통화 그대로 표시 (budgetMoney.ts)
+const { baseCurrency } = useBaseCurrency()
+const rates = ref<Record<string, number>>({})
+const toBase = (e: EntryRow) => toBaseAmount(e.amount, e.currency, baseCurrency.value, rates.value)
+const fmtAmount = formatBudgetAmount
+const fmtBase = (v: number) => formatBudgetAmount(v, baseCurrency.value)
+const fmtBare = (v: number) => formatBudgetSumBare(v, baseCurrency.value)
+
 const pad2 = (n: number) => String(n).padStart(2, '0')
 
 const fetchMonthEntries = async () => {
@@ -52,7 +61,9 @@ const fetchMonthEntries = async () => {
     showMessage('내역을 불러오지 못했습니다.', 'error')
     return
   }
-  entries.value = (data ?? []) as unknown as EntryRow[]
+  const rows = (data ?? []) as unknown as EntryRow[]
+  rates.value = { ...rates.value, ...(await loadRatesToBase(rows.map((e) => e.currency), baseCurrency.value)) }
+  entries.value = rows
 }
 
 const fetchYearEntries = async () => {
@@ -70,7 +81,9 @@ const fetchYearEntries = async () => {
     showMessage('내역을 불러오지 못했습니다.', 'error')
     return
   }
-  yearEntries.value = (data ?? []) as unknown as EntryRow[]
+  const rows = (data ?? []) as unknown as EntryRow[]
+  rates.value = { ...rates.value, ...(await loadRatesToBase(rows.map((e) => e.currency), baseCurrency.value)) }
+  yearEntries.value = rows
 }
 
 onMounted(async () => {
@@ -93,10 +106,10 @@ const nextMonth = () => {
 // ── 요약 (수입/지출/합계) ──────────────────────────
 const summarySource = computed(() => (subTab.value === 'monthly' ? yearEntries.value : entries.value))
 const summaryIncome = computed(() =>
-  summarySource.value.filter((e) => e.type === 'INCOME').reduce((s, e) => s + e.amount, 0),
+  summarySource.value.filter((e) => e.type === 'INCOME').reduce((s, e) => s + toBase(e), 0),
 )
 const summaryExpense = computed(() =>
-  summarySource.value.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + e.amount, 0),
+  summarySource.value.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + toBase(e), 0),
 )
 const summaryTotal = computed(() => summaryIncome.value - summaryExpense.value)
 
@@ -127,8 +140,8 @@ const calendarWeeks = computed(() => {
       day: d,
       inMonth: true,
       dateStr,
-      income: dayEntries.filter((e) => e.type === 'INCOME').reduce((s, e) => s + e.amount, 0),
-      expense: dayEntries.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + e.amount, 0),
+      income: dayEntries.filter((e) => e.type === 'INCOME').reduce((s, e) => s + toBase(e), 0),
+      expense: dayEntries.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + toBase(e), 0),
     })
   }
 
@@ -166,10 +179,10 @@ const selectedDateEntries = computed(() =>
   selectedDate.value ? entries.value.filter((e) => e.entry_date === selectedDate.value) : [],
 )
 const selectedDateIncome = computed(() =>
-  selectedDateEntries.value.filter((e) => e.type === 'INCOME').reduce((s, e) => s + e.amount, 0),
+  selectedDateEntries.value.filter((e) => e.type === 'INCOME').reduce((s, e) => s + toBase(e), 0),
 )
 const selectedDateExpense = computed(() =>
-  selectedDateEntries.value.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + e.amount, 0),
+  selectedDateEntries.value.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + toBase(e), 0),
 )
 
 // ── 일일 내역 ──────────────────────────
@@ -183,8 +196,8 @@ const dailyGroups = computed(() => {
     .sort((a, b) => b[0].localeCompare(a[0]))
     .map(([date, list]) => ({
       date,
-      income: list.filter((e) => e.type === 'INCOME').reduce((s, e) => s + e.amount, 0),
-      expense: list.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + e.amount, 0),
+      income: list.filter((e) => e.type === 'INCOME').reduce((s, e) => s + toBase(e), 0),
+      expense: list.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + toBase(e), 0),
       entries: list,
     }))
 })
@@ -201,8 +214,8 @@ const monthlyRows = computed(() => {
     const list = yearEntries.value.filter((e) => Number(e.entry_date.slice(5, 7)) === m)
     rows.push({
       month: m,
-      income: list.filter((e) => e.type === 'INCOME').reduce((s, e) => s + e.amount, 0),
-      expense: list.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + e.amount, 0),
+      income: list.filter((e) => e.type === 'INCOME').reduce((s, e) => s + toBase(e), 0),
+      expense: list.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + toBase(e), 0),
     })
   }
   return rows.reverse()
@@ -374,15 +387,15 @@ const onContainerClick = (e: MouseEvent) => {
     <div class="glass-card pa-2 mb-3 d-flex justify-space-around text-center">
       <div>
         <div class="summary-label">수입</div>
-        <div class="summary-value income-color">{{ formatCurrency(summaryIncome) }}</div>
+        <div class="summary-value income-color">{{ fmtBare(summaryIncome) }}</div>
       </div>
       <div>
         <div class="summary-label">지출</div>
-        <div class="summary-value expense-color">{{ formatCurrency(summaryExpense) }}</div>
+        <div class="summary-value expense-color">{{ fmtBare(summaryExpense) }}</div>
       </div>
       <div>
         <div class="summary-label">합계</div>
-        <div class="summary-value">{{ formatCurrency(summaryTotal) }}</div>
+        <div class="summary-value">{{ fmtBare(summaryTotal) }}</div>
       </div>
     </div>
 
@@ -405,8 +418,8 @@ const onContainerClick = (e: MouseEvent) => {
             @click="selectDate(cell)"
           >
             <span class="calendar-day">{{ cell.day }}</span>
-            <span v-if="cell.income > 0" class="calendar-amount income-color">{{ formatCurrency(cell.income) }}</span>
-            <span v-if="cell.expense > 0" class="calendar-amount expense-color">{{ formatCurrency(cell.expense) }}</span>
+            <span v-if="cell.income > 0" class="calendar-amount income-color">{{ fmtBare(cell.income) }}</span>
+            <span v-if="cell.expense > 0" class="calendar-amount expense-color">{{ fmtBare(cell.expense) }}</span>
           </button>
         </div>
       </div>
@@ -419,8 +432,8 @@ const onContainerClick = (e: MouseEvent) => {
             <span class="text-medium-emphasis" style="font-size: 0.75rem">{{ weekdayLabel(selectedDate) }}요일</span>
           </div>
           <div style="font-size: 0.8125rem">
-            <span v-if="selectedDateIncome > 0" class="income-color mr-2">{{ formatCurrency(selectedDateIncome) }}원</span>
-            <span v-if="selectedDateExpense > 0" class="expense-color">{{ formatCurrency(selectedDateExpense) }}원</span>
+            <span v-if="selectedDateIncome > 0" class="income-color mr-2">{{ fmtBase(selectedDateIncome) }}</span>
+            <span v-if="selectedDateExpense > 0" class="expense-color">{{ fmtBase(selectedDateExpense) }}</span>
           </div>
         </div>
 
@@ -458,7 +471,7 @@ const onContainerClick = (e: MouseEvent) => {
                 <div class="daily-entry-category">{{ e.memo || e.budget_payment_methods?.name || '' }}</div>
                 <div v-if="e.memo" class="daily-entry-sub">{{ e.budget_payment_methods?.name }}</div>
               </div>
-              <span :class="e.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ formatCurrency(e.amount) }}원</span>
+              <span :class="e.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ fmtAmount(e.amount, e.currency) }}</span>
             </div>
           </div>
         </div>
@@ -477,8 +490,8 @@ const onContainerClick = (e: MouseEvent) => {
               <span class="text-medium-emphasis" style="font-size: 0.75rem">{{ weekdayLabel(group.date) }}요일</span>
             </div>
             <div style="font-size: 0.8125rem">
-              <span v-if="group.income > 0" class="income-color mr-2">{{ formatCurrency(group.income) }}원</span>
-              <span v-if="group.expense > 0" class="expense-color">{{ formatCurrency(group.expense) }}원</span>
+              <span v-if="group.income > 0" class="income-color mr-2">{{ fmtBase(group.income) }}</span>
+              <span v-if="group.expense > 0" class="expense-color">{{ fmtBase(group.expense) }}</span>
             </div>
           </div>
           <div
@@ -513,7 +526,7 @@ const onContainerClick = (e: MouseEvent) => {
                 <div class="daily-entry-category">{{ e.memo || e.budget_payment_methods?.name || '' }}</div>
                 <div v-if="e.memo" class="daily-entry-sub">{{ e.budget_payment_methods?.name }}</div>
               </div>
-              <span :class="e.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ formatCurrency(e.amount) }}원</span>
+              <span :class="e.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ fmtAmount(e.amount, e.currency) }}</span>
             </div>
           </div>
         </div>
@@ -524,9 +537,9 @@ const onContainerClick = (e: MouseEvent) => {
       <div v-else-if="subTab === 'monthly'" class="glass-card pa-3">
         <div v-for="row in monthlyRows" :key="row.month" class="monthly-row">
           <span class="font-weight-medium">{{ row.month }}월</span>
-          <span class="income-color">{{ formatCurrency(row.income) }}원</span>
-          <span class="expense-color">{{ formatCurrency(row.expense) }}원</span>
-          <span class="font-weight-medium">{{ formatCurrency(row.income - row.expense) }}원</span>
+          <span class="income-color">{{ fmtBase(row.income) }}</span>
+          <span class="expense-color">{{ fmtBase(row.expense) }}</span>
+          <span class="font-weight-medium">{{ fmtBase(row.income - row.expense) }}</span>
         </div>
       </div>
     </template>

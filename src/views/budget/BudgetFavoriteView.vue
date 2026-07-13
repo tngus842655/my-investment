@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
-import { formatCurrency } from '@/utils/numberFormat'
+import { formatBudgetAmount } from '@/utils/budgetMoney'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { useUserDataStore } from '@/stores/userData'
 import type { BudgetCategory, BudgetPaymentMethod, BudgetType } from '@/types/budget'
@@ -216,7 +216,7 @@ const onFormTypeChange = (type: BudgetType) => {
             <div class="favorite-info">
               <div class="row-name">{{ categoryName(f.category_id) }}<span v-if="f.memo"> · {{ f.memo }}</span></div>
               <div class="favorite-sub">
-                <span :class="f.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ formatCurrency(f.amount) }}원</span>
+                <span :class="f.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ formatBudgetAmount(f.amount, f.currency) }}</span>
                 <span v-if="paymentMethodName(f.payment_method_id)"> · {{ paymentMethodName(f.payment_method_id) }}</span>
               </div>
             </div>

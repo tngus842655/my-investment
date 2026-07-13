@@ -4,8 +4,10 @@ import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { formatBudgetAmount } from '@/utils/budgetMoney'
 import { useUserDataStore } from '@/stores/userData'
 import type { BudgetCategory, BudgetPaymentMethod, BudgetType } from '@/types/budget'
+import type { CurrencyCode } from '@/config/marketConfig'
 import BudgetFavoriteView from './BudgetFavoriteView.vue'
 import BudgetDateCalendarCard from './BudgetDateCalendarCard.vue'
 import BudgetAmountKeypad from './BudgetAmountKeypad.vue'
@@ -106,6 +108,7 @@ interface QuickItem {
   amount: number
   payment_method_id: string | null
   memo: string | null
+  currency: CurrencyCode
 }
 const favorites = ref<QuickItem[]>([])
 
@@ -124,12 +127,12 @@ const removeComma = (v: string) => Number(v.replace(/,/g, '')) || 0
 const handleAmount = (v: string) => {
   amount.value = addComma(v)
 }
-const formatAmount = (v: number) => `${addComma(String(v))}원`
+const formatAmount = (v: number, currency: CurrencyCode) => formatBudgetAmount(v, currency)
 
-const MAX_AMOUNT = 10_000_000_000
+const maxAmount = computed(() => (baseCurrency.value === 'KRW' ? 10_000_000_000 : 10_000_000))
 
 const canSave = computed(() =>
-  !!categoryId.value && removeComma(amount.value) > 0 && removeComma(amount.value) <= MAX_AMOUNT,
+  !!categoryId.value && removeComma(amount.value) > 0 && removeComma(amount.value) <= maxAmount.value,
 )
 
 // 에러 메시지를 필드 밖에 따로 띄우면 나타났다 사라질 때마다 아래 요소들이
@@ -137,7 +140,7 @@ const canSave = computed(() =>
 const amountInvalid = computed(() => {
   if (amount.value === '') return false
   const n = removeComma(amount.value)
-  return n <= 0 || n > MAX_AMOUNT
+  return n <= 0 || n > maxAmount.value
 })
 
 const categoryName = (id: string) => {
@@ -206,7 +209,7 @@ const fetchFavorites = async () => {
 
   const { data: favData } = await supabase
     .from('budget_favorites')
-    .select('category_id, type, amount, payment_method_id, memo')
+    .select('category_id, type, amount, currency, payment_method_id, memo')
     .eq('user_id', user.id)
     .order('sort_order')
   favorites.value = favData ?? []
@@ -338,7 +341,7 @@ const save = async () => {
                 @click="applyQuickItem(f); favoritesMenu = false"
               >
                 <span>{{ categoryName(f.category_id) }}</span>
-                <span class="text-medium-emphasis">{{ formatAmount(f.amount) }}</span>
+                <span class="text-medium-emphasis">{{ formatAmount(f.amount, f.currency) }}</span>
               </button>
               <div v-if="favorites.length === 0" class="favorites-menu-empty">즐겨찾기가 없습니다.</div>
               <v-divider class="my-1" />
