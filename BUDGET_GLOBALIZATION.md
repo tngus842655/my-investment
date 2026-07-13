@@ -55,6 +55,38 @@
   삭제 다이얼로그/showMessage 4곳 전환, 년월은 formatYearMonth. `BudgetStatsView`: 헤더/수입·지출
   토글/도넛 중앙(총 수입·지출)/빈 상태/'기타' 폴백/showMessage 전환. 검증: vue-tsc --build 통과,
   잔여 한글은 코드 주석뿐.
+- ✅ 사용자 단계 4 (메인 화면 중간 검증) — 2026-07-13 확인 완료. 이 시점 브랜치를 사용자가 main에
+  배포하기로 결정(영어 로케일의 미전환 화면이 일부 남은 중간 상태 허용, 한국어 화면은 영향 없음).
+- ✅ Claude 단계 5 (입력·관리·더보기 화면) — 2026-07-13 완료.
+  로케일 확장: `budget.common`(note/close/saveFailed/orderSaveFailed/noCategories/noPaymentMethods),
+  `budget.entry`/`favorites`/`categories`/`paymentMethods`/`search`/`import`(title만)/`more` 네임스페이스.
+  전환: `BudgetEntryAddDialog`(제목/즐겨찾기 메뉴/수입·지출/필드 라벨·placeholder/저장·취소·닫기/알림 4곳),
+  `BudgetFavoriteView`(목록·다이얼로그·삭제 확인·알림 8곳, "(삭제된 카테고리)" 폴백),
+  `BudgetCategoryView`(탭/빈 상태/기본 시딩 버튼/이름 검증/삭제 확인 — {name}·즐겨찾기 {count}개 보간),
+  `BudgetPaymentMethodView`(동일 패턴 + 삭제 시 "결제수단 없음" 안내),
+  `BudgetSearchView`(제목/placeholder/빈 상태 — 삭제·스와이프 문구는 budget.calendar.* 재사용),
+  `BudgetMoreView`(메뉴/데이터 관리 3종/비밀번호 재확인 — 초기화 완료 메시지는 {title} 보간,
+  비밀번호 라벨은 hub.passwordLabel 재사용). 검증: vue-tsc --build 통과, 잔여 한글은 주석뿐.
+- ✅ Claude 단계 6 (기본 데이터 시딩 로케일 분기) — 2026-07-13 완료.
+  `DEFAULT_BUDGET_CATEGORIES`/`DEFAULT_BUDGET_PAYMENT_METHODS` 상수를 `getDefaultBudgetCategories()`/
+  `getDefaultBudgetPaymentMethods()` 함수로 전환 — 시딩 시점 로케일이 ko면 기존 한글, 그 외는 영어
+  (🍚 Food/🚗 Transport/… , Cash/Card). 호출부는 카테고리/결제수단 관리 화면의 "기본 추가" 버튼 2곳뿐
+  (자동 시딩 아님 — 빈 목록일 때 버튼 노출 방식). 기존 시딩 데이터는 불변.
+  검증: vue-tsc --build 통과. 실제 영어 계정 시딩 확인은 사용자 5.
+- ✅ Claude 단계 7 (엑셀 가져오기) — 2026-07-13 완료.
+  파싱은 **로케일 무관 한/영 이중 인식**: `COLUMN_ALIASES`에 영문 별칭(date/asset/payment method/
+  category/note/memo/description/amount/income-expense/type) 추가 + 헤더 비교 소문자 정규화,
+  수입·지출 셀 값도 income/expense(대소문자 무시) 인식. 양식 다운로드는 로케일별 생성(헤더·예시
+  2행·파일명 — 예시 값도 Cash/Food/Salary 등으로). UI 전체 i18n: 안내/열 칩/에러(누락 열 {cols},
+  행 오류 {row}), 미리보기 건수({count}) 및 새 카테고리·결제수단, 가져오기 버튼·완료 메시지,
+  PC 권장 문구는 <i18n-t> 보간. 검증: vue-tsc --build + npm run build 통과.
+- ✅ Claude 단계 8 (마무리 점검) — 2026-07-13 완료.
+  가계부 전 파일 잔여 한글 스캔: 사용자 노출 문구 0건 (남은 것은 코드 주석·HTML 주석·이중언어 파싱
+  상수·console.error 로그뿐). 개발자 노트 v1.0.11 항목 추가(ReleaseNotesView — 관리자 콘텐츠 한글
+  유지 정책), BUDGET_TABLE.md에 currency 컬럼·마이그레이션 반영, BUDGET.md 체크리스트·TODO.md 갱신.
+
+**남은 것 (전부 사용자 검증)**: 사용자 5(영어 계정 시딩 + USD 입력), 6(엑셀 한/영 양식), 7(최종 통합
+검증 후 main 배포).
 
 ---
 

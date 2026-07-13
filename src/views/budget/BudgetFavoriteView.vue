@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import { supabase } from '@/services/supabase'
+import { useI18n } from 'vue-i18n'
 import { showMessage } from '@/composables/useSnackbar'
 import { formatBudgetAmount } from '@/utils/budgetMoney'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
@@ -20,6 +21,7 @@ interface FavoriteRow {
   currency: CurrencyCode
 }
 
+const { t } = useI18n()
 const { baseCurrency } = useBaseCurrency()
 const userDataStore = useUserDataStore()
 
@@ -30,7 +32,7 @@ const paymentMethods = ref<BudgetPaymentMethod[]>([])
 
 const categoryName = (id: string) => {
   const c = categories.value.find((c) => c.id === id)
-  return c ? c.name : '(삭제된 카테고리)'
+  return c ? c.name : t('budget.favorites.deletedCategory')
 }
 const paymentMethodName = (id: string | null) => paymentMethods.value.find((p) => p.id === id)?.name ?? null
 
@@ -45,7 +47,7 @@ const fetchAll = async () => {
   ])
 
   if (favRes.error) {
-    showMessage('즐겨찾기를 불러오지 못했습니다.', 'error')
+    showMessage(t('budget.favorites.loadFailed'), 'error')
     return
   }
 
@@ -64,7 +66,7 @@ const persistOrder = async () => {
   const rows = favorites.value.map((f, i) => ({ ...f, sort_order: i }))
   const { error } = await supabase.from('budget_favorites').upsert(rows)
   if (error) {
-    showMessage('정렬 저장에 실패했습니다.', 'error')
+    showMessage(t('budget.common.orderSaveFailed'), 'error')
     await fetchAll()
     return
   }
@@ -101,6 +103,9 @@ const removeComma = (v: string) => Number(v.replace(/,/g, '')) || 0
 const handleAmount = (v: string) => { formAmount.value = addComma(v) }
 
 const canSave = computed(() => !!formCategoryId.value && removeComma(formAmount.value) > 0)
+
+// 금액 필드의 통화 아이콘 — 기준통화를 따름 (내역추가 다이얼로그와 동일)
+const currencyIcon = computed(() => (baseCurrency.value === 'KRW' ? 'mdi-currency-krw' : 'mdi-currency-usd'))
 
 const openAddDialog = () => {
   editingId.value = null
@@ -141,7 +146,7 @@ const saveFavorite = async () => {
     if (isEditMode.value) {
       const { error } = await supabase.from('budget_favorites').update(payload).eq('id', editingId.value)
       if (error) throw error
-      showMessage('즐겨찾기가 수정되었습니다.', 'success')
+      showMessage(t('budget.favorites.updated'), 'success')
     } else {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -154,12 +159,12 @@ const saveFavorite = async () => {
         ...payload,
       })
       if (error) throw error
-      showMessage('즐겨찾기가 추가되었습니다.', 'success')
+      showMessage(t('budget.favorites.added'), 'success')
     }
     dialog.value = false
     await fetchAll()
   } catch {
-    showMessage('저장 중 오류가 발생했습니다.', 'error')
+    showMessage(t('budget.common.saveFailed'), 'error')
   } finally {
     saving.value = false
   }
@@ -185,10 +190,10 @@ const confirmDeleteFavorite = async () => {
   const { error } = await supabase.from('budget_favorites').delete().eq('id', favoriteToDelete.value.id)
   deleting.value = false
   if (error) {
-    showMessage('삭제 중 오류가 발생했습니다.', 'error')
+    showMessage(t('budget.calendar.deleteFailed'), 'error')
     return
   }
-  showMessage('즐겨찾기가 삭제되었습니다.', 'success')
+  showMessage(t('budget.favorites.deleted'), 'success')
   closeDeleteDialog()
   await fetchAll()
 }
@@ -225,18 +230,18 @@ const onFormTypeChange = (type: BudgetType) => {
           </div>
         </VueDraggable>
         <div v-if="favorites.length === 0" class="text-center text-medium-emphasis py-4">
-          즐겨찾기가 없습니다.
+          {{ $t('budget.favorites.empty') }}
         </div>
       </div>
     </div>
 
     <v-btn block color="primary" variant="tonal" rounded="lg" class="mt-4 add-btn" prepend-icon="mdi-plus" @click="openAddDialog">
-      즐겨찾기 추가
+      {{ $t('budget.favorites.addButton') }}
     </v-btn>
 
     <v-dialog v-model="dialog" max-width="400">
       <v-card rounded="xl" class="pa-4">
-        <div class="font-weight-bold mb-4">{{ isEditMode ? '즐겨찾기 수정' : '즐겨찾기 추가' }}</div>
+        <div class="font-weight-bold mb-4">{{ isEditMode ? $t('budget.favorites.editTitle') : $t('budget.favorites.addButton') }}</div>
 
         <v-btn-toggle
           :model-value="formType"
@@ -246,25 +251,26 @@ const onFormTypeChange = (type: BudgetType) => {
           class="mb-4"
           @update:model-value="onFormTypeChange"
         >
-          <v-btn value="EXPENSE" variant="tonal">지출</v-btn>
-          <v-btn value="INCOME" variant="tonal">수입</v-btn>
+          <v-btn value="EXPENSE" variant="tonal">{{ $t('budget.common.expense') }}</v-btn>
+          <v-btn value="INCOME" variant="tonal">{{ $t('budget.common.income') }}</v-btn>
         </v-btn-toggle>
 
         <v-select
           v-model="formCategoryId"
           :items="categoryOptions"
-          label="카테고리"
+          :label="$t('budget.common.category')"
           density="compact"
           variant="outlined"
           rounded="lg"
           hide-details
           class="mb-3"
-          no-data-text="카테고리가 없습니다"
+          :no-data-text="$t('budget.common.noCategories')"
         />
 
         <v-text-field
           :model-value="formAmount"
-          label="금액"
+          :label="$t('budget.common.amount')"
+          :prepend-inner-icon="currencyIcon"
           inputmode="numeric"
           density="compact"
           variant="outlined"
@@ -277,19 +283,19 @@ const onFormTypeChange = (type: BudgetType) => {
         <v-select
           v-model="formPaymentMethodId"
           :items="paymentMethodOptions"
-          label="결제수단 (선택)"
+          :label="$t('budget.favorites.paymentMethodOptional')"
           density="compact"
           variant="outlined"
           rounded="lg"
           hide-details
           clearable
           class="mb-3"
-          no-data-text="결제수단이 없습니다"
+          :no-data-text="$t('budget.common.noPaymentMethods')"
         />
 
         <v-text-field
           v-model="formMemo"
-          label="메모 (선택)"
+          :label="$t('budget.favorites.noteOptional')"
           density="compact"
           variant="outlined"
           rounded="lg"
@@ -299,21 +305,21 @@ const onFormTypeChange = (type: BudgetType) => {
         />
 
         <div class="d-flex ga-2">
-          <v-btn variant="text" class="flex-1" @click="closeDialog">취소</v-btn>
-          <v-btn color="primary" variant="tonal" class="flex-1" :disabled="!canSave" :loading="saving" @click="saveFavorite">저장</v-btn>
+          <v-btn variant="text" class="flex-1" @click="closeDialog">{{ $t('common.cancel') }}</v-btn>
+          <v-btn color="primary" variant="tonal" class="flex-1" :disabled="!canSave" :loading="saving" @click="saveFavorite">{{ $t('common.save') }}</v-btn>
         </div>
       </v-card>
     </v-dialog>
 
     <v-dialog v-model="deleteDialog" max-width="320">
       <v-card rounded="xl" class="pa-4">
-        <div class="font-weight-bold mb-2">즐겨찾기 삭제</div>
+        <div class="font-weight-bold mb-2">{{ $t('budget.favorites.deleteTitle') }}</div>
         <div class="text-medium-emphasis mb-4" style="font-size: 0.8125rem">
-          이 즐겨찾기를 삭제하시겠습니까?
+          {{ $t('budget.favorites.deleteConfirm') }}
         </div>
         <div class="d-flex ga-2">
-          <v-btn variant="text" class="flex-1" :disabled="deleting" @click="closeDeleteDialog">취소</v-btn>
-          <v-btn color="error" variant="tonal" class="flex-1" :loading="deleting" @click="confirmDeleteFavorite">삭제</v-btn>
+          <v-btn variant="text" class="flex-1" :disabled="deleting" @click="closeDeleteDialog">{{ $t('common.cancel') }}</v-btn>
+          <v-btn color="error" variant="tonal" class="flex-1" :loading="deleting" @click="confirmDeleteFavorite">{{ $t('common.delete') }}</v-btn>
         </div>
       </v-card>
     </v-dialog>

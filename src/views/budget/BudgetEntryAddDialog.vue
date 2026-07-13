@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
@@ -14,6 +15,7 @@ import BudgetAmountKeypad from './BudgetAmountKeypad.vue'
 import BudgetCategoryGridPicker from './BudgetCategoryGridPicker.vue'
 
 const router = useRouter()
+const { t } = useI18n()
 const dialog = defineModel<boolean>()
 const { baseCurrency } = useBaseCurrency()
 const userDataStore = useUserDataStore()
@@ -131,6 +133,9 @@ const formatAmount = (v: number, currency: CurrencyCode) => formatBudgetAmount(v
 
 const maxAmount = computed(() => (baseCurrency.value === 'KRW' ? 10_000_000_000 : 10_000_000))
 
+// 금액 필드의 통화 아이콘 — 기준통화를 따름 (KRW ₩ / 그 외 $)
+const currencyIcon = computed(() => (baseCurrency.value === 'KRW' ? 'mdi-currency-krw' : 'mdi-currency-usd'))
+
 const canSave = computed(() =>
   !!categoryId.value && removeComma(amount.value) > 0 && removeComma(amount.value) <= maxAmount.value,
 )
@@ -183,7 +188,7 @@ const addPaymentMethod = async () => {
     .select()
     .single()
   if (error) {
-    showMessage('결제수단 추가에 실패했습니다.', 'error')
+    showMessage(t('budget.entry.pmAddFailed'), 'error')
     return
   }
   paymentMethods.value.push(data)
@@ -306,11 +311,11 @@ const save = async () => {
       if (error) throw error
     }
 
-    showMessage(isEditMode.value ? '내역이 수정되었습니다.' : '내역이 등록되었습니다.', 'success')
+    showMessage(isEditMode.value ? t('budget.entry.updated') : t('budget.entry.added'), 'success')
     emit('saved')
     reset()
   } catch {
-    showMessage('저장 중 오류가 발생했습니다.', 'error')
+    showMessage(t('budget.common.saveFailed'), 'error')
   } finally {
     saving.value = false
   }
@@ -327,13 +332,13 @@ const save = async () => {
     >
       <div class="dialog-header" :class="entryType === 'EXPENSE' ? 'header-sell' : 'header-buy'">
         <div class="d-flex align-center justify-space-between">
-          <div class="font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">{{ isEditMode ? '내역 수정' : '내역 추가' }}</div>
+          <div class="font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">{{ isEditMode ? $t('budget.entry.editTitle') : $t('budget.entry.addTitle') }}</div>
           <v-menu v-if="!isEditMode" v-model="favoritesMenu" :close-on-content-click="false">
             <template #activator="{ props: menuProps }">
               <v-btn v-bind="menuProps" icon="mdi-star-outline" variant="text" size="small" />
             </template>
             <v-card rounded="lg" class="favorites-menu-card">
-              <div class="favorites-menu-title">즐겨찾기</div>
+              <div class="favorites-menu-title">{{ $t('budget.common.favorites') }}</div>
               <button
                 v-for="(f, i) in favorites"
                 :key="'fav-' + i"
@@ -343,14 +348,14 @@ const save = async () => {
                 <span>{{ categoryName(f.category_id) }}</span>
                 <span class="text-medium-emphasis">{{ formatAmount(f.amount, f.currency) }}</span>
               </button>
-              <div v-if="favorites.length === 0" class="favorites-menu-empty">즐겨찾기가 없습니다.</div>
+              <div v-if="favorites.length === 0" class="favorites-menu-empty">{{ $t('budget.favorites.empty') }}</div>
               <v-divider class="my-1" />
               <button
                 class="favorites-menu-item favorites-menu-add"
                 @click="favoritesMenu = false; favoriteManageDialog = true"
               >
                 <v-icon size="16">mdi-plus</v-icon>
-                <span>즐겨찾기 관리</span>
+                <span>{{ $t('budget.entry.manageFavorites') }}</span>
               </button>
             </v-card>
           </v-menu>
@@ -360,19 +365,19 @@ const save = async () => {
             class="toggle-btn"
             :class="{ 'toggle-active-sell': entryType === 'EXPENSE' }"
             @click="entryType = 'EXPENSE'"
-          >지출</button>
+          >{{ $t('budget.common.expense') }}</button>
           <button
             class="toggle-btn"
             :class="{ 'toggle-active-buy': entryType === 'INCOME' }"
             @click="entryType = 'INCOME'"
-          >수입</button>
+          >{{ $t('budget.common.income') }}</button>
         </div>
       </div>
 
       <v-card-text class="pt-2 pb-1" style="overflow-y: auto; flex: 1">
         <v-text-field
           :model-value="entryDate"
-          label="날짜"
+          :label="$t('budget.common.date')"
           readonly
           autocomplete="off"
           prepend-inner-icon="mdi-calendar-outline"
@@ -387,7 +392,7 @@ const save = async () => {
         <v-text-field
           ref="categoryFieldRef"
           :model-value="categoryId ? categoryName(categoryId) : ''"
-          label="카테고리"
+          :label="$t('budget.common.category')"
           readonly
           autocomplete="off"
           prepend-inner-icon="mdi-shape-outline"
@@ -402,11 +407,11 @@ const save = async () => {
         <v-text-field
           ref="amountFieldRef"
           :model-value="amount"
-          label="금액"
-          placeholder="금액을 입력해주세요"
+          :label="$t('budget.common.amount')"
+          :placeholder="$t('budget.entry.amountPlaceholder')"
           readonly
           autocomplete="off"
-          prepend-inner-icon="mdi-currency-krw"
+          :prepend-inner-icon="currencyIcon"
           variant="outlined"
           density="compact"
           rounded="lg"
@@ -416,7 +421,7 @@ const save = async () => {
           @focus="amountKeypadOpen = true"
         />
 
-        <div class="text-medium-emphasis mb-1" style="font-size: 0.75rem">결제수단</div>
+        <div class="text-medium-emphasis mb-1" style="font-size: 0.75rem">{{ $t('budget.common.paymentMethod') }}</div>
         <div class="pm-chip-wrap mb-1">
           <button
             v-for="pm in paymentMethods"
@@ -426,15 +431,15 @@ const save = async () => {
             @click="paymentMethodId = paymentMethodId === pm.id ? null : pm.id"
           >{{ pm.name }}</button>
           <button class="pm-chip pm-chip-add" @click="addingPaymentMethod = !addingPaymentMethod">
-            <v-icon size="14">mdi-plus</v-icon> 추가
+            <v-icon size="14">mdi-plus</v-icon> {{ $t('budget.common.add') }}
           </button>
         </div>
         <v-expand-transition>
           <div v-if="addingPaymentMethod" class="d-flex ga-2 mb-1">
             <v-text-field
               v-model="newPaymentMethodName"
-              label="새 결제수단"
-              placeholder="예: 계좌이체"
+              :label="$t('budget.entry.newPaymentMethod')"
+              :placeholder="$t('budget.paymentMethods.namePlaceholder')"
               density="compact"
               variant="outlined"
               rounded="lg"
@@ -452,7 +457,7 @@ const save = async () => {
           v-model="memo"
           v-model:search="memoSearch"
           :items="filteredMemoSuggestions"
-          label="내용"
+          :label="$t('budget.common.note')"
           prepend-inner-icon="mdi-note-outline"
           variant="outlined"
           density="compact"
@@ -470,7 +475,7 @@ const save = async () => {
       <v-divider />
 
       <v-card-actions class="px-4 py-2">
-        <v-btn variant="text" :disabled="saving" @click="reset">취소</v-btn>
+        <v-btn variant="text" :disabled="saving" @click="reset">{{ $t('common.cancel') }}</v-btn>
         <v-spacer />
         <v-btn
           :color="entryType === 'EXPENSE' ? 'error' : 'primary'"
@@ -479,15 +484,15 @@ const save = async () => {
           variant="flat"
           rounded="lg"
           @click="save"
-        >{{ isEditMode ? '수정 저장' : '저장' }}</v-btn>
+        >{{ isEditMode ? $t('budget.entry.saveEdit') : $t('common.save') }}</v-btn>
       </v-card-actions>
     </v-card>
 
     <v-dialog v-model="favoriteManageDialog" max-width="480">
       <v-card rounded="xl" class="pa-4">
-        <div class="font-weight-bold mb-4">즐겨찾기 관리</div>
+        <div class="font-weight-bold mb-4">{{ $t('budget.entry.manageFavorites') }}</div>
         <BudgetFavoriteView />
-        <v-btn block variant="text" class="mt-4" @click="favoriteManageDialog = false">닫기</v-btn>
+        <v-btn block variant="text" class="mt-4" @click="favoriteManageDialog = false">{{ $t('budget.common.close') }}</v-btn>
       </v-card>
     </v-dialog>
 

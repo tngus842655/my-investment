@@ -2,7 +2,9 @@
 
 가계부(budget) 모듈 Supabase 테이블 스키마. 네이밍 규칙 등 전체 맥락은 **BUDGET.md** 참고.
 
-마이그레이션: `supabase/migrations/20260705_01_budget_tables.sql`, `20260705_02_budget_payment_methods.sql`, `20260705_03_budget_categories_drop_icon.sql`. 모두 KRW 전용(통화 구분 없음), `type`은 Postgres enum 대신 `text + CHECK`로 단순화. `public` 스키마 관례대로 RLS 적용.
+마이그레이션: `supabase/migrations/20260705_01_budget_tables.sql`, `20260705_02_budget_payment_methods.sql`, `20260705_03_budget_categories_drop_icon.sql`, `20260713_01_budget_currency.sql`. `type`은 Postgres enum 대신 `text + CHECK`로 단순화. `public` 스키마 관례대로 RLS 적용.
+
+통화: `budget_entries`/`budget_favorites`의 `currency`(currency_enum, DEFAULT 'KRW')는 **저장 시점의 기준통화**를 기록한다. 집계는 표시 시점에 현재 기준통화로 환산(`src/utils/budgetMoney.ts`), 단건 표시는 기록된 통화 그대로. 상세는 **BUDGET_GLOBALIZATION.md** 통화 설계 참고.
 
 #### budget_categories
 
@@ -45,6 +47,7 @@
 | category_id       | uuid        | FK → budget_categories (`ON DELETE RESTRICT`)      |
 | type              | text        | INCOME \| EXPENSE (조회 편의상 카테고리에서 비정규화) |
 | amount            | numeric     | 금액                                                |
+| currency          | currency_enum | 저장 시점의 기준통화 (DEFAULT 'KRW')              |
 | payment_method_id | uuid (nullable) | FK → budget_payment_methods (`ON DELETE SET NULL`) |
 | memo              | text (nullable) | 메모                                              |
 | entry_date        | date        | 날짜                                                |
@@ -66,6 +69,7 @@
 | category_id       | uuid        | FK → budget_categories (`ON DELETE CASCADE`) |
 | type              | text        | INCOME \| EXPENSE                       |
 | amount            | numeric     | 금액                                     |
+| currency          | currency_enum | 저장 시점의 기준통화 (DEFAULT 'KRW')   |
 | payment_method_id | uuid (nullable) | FK → budget_payment_methods (`ON DELETE SET NULL`) |
 | memo              | text (nullable) |                                       |
 | sort_order        | int8        | 정렬 순서                                |

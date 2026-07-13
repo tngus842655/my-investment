@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
+import { useI18n } from 'vue-i18n'
 import { showMessage } from '@/composables/useSnackbar'
 import { formatBudgetAmount } from '@/utils/budgetMoney'
 import type { BudgetType } from '@/types/budget'
@@ -21,6 +22,8 @@ interface EntryRow {
   budget_payment_methods: { name: string } | null
 }
 
+
+const { t } = useI18n()
 const router = useRouter()
 const loading = ref(true)
 const query = ref('')
@@ -38,7 +41,7 @@ const fetchEntries = async () => {
     .limit(5000)
   loading.value = false
   if (error) {
-    showMessage('내역을 불러오지 못했습니다.', 'error')
+    showMessage(t('budget.calendar.loadFailed'), 'error')
     return
   }
   entries.value = (data ?? []) as unknown as EntryRow[]
@@ -94,12 +97,12 @@ const deleteEntry = async () => {
   if (!entryToDelete.value) return
   const { error } = await supabase.from('budget_entries').delete().eq('id', entryToDelete.value.id)
   if (error) {
-    showMessage('삭제 중 오류가 발생했습니다.', 'error')
+    showMessage(t('budget.calendar.deleteFailed'), 'error')
     return
   }
   deleteDialog.value = false
   entryToDelete.value = null
-  showMessage('내역이 삭제되었습니다.', 'success')
+  showMessage(t('budget.calendar.deleted'), 'success')
   await fetchEntries()
 }
 
@@ -163,12 +166,12 @@ const onContainerClick = (e: MouseEvent) => {
       <button class="back-btn" @click="router.back()">
         <v-icon size="20">mdi-arrow-left</v-icon>
       </button>
-      <div class="font-weight-bold">내역 검색</div>
+      <div class="font-weight-bold">{{ $t('budget.search.title') }}</div>
     </div>
 
     <v-text-field
       v-model="query"
-      placeholder="메모, 카테고리, 결제수단으로 검색"
+      :placeholder="$t('budget.search.placeholder')"
       density="compact"
       variant="outlined"
       rounded="lg"
@@ -185,11 +188,11 @@ const onContainerClick = (e: MouseEvent) => {
     </div>
 
     <div v-else-if="!(query ?? '').trim()" class="text-center text-medium-emphasis py-8">
-      검색어를 입력해주세요.
+      {{ $t('budget.search.enterQuery') }}
     </div>
 
     <div v-else-if="results.length === 0" class="text-center text-medium-emphasis py-8">
-      검색 결과가 없습니다.
+      {{ $t('budget.search.noResults') }}
     </div>
 
     <div v-else class="glass-card pa-3">
@@ -202,11 +205,11 @@ const onContainerClick = (e: MouseEvent) => {
         <div class="swipe-actions">
           <button class="action-btn action-edit" @click.stop="openEditDialog(e)">
             <v-icon size="18">mdi-pencil-outline</v-icon>
-            <span>수정</span>
+            <span>{{ $t('common.edit') }}</span>
           </button>
           <button class="action-btn action-delete" @click.stop="openDeleteDialog(e)">
             <v-icon size="18">mdi-delete-outline</v-icon>
-            <span>삭제</span>
+            <span>{{ $t('common.delete') }}</span>
           </button>
         </div>
 
@@ -229,18 +232,18 @@ const onContainerClick = (e: MouseEvent) => {
           <span :class="e.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ formatBudgetAmount(e.amount, e.currency) }}</span>
         </div>
       </div>
-      <p class="swipe-hint">← 항목을 왼쪽으로 밀면 수정/삭제할 수 있어요</p>
+      <p class="swipe-hint">{{ $t('budget.calendar.swipeHint') }}</p>
     </div>
 
     <BudgetEntryAddDialog v-model="dialog" :initial-data="dialogInitialData" @saved="onSaved" />
 
     <v-dialog v-model="deleteDialog" max-width="320">
       <v-card rounded="xl" class="glass-dialog">
-        <v-card-title class="text-center pt-6">내역 삭제</v-card-title>
-        <v-card-text class="text-center text-medium-emphasis">이 내역을 삭제하시겠습니까?</v-card-text>
+        <v-card-title class="text-center pt-6">{{ $t('budget.calendar.deleteTitle') }}</v-card-title>
+        <v-card-text class="text-center text-medium-emphasis">{{ $t('budget.calendar.deleteConfirm') }}</v-card-text>
         <v-card-actions class="pa-4 pt-2">
-          <v-btn block variant="text" @click="deleteDialog = false">취소</v-btn>
-          <v-btn block color="error" @click="deleteEntry">삭제</v-btn>
+          <v-btn block variant="text" @click="deleteDialog = false">{{ $t('common.cancel') }}</v-btn>
+          <v-btn block color="error" @click="deleteEntry">{{ $t('common.delete') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

@@ -2,9 +2,11 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
+import { useI18n } from 'vue-i18n'
 import { showMessage } from '@/composables/useSnackbar'
 
 const router = useRouter()
+const { t } = useI18n()
 const dataManageOpen = ref(false)
 
 // ── 데이터 초기화 ──────────────────────────
@@ -15,15 +17,15 @@ const resetPasswordError = ref('')
 const resetLoading = ref(false)
 
 const resetTitle = computed(() => {
-  if (resetTarget.value === 'entries') return '거래내역 초기화'
-  if (resetTarget.value === 'favorites') return '즐겨찾기 초기화'
-  if (resetTarget.value === 'all') return '전체 초기화'
+  if (resetTarget.value === 'entries') return t('budget.more.resetEntries')
+  if (resetTarget.value === 'favorites') return t('budget.more.resetFavorites')
+  if (resetTarget.value === 'all') return t('budget.more.resetAll')
   return ''
 })
 const resetDescription = computed(() => {
-  if (resetTarget.value === 'entries') return '등록된 모든 거래내역이 삭제됩니다.'
-  if (resetTarget.value === 'favorites') return '등록된 모든 즐겨찾기가 삭제됩니다.'
-  if (resetTarget.value === 'all') return '카테고리·결제수단·즐겨찾기·거래내역 등 가계부의 모든 데이터가 삭제됩니다.'
+  if (resetTarget.value === 'entries') return t('budget.more.resetEntriesDesc')
+  if (resetTarget.value === 'favorites') return t('budget.more.resetFavoritesDesc')
+  if (resetTarget.value === 'all') return t('budget.more.resetAllDesc')
   return ''
 })
 
@@ -38,7 +40,7 @@ const closeResetDialog = () => {
 
 const executeReset = async () => {
   if (!resetPassword.value) {
-    resetPasswordError.value = '비밀번호를 입력해주세요.'
+    resetPasswordError.value = t('budget.more.passwordRequired')
     return
   }
   resetLoading.value = true
@@ -51,7 +53,7 @@ const executeReset = async () => {
       password: resetPassword.value,
     })
     if (authError) {
-      resetPasswordError.value = '비밀번호가 올바르지 않습니다.'
+      resetPasswordError.value = t('budget.more.passwordWrong')
       return
     }
 
@@ -71,10 +73,10 @@ const executeReset = async () => {
       if (pmError) throw pmError
     }
 
-    showMessage(`${resetTitle.value}가 완료되었습니다.`, 'success')
+    showMessage(t('budget.more.resetDone', { title: resetTitle.value }), 'success')
     closeResetDialog()
   } catch {
-    showMessage('초기화 중 오류가 발생했습니다.', 'error')
+    showMessage(t('budget.more.resetFailed'), 'error')
   } finally {
     resetLoading.value = false
   }
@@ -85,20 +87,20 @@ const executeReset = async () => {
   <v-container class="pa-4 pa-sm-6 budget-more-page">
     <div class="d-flex align-center justify-space-between mb-2">
       <div class="d-flex align-center ga-2">
-        <img src="/icons/icon-more.png" class="header-icon" alt="더보기" />
-        <div class="font-weight-bold">더보기</div>
+        <img src="/icons/icon-more.png" class="header-icon" :alt="$t('budget.nav.more')" />
+        <div class="font-weight-bold">{{ $t('budget.nav.more') }}</div>
       </div>
       <v-btn icon variant="text" size="small" to="/hub">
-        <img src="/icons/icon-hub.png" class="header-icon" alt="허브" />
+        <img src="/icons/icon-hub.png" class="header-icon" :alt="$t('common.hub')" />
       </v-btn>
     </div>
 
-    <div class="section-label mb-2">가계부</div>
+    <div class="section-label mb-2">{{ $t('hub.budget') }}</div>
     <div class="d-flex flex-column ga-2 mb-5">
       <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/budget/search')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-magnify</v-icon></div>
         <div>
-          <div class="font-weight-medium">내역 검색</div>
+          <div class="font-weight-medium">{{ $t('budget.search.title') }}</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -107,7 +109,7 @@ const executeReset = async () => {
       <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/budget/manage')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-cog-outline</v-icon></div>
         <div>
-          <div class="font-weight-medium">관리</div>
+          <div class="font-weight-medium">{{ $t('budget.common.manage') }}</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -116,7 +118,7 @@ const executeReset = async () => {
       <div class="menu-card glass-card pa-2 d-flex align-center ga-3" @click="router.push('/budget/import')">
         <div class="menu-icon"><v-icon size="18" color="primary">mdi-file-excel-outline</v-icon></div>
         <div>
-          <div class="font-weight-medium">엑셀 가져오기</div>
+          <div class="font-weight-medium">{{ $t('budget.import.title') }}</div>
         </div>
         <v-spacer />
         <v-icon size="16" class="chevron-icon">mdi-chevron-right</v-icon>
@@ -125,18 +127,18 @@ const executeReset = async () => {
 
     <div class="glass-card py-2 px-4 mb-5 mt-auto">
       <div class="section-label-lg d-flex align-center justify-space-between cursor-pointer" @click="dataManageOpen = !dataManageOpen">
-        <span>데이터 관리</span>
+        <span>{{ $t('budget.more.dataManage') }}</span>
         <v-icon size="18" class="collapse-icon" :class="{ 'collapse-icon-open': dataManageOpen }">mdi-chevron-down</v-icon>
       </div>
       <div v-if="dataManageOpen" class="mt-2">
         <v-btn variant="tonal" color="error" rounded="lg" block prepend-icon="mdi-delete-clock-outline" class="mb-2" @click="openResetDialog('entries')">
-          거래내역 초기화
+          {{ $t('budget.more.resetEntries') }}
         </v-btn>
         <v-btn variant="tonal" color="error" rounded="lg" block prepend-icon="mdi-star-off-outline" class="mb-2" @click="openResetDialog('favorites')">
-          즐겨찾기 초기화
+          {{ $t('budget.more.resetFavorites') }}
         </v-btn>
         <v-btn variant="tonal" color="error" rounded="lg" block prepend-icon="mdi-database-remove-outline" @click="openResetDialog('all')">
-          전체 초기화
+          {{ $t('budget.more.resetAll') }}
         </v-btn>
       </div>
     </div>
@@ -145,7 +147,7 @@ const executeReset = async () => {
       <v-card rounded="xl" class="glass-dialog pa-4">
         <div class="font-weight-bold mb-2 text-error">{{ resetTitle }}</div>
         <div class="text-medium-emphasis mb-4" style="font-size: 0.8125rem">
-          {{ resetDescription }} 이 작업은 되돌릴 수 없습니다. 계속하려면 비밀번호를 입력해주세요.
+          {{ resetDescription }} {{ $t('budget.more.irreversible') }}
         </div>
         <form @submit.prevent="executeReset">
           <input
@@ -161,7 +163,7 @@ const executeReset = async () => {
             v-model="resetPassword"
             type="password"
             autocomplete="current-password"
-            label="비밀번호"
+            :label="$t('hub.passwordLabel')"
             density="compact"
             variant="outlined"
             rounded="lg"
@@ -169,8 +171,8 @@ const executeReset = async () => {
             autofocus
           />
           <div class="d-flex ga-2 mt-2">
-            <v-btn type="button" variant="text" class="flex-1" :disabled="resetLoading" @click="closeResetDialog">취소</v-btn>
-            <v-btn type="submit" color="error" variant="tonal" class="flex-1" :loading="resetLoading">초기화</v-btn>
+            <v-btn type="button" variant="text" class="flex-1" :disabled="resetLoading" @click="closeResetDialog">{{ $t('common.cancel') }}</v-btn>
+            <v-btn type="submit" color="error" variant="tonal" class="flex-1" :loading="resetLoading">{{ $t('budget.more.resetButton') }}</v-btn>
           </div>
         </form>
       </v-card>
