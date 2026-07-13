@@ -24,7 +24,7 @@ const { scale, rootHeight } = useFitToPanel(rootRef, scaleWrapRef)
       class="scale-wrap"
       :style="{ transform: scale < 1 ? `scale(${scale})` : undefined, width: scale < 1 ? `${100 / scale}%` : '100%' }"
     >
-      <BudgetPanelTopbar title="금액" @close="emit('close')" />
+      <BudgetPanelTopbar :title="$t('budget.common.amount')" @close="emit('close')" />
       <div class="keypad-grid">
         <button
           v-for="(key, i) in keys"
@@ -35,7 +35,7 @@ const { scale, rootHeight } = useFitToPanel(rootRef, scaleWrapRef)
           @click="key === 'back' ? emit('backspace') : key === 'confirm' ? emit('confirm') : key && emit('digit', key)"
         >
           <v-icon v-if="key === 'back'" size="20">mdi-backspace-outline</v-icon>
-          <span v-else-if="key === 'confirm'">확인</span>
+          <span v-else-if="key === 'confirm'">{{ $t('common.confirm') }}</span>
           <span v-else>{{ key }}</span>
         </button>
       </div>

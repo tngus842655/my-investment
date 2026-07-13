@@ -31,14 +31,14 @@ watch(() => props.items.length, async () => {
       class="scale-wrap"
       :style="{ transform: scale < 1 ? `scale(${scale})` : undefined, width: scale < 1 ? `${100 / scale}%` : '100%' }"
     >
-      <BudgetPanelTopbar title="카테고리" @close="emit('close')" />
+      <BudgetPanelTopbar :title="$t('budget.common.category')" @close="emit('close')" />
 
       <div v-if="items.length === 0" class="category-picker-empty">
         <div class="text-medium-emphasis mb-2" style="font-size: 0.8125rem">
-          카테고리가 없습니다. 먼저 추가해주세요.
+          {{ $t('budget.categoryPicker.empty') }}
         </div>
         <v-btn size="small" variant="tonal" color="primary" @click="emit('manage')">
-          카테고리 추가하러 가기
+          {{ $t('budget.categoryPicker.goAdd') }}
         </v-btn>
       </div>
 
@@ -50,7 +50,7 @@ watch(() => props.items.length, async () => {
           @click="emit('select', item.value)"
         >{{ item.title }}</button>
         <button class="category-key category-key--add" @click="emit('manage')">
-          <v-icon size="14">mdi-plus</v-icon> 추가
+          <v-icon size="14">mdi-plus</v-icon> {{ $t('budget.common.add') }}
         </button>
       </div>
     </div>

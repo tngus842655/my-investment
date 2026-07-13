@@ -1,13 +1,21 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useUserDataStore } from '@/stores/userData'
 
 const router = useRouter()
 const route = useRoute()
 
+// 가계부는 FIRE 목표와 무관하지만 기준통화(investment_goals.base_currency)는 공유하므로
+// 진입 시 동기화해 둔다 — 금액 표시·집계 환산이 이 값을 따름 (BUDGET_GLOBALIZATION.md)
+onMounted(() => {
+  useUserDataStore().ensureGoals()
+})
+
 const tabs = [
-  { label: '캘린더', route: '/budget', icon: null, activeIcon: null, img: '/icons/icon-calendar.png' },
-  { label: '통계', route: '/budget/stats', icon: null, activeIcon: null, img: '/icons/icon-stats.png' },
-  { label: '더보기', route: '/budget/more', icon: null, activeIcon: null, img: '/icons/icon-more.png' },
+  { labelKey: 'budget.nav.calendar', route: '/budget', icon: null, activeIcon: null, img: '/icons/icon-calendar.png' },
+  { labelKey: 'budget.nav.stats', route: '/budget/stats', icon: null, activeIcon: null, img: '/icons/icon-stats.png' },
+  { labelKey: 'budget.nav.more', route: '/budget/more', icon: null, activeIcon: null, img: '/icons/icon-more.png' },
 ]
 
 const isActive = (tabRoute: string) => route.path === tabRoute
@@ -27,9 +35,9 @@ const isActive = (tabRoute: string) => route.path === tabRoute
         :class="{ active: isActive(tab.route) }"
         @click="router.push(tab.route)"
       >
-        <img v-if="tab.img" :src="tab.img" class="tab-png-icon" :class="{ 'tab-png-active': isActive(tab.route) }" :alt="tab.label" />
+        <img v-if="tab.img" :src="tab.img" class="tab-png-icon" :class="{ 'tab-png-active': isActive(tab.route) }" :alt="$t(tab.labelKey)" />
         <v-icon v-else size="31">{{ isActive(tab.route) ? tab.activeIcon : tab.icon }}</v-icon>
-        <span class="bottom-nav-label">{{ tab.label }}</span>
+        <span class="bottom-nav-label">{{ $t(tab.labelKey) }}</span>
       </button>
     </nav>
   </div>

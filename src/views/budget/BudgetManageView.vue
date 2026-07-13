@@ -16,15 +16,15 @@ const tab = ref<'category' | 'paymentMethod' | 'favorite'>('category')
         <v-icon size="20">mdi-arrow-left</v-icon>
       </button>
       <div>
-        <div class="font-weight-bold">관리</div>
-        <div class="text-medium-emphasis">카테고리·결제수단·즐겨찾기 관리</div>
+        <div class="font-weight-bold">{{ $t('budget.common.manage') }}</div>
+        <div class="text-medium-emphasis">{{ $t('budget.manage.subtitle') }}</div>
       </div>
     </div>
 
     <v-btn-toggle v-model="tab" mandatory rounded="lg" density="comfortable" class="mb-4 w-100">
-      <v-btn value="category" variant="tonal" class="flex-grow-1">카테고리</v-btn>
-      <v-btn value="paymentMethod" variant="tonal" class="flex-grow-1">결제수단</v-btn>
-      <v-btn value="favorite" variant="tonal" class="flex-grow-1">즐겨찾기</v-btn>
+      <v-btn value="category" variant="tonal" class="flex-grow-1">{{ $t('budget.common.category') }}</v-btn>
+      <v-btn value="paymentMethod" variant="tonal" class="flex-grow-1">{{ $t('budget.common.paymentMethod') }}</v-btn>
+      <v-btn value="favorite" variant="tonal" class="flex-grow-1">{{ $t('budget.common.favorites') }}</v-btn>
     </v-btn-toggle>
 
     <div class="flex-grow-1" style="min-height: 0">

@@ -279,6 +279,16 @@ router.beforeEach(async (to) => {
     }
   }
 
+  // 세션이 있는데 로그인 화면(/)으로 들어오면 마지막 사용 모듈로 보낸다 (LoginView 로그인 성공 후와 동일 규칙).
+  // 안드로이드 앱(TWA) Start URL이 '/'라 앱을 열 때마다 로그인 폼이 떠서 로그아웃된 것처럼 보이던 문제 해결.
+  // 로그아웃 플로우는 전부 signOut 완료 후 '/'로 이동하므로(세션 없음) 이 분기를 타지 않는다.
+  if (to.path === '/' && session) {
+    const lastModule = getLastModule()
+    if (lastModule === 'budget') return '/budget'
+    if (lastModule === 'asset') return '/dashboard'
+    return '/hub'
+  }
+
   if (to.meta.requiresAuth && !session) {
     goalCheckedUserId = null
     return '/'

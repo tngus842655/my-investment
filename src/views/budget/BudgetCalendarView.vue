@@ -2,8 +2,12 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
-import { formatCurrency } from '@/utils/numberFormat'
+import { useI18n } from 'vue-i18n'
+import { formatYearMonth } from '@/utils/dateFormat'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { loadRatesToBase, toBaseAmount, formatBudgetAmount, formatBudgetSumBare } from '@/utils/budgetMoney'
 import type { BudgetType } from '@/types/budget'
+import type { CurrencyCode } from '@/config/marketConfig'
 import BudgetEntryAddDialog from './BudgetEntryAddDialog.vue'
 import BudgetMonthYearCard from './BudgetMonthYearCard.vue'
 
@@ -15,6 +19,7 @@ interface EntryRow {
   payment_method_id: string | null
   memo: string | null
   entry_date: string
+  currency: CurrencyCode
   budget_categories: { name: string } | null
   budget_payment_methods: { name: string } | null
 }
@@ -30,6 +35,15 @@ const loading = ref(true)
 const entries = ref<EntryRow[]>([])
 const yearEntries = ref<EntryRow[]>([])
 
+// 집계는 행별 통화를 기준통화로 환산 후 합산, 단건은 기록된 통화 그대로 표시 (budgetMoney.ts)
+const { t, tm, rt } = useI18n()
+const { baseCurrency } = useBaseCurrency()
+const rates = ref<Record<string, number>>({})
+const toBase = (e: EntryRow) => toBaseAmount(e.amount, e.currency, baseCurrency.value, rates.value)
+const fmtAmount = formatBudgetAmount
+const fmtBase = (v: number) => formatBudgetAmount(v, baseCurrency.value)
+const fmtBare = (v: number) => formatBudgetSumBare(v, baseCurrency.value)
+
 const pad2 = (n: number) => String(n).padStart(2, '0')
 
 const fetchMonthEntries = async () => {
@@ -40,17 +54,19 @@ const fetchMonthEntries = async () => {
   const end = `${year.value}-${pad2(month.value)}-${pad2(new Date(year.value, month.value, 0).getDate())}`
   const { data, error } = await supabase
     .from('budget_entries')
-    .select('id, type, category_id, amount, payment_method_id, memo, entry_date, budget_categories(name), budget_payment_methods(name)')
+    .select('id, type, category_id, amount, currency, payment_method_id, memo, entry_date, budget_categories(name), budget_payment_methods(name)')
     .eq('user_id', user.id)
     .gte('entry_date', start)
     .lte('entry_date', end)
     .order('entry_date')
   loading.value = false
   if (error) {
-    showMessage('내역을 불러오지 못했습니다.', 'error')
+    showMessage(t('budget.calendar.loadFailed'), 'error')
     return
   }
-  entries.value = (data ?? []) as unknown as EntryRow[]
+  const rows = (data ?? []) as unknown as EntryRow[]
+  rates.value = { ...rates.value, ...(await loadRatesToBase(rows.map((e) => e.currency), baseCurrency.value)) }
+  entries.value = rows
 }
 
 const fetchYearEntries = async () => {
@@ -60,15 +76,17 @@ const fetchYearEntries = async () => {
   const end = `${monthlyYear.value}-12-31`
   const { data, error } = await supabase
     .from('budget_entries')
-    .select('id, type, category_id, amount, payment_method_id, memo, entry_date, budget_categories(name), budget_payment_methods(name)')
+    .select('id, type, category_id, amount, currency, payment_method_id, memo, entry_date, budget_categories(name), budget_payment_methods(name)')
     .eq('user_id', user.id)
     .gte('entry_date', start)
     .lte('entry_date', end)
   if (error) {
-    showMessage('내역을 불러오지 못했습니다.', 'error')
+    showMessage(t('budget.calendar.loadFailed'), 'error')
     return
   }
-  yearEntries.value = (data ?? []) as unknown as EntryRow[]
+  const rows = (data ?? []) as unknown as EntryRow[]
+  rates.value = { ...rates.value, ...(await loadRatesToBase(rows.map((e) => e.currency), baseCurrency.value)) }
+  yearEntries.value = rows
 }
 
 onMounted(async () => {
@@ -91,10 +109,10 @@ const nextMonth = () => {
 // ── 요약 (수입/지출/합계) ──────────────────────────
 const summarySource = computed(() => (subTab.value === 'monthly' ? yearEntries.value : entries.value))
 const summaryIncome = computed(() =>
-  summarySource.value.filter((e) => e.type === 'INCOME').reduce((s, e) => s + e.amount, 0),
+  summarySource.value.filter((e) => e.type === 'INCOME').reduce((s, e) => s + toBase(e), 0),
 )
 const summaryExpense = computed(() =>
-  summarySource.value.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + e.amount, 0),
+  summarySource.value.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + toBase(e), 0),
 )
 const summaryTotal = computed(() => summaryIncome.value - summaryExpense.value)
 
@@ -125,8 +143,8 @@ const calendarWeeks = computed(() => {
       day: d,
       inMonth: true,
       dateStr,
-      income: dayEntries.filter((e) => e.type === 'INCOME').reduce((s, e) => s + e.amount, 0),
-      expense: dayEntries.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + e.amount, 0),
+      income: dayEntries.filter((e) => e.type === 'INCOME').reduce((s, e) => s + toBase(e), 0),
+      expense: dayEntries.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + toBase(e), 0),
     })
   }
 
@@ -164,10 +182,10 @@ const selectedDateEntries = computed(() =>
   selectedDate.value ? entries.value.filter((e) => e.entry_date === selectedDate.value) : [],
 )
 const selectedDateIncome = computed(() =>
-  selectedDateEntries.value.filter((e) => e.type === 'INCOME').reduce((s, e) => s + e.amount, 0),
+  selectedDateEntries.value.filter((e) => e.type === 'INCOME').reduce((s, e) => s + toBase(e), 0),
 )
 const selectedDateExpense = computed(() =>
-  selectedDateEntries.value.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + e.amount, 0),
+  selectedDateEntries.value.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + toBase(e), 0),
 )
 
 // ── 일일 내역 ──────────────────────────
@@ -181,16 +199,18 @@ const dailyGroups = computed(() => {
     .sort((a, b) => b[0].localeCompare(a[0]))
     .map(([date, list]) => ({
       date,
-      income: list.filter((e) => e.type === 'INCOME').reduce((s, e) => s + e.amount, 0),
-      expense: list.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + e.amount, 0),
+      income: list.filter((e) => e.type === 'INCOME').reduce((s, e) => s + toBase(e), 0),
+      expense: list.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + toBase(e), 0),
       entries: list,
     }))
 })
 
+const weekdays = computed(() => (tm('date.weekdays') as unknown[]).map((w) => rt(w as string)))
 const weekdayLabel = (dateStr: string) => {
   const d = new Date(`${dateStr}T00:00:00`)
-  return ['일', '월', '화', '수', '목', '금', '토'][d.getDay()]
+  return t('date.weekdayLabel', { weekday: weekdays.value[d.getDay()] })
 }
+const monthName = (m: number) => rt((tm('date.months') as unknown[])[m - 1] as string)
 
 // ── 월별 요약 ──────────────────────────
 const monthlyRows = computed(() => {
@@ -199,8 +219,8 @@ const monthlyRows = computed(() => {
     const list = yearEntries.value.filter((e) => Number(e.entry_date.slice(5, 7)) === m)
     rows.push({
       month: m,
-      income: list.filter((e) => e.type === 'INCOME').reduce((s, e) => s + e.amount, 0),
-      expense: list.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + e.amount, 0),
+      income: list.filter((e) => e.type === 'INCOME').reduce((s, e) => s + toBase(e), 0),
+      expense: list.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + toBase(e), 0),
     })
   }
   return rows.reverse()
@@ -254,12 +274,12 @@ const deleteEntry = async () => {
   if (!entryToDelete.value) return
   const { error } = await supabase.from('budget_entries').delete().eq('id', entryToDelete.value.id)
   if (error) {
-    showMessage('삭제 중 오류가 발생했습니다.', 'error')
+    showMessage(t('budget.calendar.deleteFailed'), 'error')
     return
   }
   deleteDialog.value = false
   entryToDelete.value = null
-  showMessage('내역이 삭제되었습니다.', 'success')
+  showMessage(t('budget.calendar.deleted'), 'success')
   await fetchMonthEntries()
   await fetchYearEntries()
 }
@@ -322,15 +342,15 @@ const onContainerClick = (e: MouseEvent) => {
   <v-container class="pa-4 pa-sm-6 pb-16" @click="onContainerClick">
     <div class="d-flex align-center justify-space-between mb-2">
       <div class="d-flex align-center ga-2">
-        <img src="/icons/icon-calendar.png" class="header-icon" alt="가계부" />
-        <div class="font-weight-bold text-h6">가계부</div>
+        <img src="/icons/icon-calendar.png" class="header-icon" :alt="$t('hub.budget')" />
+        <div class="font-weight-bold text-h6">{{ $t('hub.budget') }}</div>
       </div>
       <div class="d-flex align-center ga-1">
         <v-btn icon variant="text" size="small" to="/budget/search">
           <v-icon size="20">mdi-magnify</v-icon>
         </v-btn>
         <v-btn icon variant="text" size="small" to="/hub">
-          <img src="/icons/icon-hub.png" class="header-icon" alt="허브" />
+          <img src="/icons/icon-hub.png" class="header-icon" :alt="$t('common.hub')" />
         </v-btn>
       </div>
     </div>
@@ -343,10 +363,10 @@ const onContainerClick = (e: MouseEvent) => {
         size="small"
         @click="subTab === 'monthly' ? monthlyYear -= 1 : prevMonth()"
       />
-      <div v-if="subTab === 'monthly'" class="font-weight-bold">{{ monthlyYear }}년</div>
+      <div v-if="subTab === 'monthly'" class="font-weight-bold">{{ $t('date.year', { year: monthlyYear }) }}</div>
       <v-menu v-else v-model="dateMenuOpen" :close-on-content-click="false" location="bottom center">
         <template #activator="{ props: menuProps }">
-          <button v-bind="menuProps" class="font-weight-bold nav-year-month-btn">{{ year }}년 {{ month }}월</button>
+          <button v-bind="menuProps" class="font-weight-bold nav-year-month-btn">{{ formatYearMonth(year, month) }}</button>
         </template>
         <BudgetMonthYearCard
           v-model:year="year"
@@ -363,24 +383,24 @@ const onContainerClick = (e: MouseEvent) => {
     </div>
 
     <v-btn-toggle v-model="subTab" mandatory rounded="lg" density="comfortable" class="mb-4 w-100">
-      <v-btn value="calendar" variant="tonal" class="flex-grow-1">캘린더</v-btn>
-      <v-btn value="daily" variant="tonal" class="flex-grow-1">일별</v-btn>
-      <v-btn value="monthly" variant="tonal" class="flex-grow-1">월별</v-btn>
+      <v-btn value="calendar" variant="tonal" class="flex-grow-1">{{ $t('budget.nav.calendar') }}</v-btn>
+      <v-btn value="daily" variant="tonal" class="flex-grow-1">{{ $t('budget.calendar.daily') }}</v-btn>
+      <v-btn value="monthly" variant="tonal" class="flex-grow-1">{{ $t('budget.calendar.monthly') }}</v-btn>
     </v-btn-toggle>
 
     <!-- 요약 -->
     <div class="glass-card pa-2 mb-3 d-flex justify-space-around text-center">
       <div>
-        <div class="summary-label">수입</div>
-        <div class="summary-value income-color">{{ formatCurrency(summaryIncome) }}</div>
+        <div class="summary-label">{{ $t('budget.common.income') }}</div>
+        <div class="summary-value income-color">{{ fmtBare(summaryIncome) }}</div>
       </div>
       <div>
-        <div class="summary-label">지출</div>
-        <div class="summary-value expense-color">{{ formatCurrency(summaryExpense) }}</div>
+        <div class="summary-label">{{ $t('budget.common.expense') }}</div>
+        <div class="summary-value expense-color">{{ fmtBare(summaryExpense) }}</div>
       </div>
       <div>
-        <div class="summary-label">합계</div>
-        <div class="summary-value">{{ formatCurrency(summaryTotal) }}</div>
+        <div class="summary-label">{{ $t('budget.common.total') }}</div>
+        <div class="summary-value">{{ fmtBare(summaryTotal) }}</div>
       </div>
     </div>
 
@@ -392,7 +412,7 @@ const onContainerClick = (e: MouseEvent) => {
       <!-- 캘린더 -->
       <div v-if="subTab === 'calendar'" class="glass-card pa-3">
         <div class="calendar-weekday-row">
-          <span v-for="w in ['일', '월', '화', '수', '목', '금', '토']" :key="w" class="calendar-weekday">{{ w }}</span>
+          <span v-for="(w, wi) in weekdays" :key="wi" class="calendar-weekday">{{ w }}</span>
         </div>
         <div v-for="(week, wi) in calendarWeeks" :key="wi" class="calendar-week-row">
           <button
@@ -403,8 +423,8 @@ const onContainerClick = (e: MouseEvent) => {
             @click="selectDate(cell)"
           >
             <span class="calendar-day">{{ cell.day }}</span>
-            <span v-if="cell.income > 0" class="calendar-amount income-color">{{ formatCurrency(cell.income) }}</span>
-            <span v-if="cell.expense > 0" class="calendar-amount expense-color">{{ formatCurrency(cell.expense) }}</span>
+            <span v-if="cell.income > 0" class="calendar-amount income-color">{{ fmtBare(cell.income) }}</span>
+            <span v-if="cell.expense > 0" class="calendar-amount expense-color">{{ fmtBare(cell.expense) }}</span>
           </button>
         </div>
       </div>
@@ -413,17 +433,17 @@ const onContainerClick = (e: MouseEvent) => {
       <div v-if="subTab === 'calendar' && selectedDate" class="mt-3">
         <div class="d-flex align-center justify-space-between mb-2 px-1">
           <div class="font-weight-bold">
-            {{ Number(selectedDate.slice(8, 10)) }}일
-            <span class="text-medium-emphasis" style="font-size: 0.75rem">{{ weekdayLabel(selectedDate) }}요일</span>
+            {{ $t('date.dayOnly', { day: Number(selectedDate.slice(8, 10)) }) }}
+            <span class="text-medium-emphasis" style="font-size: 0.75rem">{{ weekdayLabel(selectedDate) }}</span>
           </div>
           <div style="font-size: 0.8125rem">
-            <span v-if="selectedDateIncome > 0" class="income-color mr-2">{{ formatCurrency(selectedDateIncome) }}원</span>
-            <span v-if="selectedDateExpense > 0" class="expense-color">{{ formatCurrency(selectedDateExpense) }}원</span>
+            <span v-if="selectedDateIncome > 0" class="income-color mr-2">{{ fmtBase(selectedDateIncome) }}</span>
+            <span v-if="selectedDateExpense > 0" class="expense-color">{{ fmtBase(selectedDateExpense) }}</span>
           </div>
         </div>
 
         <div v-if="selectedDateEntries.length === 0" class="glass-card pa-4 text-center text-medium-emphasis">
-          내역이 없습니다.
+          {{ $t('budget.common.noEntries') }}
         </div>
         <div v-else class="glass-card pa-2">
           <div
@@ -435,11 +455,11 @@ const onContainerClick = (e: MouseEvent) => {
             <div class="swipe-actions">
               <button class="action-btn action-edit" @click.stop="openEditDialog(e)">
                 <v-icon size="18">mdi-pencil-outline</v-icon>
-                <span>수정</span>
+                <span>{{ $t('common.edit') }}</span>
               </button>
               <button class="action-btn action-delete" @click.stop="openDeleteDialog(e)">
                 <v-icon size="18">mdi-delete-outline</v-icon>
-                <span>삭제</span>
+                <span>{{ $t('common.delete') }}</span>
               </button>
             </div>
             <div
@@ -456,27 +476,27 @@ const onContainerClick = (e: MouseEvent) => {
                 <div class="daily-entry-category">{{ e.memo || e.budget_payment_methods?.name || '' }}</div>
                 <div v-if="e.memo" class="daily-entry-sub">{{ e.budget_payment_methods?.name }}</div>
               </div>
-              <span :class="e.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ formatCurrency(e.amount) }}원</span>
+              <span :class="e.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ fmtAmount(e.amount, e.currency) }}</span>
             </div>
           </div>
         </div>
-        <p v-if="selectedDateEntries.length > 0" class="swipe-hint">← 항목을 왼쪽으로 밀면 수정/삭제할 수 있어요</p>
+        <p v-if="selectedDateEntries.length > 0" class="swipe-hint">{{ $t('budget.calendar.swipeHint') }}</p>
       </div>
 
       <!-- 일일 -->
       <div v-else-if="subTab === 'daily'">
         <div v-if="dailyGroups.length === 0" class="text-center text-medium-emphasis py-8">
-          이번 달 내역이 없습니다.
+          {{ $t('budget.calendar.noEntriesMonth') }}
         </div>
         <div v-for="group in dailyGroups" :key="group.date" class="glass-card pa-2 mb-2">
           <div class="d-flex align-center justify-space-between mb-1">
             <div class="font-weight-bold">
-              {{ Number(group.date.slice(8, 10)) }}일
-              <span class="text-medium-emphasis" style="font-size: 0.75rem">{{ weekdayLabel(group.date) }}요일</span>
+              {{ $t('date.dayOnly', { day: Number(group.date.slice(8, 10)) }) }}
+              <span class="text-medium-emphasis" style="font-size: 0.75rem">{{ weekdayLabel(group.date) }}</span>
             </div>
             <div style="font-size: 0.8125rem">
-              <span v-if="group.income > 0" class="income-color mr-2">{{ formatCurrency(group.income) }}원</span>
-              <span v-if="group.expense > 0" class="expense-color">{{ formatCurrency(group.expense) }}원</span>
+              <span v-if="group.income > 0" class="income-color mr-2">{{ fmtBase(group.income) }}</span>
+              <span v-if="group.expense > 0" class="expense-color">{{ fmtBase(group.expense) }}</span>
             </div>
           </div>
           <div
@@ -489,11 +509,11 @@ const onContainerClick = (e: MouseEvent) => {
             <div class="swipe-actions">
               <button class="action-btn action-edit" @click.stop="openEditDialog(e)">
                 <v-icon size="18">mdi-pencil-outline</v-icon>
-                <span>수정</span>
+                <span>{{ $t('common.edit') }}</span>
               </button>
               <button class="action-btn action-delete" @click.stop="openDeleteDialog(e)">
                 <v-icon size="18">mdi-delete-outline</v-icon>
-                <span>삭제</span>
+                <span>{{ $t('common.delete') }}</span>
               </button>
             </div>
 
@@ -511,20 +531,20 @@ const onContainerClick = (e: MouseEvent) => {
                 <div class="daily-entry-category">{{ e.memo || e.budget_payment_methods?.name || '' }}</div>
                 <div v-if="e.memo" class="daily-entry-sub">{{ e.budget_payment_methods?.name }}</div>
               </div>
-              <span :class="e.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ formatCurrency(e.amount) }}원</span>
+              <span :class="e.type === 'INCOME' ? 'income-color' : 'expense-color'">{{ fmtAmount(e.amount, e.currency) }}</span>
             </div>
           </div>
         </div>
-        <p class="swipe-hint">← 항목을 왼쪽으로 밀면 수정/삭제할 수 있어요</p>
+        <p class="swipe-hint">{{ $t('budget.calendar.swipeHint') }}</p>
       </div>
 
       <!-- 월별 -->
       <div v-else-if="subTab === 'monthly'" class="glass-card pa-3">
         <div v-for="row in monthlyRows" :key="row.month" class="monthly-row">
-          <span class="font-weight-medium">{{ row.month }}월</span>
-          <span class="income-color">{{ formatCurrency(row.income) }}원</span>
-          <span class="expense-color">{{ formatCurrency(row.expense) }}원</span>
-          <span class="font-weight-medium">{{ formatCurrency(row.income - row.expense) }}원</span>
+          <span class="font-weight-medium">{{ monthName(row.month) }}</span>
+          <span class="income-color">{{ fmtBase(row.income) }}</span>
+          <span class="expense-color">{{ fmtBase(row.expense) }}</span>
+          <span class="font-weight-medium">{{ fmtBase(row.income - row.expense) }}</span>
         </div>
       </div>
     </template>
@@ -546,11 +566,11 @@ const onContainerClick = (e: MouseEvent) => {
 
     <v-dialog v-model="deleteDialog" max-width="320">
       <v-card rounded="xl" class="glass-dialog">
-        <v-card-title class="text-center pt-6">내역 삭제</v-card-title>
-        <v-card-text class="text-center text-medium-emphasis">이 내역을 삭제하시겠습니까?</v-card-text>
+        <v-card-title class="text-center pt-6">{{ $t('budget.calendar.deleteTitle') }}</v-card-title>
+        <v-card-text class="text-center text-medium-emphasis">{{ $t('budget.calendar.deleteConfirm') }}</v-card-text>
         <v-card-actions class="pa-4 pt-2">
-          <v-btn block variant="text" @click="deleteDialog = false">취소</v-btn>
-          <v-btn block color="error" @click="deleteEntry">삭제</v-btn>
+          <v-btn block variant="text" @click="deleteDialog = false">{{ $t('common.cancel') }}</v-btn>
+          <v-btn block color="error" @click="deleteEntry">{{ $t('common.delete') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

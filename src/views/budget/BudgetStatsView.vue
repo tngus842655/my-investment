@@ -2,9 +2,13 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
-import { formatCurrency } from '@/utils/numberFormat'
+import { useI18n } from 'vue-i18n'
+import { formatYearMonth } from '@/utils/dateFormat'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { loadRatesToBase, toBaseAmount, formatBudgetAmount } from '@/utils/budgetMoney'
 import { useDesignTokens } from '@/composables/useDesignTokens'
 import type { BudgetType } from '@/types/budget'
+import type { CurrencyCode } from '@/config/marketConfig'
 import BudgetMonthYearCard from './BudgetMonthYearCard.vue'
 
 const { chart } = useDesignTokens()
@@ -13,6 +17,7 @@ interface EntryRow {
   type: BudgetType
   category_id: string
   amount: number
+  currency: CurrencyCode
   budget_categories: { name: string } | null
 }
 
@@ -25,6 +30,13 @@ const hoveredKey = ref<string | null>(null)
 const loading = ref(true)
 const entries = ref<EntryRow[]>([])
 
+// 통계는 전부 집계라 행별 통화를 기준통화로 환산 후 합산·표시 (budgetMoney.ts)
+const { t } = useI18n()
+const { baseCurrency } = useBaseCurrency()
+const rates = ref<Record<string, number>>({})
+const toBase = (e: EntryRow) => toBaseAmount(e.amount, e.currency, baseCurrency.value, rates.value)
+const fmtBase = (v: number) => formatBudgetAmount(v, baseCurrency.value)
+
 const pad2 = (n: number) => String(n).padStart(2, '0')
 
 const fetchEntries = async () => {
@@ -35,16 +47,18 @@ const fetchEntries = async () => {
   const end = `${year.value}-${pad2(month.value)}-${pad2(new Date(year.value, month.value, 0).getDate())}`
   const { data, error } = await supabase
     .from('budget_entries')
-    .select('type, category_id, amount, budget_categories(name)')
+    .select('type, category_id, amount, currency, budget_categories(name)')
     .eq('user_id', user.id)
     .gte('entry_date', start)
     .lte('entry_date', end)
   loading.value = false
   if (error) {
-    showMessage('통계를 불러오지 못했습니다.', 'error')
+    showMessage(t('budget.stats.loadFailed'), 'error')
     return
   }
-  entries.value = (data ?? []) as unknown as EntryRow[]
+  const rows = (data ?? []) as unknown as EntryRow[]
+  rates.value = { ...rates.value, ...(await loadRatesToBase(rows.map((e) => e.currency), baseCurrency.value)) }
+  entries.value = rows
 }
 
 onMounted(fetchEntries)
@@ -64,10 +78,10 @@ const monthIndex = computed<number>({
 })
 
 const incomeTotal = computed(() =>
-  entries.value.filter((e) => e.type === 'INCOME').reduce((s, e) => s + e.amount, 0),
+  entries.value.filter((e) => e.type === 'INCOME').reduce((s, e) => s + toBase(e), 0),
 )
 const expenseTotal = computed(() =>
-  entries.value.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + e.amount, 0),
+  entries.value.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + toBase(e), 0),
 )
 
 // ── SVG 도넛 계산 (PortfolioAnalysisView와 동일한 방식) ──────────────────────
@@ -109,8 +123,8 @@ const segments = computed<Seg[]>(() => {
     if (e.type !== statType.value) continue
     const key = e.category_id
     const existing = map.get(key)
-    if (existing) existing.value += e.amount
-    else map.set(key, { label: e.budget_categories?.name ?? '기타', value: e.amount })
+    if (existing) existing.value += toBase(e)
+    else map.set(key, { label: e.budget_categories?.name ?? t('budget.stats.etc'), value: toBase(e) })
   }
 
   const total = [...map.values()].reduce((s, v) => s + v.value, 0)
@@ -145,11 +159,11 @@ const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.v
   <v-container class="pa-4 pa-sm-6 pb-16">
     <div class="d-flex align-center justify-space-between mb-2">
       <div class="d-flex align-center ga-2">
-        <img src="/icons/icon-stats.png" class="header-icon" alt="통계" />
-        <div class="font-weight-bold text-h6">통계</div>
+        <img src="/icons/icon-stats.png" class="header-icon" :alt="$t('budget.nav.stats')" />
+        <div class="font-weight-bold text-h6">{{ $t('budget.nav.stats') }}</div>
       </div>
       <v-btn icon variant="text" size="small" to="/hub">
-        <img src="/icons/icon-hub.png" class="header-icon" alt="허브" />
+        <img src="/icons/icon-hub.png" class="header-icon" :alt="$t('common.hub')" />
       </v-btn>
     </div>
 
@@ -157,7 +171,7 @@ const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.v
       <v-btn icon="mdi-chevron-left" variant="text" size="small" @click="prevMonth" />
       <v-menu v-model="dateMenuOpen" :close-on-content-click="false" location="bottom center">
         <template #activator="{ props: menuProps }">
-          <button v-bind="menuProps" class="font-weight-bold nav-year-month-btn">{{ year }}년 {{ month }}월</button>
+          <button v-bind="menuProps" class="font-weight-bold nav-year-month-btn">{{ formatYearMonth(year, month) }}</button>
         </template>
         <BudgetMonthYearCard v-model:year="year" v-model:month="monthIndex" @close="dateMenuOpen = false" />
       </v-menu>
@@ -165,8 +179,8 @@ const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.v
     </div>
 
     <v-btn-toggle v-model="statType" mandatory rounded="lg" density="comfortable" class="mb-4 w-100">
-      <v-btn value="INCOME" variant="tonal" class="flex-grow-1">수입 {{ formatCurrency(incomeTotal) }}원</v-btn>
-      <v-btn value="EXPENSE" variant="tonal" class="flex-grow-1">지출 {{ formatCurrency(expenseTotal) }}원</v-btn>
+      <v-btn value="INCOME" variant="tonal" class="flex-grow-1">{{ $t('budget.common.income') }} {{ fmtBase(incomeTotal) }}</v-btn>
+      <v-btn value="EXPENSE" variant="tonal" class="flex-grow-1">{{ $t('budget.common.expense') }} {{ fmtBase(expenseTotal) }}</v-btn>
     </v-btn-toggle>
 
     <div v-if="loading" class="d-flex justify-center py-8">
@@ -174,7 +188,7 @@ const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.v
     </div>
 
     <div v-else-if="segments.length === 0" class="text-center text-medium-emphasis py-8">
-      내역이 없습니다.
+      {{ $t('budget.common.noEntries') }}
     </div>
 
     <template v-else>
@@ -195,13 +209,13 @@ const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.v
               @touchend.passive="hoveredKey = null"
             />
             <text x="120" y="108" text-anchor="middle" class="center-label">
-              {{ hovered ? hovered.label : (statType === 'EXPENSE' ? '총 지출' : '총 수입') }}
+              {{ hovered ? hovered.label : (statType === 'EXPENSE' ? $t('budget.stats.totalExpense') : $t('budget.stats.totalIncome')) }}
             </text>
             <text x="120" y="130" text-anchor="middle" class="center-value">
-              {{ hovered ? hovered.pct.toFixed(1) + '%' : formatCurrency(statTotal) + '원' }}
+              {{ hovered ? hovered.pct.toFixed(1) + '%' : fmtBase(statTotal) }}
             </text>
             <text v-if="hovered" x="120" y="150" text-anchor="middle" class="center-sub">
-              {{ formatCurrency(hovered.value) }}원
+              {{ fmtBase(hovered.value) }}
             </text>
           </svg>
         </div>
@@ -226,7 +240,7 @@ const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.v
           </div>
           <div class="legend-right">
             <span class="legend-pct" :style="{ color: seg.color }">{{ seg.pct.toFixed(1) }}%</span>
-            <span class="legend-val">{{ formatCurrency(seg.value) }}원</span>
+            <span class="legend-val">{{ fmtBase(seg.value) }}</span>
           </div>
         </div>
       </div>

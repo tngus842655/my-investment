@@ -64,4 +64,5 @@ Fire Path의 서브 기능으로 추가하는 가계부. 자산관리(기존 메
 ## 관련 문서
 
 - **BUDGET_TABLE.md**: 가계부 테이블 스키마
+- **BUDGET_GLOBALIZATION.md**: 가계부 다국가 지원(영어 버전) 작업 계획 — 사용자/Claude 단계 구분
 - **TABLE.md**: 자산관리 테이블 스키마 (참고용, 가계부와는 무관)
