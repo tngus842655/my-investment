@@ -104,6 +104,9 @@ const handleAmount = (v: string) => { formAmount.value = addComma(v) }
 
 const canSave = computed(() => !!formCategoryId.value && removeComma(formAmount.value) > 0)
 
+// 금액 필드의 통화 아이콘 — 기준통화를 따름 (내역추가 다이얼로그와 동일)
+const currencyIcon = computed(() => (baseCurrency.value === 'KRW' ? 'mdi-currency-krw' : 'mdi-currency-usd'))
+
 const openAddDialog = () => {
   editingId.value = null
   formType.value = 'EXPENSE'
@@ -267,6 +270,7 @@ const onFormTypeChange = (type: BudgetType) => {
         <v-text-field
           :model-value="formAmount"
           :label="$t('budget.common.amount')"
+          :prepend-inner-icon="currencyIcon"
           inputmode="numeric"
           density="compact"
           variant="outlined"

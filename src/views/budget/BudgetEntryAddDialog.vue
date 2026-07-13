@@ -133,6 +133,9 @@ const formatAmount = (v: number, currency: CurrencyCode) => formatBudgetAmount(v
 
 const maxAmount = computed(() => (baseCurrency.value === 'KRW' ? 10_000_000_000 : 10_000_000))
 
+// 금액 필드의 통화 아이콘 — 기준통화를 따름 (KRW ₩ / 그 외 $)
+const currencyIcon = computed(() => (baseCurrency.value === 'KRW' ? 'mdi-currency-krw' : 'mdi-currency-usd'))
+
 const canSave = computed(() =>
   !!categoryId.value && removeComma(amount.value) > 0 && removeComma(amount.value) <= maxAmount.value,
 )
@@ -408,7 +411,7 @@ const save = async () => {
           :placeholder="$t('budget.entry.amountPlaceholder')"
           readonly
           autocomplete="off"
-          prepend-inner-icon="mdi-currency-krw"
+          :prepend-inner-icon="currencyIcon"
           variant="outlined"
           density="compact"
           rounded="lg"
