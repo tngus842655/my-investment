@@ -3,6 +3,8 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { useUserDataStore } from '@/stores/userData'
 import type { BudgetCategory, BudgetPaymentMethod, BudgetType } from '@/types/budget'
 import BudgetFavoriteView from './BudgetFavoriteView.vue'
 import BudgetDateCalendarCard from './BudgetDateCalendarCard.vue'
@@ -11,6 +13,8 @@ import BudgetCategoryGridPicker from './BudgetCategoryGridPicker.vue'
 
 const router = useRouter()
 const dialog = defineModel<boolean>()
+const { baseCurrency } = useBaseCurrency()
+const userDataStore = useUserDataStore()
 
 const props = defineProps<{
   initialData?: {
@@ -289,10 +293,13 @@ const save = async () => {
     }
 
     if (isEditMode.value && props.initialData) {
+      // 수정 시에는 기존 통화를 보존한다 (기준통화 변경 후 옛 내역을 고쳐도 통화가 덮어써지지 않도록)
       const { error } = await supabase.from('budget_entries').update(payload).eq('id', props.initialData.id)
       if (error) throw error
     } else {
-      const { error } = await supabase.from('budget_entries').insert(payload)
+      // 신규 내역의 통화 = 저장 시점의 기준통화 (BUDGET_GLOBALIZATION.md 통화 설계 1항)
+      await userDataStore.ensureGoals()
+      const { error } = await supabase.from('budget_entries').insert({ ...payload, currency: baseCurrency.value })
       if (error) throw error
     }
 

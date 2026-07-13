@@ -5,6 +5,7 @@ import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { formatCurrency } from '@/utils/numberFormat'
 import type { BudgetType } from '@/types/budget'
+import type { CurrencyCode } from '@/config/marketConfig'
 import BudgetEntryAddDialog from './BudgetEntryAddDialog.vue'
 
 interface EntryRow {
@@ -15,6 +16,7 @@ interface EntryRow {
   payment_method_id: string | null
   memo: string | null
   entry_date: string
+  currency: CurrencyCode
   budget_categories: { name: string } | null
   budget_payment_methods: { name: string } | null
 }
@@ -30,7 +32,7 @@ const fetchEntries = async () => {
   loading.value = true
   const { data, error } = await supabase
     .from('budget_entries')
-    .select('id, type, category_id, amount, payment_method_id, memo, entry_date, budget_categories(name), budget_payment_methods(name)')
+    .select('id, type, category_id, amount, currency, payment_method_id, memo, entry_date, budget_categories(name), budget_payment_methods(name)')
     .eq('user_id', user.id)
     .order('entry_date', { ascending: false })
     .limit(5000)

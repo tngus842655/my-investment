@@ -13,6 +13,15 @@
 
 - ✅ 사용자 단계 0 (범위 확정) — 2026-07-13 **2안(기준통화 포함) 확정**. "문구만 번역하면 반쪽"이라는
   보류 사유를 해소하는 방향으로 진행.
+- ✅ Claude 단계 1 (통화 컬럼 + 저장 경로) — 2026-07-13 완료.
+  마이그레이션 `20260713_01_budget_currency.sql` 작성(두 테이블에 currency 추가 + KRW 백필, → 사용자 1 실행 대기).
+  insert 경로 3곳(내역추가 다이얼로그/즐겨찾기 추가/엑셀 가져오기)에 `currency: baseCurrency` 기록 —
+  각 경로에서 `ensureGoals()`를 await해 기준통화 미동기화 상태(가계부는 goals를 안 읽음)에서의 오기록 방지.
+  **수정(update) 시에는 통화를 보존**(기준통화 변경 후 옛 내역 편집 시 통화 오염 방지).
+  select 4곳(캘린더 2/검색/통계) 컬럼 목록과 로컬 EntryRow/FavoriteRow 타입에 currency 추가.
+  `BudgetLayout` 진입 시 `ensureGoals()` 호출 추가(표시·환산이 기준통화를 따르도록 동기화 진입점).
+  검증: vue-tsc --build 통과. ⚠️ 이 커밋의 main 배포는 **사용자 1(SQL 실행) 이후**에 할 것 —
+  currency 컬럼이 없는 DB에 insert하면 에러남.
 
 ---
 

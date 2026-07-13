@@ -5,6 +5,7 @@ import { showMessage } from '@/composables/useSnackbar'
 import { formatCurrency } from '@/utils/numberFormat'
 import { useDesignTokens } from '@/composables/useDesignTokens'
 import type { BudgetType } from '@/types/budget'
+import type { CurrencyCode } from '@/config/marketConfig'
 import BudgetMonthYearCard from './BudgetMonthYearCard.vue'
 
 const { chart } = useDesignTokens()
@@ -13,6 +14,7 @@ interface EntryRow {
   type: BudgetType
   category_id: string
   amount: number
+  currency: CurrencyCode
   budget_categories: { name: string } | null
 }
 
@@ -35,7 +37,7 @@ const fetchEntries = async () => {
   const end = `${year.value}-${pad2(month.value)}-${pad2(new Date(year.value, month.value, 0).getDate())}`
   const { data, error } = await supabase
     .from('budget_entries')
-    .select('type, category_id, amount, budget_categories(name)')
+    .select('type, category_id, amount, currency, budget_categories(name)')
     .eq('user_id', user.id)
     .gte('entry_date', start)
     .lte('entry_date', end)

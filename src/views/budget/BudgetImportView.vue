@@ -4,9 +4,13 @@ import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { formatCurrency } from '@/utils/numberFormat'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { useUserDataStore } from '@/stores/userData'
 import type { BudgetType, BudgetCategory, BudgetPaymentMethod } from '@/types/budget'
 
 const router = useRouter()
+const { baseCurrency } = useBaseCurrency()
+const userDataStore = useUserDataStore()
 
 interface ParsedRow {
   rowNumber: number
@@ -279,6 +283,8 @@ const doImport = async () => {
   try {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
+    // 가져온 내역의 통화 = 가져오기 시점의 기준통화 (BUDGET_GLOBALIZATION.md 통화 설계 6항)
+    await userDataStore.ensureGoals()
 
     const [{ data: catData }, { data: pmData }] = await Promise.all([
       supabase.from('budget_categories').select('*').eq('user_id', user.id),
@@ -333,6 +339,7 @@ const doImport = async () => {
         payment_method_id: paymentMethod?.id ?? null,
         memo: r.memo || null,
         entry_date: r.entryDate,
+        currency: baseCurrency.value,
       }
     })
 

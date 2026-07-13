@@ -4,7 +4,10 @@ import { VueDraggable } from 'vue-draggable-plus'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { formatCurrency } from '@/utils/numberFormat'
+import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { useUserDataStore } from '@/stores/userData'
 import type { BudgetCategory, BudgetPaymentMethod, BudgetType } from '@/types/budget'
+import type { CurrencyCode } from '@/config/marketConfig'
 
 interface FavoriteRow {
   id: string
@@ -14,7 +17,11 @@ interface FavoriteRow {
   payment_method_id: string | null
   memo: string | null
   sort_order: number
+  currency: CurrencyCode
 }
+
+const { baseCurrency } = useBaseCurrency()
+const userDataStore = useUserDataStore()
 
 const loading = ref(true)
 const favorites = ref<FavoriteRow[]>([])
@@ -138,9 +145,12 @@ const saveFavorite = async () => {
     } else {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
+      // 신규 즐겨찾기의 통화 = 저장 시점의 기준통화. 수정 시에는 기존 통화 보존 (내역과 동일 정책)
+      await userDataStore.ensureGoals()
       const { error } = await supabase.from('budget_favorites').insert({
         user_id: user.id,
         sort_order: favorites.value.length,
+        currency: baseCurrency.value,
         ...payload,
       })
       if (error) throw error

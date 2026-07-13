@@ -1,8 +1,16 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useUserDataStore } from '@/stores/userData'
 
 const router = useRouter()
 const route = useRoute()
+
+// 가계부는 FIRE 목표와 무관하지만 기준통화(investment_goals.base_currency)는 공유하므로
+// 진입 시 동기화해 둔다 — 금액 표시·집계 환산이 이 값을 따름 (BUDGET_GLOBALIZATION.md)
+onMounted(() => {
+  useUserDataStore().ensureGoals()
+})
 
 const tabs = [
   { label: '캘린더', route: '/budget', icon: null, activeIcon: null, img: '/icons/icon-calendar.png' },
