@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { useUserDataStore } from '@/stores/userData'
-import { getStockPrice } from '@/services/market'
+import { getCachedStockQuote } from '@/services/market'
 import { getTickerDisplayName } from '@/utils/tickerNames'
 import { showMessage } from '@/composables/useSnackbar'
 import { convertMoney } from '@/utils/portfolioMath'
@@ -78,7 +78,7 @@ const loadAllPrices = async () => {
       targets.map((h) => {
         const row = portfolioRows.value.find((p) => p.ticker === h.ticker)
         if (!row) return Promise.resolve(0)
-        return getStockPrice(row.ticker, row).catch(() => 0)
+        return getCachedStockQuote(row.ticker, row).then((q) => q.price).catch(() => 0)
       }),
     )
     const next: Record<string, number> = {}

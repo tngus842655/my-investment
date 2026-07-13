@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { useUserDataStore } from '@/stores/userData'
-import { getStockQuote } from '@/services/market'
+import { getCachedStockQuote } from '@/services/market'
 import { getTickerDisplayName } from '@/utils/tickerNames'
 import { convertMoney } from '@/utils/portfolioMath'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
@@ -198,7 +198,7 @@ const loadData = async () => {
       holdings.map(([, h]) =>
         h.cash
           ? Promise.resolve<{ price: number | null; changeRate: number | null }>({ price: null, changeRate: null })
-          : getStockQuote(h.row.ticker, h.row).catch(() => ({ price: null, changeRate: null })),
+          : getCachedStockQuote(h.row.ticker, h.row).catch(() => ({ price: null, changeRate: null })),
       ),
     )
 
