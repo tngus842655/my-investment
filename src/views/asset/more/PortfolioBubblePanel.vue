@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { supabase } from '@/services/supabase'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
+import { useUserDataStore } from '@/stores/userData'
 import { getStockQuote } from '@/services/market'
 import { getTickerDisplayName } from '@/utils/tickerNames'
 import { convertMoney } from '@/utils/portfolioMath'
@@ -9,6 +9,7 @@ import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { getAssetClass, isCash, type AssetClass, type MarketCode } from '@/config/marketConfig'
 
 const { baseCurrency, money } = useBaseCurrency()
+const userDataStore = useUserDataStore()
 
 const loading = ref(true)
 
@@ -171,14 +172,12 @@ function packCircles(radii: number[]): { x: number; y: number }[] {
 const loadData = async () => {
   loading.value = true
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const [portfolioResult, rate] = await Promise.all([
-      supabase.from('portfolios').select('*').eq('user_id', user.id),
+    const [storeRows, rate] = await Promise.all([
+      userDataStore.ensurePortfolios(),
       getCachedExchangeRate(),
     ])
     exchangeRate.value = rate
-    const rows = (portfolioResult.data ?? []) as PortfolioRow[]
+    const rows = storeRows as PortfolioRow[]
 
     // 계좌가 달라도 같은 종목이면 수량·원가 합산
     const map = new Map<string, { quantity: number; costNative: number; currency: 'KRW' | 'USD'; assetClass: AssetClass; cash: boolean; row: PortfolioRow }>()

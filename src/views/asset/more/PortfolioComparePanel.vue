@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { supabase } from '@/services/supabase'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
+import { useUserDataStore } from '@/stores/userData'
 import { getStockPrice } from '@/services/market'
 import { getTickerDisplayName } from '@/utils/tickerNames'
 import { showMessage } from '@/composables/useSnackbar'
@@ -14,6 +14,7 @@ import { useI18n } from 'vue-i18n'
 const { chart } = useDesignTokens()
 const { baseCurrency, displayCurrency, money } = useBaseCurrency()
 const { t } = useI18n()
+const userDataStore = useUserDataStore()
 
 const loading = ref(true)
 const exchangeRate = ref(1350)
@@ -143,10 +144,8 @@ const compareRows = computed<CompareRow[]>(() => {
 const loadData = async () => {
   loading.value = true
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const [portfolioResult, rate] = await Promise.all([supabase.from('portfolios').select('*').eq('user_id', user.id), getCachedExchangeRate()])
-    portfolioRows.value = portfolioResult.data ?? []
+    const [rows, rate] = await Promise.all([userDataStore.ensurePortfolios(), getCachedExchangeRate()])
+    portfolioRows.value = rows as PortfolioRow[]
     exchangeRate.value = rate
     loadAllPrices()
   } finally {

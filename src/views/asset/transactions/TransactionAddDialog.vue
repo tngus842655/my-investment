@@ -207,13 +207,15 @@ const newTickerError = computed(() => {
   return ''
 })
 
-// 매도 가능 수량: 현재 보유 수량 + (수정 모드에서 원래 이 거래가 SELL이었다면 그만큼 되돌려줌)
+// 매도 가능 수량: 현재 보유 수량에서 수정 대상 거래의 기존 효과를 되돌린 값.
+// 원래 SELL이었으면 그 수량을 되돌려 더하고, 원래 BUY였으면 그 매수분을 뺀다
+// (BUY→SELL로 유형을 바꾸는 수정에서 원래 매수분이 보유로 잡혀 초과 매도가 통과되는 것 방지)
 const availableForSell = computed(() => {
   const held = selectedPortfolio.value?.quantity ?? 0
-  const originalSellQty = (isEditMode.value && props.initialData?.transaction_type === 'SELL')
-    ? props.initialData.quantity
-    : 0
-  return held + originalSellQty
+  if (!isEditMode.value || !props.initialData) return held
+  return props.initialData.transaction_type === 'SELL'
+    ? held + props.initialData.quantity
+    : held - props.initialData.quantity
 })
 
 const quantityError = computed(() => {
@@ -227,11 +229,14 @@ const quantityError = computed(() => {
 })
 
 // 보유수량 초과 매도 여부 (좁은 필드 error 슬롯 대신 전체 폭 배너로 별도 표시)
+// 새 종목은 보유 0이므로 매도 자체가 불가 — 첫 거래를 SELL로 저장해 음수 보유가 생기는 것 방지
 const sellExceedsHoldingError = computed(() => {
-  if (!quantity.value || !selectedPortfolio.value || isNewPortfolio.value || txType.value !== 'SELL') return ''
+  if (!quantity.value || txType.value !== 'SELL') return ''
+  if (!isNewPortfolio.value && !selectedPortfolio.value) return ''
   const q = Number(quantity.value)
-  if (q <= 0 || q <= availableForSell.value) return ''
-  return t('dialog.errors.qtySellExceedsHolding', { held: availableForSell.value.toLocaleString() })
+  const available = isNewPortfolio.value ? 0 : availableForSell.value
+  if (q <= 0 || q <= available) return ''
+  return t('dialog.errors.qtySellExceedsHolding', { held: available.toLocaleString() })
 })
 
 const unitPriceError = computed(() => {
@@ -281,6 +286,7 @@ const canSave = computed(() => {
       removeComma(unitPrice.value) > 0 &&
       txDate.value &&
       !quantityError.value &&
+      !sellExceedsHoldingError.value &&
       !unitPriceError.value &&
       !txDateError.value
   }
