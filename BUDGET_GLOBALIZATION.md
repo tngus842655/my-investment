@@ -73,6 +73,20 @@
   (🍚 Food/🚗 Transport/… , Cash/Card). 호출부는 카테고리/결제수단 관리 화면의 "기본 추가" 버튼 2곳뿐
   (자동 시딩 아님 — 빈 목록일 때 버튼 노출 방식). 기존 시딩 데이터는 불변.
   검증: vue-tsc --build 통과. 실제 영어 계정 시딩 확인은 사용자 5.
+- ✅ Claude 단계 7 (엑셀 가져오기) — 2026-07-13 완료.
+  파싱은 **로케일 무관 한/영 이중 인식**: `COLUMN_ALIASES`에 영문 별칭(date/asset/payment method/
+  category/note/memo/description/amount/income-expense/type) 추가 + 헤더 비교 소문자 정규화,
+  수입·지출 셀 값도 income/expense(대소문자 무시) 인식. 양식 다운로드는 로케일별 생성(헤더·예시
+  2행·파일명 — 예시 값도 Cash/Food/Salary 등으로). UI 전체 i18n: 안내/열 칩/에러(누락 열 {cols},
+  행 오류 {row}), 미리보기 건수({count}) 및 새 카테고리·결제수단, 가져오기 버튼·완료 메시지,
+  PC 권장 문구는 <i18n-t> 보간. 검증: vue-tsc --build + npm run build 통과.
+- ✅ Claude 단계 8 (마무리 점검) — 2026-07-13 완료.
+  가계부 전 파일 잔여 한글 스캔: 사용자 노출 문구 0건 (남은 것은 코드 주석·HTML 주석·이중언어 파싱
+  상수·console.error 로그뿐). 개발자 노트 v1.0.11 항목 추가(ReleaseNotesView — 관리자 콘텐츠 한글
+  유지 정책), BUDGET_TABLE.md에 currency 컬럼·마이그레이션 반영, BUDGET.md 체크리스트·TODO.md 갱신.
+
+**남은 것 (전부 사용자 검증)**: 사용자 5(영어 계정 시딩 + USD 입력), 6(엑셀 한/영 양식), 7(최종 통합
+검증 후 main 배포).
 
 ---
 
