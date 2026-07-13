@@ -20,6 +20,8 @@
     "fullDate": "{monthShort} {day}, {year}",
     "year": "{year}",
     "months": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    "dayOnly": "{day}",
+    "weekdayLabel": "{weekday}",
     "durationYM": "{years}y {months}mo",
     "durationY": "{years}y",
     "durationM": "{months}mo",
@@ -759,11 +761,12 @@
       "favorites": "Favorites",
       "income": "Income",
       "expense": "Expense",
-      "confirm": "OK",
       "today": "Today",
       "thisMonth": "This Month",
       "add": "Add",
-      "manage": "Manage"
+      "manage": "Manage",
+      "total": "Total",
+      "noEntries": "No entries."
     },
     "nav": {
       "calendar": "Calendar",
@@ -776,6 +779,23 @@
     "categoryPicker": {
       "empty": "No categories yet. Add one first.",
       "goAdd": "Add a category"
+    },
+    "calendar": {
+      "daily": "Daily",
+      "monthly": "Monthly",
+      "loadFailed": "Failed to load entries.",
+      "noEntriesMonth": "No entries this month.",
+      "swipeHint": "← Swipe an item left to edit or delete",
+      "deleteTitle": "Delete Entry",
+      "deleteConfirm": "Delete this entry?",
+      "deleted": "Entry deleted.",
+      "deleteFailed": "Failed to delete."
+    },
+    "stats": {
+      "loadFailed": "Failed to load stats.",
+      "etc": "Other",
+      "totalIncome": "Total Income",
+      "totalExpense": "Total Expense"
     }
   }
 }

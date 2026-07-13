@@ -35,7 +35,7 @@ const { scale, rootHeight } = useFitToPanel(rootRef, scaleWrapRef)
           @click="key === 'back' ? emit('backspace') : key === 'confirm' ? emit('confirm') : key && emit('digit', key)"
         >
           <v-icon v-if="key === 'back'" size="20">mdi-backspace-outline</v-icon>
-          <span v-else-if="key === 'confirm'">{{ $t('budget.common.confirm') }}</span>
+          <span v-else-if="key === 'confirm'">{{ $t('common.confirm') }}</span>
           <span v-else>{{ key }}</span>
         </button>
       </div>

@@ -44,6 +44,17 @@
   DividendCalendarView의 weekdays 패턴과 동일), `BudgetDateCalendarCard`(제목/오늘/년월 → formatYearMonth).
   참고: 날짜 팝업 내부 `v-date-picker`(Vuetify)의 요일 헤더는 Vuetify 기본 로케일(en) 그대로 —
   기존 한국어 화면에서도 영문 요일이었으므로 변경 없음. 검증: vue-tsc --build 통과.
+- ✅ 사용자 단계 3 (용어 감수) — 2026-07-13 용어표 그대로 승인 (Budget/Entry/Income·Expense/
+  Payment Method/Favorites/Manage/Stats/Note 등).
+- ✅ Claude 단계 4 (메인 화면 — 캘린더 + 통계) — 2026-07-13 완료.
+  로케일 확장: `date.dayOnly`("{day}일"/"{day}")·`date.weekdayLabel`("{weekday}요일"/"{weekday}"),
+  `budget.common.total`·`noEntries`, `budget.calendar.*`(서브탭/빈 상태/스와이프 힌트/삭제 다이얼로그/
+  로드 실패), `budget.stats.*`(로드 실패/기타/총 수입·지출). 키패드 확인 버튼은 기존 `common.confirm`
+  재사용으로 교체(중복 키 제거). `BudgetCalendarView`: 헤더(hub.budget)/서브탭/요약 라벨/캘린더 요일
+  헤더(date.weekdays)/날짜 표제/빈 상태/스와이프 수정·삭제(common.edit·delete)/월별 행(date.months)/
+  삭제 다이얼로그/showMessage 4곳 전환, 년월은 formatYearMonth. `BudgetStatsView`: 헤더/수입·지출
+  토글/도넛 중앙(총 수입·지출)/빈 상태/'기타' 폴백/showMessage 전환. 검증: vue-tsc --build 통과,
+  잔여 한글은 코드 주석뿐.
 
 ---
 
