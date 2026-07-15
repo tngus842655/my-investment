@@ -6,7 +6,7 @@ import { supabase } from '@/services/supabase'
 import PortfolioAddDialog from './PortfolioAddDialog.vue'
 import type { PortfolioAsset } from '@/types/portfolio'
 import { showMessage } from '@/composables/useSnackbar'
-import { getStockPrice } from '@/services/market'
+import { getStockQuote } from '@/services/market'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerLabel, isEtfTicker, getTickerDisplayName } from '@/utils/tickerNames'
 import { evaluateItemBase, simpleCostBase, convertMoney } from '@/utils/portfolioMath'
@@ -32,6 +32,7 @@ interface PortfolioViewItem extends PortfolioAsset {
   costBase?: number
   profitAmountBase?: number
   profitRate?: number
+  changeRate?: number | null // 전일 대비 등락률(%)
   isPriceFallback?: boolean // 현재가 조회 실패 시 true
 }
 
@@ -44,6 +45,15 @@ const { baseCurrency, displayCurrency, money, moneyOr } = useBaseCurrency()
 const swipedId = ref<string | null>(null)
 const SWIPE_THRESHOLD = 40
 const ACTION_WIDTH = 128
+
+// ── 카드 플립 상태 ────────────────────────────────
+// 탭하면 뒷면(상세 정보) 표시. 스와이프와 상호 배타.
+const flippedId = ref<string | null>(null)
+const TAP_THRESHOLD = 10 // 이동량이 이보다 작으면 탭으로 간주
+const toggleFlip = (id: string) => {
+  swipedId.value = null // 스와이프 열림 상태면 닫고 플립
+  flippedId.value = flippedId.value === id ? null : id
+}
 
 // ── 드래그앤드롭 상태 ─────────────────────────────
 const isSavingOrder = ref(false)
@@ -128,7 +138,7 @@ const loadPortfolios = async () => {
       ...items.map((item) =>
         isCashItem(item)
           ? Promise.resolve(null)
-          : getStockPrice(item.ticker, item).catch(() => null),
+          : getStockQuote(item.ticker, item).catch(() => null),
       ),
     ])
 
@@ -153,7 +163,9 @@ const loadPortfolios = async () => {
       const isCash = isCashItem(item)
 
       // 현금은 현재가 API 조회 불필요, avg_price 그대로 사용
-      const currentPrice = isCash ? null : prices[i] && prices[i]! > 0 ? prices[i] : null
+      const quote = prices[i]
+      const currentPrice = isCash ? null : quote && quote.price > 0 ? quote.price : null
+      const changeRate = isCash ? null : (quote?.changeRate ?? null)
 
       const { currentPriceInCurrency, evaluationAmount, evaluationAmountBase } =
         evaluateItemBase(item, currentPrice, rate, baseCurrency.value)
@@ -175,6 +187,7 @@ const loadPortfolios = async () => {
         costBase,
         profitAmountBase,
         profitRate,
+        changeRate,
         isPriceFallback,
       }
     })
@@ -223,6 +236,7 @@ const loadPortfolios = async () => {
 const startDrag = (e: MouseEvent | TouchEvent, item: PortfolioViewItem) => {
   e.preventDefault()
   swipedId.value = null
+  flippedId.value = null
 
   const touch = e instanceof TouchEvent ? e.touches[0]! : e
   const cardEl = (e.currentTarget as HTMLElement).closest('.portfolio-card-wrap') as HTMLElement
@@ -331,34 +345,54 @@ const reorderItems = (fromId: string, toId: string) => {
 const isDraggingSwipe = ref(false)
 const swipeTouchStartX = ref(0)
 const swipeTouchStartY = ref(0)
+// 터치 직후 브라우저가 합성 마우스 이벤트를 발생시킴(핸들러가 passive라 preventDefault
+// 불가). 스와이프는 멱등이라 무해했지만 플립 토글은 두 번 실행돼 상쇄되므로, 최근
+// 터치 후 짧은 시간 동안 마우스 핸들러를 무시한다.
+let lastTouchTime = 0
 
 const onSwipeTouchStart = (e: TouchEvent) => {
   if (draggingId.value) return
+  lastTouchTime = Date.now()
   swipeTouchStartX.value = e.touches[0]?.clientX ?? 0
   swipeTouchStartY.value = e.touches[0]?.clientY ?? 0
   isDraggingSwipe.value = true
 }
-const onSwipeTouchEnd = (e: TouchEvent, id: string) => {
+const onSwipeTouchEnd = (e: TouchEvent, id: string, flippable: boolean) => {
   if (!isDraggingSwipe.value) return
+  lastTouchTime = Date.now()
   isDraggingSwipe.value = false
   const dx = swipeTouchStartX.value - (e.changedTouches[0]?.clientX ?? 0)
   const dy = Math.abs(swipeTouchStartY.value - (e.changedTouches[0]?.clientY ?? 0))
+  // 탭(이동량이 거의 없음): 열린 스와이프는 닫기만, 그 외엔 플립 토글
+  if (Math.abs(dx) < TAP_THRESHOLD && dy < TAP_THRESHOLD) {
+    if (swipedId.value === id) swipedId.value = null
+    else if (flippable) toggleFlip(id)
+    return
+  }
   if (dy > 10 && dy > Math.abs(dx)) return
-  if (dx > SWIPE_THRESHOLD) swipedId.value = id
+  if (dx > SWIPE_THRESHOLD) { swipedId.value = id; flippedId.value = null }
   else if (dx < -SWIPE_THRESHOLD / 2 && swipedId.value === id) swipedId.value = null
 }
 const onSwipeMouseDown = (e: MouseEvent) => {
+  if (Date.now() - lastTouchTime < 700) return // 터치 후 합성 마우스 이벤트 무시
   swipeTouchStartX.value = e.clientX
   swipeTouchStartY.value = e.clientY
   isDraggingSwipe.value = true
 }
-const onSwipeMouseUp = (e: MouseEvent, id: string) => {
+const onSwipeMouseUp = (e: MouseEvent, id: string, flippable: boolean) => {
+  if (Date.now() - lastTouchTime < 700) return // 터치 후 합성 마우스 이벤트 무시
   if (!isDraggingSwipe.value) return
   isDraggingSwipe.value = false
   const dx = swipeTouchStartX.value - e.clientX
   const dy = Math.abs(swipeTouchStartY.value - e.clientY)
+  // 클릭(이동량이 거의 없음): 열린 스와이프는 닫기만, 그 외엔 플립 토글
+  if (Math.abs(dx) < TAP_THRESHOLD && dy < TAP_THRESHOLD) {
+    if (swipedId.value === id) swipedId.value = null
+    else if (flippable) toggleFlip(id)
+    return
+  }
   if (dy > 10 && dy > Math.abs(dx)) return
-  if (dx > SWIPE_THRESHOLD) swipedId.value = id
+  if (dx > SWIPE_THRESHOLD) { swipedId.value = id; flippedId.value = null }
   else if (dx < -SWIPE_THRESHOLD / 2 && swipedId.value === id) swipedId.value = null
 }
 
@@ -368,10 +402,15 @@ const closeSwipe = () => {
 
 // 열린 카드 자신을 클릭한 게 아니면(다른 카드·빈 영역·상단 버튼 등 어디든) 닫기
 const onContainerClick = (e: MouseEvent) => {
-  if (!swipedId.value) return
-  const swipedEl = document.querySelector(`.portfolio-card-wrap[data-id="${swipedId.value}"]`)
-  if (swipedEl?.contains(e.target as Node)) return
-  closeSwipe()
+  if (swipedId.value) {
+    const swipedEl = document.querySelector(`.portfolio-card-wrap[data-id="${swipedId.value}"]`)
+    if (!swipedEl?.contains(e.target as Node)) closeSwipe()
+  }
+  // 뒤집힌 카드 바깥을 클릭하면 플립도 닫기 (해당 카드 탭은 touchend/mouseup에서 이미 처리)
+  if (flippedId.value) {
+    const flippedEl = document.querySelector(`.portfolio-card-wrap[data-id="${flippedId.value}"]`)
+    if (!flippedEl?.contains(e.target as Node)) flippedId.value = null
+  }
 }
 
 // ── 다이얼로그 ────────────────────────────────────
@@ -422,6 +461,13 @@ const formatKrw = (v: number) => Math.round(v).toLocaleString('ko-KR')
 // 보유자산 카드 평가금액/손익 — 표시통화(기준통화 또는 미리보기)로 포맷
 const displayEval = (v: number) => money(v, exchangeRate.value ?? 1350, 'full')
 const displayProfit = (v: number) => (v > 0 ? '+' : '') + displayEval(v)
+
+// 카드 뒷면 보유비중 — 투자자산(현금 제외) 평가금액 합계 대비 비율
+const weightPercent = (item: PortfolioViewItem): number => {
+  const total = totalEvaluationAmountBase.value
+  if (!total) return 0
+  return ((item.evaluationAmountBase ?? 0) / total) * 100
+}
 
 // 현금 카드: 보유 통화 그대로 표기 (기준통화 병기용)
 const formatNative = (item: PortfolioViewItem) => {
@@ -485,6 +531,11 @@ const formatPrice = (v: number, currency: string) => {
 }
 
 const formatPercent = (v: number) => (v >= 0 ? '+' : '') + v.toFixed(2) + '%'
+
+// 카드 뒷면 현재가/평균단가 — 보유 통화 그대로(원화·달러 기호 병기)
+const nativePrice = (v: number, currency: string) =>
+  (currency === 'USD' ? '$' : '') + formatPrice(v, currency) + (currency === 'KRW' ? '원' : '')
+
 const truncateAccount = (name: string) =>
   /[ㄱ-ㅎ가-힣]/.test(name) ? name.slice(0, 2) : name.slice(0, 4)
 const formatProfit = (v: number) => (v > 0 ? '+' : '') + formatKrw(v)
@@ -816,10 +867,14 @@ onUnmounted(() => {
             class="swipe-card"
             :style="swipedId === item.id ? `transform: translateX(-${ACTION_WIDTH}px)` : ''"
             @touchstart.passive="(e) => onSwipeTouchStart(e)"
-            @touchend.passive="(e) => onSwipeTouchEnd(e, item.id)"
+            @touchend.passive="(e) => onSwipeTouchEnd(e, item.id, !isCashItem(item))"
             @mousedown="(e) => onSwipeMouseDown(e)"
-            @mouseup="(e) => onSwipeMouseUp(e, item.id)"
+            @mouseup="(e) => onSwipeMouseUp(e, item.id, !isCashItem(item))"
           >
+          <!-- 플립 컨테이너: 앞뒤 face를 겹쳐 탭 시 3D 회전 -->
+          <div class="flip-inner" :class="{ 'flip-inner--flipped': flippedId === item.id }">
+            <!-- 앞면 -->
+            <div class="flip-face flip-front">
             <div
               class="glass-card asset-card pa-2"
               :class="isCashItem(item) ? 'border-cash-left' : (item.profitAmountBase ?? 0) >= 0 ? 'border-success-left' : 'border-error-left'"
@@ -944,10 +999,56 @@ onUnmounted(() => {
                 </div>
               </template>
             </div>
+            </div>
+            <!-- 뒷면: 상세 정보 (현금 카드는 뒷면 없음) -->
+            <div v-if="!isCashItem(item)" class="flip-face flip-back">
+              <div
+                class="glass-card asset-card pa-2"
+                :class="(item.profitAmountBase ?? 0) >= 0 ? 'border-success-left' : 'border-error-left'"
+              >
+                <!-- 헤더: 종목명 + 수익률 (앞면과 동일 위치) -->
+                <div class="d-flex justify-space-between align-center mb-1" style="gap: 6px">
+                  <span class="ticker-name" style="flex: 1; min-width: 0">{{ getTickerLabel(item.ticker).name }}</span>
+                  <v-chip
+                    :color="(item.profitRate ?? 0) >= 0 ? 'success' : 'error'"
+                    size="x-small"
+                    variant="tonal"
+                    style="flex-shrink: 0"
+                  >
+                    {{ formatPercent(item.profitRate ?? 0) }}
+                  </v-chip>
+                </div>
+                <!-- 상세 지표 2×2 그리드 -->
+                <div class="flip-back-grid">
+                  <div class="flip-metric">
+                    <span class="flip-metric-label">{{ $t('portfolio.currentPrice') }}</span>
+                    <span class="flip-metric-value">{{ item.currentPrice != null ? nativePrice(item.currentPrice, item.currency) : '—' }}</span>
+                  </div>
+                  <div class="flip-metric">
+                    <span class="flip-metric-label">{{ $t('portfolio.avgPrice') }}</span>
+                    <span class="flip-metric-value">{{ nativePrice(item.avg_price, item.currency) }}</span>
+                  </div>
+                  <div class="flip-metric">
+                    <span class="flip-metric-label">{{ $t('portfolio.dayChange') }}</span>
+                    <span
+                      class="flip-metric-value"
+                      :class="item.changeRate == null ? '' : item.changeRate >= 0 ? 'text-success' : 'text-error'"
+                    >{{ item.changeRate != null ? formatPercent(item.changeRate) : '—' }}</span>
+                  </div>
+                  <div class="flip-metric">
+                    <span class="flip-metric-label">{{ $t('portfolio.weight') }}</span>
+                    <span class="flip-metric-value">{{ weightPercent(item).toFixed(1) }}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           </div>
         </div>
       </TransitionGroup>
-      <p v-if="sortedPortfolios.length > 0" class="swipe-hint">{{ $t('portfolio.swipeHint') }}</p>
+      <p v-if="sortedPortfolios.length > 0" class="swipe-hint">
+        {{ $t('portfolio.swipeHint') }}<br />{{ $t('portfolio.tapHint') }}
+      </p>
     </template>
   </v-container>
 
@@ -1249,6 +1350,55 @@ onUnmounted(() => {
   will-change: transform;
   border-radius: 20px;
   overflow: hidden;
+  /* 3D 원근 — 자식 .flip-inner 회전에 적용. overflow:hidden은 이 요소(원근
+     부모)에 있고 preserve-3d 요소 자신에는 없으므로 flat으로 강제되지 않음 */
+  perspective: 1200px;
+}
+
+/* ── 카드 플립 (탭 시 앞뒤 전환) ── */
+.flip-inner {
+  position: relative;
+  /* 앞/뒷면 face를 같은 그리드 셀에 겹쳐, 컨테이너 높이가 더 큰 쪽에 자동 정합 */
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+.flip-inner--flipped {
+  transform: rotateY(180deg);
+}
+.flip-face {
+  grid-area: 1 / 1; /* 두 face를 겹침 */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.flip-back {
+  transform: rotateY(180deg);
+}
+
+.flip-back-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px 12px;
+  margin-top: 2px;
+}
+.flip-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+.flip-metric-label {
+  font-size: 0.6875rem;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+  white-space: nowrap;
+}
+.flip-metric-value {
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .asset-card {
