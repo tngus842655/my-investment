@@ -348,7 +348,7 @@ const onContainerClick = (e: MouseEvent) => {
         <div class="font-weight-bold text-h6">{{ $t('hub.budget') }}</div>
       </div>
       <div class="d-flex align-center ga-1">
-        <v-btn icon variant="text" size="small" to="/budget/search">
+        <v-btn icon variant="text" size="x-small" to="/budget/search">
           <v-icon size="20">mdi-magnify</v-icon>
         </v-btn>
         <button class="icon-btn" @click="router.push('/hub')">
