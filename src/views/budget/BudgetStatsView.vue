@@ -162,7 +162,7 @@ const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.v
         <img src="/icons/icon-stats.png" class="header-icon" :alt="$t('budget.nav.stats')" />
         <div class="font-weight-bold text-h6">{{ $t('budget.nav.stats') }}</div>
       </div>
-      <v-btn variant="text" size="small" to="/hub" class="hub-btn">
+      <v-btn variant="text" size="small" to="/hub" class="hub-btn" :ripple="false">
         <img src="/icons/icon-hub.png" class="header-icon" :alt="$t('common.hub')" />
         <span class="hub-btn-label">{{ $t('common.hub') }}</span>
       </v-btn>
@@ -262,6 +262,9 @@ const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.v
   background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%) !important;
   border-radius: 999px !important;
   box-shadow: 0 4px 14px rgba(109, 40, 217, 0.45) !important;
+}
+.hub-btn :deep(.v-btn__overlay) {
+  opacity: 0 !important;
 }
 .hub-btn-label {
   font-size: 0.8rem;
