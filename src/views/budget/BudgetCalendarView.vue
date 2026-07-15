@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { useI18n } from 'vue-i18n'
@@ -24,6 +25,7 @@ interface EntryRow {
   budget_payment_methods: { name: string } | null
 }
 
+const router = useRouter()
 const today = new Date()
 const subTab = ref<'calendar' | 'daily' | 'monthly'>('calendar')
 
@@ -349,10 +351,10 @@ const onContainerClick = (e: MouseEvent) => {
         <v-btn icon variant="text" size="small" to="/budget/search">
           <v-icon size="20">mdi-magnify</v-icon>
         </v-btn>
-        <v-btn variant="text" size="small" to="/hub" class="hub-btn" :ripple="false">
-          <img src="/icons/icon-hub.png" class="header-icon" :alt="$t('common.hub')" />
-          <span class="hub-btn-label">{{ $t('common.hub') }}</span>
-        </v-btn>
+        <button class="icon-btn" @click="router.push('/hub')">
+          <img src="/icons/icon-hub.png" :alt="$t('common.hub')" class="icon-btn-img" />
+          <span class="icon-btn-label">{{ $t('common.hub') }}</span>
+        </button>
       </div>
     </div>
 
@@ -585,25 +587,28 @@ const onContainerClick = (e: MouseEvent) => {
   object-fit: contain;
 }
 
-.hub-btn {
-  min-width: auto !important;
-  padding: 5px 14px 5px 5px !important;
-  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%) !important;
-  border-radius: 999px !important;
-  box-shadow: 0 4px 14px rgba(109, 40, 217, 0.45) !important;
+.icon-btn {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  border: none;
+  padding: 2px 14px 2px 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(109, 40, 217, 0.45);
+  transition: opacity 0.15s ease, transform 0.1s ease;
 }
-.hub-btn :deep(.v-btn__overlay) {
-  opacity: 0 !important;
-}
-.hub-btn .header-icon {
-  width: 22px !important;
-  height: 22px !important;
-}
-.hub-btn-label {
+.icon-btn:active { opacity: 0.85; transform: scale(0.97); }
+.icon-btn-label {
   font-size: 0.8rem;
   font-weight: 700;
   color: #fff;
-  margin-left: 4px;
+}
+.icon-btn-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
 
 .nav-year-month-btn {
