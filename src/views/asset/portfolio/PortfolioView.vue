@@ -459,8 +459,8 @@ const deletePortfolio = async () => {
 const formatKrw = (v: number) => Math.round(v).toLocaleString('ko-KR')
 
 // 보유자산 카드 평가금액/손익 — 표시통화(기준통화 또는 미리보기)로 포맷.
-// 좁은 화면은 억/만 축약('short'), 큰 화면은 숫자 그대로('full') — 상단 요약 카드와 동일 방식
-const displayEval = (v: number) => money(v, exchangeRate.value ?? 1350, isNarrowScreen.value ? 'short' : 'full')
+// 앞면 2번째 줄은 카드 폭 전체를 쓰는 한 줄이라 현실적인 값은 항상 들어감 → 숫자 그대로(full)
+const displayEval = (v: number) => money(v, exchangeRate.value ?? 1350, 'full')
 const displayProfit = (v: number) => (v > 0 ? '+' : '') + displayEval(v)
 
 // 카드 뒷면 보유비중 — 투자자산(현금 제외) 평가금액 합계 대비 비율
@@ -534,11 +534,12 @@ const formatPrice = (v: number, currency: string) => {
 const formatPercent = (v: number) => (v >= 0 ? '+' : '') + v.toFixed(2) + '%'
 
 // 카드 뒷면 현재가/평균단가 — 보유 통화 그대로(원화·달러 기호 병기).
-// KRW는 좁은 화면에서 억/만 축약, 큰 화면에서는 숫자 그대로 (요약 카드와 동일 방식)
+// 2열 그리드 반칸이라 폭이 좁으므로 값 길이로 개별 판단: 여유 있으면 숫자 그대로,
+// 반칸을 넘칠 만큼 큰 값(대략 억 단위 이상)만 억/만으로 축약
 const nativePrice = (v: number, currency: string) => {
   if (currency === 'KRW') {
-    const krw = isNarrowScreen.value ? formatPrice(v, 'KRW') : Math.round(v).toLocaleString('ko-KR')
-    return krw + '원'
+    const full = Math.round(v).toLocaleString('ko-KR') + '원'
+    return full.length > 11 ? formatPrice(v, 'KRW') + '원' : full
   }
   return (currency === 'USD' ? '$' : '') + formatPrice(v, currency)
 }
