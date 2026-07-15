@@ -233,7 +233,7 @@
     "dividendCalendar": "배당 캘린더"
   },
   "displaySettings": {
-    "title": "화면 설정",
+    "title": "화면 및 언어 설정",
     "fontSize": "글자 크기",
     "reset": "초기화",
     "small": "작게 ({pct})",
@@ -612,7 +612,7 @@
     "devNotes": "개발자 노트",
     "settings": "설정",
     "themeSelect": "테마 선택",
-    "displaySettings": "화면 설정",
+    "displaySettings": "화면 및 언어 설정",
     "changePassword": "비밀번호 변경",
     "logout": "로그아웃",
     "logoutConfirm": "정말 로그아웃 하시겠습니까?",

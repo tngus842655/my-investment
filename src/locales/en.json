@@ -233,7 +233,7 @@
     "dividendCalendar": "Dividend Calendar"
   },
   "displaySettings": {
-    "title": "Display Settings",
+    "title": "Display & Language",
     "fontSize": "Font Size",
     "reset": "Reset",
     "small": "Small ({pct})",
@@ -612,7 +612,7 @@
     "devNotes": "Dev Notes",
     "settings": "Settings",
     "themeSelect": "Theme",
-    "displaySettings": "Display Settings",
+    "displaySettings": "Display & Language",
     "changePassword": "Change Password",
     "logout": "Log out",
     "logoutConfirm": "Are you sure you want to log out?",
