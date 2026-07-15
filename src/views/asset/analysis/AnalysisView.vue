@@ -365,6 +365,7 @@ onUnmounted(clearPullToRefresh)
       <div class="d-flex align-center ga-2">
         <button class="icon-btn" @click="router.push('/hub')">
           <img src="/icons/icon-hub.png" :alt="$t('common.hub')" class="icon-btn-img" />
+          <span class="icon-btn-label">{{ $t('common.hub') }}</span>
         </button>
       </div>
     </div>
@@ -590,20 +591,26 @@ onUnmounted(clearPullToRefresh)
 }
 
 .icon-btn {
-  background: none;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
   border: none;
-  padding: 4px;
+  padding: 2px 14px 2px 2px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: opacity 0.15s ease;
+  gap: 6px;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(109, 40, 217, 0.45);
+  transition: opacity 0.15s ease, transform 0.1s ease;
 }
-.icon-btn:active { opacity: 0.6; }
+.icon-btn:active { opacity: 0.85; transform: scale(0.97); }
+.icon-btn-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+}
 .icon-btn-img {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   object-fit: contain;
 }
 

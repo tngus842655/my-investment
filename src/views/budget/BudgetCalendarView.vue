@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { useI18n } from 'vue-i18n'
@@ -24,6 +25,7 @@ interface EntryRow {
   budget_payment_methods: { name: string } | null
 }
 
+const router = useRouter()
 const today = new Date()
 const subTab = ref<'calendar' | 'daily' | 'monthly'>('calendar')
 
@@ -346,12 +348,13 @@ const onContainerClick = (e: MouseEvent) => {
         <div class="font-weight-bold text-h6">{{ $t('hub.budget') }}</div>
       </div>
       <div class="d-flex align-center ga-1">
-        <v-btn icon variant="text" size="small" to="/budget/search">
+        <v-btn icon variant="text" size="x-small" to="/budget/search">
           <v-icon size="20">mdi-magnify</v-icon>
         </v-btn>
-        <v-btn icon variant="text" size="small" to="/hub">
-          <img src="/icons/icon-hub.png" class="header-icon" :alt="$t('common.hub')" />
-        </v-btn>
+        <button class="icon-btn" @click="router.push('/hub')">
+          <img src="/icons/icon-hub.png" :alt="$t('common.hub')" class="icon-btn-img" />
+          <span class="icon-btn-label">{{ $t('common.hub') }}</span>
+        </button>
       </div>
     </div>
 
@@ -579,6 +582,30 @@ const onContainerClick = (e: MouseEvent) => {
 
 <style scoped>
 .header-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.icon-btn {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  border: none;
+  padding: 2px 14px 2px 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(109, 40, 217, 0.45);
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+.icon-btn:active { opacity: 0.85; transform: scale(0.97); }
+.icon-btn-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+}
+.icon-btn-img {
   width: 28px;
   height: 28px;
   object-fit: contain;
