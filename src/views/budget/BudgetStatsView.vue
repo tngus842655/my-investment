@@ -261,7 +261,7 @@ const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.v
   padding: 0 14px 0 8px !important;
   background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%) !important;
   border-radius: 999px !important;
-  box-shadow: 0 4px 14px rgba(109, 40, 217, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 4px 14px rgba(109, 40, 217, 0.45) !important;
 }
 .hub-btn-label {
   font-size: 0.8rem;

@@ -128,7 +128,7 @@ const router = useRouter()
   align-items: center;
   gap: 6px;
   border-radius: 999px;
-  box-shadow: 0 4px 14px rgba(109, 40, 217, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 14px rgba(109, 40, 217, 0.45);
   transition: opacity 0.15s ease, transform 0.1s ease;
 }
 .icon-btn:active { opacity: 0.85; transform: scale(0.97); }
