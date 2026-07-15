@@ -1343,24 +1343,33 @@ onUnmounted(() => {
   perspective: 1200px;
 }
 
-/* ── 카드 플립 (탭 시 앞뒤 전환) ── */
+/* ── 카드 플립 (탭 시 위아래로 뒤집힘) ── */
 .flip-inner {
   position: relative;
-  /* 앞/뒷면 face를 같은 그리드 셀에 겹쳐, 컨테이너 높이가 더 큰 쪽에 자동 정합 */
+  /* 앞/뒷면 face를 같은 그리드 셀에 겹침 */
   display: grid;
+  /* 앞뒤 높이를 고정으로 동일하게 맞춤. rem이라 폰트 스케일에 연동됨
+     (16px 기준 72px). 뒷면이 앞면보다 짧아 뒤의 수정/삭제 버튼이 비쳐 보이던
+     문제를 해결 */
+  height: 4.5rem;
   transform-style: preserve-3d;
   transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1);
 }
 .flip-inner--flipped {
-  transform: rotateY(180deg);
+  transform: rotateX(180deg);
 }
 .flip-face {
   grid-area: 1 / 1; /* 두 face를 겹침 */
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
+/* 앞뒤 카드 본체가 고정 높이를 꽉 채우도록 (뒷면 하단 비침 방지) */
+.flip-face > .asset-card {
+  height: 100%;
+  box-sizing: border-box;
+}
 .flip-back {
-  transform: rotateY(180deg);
+  transform: rotateX(180deg);
 }
 
 .flip-back-grid {
