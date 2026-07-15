@@ -1123,6 +1123,8 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
+  /* 공간이 부족하면 종목명이 먼저 …으로 잘리도록 (서브/계좌 태그보다 우선 축소) */
+  flex-shrink: 1;
 }
 
 .card-amount {
@@ -1134,6 +1136,9 @@ onUnmounted(() => {
   font-size: 0.6875rem;
   font-weight: 400;
   color: rgba(var(--v-theme-on-surface), 0.45);
+  /* 종목명이 잘리더라도 서브 티커는 안 줄고 안 접히게 */
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .account-tag {
@@ -1145,6 +1150,9 @@ onUnmounted(() => {
   border-radius: 4px;
   padding: 1px 5px;
   vertical-align: middle;
+  /* 계좌 태그는 안 줄고 안 접히게 — 좁은 화면에서 글자가 2줄로 깨지던 문제 방지 */
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .compact-price-row {
