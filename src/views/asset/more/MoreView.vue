@@ -122,11 +122,11 @@ const router = useRouter()
 .icon-btn {
   background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
   border: none;
-  padding: 6px 16px 6px 6px;
+  padding: 2px 14px 2px 2px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   border-radius: 999px;
   box-shadow: 0 4px 14px rgba(109, 40, 217, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
   transition: opacity 0.15s ease, transform 0.1s ease;
