@@ -219,6 +219,7 @@ onUnmounted(clearPullToRefresh)
       <div class="d-flex align-center ga-1">
         <button class="icon-btn" @click="router.push('/hub')">
           <img src="/icons/icon-hub.png" :alt="$t('common.hub')" class="icon-btn-img" />
+          <span class="icon-btn-label">{{ $t('common.hub') }}</span>
         </button>
       </div>
     </div>
@@ -465,20 +466,25 @@ onUnmounted(clearPullToRefresh)
 
 /* 헤더 목표수정 아이콘 버튼 */
 .icon-btn {
-  background: none;
+  background: rgba(var(--v-theme-primary), 0.1);
   border: none;
-  padding: 4px;
+  padding: 4px 12px 4px 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 50%;
+  gap: 4px;
+  border-radius: 999px;
   transition: opacity 0.15s ease;
 }
 .icon-btn:active { opacity: 0.6; }
+.icon-btn-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgb(var(--v-theme-primary));
+}
 .icon-btn-img {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   object-fit: contain;
 }
 

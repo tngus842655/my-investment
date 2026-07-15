@@ -349,8 +349,9 @@ const onContainerClick = (e: MouseEvent) => {
         <v-btn icon variant="text" size="small" to="/budget/search">
           <v-icon size="20">mdi-magnify</v-icon>
         </v-btn>
-        <v-btn icon variant="text" size="small" to="/hub">
+        <v-btn variant="text" size="small" to="/hub" class="hub-btn">
           <img src="/icons/icon-hub.png" class="header-icon" :alt="$t('common.hub')" />
+          <span class="hub-btn-label">{{ $t('common.hub') }}</span>
         </v-btn>
       </div>
     </div>
@@ -582,6 +583,16 @@ const onContainerClick = (e: MouseEvent) => {
   width: 28px;
   height: 28px;
   object-fit: contain;
+}
+
+.hub-btn {
+  min-width: auto !important;
+  padding: 0 10px !important;
+}
+.hub-btn-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 2px;
 }
 
 .nav-year-month-btn {

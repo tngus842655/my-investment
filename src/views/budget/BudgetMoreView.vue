@@ -90,8 +90,9 @@ const executeReset = async () => {
         <img src="/icons/icon-more.png" class="header-icon" :alt="$t('budget.nav.more')" />
         <div class="font-weight-bold">{{ $t('budget.nav.more') }}</div>
       </div>
-      <v-btn icon variant="text" size="small" to="/hub">
+      <v-btn variant="text" size="small" to="/hub" class="hub-btn">
         <img src="/icons/icon-hub.png" class="header-icon" :alt="$t('common.hub')" />
+        <span class="hub-btn-label">{{ $t('common.hub') }}</span>
       </v-btn>
     </div>
 
@@ -201,6 +202,16 @@ const executeReset = async () => {
   width: 28px;
   height: 28px;
   object-fit: contain;
+}
+
+.hub-btn {
+  min-width: auto !important;
+  padding: 0 10px !important;
+}
+.hub-btn-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 2px;
 }
 
 .section-label {
