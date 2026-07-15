@@ -458,8 +458,9 @@ const deletePortfolio = async () => {
 // ── 포맷 유틸 ─────────────────────────────────────
 const formatKrw = (v: number) => Math.round(v).toLocaleString('ko-KR')
 
-// 보유자산 카드 평가금액/손익 — 표시통화(기준통화 또는 미리보기)로 포맷
-const displayEval = (v: number) => money(v, exchangeRate.value ?? 1350, 'full')
+// 보유자산 카드 평가금액/손익 — 표시통화(기준통화 또는 미리보기)로 포맷.
+// 좁은 화면은 억/만 축약('short'), 큰 화면은 숫자 그대로('full') — 상단 요약 카드와 동일 방식
+const displayEval = (v: number) => money(v, exchangeRate.value ?? 1350, isNarrowScreen.value ? 'short' : 'full')
 const displayProfit = (v: number) => (v > 0 ? '+' : '') + displayEval(v)
 
 // 카드 뒷면 보유비중 — 투자자산(현금 제외) 평가금액 합계 대비 비율
@@ -532,9 +533,15 @@ const formatPrice = (v: number, currency: string) => {
 
 const formatPercent = (v: number) => (v >= 0 ? '+' : '') + v.toFixed(2) + '%'
 
-// 카드 뒷면 현재가/평균단가 — 보유 통화 그대로(원화·달러 기호 병기)
-const nativePrice = (v: number, currency: string) =>
-  (currency === 'USD' ? '$' : '') + formatPrice(v, currency) + (currency === 'KRW' ? '원' : '')
+// 카드 뒷면 현재가/평균단가 — 보유 통화 그대로(원화·달러 기호 병기).
+// KRW는 좁은 화면에서 억/만 축약, 큰 화면에서는 숫자 그대로 (요약 카드와 동일 방식)
+const nativePrice = (v: number, currency: string) => {
+  if (currency === 'KRW') {
+    const krw = isNarrowScreen.value ? formatPrice(v, 'KRW') : Math.round(v).toLocaleString('ko-KR')
+    return krw + '원'
+  }
+  return (currency === 'USD' ? '$' : '') + formatPrice(v, currency)
+}
 
 const truncateAccount = (name: string) =>
   /[ㄱ-ㅎ가-힣]/.test(name) ? name.slice(0, 2) : name.slice(0, 4)
@@ -1125,6 +1132,10 @@ onUnmounted(() => {
   min-width: 0;
   /* 공간이 부족하면 종목명이 먼저 …으로 잘리도록 (서브/계좌 태그보다 우선 축소) */
   flex-shrink: 1;
+  /* 아주 긴 종목명은 이 상한에서 무조건 …으로 자름 (카드 밖 삐져나감 방지).
+     "KODEX 미국나스닥100" 같은 일반 이름은 유지하고 "KODEX 200타겟위클리커버드콜"
+     처럼 과하게 긴 이름만 잘리는 값. 더 좁은 화면에서는 flex-shrink로 더 줄어듦 */
+  max-width: 8.5rem;
 }
 
 .card-amount {
