@@ -846,12 +846,12 @@ onUnmounted(() => {
         <div
           v-for="item in sortedPortfolios"
           :key="item.id"
-          class="portfolio-card-wrap mb-1"
+          class="portfolio-card-wrap"
           :data-id="item.id"
           :style="draggingId === item.id ? { opacity: '0', pointerEvents: 'none' } : {}"
         >
-          <!-- 스와이프 액션 -->
-          <div class="swipe-actions">
+          <!-- 스와이프 액션 (열림 상태에서만 렌더 — 플립 전환 중 뒤에 비치지 않도록) -->
+          <div v-show="swipedId === item.id" class="swipe-actions">
             <button class="action-btn action-edit" @click.stop="openEditDialog(item)">
               <v-icon size="18">mdi-pencil-outline</v-icon>
               <span>{{ $t('common.edit') }}</span>
@@ -876,7 +876,7 @@ onUnmounted(() => {
             <!-- 앞면 -->
             <div class="flip-face flip-front">
             <div
-              class="glass-card asset-card pa-2"
+              class="glass-card asset-card px-2 py-1"
               :class="isCashItem(item) ? 'border-cash-left' : (item.profitAmountBase ?? 0) >= 0 ? 'border-success-left' : 'border-error-left'"
             >
               <!-- 상단: 종목명 + 수익률 + 드래그 핸들 -->
@@ -1003,7 +1003,7 @@ onUnmounted(() => {
             <!-- 뒷면: 상세 정보 (현금 카드는 뒷면 없음). 앞면과 중복되는 종목명·수익률은 생략 -->
             <div v-if="!isCashItem(item)" class="flip-face flip-back">
               <div
-                class="glass-card asset-card pa-2 d-flex flex-column justify-center"
+                class="glass-card asset-card px-2 py-1 d-flex flex-column justify-center"
                 :class="(item.profitAmountBase ?? 0) >= 0 ? 'border-success-left' : 'border-error-left'"
               >
                 <!-- 상세 지표 2×2 그리드 -->
@@ -1178,6 +1178,7 @@ onUnmounted(() => {
   overflow: hidden;
   border-radius: 20px;
   transition: transform 0.2s ease;
+  margin-bottom: 0.2rem;
 }
 
 .swipe-hint {
@@ -1349,9 +1350,8 @@ onUnmounted(() => {
   /* 앞/뒷면 face를 같은 그리드 셀에 겹침 */
   display: grid;
   /* 앞뒤 높이를 고정으로 동일하게 맞춤. rem이라 폰트 스케일에 연동됨
-     (16px 기준 72px). 뒷면이 앞면보다 짧아 뒤의 수정/삭제 버튼이 비쳐 보이던
-     문제를 해결 */
-  height: 4.5rem;
+     (16px 기준 64px) */
+  height: 4rem;
   transform-style: preserve-3d;
   transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1);
 }
