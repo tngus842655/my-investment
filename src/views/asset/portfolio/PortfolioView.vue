@@ -1000,30 +1000,14 @@ onUnmounted(() => {
               </template>
             </div>
             </div>
-            <!-- 뒷면: 상세 정보 (현금 카드는 뒷면 없음) -->
+            <!-- 뒷면: 상세 정보 (현금 카드는 뒷면 없음). 앞면과 중복되는 종목명·수익률은 생략 -->
             <div v-if="!isCashItem(item)" class="flip-face flip-back">
               <div
-                class="glass-card asset-card pa-2"
+                class="glass-card asset-card pa-2 d-flex flex-column justify-center"
                 :class="(item.profitAmountBase ?? 0) >= 0 ? 'border-success-left' : 'border-error-left'"
               >
-                <!-- 헤더: 종목명 + 수익률 (앞면과 동일 위치) -->
-                <div class="d-flex justify-space-between align-center mb-1" style="gap: 6px">
-                  <span class="ticker-name" style="flex: 1; min-width: 0">{{ getTickerLabel(item.ticker).name }}</span>
-                  <v-chip
-                    :color="(item.profitRate ?? 0) >= 0 ? 'success' : 'error'"
-                    size="x-small"
-                    variant="tonal"
-                    style="flex-shrink: 0"
-                  >
-                    {{ formatPercent(item.profitRate ?? 0) }}
-                  </v-chip>
-                </div>
                 <!-- 상세 지표 2×2 그리드 -->
                 <div class="flip-back-grid">
-                  <div class="flip-metric">
-                    <span class="flip-metric-label">{{ $t('portfolio.currentPrice') }}</span>
-                    <span class="flip-metric-value">{{ item.currentPrice != null ? nativePrice(item.currentPrice, item.currency) : '—' }}</span>
-                  </div>
                   <div class="flip-metric">
                     <span class="flip-metric-label">{{ $t('portfolio.avgPrice') }}</span>
                     <span class="flip-metric-value">{{ nativePrice(item.avg_price, item.currency) }}</span>
@@ -1034,6 +1018,10 @@ onUnmounted(() => {
                       class="flip-metric-value"
                       :class="item.changeRate == null ? '' : item.changeRate >= 0 ? 'text-success' : 'text-error'"
                     >{{ item.changeRate != null ? formatPercent(item.changeRate) : '—' }}</span>
+                  </div>
+                  <div class="flip-metric">
+                    <span class="flip-metric-label">{{ $t('portfolio.currentPrice') }}</span>
+                    <span class="flip-metric-value">{{ item.currentPrice != null ? nativePrice(item.currentPrice, item.currency) : '—' }}</span>
                   </div>
                   <div class="flip-metric">
                     <span class="flip-metric-label">{{ $t('portfolio.weight') }}</span>
@@ -1379,7 +1367,7 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 3px 12px;
-  margin-top: 2px;
+  width: 100%;
 }
 .flip-metric {
   display: flex;
