@@ -120,21 +120,22 @@ const router = useRouter()
 }
 
 .icon-btn {
-  background: rgba(var(--v-theme-primary), 0.1);
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
   border: none;
-  padding: 4px 12px 4px 4px;
+  padding: 6px 16px 6px 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   border-radius: 999px;
-  transition: opacity 0.15s ease;
+  box-shadow: 0 4px 14px rgba(109, 40, 217, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: opacity 0.15s ease, transform 0.1s ease;
 }
-.icon-btn:active { opacity: 0.6; }
+.icon-btn:active { opacity: 0.85; transform: scale(0.97); }
 .icon-btn-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: rgb(var(--v-theme-primary));
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
 }
 .icon-btn-img {
   width: 28px;
