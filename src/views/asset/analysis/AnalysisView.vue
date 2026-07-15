@@ -593,7 +593,7 @@ onUnmounted(clearPullToRefresh)
 .icon-btn {
   background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
   border: none;
-  padding: 2px 14px 2px 2px;
+  padding: 5px 14px 5px 5px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -609,8 +609,8 @@ onUnmounted(clearPullToRefresh)
   color: #fff;
 }
 .icon-btn-img {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   object-fit: contain;
 }
 

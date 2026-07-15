@@ -587,13 +587,17 @@ const onContainerClick = (e: MouseEvent) => {
 
 .hub-btn {
   min-width: auto !important;
-  padding: 0 14px 0 8px !important;
+  padding: 5px 14px 5px 5px !important;
   background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%) !important;
   border-radius: 999px !important;
   box-shadow: 0 4px 14px rgba(109, 40, 217, 0.45) !important;
 }
 .hub-btn :deep(.v-btn__overlay) {
   opacity: 0 !important;
+}
+.hub-btn .header-icon {
+  width: 22px !important;
+  height: 22px !important;
 }
 .hub-btn-label {
   font-size: 0.8rem;
