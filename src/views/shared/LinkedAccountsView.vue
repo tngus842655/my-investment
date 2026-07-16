@@ -146,7 +146,7 @@ onMounted(() => {
           <v-spacer />
           <template v-if="isConnected(m.provider)">
             <v-chip size="small" color="success" variant="tonal">{{ $t('linkedAccounts.connected') }}</v-chip>
-            <v-btn size="small" variant="text" color="error" :loading="busy === m.provider" @click="promptDisconnect(m.provider)">
+            <v-btn size="small" variant="tonal" color="error" :loading="busy === m.provider" @click="promptDisconnect(m.provider)">
               {{ $t('linkedAccounts.disconnect') }}
             </v-btn>
           </template>
