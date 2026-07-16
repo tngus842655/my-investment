@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { isAdminEmail } from '@/config/admin'
+import ProviderBadges from '@/components/common/ProviderBadges.vue'
 
 const router = useRouter()
 const loading = ref(false)
@@ -20,6 +21,7 @@ interface LogItem {
 }
 
 const logs = ref<LogItem[]>([])
+const providerMap = ref<Record<string, string[]>>({})
 const emailSearch = ref('')
 const dateSearch = ref('')
 const pageSearch = ref<string | null>(null)
@@ -189,6 +191,9 @@ onMounted(async () => {
     return
   }
   isAdmin.value = true
+  // 이메일별 로그인 수단(provider) — 검색과 무관하게 1회만 조회
+  const { data: providers } = await supabase.rpc('admin_get_user_providers')
+  providerMap.value = Object.fromEntries((providers ?? []).map((p: { email: string; providers: string[] }) => [p.email, p.providers]))
   await search()
 })
 </script>
@@ -307,7 +312,10 @@ onMounted(async () => {
                     {{ activeTab === 'login' ? 'mdi-login' : activeTab === 'access' ? 'mdi-file-eye-outline' : 'mdi-account-clock-outline' }}
                   </v-icon>
                   <div style="min-width: 0">
-                    <div class="log-email text-truncate">{{ log.email }}</div>
+                    <div class="d-flex align-center ga-1" style="min-width: 0">
+                      <span class="log-email text-truncate">{{ log.email }}</span>
+                      <ProviderBadges :providers="providerMap[log.email]" />
+                    </div>
                     <div v-if="log.page" class="log-page">{{ pageLabel(log.page) }}</div>
                   </div>
                 </div>
