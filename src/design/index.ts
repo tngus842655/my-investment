@@ -1,5 +1,5 @@
 // ─── Themes ──────────────────────────────────────────────────
-export type { ThemeId, FpColors, FpTheme } from './themes/types'
+export type { ThemeId, ThemeSetting, FpColors, FpTheme } from './themes/types'
 export { FP_THEMES, FP_THEME_MAP } from './themes/index'
 export { lightTheme, darkTheme, natureTheme, spaceTheme, goldTheme } from './themes/index'
 

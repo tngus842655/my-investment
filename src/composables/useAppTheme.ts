@@ -1,8 +1,16 @@
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useTheme } from 'vuetify'
 import { FP_THEMES, FP_THEME_MAP, THEME_STORAGE_KEY } from '@/design'
-import type { ThemeId } from '@/design'
+import type { ThemeId, ThemeSetting } from '@/design'
 import { supabase } from '@/services/supabase'
+
+// 선택된 테마 설정('system' 포함) — 앱 전역에서 공유 (모듈 레벨 ref)
+const themeSetting = ref<ThemeSetting>('dark')
+
+const systemDarkQuery = window.matchMedia?.('(prefers-color-scheme: dark)') ?? null
+const systemThemeId = (): ThemeId => ((systemDarkQuery?.matches ?? true) ? 'dark' : 'light')
+
+let systemListenerBound = false
 
 export const useAppTheme = () => {
   const theme = useTheme()
@@ -13,8 +21,13 @@ export const useAppTheme = () => {
 
   const isDark = () => currentTheme.value.dark
 
-  const setTheme = (id: ThemeId) => {
-    theme.change(id)
+  const applySetting = (setting: ThemeSetting) => {
+    theme.change(setting === 'system' ? systemThemeId() : setting)
+  }
+
+  const setTheme = (id: ThemeSetting) => {
+    themeSetting.value = id
+    applySetting(id)
     localStorage.setItem(THEME_STORAGE_KEY, id)
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
@@ -30,25 +43,29 @@ export const useAppTheme = () => {
   }
 
   const initTheme = () => {
-    const saved = localStorage.getItem(THEME_STORAGE_KEY) as ThemeId | null
-    if (saved && FP_THEME_MAP[saved]) {
-      theme.change(saved)
-      return
+    const saved = localStorage.getItem(THEME_STORAGE_KEY) as ThemeSetting | null
+    if (saved === 'system' || (saved && FP_THEME_MAP[saved])) {
+      themeSetting.value = saved
+    } else {
+      // 구버전 키 호환, 저장된 설정이 없으면 기기 화면모드를 따른다
+      const legacy = localStorage.getItem('my-investment-theme')
+      themeSetting.value = legacy === 'light' || legacy === 'dark' ? legacy : 'system'
     }
-    // 구버전 키 호환
-    const legacy = localStorage.getItem('my-investment-theme')
-    if (legacy === 'light' || legacy === 'dark') {
-      theme.change(legacy)
-      return
+    applySetting(themeSetting.value)
+
+    // 앱 사용 중 기기 화면모드가 바뀌면 실시간 반영 ('system' 설정일 때만)
+    if (!systemListenerBound && systemDarkQuery) {
+      systemDarkQuery.addEventListener('change', () => {
+        if (themeSetting.value === 'system') applySetting('system')
+      })
+      systemListenerBound = true
     }
-    // 저장된 설정이 없으면 기기의 화면모드(다크/라이트)를 따른다
-    const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? true
-    theme.change(prefersDark ? 'dark' : 'light')
   }
 
   return {
     currentThemeId,
     currentTheme,
+    themeSetting,
     themes: FP_THEMES,
     isDark,
     setTheme,

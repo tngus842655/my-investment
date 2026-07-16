@@ -626,6 +626,7 @@
     "adminPage": "Admin Page",
     "themeSheetTitle": "Choose a Theme",
     "themeSheetDesc": "Select a color theme applied across the app",
+    "themeSystem": "System",
     "errors": {
       "logoutError": "An error occurred while logging out.",
       "enterPassword": "Please enter your password.",
