@@ -36,7 +36,10 @@ supabase.auth.onAuthStateChange((event, session) => {
 
   // (1) 오버레이 쪽: 홈 화면 앱이 복귀 URL에 실어 보낸 nonce가 있으면(=iOS standalone에서
   // 시작한 OAuth) 세션 토큰을 티켓으로 남기고, 저장이 끝난 뒤 복귀 안내를 띄운다.
-  if (handoffNonce && !isStandaloneDisplay() && !handoffTicketSaved) {
+  // 주의: iOS 인앱 브라우저 오버레이는 홈 화면 앱 컨텍스트 안에서 떠서 자신도 standalone으로
+  // 보고할 수 있으므로 display-mode로 거르면 안 된다. nonce는 오버레이에서만 URL에 실려 온다
+  // (홈 화면 앱 본체는 OAuth 중 페이지 이동 없이 로그인 화면에 머무른다).
+  if (handoffNonce && !handoffTicketSaved) {
     handoffTicketSaved = true
     supabase
       .from('oauth_handoff')
@@ -100,7 +103,11 @@ onMounted(() => {
             return
           }
           if (nonce) {
-            const { data } = await supabase.rpc('claim_oauth_handoff', { p_nonce: nonce })
+            const { data, error: claimError } = await supabase.rpc('claim_oauth_handoff', { p_nonce: nonce })
+            if (claimError) {
+              showMessage(`${t('auth.pwaHandoffError')}: ${claimError.message}`, 'error')
+              break
+            }
             const ticket = data?.[0]
             if (ticket) {
               const { error } = await supabase.auth.setSession({
@@ -114,10 +121,15 @@ onMounted(() => {
                 window.location.reload()
                 return
               }
+              showMessage(`${t('auth.pwaHandoffError')}: ${error.message}`, 'error')
+              break
             }
           }
           await new Promise((resolve) => setTimeout(resolve, 1200))
         }
+        // 세션도 티켓도 끝내 없음 — 취소했다면 정상, 로그인했는데 이 메시지가 보이면
+        // 오버레이 쪽에서 티켓 저장이 안 된 것 (진단용)
+        showMessage(t('auth.pwaTicketMissing'), 'warning')
         sessionStorage.removeItem(OAUTH_LOGIN_PENDING_KEY)
         sessionStorage.removeItem(OAUTH_HANDOFF_NONCE_KEY)
       } finally {
