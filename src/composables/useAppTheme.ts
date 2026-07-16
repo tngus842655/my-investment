@@ -37,7 +37,13 @@ export const useAppTheme = () => {
     }
     // 구버전 키 호환
     const legacy = localStorage.getItem('my-investment-theme')
-    theme.change(legacy === 'light' ? 'light' : 'dark')
+    if (legacy === 'light' || legacy === 'dark') {
+      theme.change(legacy)
+      return
+    }
+    // 저장된 설정이 없으면 기기의 화면모드(다크/라이트)를 따른다
+    const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? true
+    theme.change(prefersDark ? 'dark' : 'light')
   }
 
   return {
