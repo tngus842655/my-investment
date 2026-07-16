@@ -2,8 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { supabase, OAUTH_LOGIN_PENDING_KEY, OAUTH_HANDOFF_NONCE_KEY, OAUTH_HANDOFF_PARAM } from '@/services/supabase'
-import { isStandaloneDisplay } from '@/utils/displayMode'
+import { supabase, OAUTH_LOGIN_PENDING_KEY } from '@/services/supabase'
 import { getErrorMessageKey } from '@/utils/errorMessage'
 import { showMessage } from '@/composables/useSnackbar'
 import { useDesignTokens } from '@/composables/useDesignTokens'
@@ -191,22 +190,12 @@ const signInWithProvider = async (provider: 'google' | 'kakao') => {
   oauthLoading.value = provider
   // 리다이렉트 복귀 후 App.vue의 onAuthStateChange에서 login_log 기록에 사용하는 표식
   sessionStorage.setItem(OAUTH_LOGIN_PENDING_KEY, provider)
-  // iOS 홈 화면 앱에서는 OAuth가 별도 인앱 브라우저(오버레이)에서 진행되고 세션도 그쪽에만
-  // 생긴다(저장소 비공유). 오버레이가 세션을 티켓(oauth_handoff)으로 넘겨줄 수 있도록
-  // 일회성 nonce를 복귀 URL에 실어 보내고, 본체는 오버레이가 닫힐 때 티켓을 회수한다(App.vue).
-  let redirectTo = `${window.location.origin}/`
-  if (detectPlatform() === 'ios' && isStandaloneDisplay()) {
-    const nonce = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('')
-    sessionStorage.setItem(OAUTH_HANDOFF_NONCE_KEY, nonce)
-    redirectTo = `${redirectTo}?${OAUTH_HANDOFF_PARAM}=${nonce}`
-  }
   const { error } = await supabase.auth.signInWithOAuth({
     provider,
-    options: { redirectTo },
+    options: { redirectTo: `${window.location.origin}/` },
   })
   if (error) {
     sessionStorage.removeItem(OAUTH_LOGIN_PENDING_KEY)
-    sessionStorage.removeItem(OAUTH_HANDOFF_NONCE_KEY)
     oauthLoading.value = null
     showMessage(t(getErrorMessageKey(error.code)), 'warning')
   }
@@ -254,9 +243,9 @@ onMounted(() => {
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true
   platform.value = detectPlatform()
 
-  // iOS 홈 화면 앱에서는 OAuth가 인앱 브라우저(오버레이)에서 진행되고 이 페이지는 그대로
-  // 남으므로, 취소하고 돌아오면 버튼 스피너가 계속 돈다. 화면이 다시 보일 때 해제한다.
-  // (성공 시에는 App.vue가 세션을 이어받아 재시동하므로 해제해도 무방)
+  // 홈 화면 앱(standalone)에서는 OAuth 시작 후에도 이 페이지가 그대로 남으므로,
+  // 취소하고 돌아오면 버튼 스피너가 계속 돈다. 화면이 다시 보일 때 해제한다.
+  // (성공 시에는 리다이렉트 복귀로 페이지를 떠나므로 이 화면에 남지 않는다)
   if (isStandalone) {
     document.addEventListener('visibilitychange', resetOauthLoadingOnVisible)
   }
