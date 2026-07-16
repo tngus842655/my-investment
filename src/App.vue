@@ -37,9 +37,11 @@ supabase.auth.onAuthStateChange((event, session) => {
   // (1) 오버레이 쪽: 홈 화면 앱이 복귀 URL에 실어 보낸 nonce가 있으면(=iOS standalone에서
   // 시작한 OAuth) 세션 토큰을 티켓으로 남기고, 저장이 끝난 뒤 복귀 안내를 띄운다.
   // 주의: iOS 인앱 브라우저 오버레이는 홈 화면 앱 컨텍스트 안에서 떠서 자신도 standalone으로
-  // 보고할 수 있으므로 display-mode로 거르면 안 된다. nonce는 오버레이에서만 URL에 실려 온다
-  // (홈 화면 앱 본체는 OAuth 중 페이지 이동 없이 로그인 화면에 머무른다).
-  if (handoffNonce && !handoffTicketSaved) {
+  // 보고할 수 있으므로 display-mode로 거르면 안 된다.
+  // 단, iOS가 복귀 리다이렉트를 홈 화면 앱 본체로 직접 되돌려주는 경우(오버레이가 자동으로
+  // 닫히는 환경)에는 이 컨텍스트가 곧 앱 본체다 — OAuth 시작 표식(sessionStorage, 본체에만
+  // 있음)으로 구분해서 티켓·안내 없이 그대로 로그인을 진행한다.
+  if (handoffNonce && !handoffTicketSaved && !sessionStorage.getItem(OAUTH_LOGIN_PENDING_KEY)) {
     handoffTicketSaved = true
     supabase
       .from('oauth_handoff')
