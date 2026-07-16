@@ -38,6 +38,8 @@ const submit = async () => {
       }
       return
     }
+    // 이메일 없이 가입했던 소셜 계정이 이메일을 등록하면 signup_log에도 기록 (멱등)
+    supabase.rpc('record_signup', { user_email: email.value }).then(() => {})
     // 이메일 확인이 꺼진 환경에서는 즉시 반영되므로, 반영됐으면 바로 진입
     const { data: { user } } = await supabase.auth.getUser()
     if (user?.email) {

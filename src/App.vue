@@ -18,10 +18,17 @@ supabase.auth.onAuthStateChange((event, session) => {
   if (event !== 'SIGNED_IN' || !session?.user) return
   if (!sessionStorage.getItem(OAUTH_LOGIN_PENDING_KEY)) return
   sessionStorage.removeItem(OAUTH_LOGIN_PENDING_KEY)
+  const user = session.user
   supabase
     .from('login_log')
-    .insert({ user_id: session.user.id, email: session.user.email })
+    .insert({ user_id: user.id, email: user.email })
     .then(() => {})
+  // 소셜 신규 가입도 signup_log에 남긴다. record_signup은 이메일 기준 멱등이라
+  // 기존 회원(자동 연결 포함)은 no-op, 신규만 insert 된다. 이메일 없는 계정은
+  // 이후 CompleteEmailView에서 이메일 등록 시 기록한다.
+  if (user.email) {
+    supabase.rpc('record_signup', { user_email: user.email }).then(() => {})
+  }
 })
 
 onMounted(() => {
