@@ -232,6 +232,12 @@ const onBeforeInstallPrompt = (e: Event) => {
 }
 
 onMounted(() => {
+  // OAuth를 시작(표식 set)했다가 제공자 화면에서 취소/뒤로가기 하면 세션 없이 이 화면으로
+  // 돌아오는데, 그때 표식이 sessionStorage에 잔존한다. 성공한 OAuth는 라우터 가드가 곧바로
+  // 마지막 모듈로 보내 이 화면이 마운트되지 않으므로(=여기 오면 로그인 안 된 상태), 잔존 표식을
+  // 제거해 이후 비밀번호 로그인 시 App.vue가 login_log를 중복 기록하지 않도록 한다.
+  sessionStorage.removeItem(OAUTH_LOGIN_PENDING_KEY)
+
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true
   platform.value = detectPlatform()
   const dismissed = localStorage.getItem(A2HS_DISMISSED_KEY) === '1'
