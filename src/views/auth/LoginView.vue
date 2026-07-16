@@ -250,6 +250,13 @@ onMounted(() => {
 
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true
   platform.value = detectPlatform()
+
+  // iOS 홈 화면 앱에서는 OAuth가 인앱 브라우저(오버레이)에서 진행되고 이 페이지는 그대로
+  // 남으므로, 취소하고 돌아오면 버튼 스피너가 계속 돈다. 화면이 다시 보일 때 해제한다.
+  // (성공 시에는 App.vue가 세션을 이어받아 재시동하므로 해제해도 무방)
+  if (isStandalone) {
+    document.addEventListener('visibilitychange', resetOauthLoadingOnVisible)
+  }
   const dismissed = localStorage.getItem(A2HS_DISMISSED_KEY) === '1'
   showInstallBanner.value = !isStandalone && !dismissed && platform.value !== null
 
@@ -258,8 +265,13 @@ onMounted(() => {
   }
 })
 
+const resetOauthLoadingOnVisible = () => {
+  if (document.visibilityState === 'visible') oauthLoading.value = null
+}
+
 onUnmounted(() => {
   window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+  document.removeEventListener('visibilitychange', resetOauthLoadingOnVisible)
 })
 </script>
 
