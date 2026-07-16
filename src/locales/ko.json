@@ -731,6 +731,9 @@
     "orDivider": "또는",
     "continueWithGoogle": "Google로 계속하기",
     "continueWithKakao": "카카오로 계속하기",
+    "pwaReturnTitle": "로그인 완료!",
+    "pwaReturnDesc": "왼쪽 위 ✕ 버튼을 누르면\n앱으로 돌아갑니다.",
+    "pwaReturnDismiss": "여기서 계속하기",
     "completeEmail": {
       "title": "이메일 등록",
       "desc": "카카오 계정에서 이메일을 받지 못했어요. 서비스 이용을 위해 이메일 주소를 등록해 주세요.",
