@@ -194,6 +194,9 @@ onMounted(async () => {
           <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-cellphone-cog" class="mb-2" @click="router.push('/display-settings')">
             {{ $t('hub.displaySettings') }}
           </v-btn>
+          <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-account-multiple-outline" class="mb-2" @click="router.push('/linked-accounts')">
+            {{ $t('hub.linkedAccounts') }}
+          </v-btn>
           <v-btn variant="tonal" color="primary" rounded="lg" block prepend-icon="mdi-lock-reset" @click="router.push('/change-password')">
             {{ $t('hub.changePassword') }}
           </v-btn>

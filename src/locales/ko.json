@@ -613,6 +613,7 @@
     "settings": "설정",
     "themeSelect": "테마 선택",
     "displaySettings": "화면 및 언어 설정",
+    "linkedAccounts": "소셜 로그인 연결",
     "changePassword": "비밀번호 변경",
     "logout": "로그아웃",
     "logoutConfirm": "정말 로그아웃 하시겠습니까?",
@@ -655,6 +656,19 @@
       "success": "비밀번호가 변경되었습니다.",
       "failed": "비밀번호 변경에 실패했습니다."
     }
+  },
+  "linkedAccounts": {
+    "title": "소셜 로그인 연결",
+    "desc": "이 계정에 소셜 로그인을 연결하면, 이메일·구글·카카오 중 편한 방법으로 같은 계정에 로그인할 수 있어요.",
+    "emailLogin": "이메일 로그인",
+    "connected": "연결됨",
+    "connect": "연결",
+    "disconnect": "연결 해제",
+    "disconnected": "연결을 해제했어요.",
+    "cannotUnlinkLast": "마지막 로그인 수단은 해제할 수 없어요.",
+    "alreadyLinkedElsewhere": "이 소셜 계정은 이미 다른 계정에 연결되어 있어요.",
+    "connectError": "연결 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.",
+    "disconnectError": "연결 해제 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요."
   },
   "feedback": {
     "title": "의견 관리",
@@ -720,7 +734,8 @@
       "notYet": "아직 이메일 인증이 완료되지 않았어요. 메일의 링크를 확인해 주세요.",
       "conflictDesc": "이 이메일은 다른 로그인 방식(구글 또는 이메일)으로 이미 가입되어 있어요. 기존 방식으로 로그인해 주세요.",
       "error": "이메일 등록 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.",
-      "logout": "다른 방법으로 로그인"
+      "existingHint": "이미 이메일이나 구글로 가입하셨나요?",
+      "logout": "기존 계정으로 로그인"
     },
     "forgotLink": "비밀번호를 잊으셨나요?",
     "noAccount": "계정이 없으신가요?",

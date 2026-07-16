@@ -613,6 +613,7 @@
     "settings": "Settings",
     "themeSelect": "Theme",
     "displaySettings": "Display & Language",
+    "linkedAccounts": "Linked Accounts",
     "changePassword": "Change Password",
     "logout": "Log out",
     "logoutConfirm": "Are you sure you want to log out?",
@@ -655,6 +656,19 @@
       "success": "Password changed.",
       "failed": "Failed to change password."
     }
+  },
+  "linkedAccounts": {
+    "title": "Linked Accounts",
+    "desc": "Link social logins to this account so you can sign in to the same account with email, Google, or Kakao — whichever is convenient.",
+    "emailLogin": "Email login",
+    "connected": "Connected",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "disconnected": "Disconnected.",
+    "cannotUnlinkLast": "You can't remove your last sign-in method.",
+    "alreadyLinkedElsewhere": "This social account is already linked to another account.",
+    "connectError": "Something went wrong while connecting. Please try again shortly.",
+    "disconnectError": "Something went wrong while disconnecting. Please try again shortly."
   },
   "feedback": {
     "title": "Feedback",
@@ -720,7 +734,8 @@
       "notYet": "Your email isn't verified yet. Please check the link in the email.",
       "conflictDesc": "This email is already registered with another login method (Google or email). Please sign in with that method instead.",
       "error": "Something went wrong while registering your email. Please try again shortly.",
-      "logout": "Sign in another way"
+      "existingHint": "Already signed up with email or Google?",
+      "logout": "Sign in to your existing account"
     },
     "forgotLink": "Forgot your password?",
     "noAccount": "Don't have an account?",

@@ -39,6 +39,7 @@ import NoticesView from '@/views/shared/NoticesView.vue'
 import PrivacyPolicyView from '@/views/shared/PrivacyPolicyView.vue'
 import ResetPasswordView from '@/views/auth/ResetPasswordView.vue'
 import CompleteEmailView from '@/views/auth/CompleteEmailView.vue'
+import LinkedAccountsView from '@/views/shared/LinkedAccountsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -147,6 +148,12 @@ const router = createRouter({
       name: 'changePassword',
       component: ChangePasswordView,
       meta: { requiresAuth: true, label: '비밀번호 변경' },
+    },
+    {
+      path: '/linked-accounts',
+      name: 'linkedAccounts',
+      component: LinkedAccountsView,
+      meta: { requiresAuth: true, label: '소셜 로그인 연결' },
     },
     {
       path: '/display-settings',

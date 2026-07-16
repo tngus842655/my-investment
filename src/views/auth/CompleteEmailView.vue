@@ -111,7 +111,11 @@ const logout = async () => {
           <v-btn color="primary" size="large" rounded="lg" block elevation="0" :loading="loading" class="mt-4" style="font-weight: 700" @click="submit">
             {{ $t('auth.completeEmail.submit') }}
           </v-btn>
-          <v-btn variant="text" block size="default" :disabled="loading" class="mt-2" style="color: rgba(var(--v-theme-on-surface), 0.5)" @click="logout">
+
+          <v-divider class="my-4" opacity="0.1" />
+
+          <div class="complete-existing">{{ $t('auth.completeEmail.existingHint') }}</div>
+          <v-btn variant="text" block size="default" :disabled="loading" class="mt-1" style="color: rgb(var(--v-theme-primary)); font-weight: 600" @click="logout">
             {{ $t('auth.completeEmail.logout') }}
           </v-btn>
         </template>
@@ -152,5 +156,10 @@ const logout = async () => {
   font-size: 0.875rem;
   line-height: 1.6;
   color: rgba(var(--v-theme-on-surface), 0.6);
+}
+
+.complete-existing {
+  font-size: 0.8125rem;
+  color: rgba(var(--v-theme-on-surface), 0.55);
 }
 </style>
