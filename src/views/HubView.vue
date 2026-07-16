@@ -52,37 +52,60 @@ const logout = async () => {
 const deleteStep = ref(0)
 const deletePassword = ref('')
 const deletePasswordError = ref('')
+const deleteConfirmText = ref('')
+const deleteConfirmError = ref('')
+// 비밀번호 없는 소셜 전용 계정 여부 — 비밀번호 재인증 대신 '삭제' 입력으로 확인
+const isSocialOnly = ref(false)
 const deleteLoading = ref(false)
 
-const openDeleteDialog = () => {
+const resetDeleteState = () => {
   deletePassword.value = ''
   deletePasswordError.value = ''
+  deleteConfirmText.value = ''
+  deleteConfirmError.value = ''
+}
+
+const openDeleteDialog = async () => {
+  resetDeleteState()
+  // email identity가 있으면 비밀번호 계정, 없으면 소셜(카카오/구글) 전용 계정
+  const { data } = await supabase.auth.getUserIdentities()
+  isSocialOnly.value = !(data?.identities ?? []).some((i) => i.provider === 'email')
   deleteStep.value = 1
 }
 
 const closeDeleteDialog = () => {
   deleteStep.value = 0
-  deletePassword.value = ''
-  deletePasswordError.value = ''
+  resetDeleteState()
 }
 
 const deleteAccount = async () => {
-  if (!deletePassword.value) {
+  // 소셜 전용 계정은 '삭제' 입력으로, 비밀번호 계정은 비밀번호 재인증으로 본인 확인
+  if (isSocialOnly.value) {
+    if (deleteConfirmText.value.trim().toLowerCase() !== t('hub.deleteConfirmWord').toLowerCase()) {
+      deleteConfirmError.value = t('hub.errors.wrongConfirmText')
+      return
+    }
+  } else if (!deletePassword.value) {
     deletePasswordError.value = t('hub.errors.enterPassword')
     return
   }
+
   deleteLoading.value = true
   try {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user?.email) return
+    if (!user) return
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email: user.email,
-      password: deletePassword.value,
-    })
-    if (authError) {
-      deletePasswordError.value = t('hub.errors.wrongPassword')
-      return
+    // 비밀번호 계정만 재인증으로 본인 확인 (소셜 전용은 현재 세션으로 확인 갈음)
+    if (!isSocialOnly.value) {
+      if (!user.email) return
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: deletePassword.value,
+      })
+      if (authError) {
+        deletePasswordError.value = t('hub.errors.wrongPassword')
+        return
+      }
     }
 
     const { error } = await supabase.rpc('delete_user_account')
@@ -273,9 +296,24 @@ onMounted(async () => {
               aria-hidden="true"
             />
             <div class="text-medium-emphasis text-center mb-4">
-              {{ $t('hub.passwordConfirmBody') }}
+              {{ isSocialOnly ? $t('hub.confirmTextBody') : $t('hub.passwordConfirmBody') }}
             </div>
             <v-text-field
+              v-if="isSocialOnly"
+              v-model="deleteConfirmText"
+              type="text"
+              autocomplete="off"
+              :label="$t('hub.confirmTextLabel')"
+              :placeholder="$t('hub.deleteConfirmWord')"
+              variant="outlined"
+              density="compact"
+              rounded="lg"
+              :error-messages="deleteConfirmError"
+              autofocus
+              @keydown.enter.prevent="deleteAccount"
+            />
+            <v-text-field
+              v-else
               v-model="deletePassword"
               type="password"
               autocomplete="current-password"
