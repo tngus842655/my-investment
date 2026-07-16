@@ -2,7 +2,9 @@
 import { onMounted, ref } from 'vue'
 import { RouterView } from 'vue-router'
 import { useTheme } from 'vuetify'
+import { useI18n } from 'vue-i18n'
 import GlobalSnackbar from '@/components/common/GlobalSnackbar.vue'
+import { showMessage } from '@/composables/useSnackbar'
 import { useAppTheme } from '@/composables/useAppTheme'
 import { useFontScale } from '@/composables/useFontScale'
 import { supabase, OAUTH_LOGIN_PENDING_KEY, OAUTH_HANDOFF_NONCE_KEY, OAUTH_HANDOFF_PARAM } from '@/services/supabase'
@@ -10,6 +12,7 @@ import { isAdminEmail } from '@/config/admin'
 import { isStandaloneDisplay } from '@/utils/displayMode'
 
 const theme = useTheme()
+const { t } = useI18n()
 const { initTheme } = useAppTheme()
 const { initFontScale } = useFontScale()
 
@@ -43,7 +46,8 @@ supabase.auth.onAuthStateChange((event, session) => {
         access_token: session.access_token,
       })
       .then(({ error }) => {
-        if (!error) showPwaReturnGuide.value = true
+        if (error) showMessage(`${t('auth.pwaHandoffError')}: ${error.message}`, 'error')
+        else showPwaReturnGuide.value = true
       })
   }
 
@@ -82,6 +86,8 @@ onMounted(() => {
       if (document.visibilityState !== 'visible' || resuming) return
       if (!sessionStorage.getItem(OAUTH_LOGIN_PENDING_KEY)) return
       resuming = true
+      // 새 버전 실행 여부를 눈으로 확인할 수 있는 표식을 겸한다 (배포·캐시 진단용)
+      showMessage(t('auth.pwaResuming'))
       try {
         const nonce = sessionStorage.getItem(OAUTH_HANDOFF_NONCE_KEY)
         for (let attempt = 0; attempt < 5; attempt++) {
