@@ -30,6 +30,7 @@ USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'email') = 'admin
 | record_signup(user_email)   | LoginView.vue (로그인/가입)   | SECURITY DEFINER. signup_log에 신규 insert 또는 탈퇴 이력 재활성화     |
 | save_daily_asset_snapshot() | FireHistoryView.vue, pg_cron  | asset_history에 당일 스냅샷 upsert (아래 pg_cron 항목 참고)          |
 | admin_get_email_confirmations() | AdminSignupLogView.vue (가입 이력) | SECURITY DEFINER. 관리자만 호출 가능. auth.users의 이메일별 인증 여부(email_confirmed_at) 반환 |
+| claim_oauth_handoff(p_nonce)  | App.vue (iOS 홈 화면 앱 로그인 복귀) | SECURITY DEFINER. oauth_handoff 티켓을 회수(반환+삭제, 1회용). 2분 경과 티켓은 회수 불가·호출 시 함께 정리 |
 
 ### pg_cron
 
@@ -300,3 +301,21 @@ END;
 | 관리자 delete          | DELETE | 관리자만 삭제 가능                                                  |
 
 새 공지 작성 시 대시보드에 최초 1회 팝업 노출. "마지막으로 본 공지 id"는 서버 동기화 없이 로컬스토리지에만 저장(기기별).
+
+#### oauth_handoff
+
+iOS 홈 화면 앱(standalone PWA)의 SNS 로그인 세션 전달용 일회성 티켓. iOS는 standalone에서 외부 도메인(OAuth)으로 나가면 별도 인앱 브라우저(오버레이)를 띄우는데, 오버레이와 홈 화면 앱은 저장소를 공유하지 않아 세션이 본체로 전달되지 않는다. 오버레이(로그인된 세션)가 insert하고, 앱 본체가 `claim_oauth_handoff(nonce)`로 회수(조회+삭제)해 `setSession`으로 로그인을 복원한다. TTL 2분, 1회용. (`supabase/migrations/20260716_02_oauth_handoff.sql`)
+
+| 컬럼명        | 타입        | 설명                                        |
+| ------------- | ----------- | -------------------------------------------- |
+| nonce         | text        | PK. 클라이언트 생성 128비트 랜덤 hex         |
+| refresh_token | text        | 전달할 세션의 refresh token                  |
+| access_token  | text        | 전달할 세션의 access token                   |
+| user_id       | uuid        | 세션 소유자 (기본값 auth.uid())              |
+| created_at    | timestamptz |                                              |
+
+**RLS 정책 (oauth_handoff 테이블):**
+
+| 정책명                              | 커맨드 | roles         | 설명                                                        |
+| ------------------------------------ | ------ | ------------- | ------------------------------------------------------------ |
+| authenticated_insert_own_handoff     | INSERT | authenticated | 로그인 사용자가 본인(user_id = auth.uid()) 티켓만 생성 가능. select/update/delete 정책 없음 — 회수는 claim_oauth_handoff RPC로만 |
