@@ -6,6 +6,7 @@ import GlobalSnackbar from '@/components/common/GlobalSnackbar.vue'
 import { useAppTheme } from '@/composables/useAppTheme'
 import { useFontScale } from '@/composables/useFontScale'
 import { supabase, OAUTH_LOGIN_PENDING_KEY } from '@/services/supabase'
+import { isAdminEmail } from '@/config/admin'
 
 const theme = useTheme()
 const { initTheme } = useAppTheme()
@@ -26,7 +27,8 @@ supabase.auth.onAuthStateChange((event, session) => {
   // 소셜 신규 가입도 signup_log에 남긴다. record_signup은 이메일 기준 멱등이라
   // 기존 회원(자동 연결 포함)은 no-op, 신규만 insert 된다. 이메일 없는 계정은
   // 이후 CompleteEmailView에서 이메일 등록 시 기록한다.
-  if (user.email) {
+  // 관리자 이메일은 가입 통계·이력 대상이 아니므로 기록하지 않는다 (AdminStatsView도 관리자 제외).
+  if (user.email && !isAdminEmail(user.email)) {
     supabase.rpc('record_signup', { user_email: user.email }).then(() => {})
   }
 })
