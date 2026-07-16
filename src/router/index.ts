@@ -38,6 +38,7 @@ import AdminNoticesView from '@/views/admin/AdminNoticesView.vue'
 import NoticesView from '@/views/shared/NoticesView.vue'
 import PrivacyPolicyView from '@/views/shared/PrivacyPolicyView.vue'
 import ResetPasswordView from '@/views/auth/ResetPasswordView.vue'
+import CompleteEmailView from '@/views/auth/CompleteEmailView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -56,6 +57,11 @@ const router = createRouter({
       path: '/reset-password',
       name: 'resetPassword',
       component: ResetPasswordView,
+    },
+    {
+      path: '/completeEmail',
+      name: 'completeEmail',
+      component: CompleteEmailView,
     },
     {
       path: '/hub',
@@ -270,6 +276,21 @@ router.beforeEach(async (to) => {
   const {
     data: { session },
   } = await supabase.auth.getSession()
+
+  // SNS(카카오) 로그인 시 이메일을 제공받지 못한 계정 — 이메일 등록을 먼저 완료해야 앱 사용 가능
+  const needsEmail = !!session && !session.user.email
+
+  // 이메일 등록 화면 자체의 접근 제어
+  if (to.path === '/completeEmail') {
+    if (!session) return '/'
+    if (!needsEmail) return '/hub' // 이미 이메일이 있으면 등록 화면 불필요
+    return true
+  }
+
+  // 이메일 미보유 SNS 계정은 보호 페이지·로그인 리다이렉트 전에 이메일 등록으로 유도
+  if (needsEmail && (to.meta.requiresAuth || to.path === '/')) {
+    return '/completeEmail'
+  }
 
   if (isInitialNavigation) {
     isInitialNavigation = false

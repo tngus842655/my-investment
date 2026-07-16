@@ -710,6 +710,18 @@
     "orDivider": "or",
     "continueWithGoogle": "Continue with Google",
     "continueWithKakao": "Continue with Kakao",
+    "completeEmail": {
+      "title": "Register your email",
+      "desc": "We couldn't get an email from your Kakao account. Please register an email address to use the service.",
+      "submit": "Send verification email",
+      "sentTitle": "Verification email sent",
+      "sentDesc": "We've sent a verification email to the address you entered. Click the link in the email to complete registration.",
+      "recheck": "I've verified",
+      "notYet": "Your email isn't verified yet. Please check the link in the email.",
+      "conflictDesc": "This email is already registered with another login method (Google or email). Please sign in with that method instead.",
+      "error": "Something went wrong while registering your email. Please try again shortly.",
+      "logout": "Sign in another way"
+    },
     "forgotLink": "Forgot your password?",
     "noAccount": "Don't have an account?",
     "signupLink": "Sign up",
