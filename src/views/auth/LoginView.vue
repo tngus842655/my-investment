@@ -2,7 +2,8 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { supabase, OAUTH_LOGIN_PENDING_KEY } from '@/services/supabase'
+import { supabase, OAUTH_LOGIN_PENDING_KEY, OAUTH_PWA_RETURN_KEY } from '@/services/supabase'
+import { isStandaloneDisplay } from '@/utils/displayMode'
 import { getErrorMessageKey } from '@/utils/errorMessage'
 import { showMessage } from '@/composables/useSnackbar'
 import { useDesignTokens } from '@/composables/useDesignTokens'
@@ -190,12 +191,19 @@ const signInWithProvider = async (provider: 'google' | 'kakao') => {
   oauthLoading.value = provider
   // 리다이렉트 복귀 후 App.vue의 onAuthStateChange에서 login_log 기록에 사용하는 표식
   sessionStorage.setItem(OAUTH_LOGIN_PENDING_KEY, provider)
+  // iOS 홈 화면 앱에서는 OAuth가 별도 인앱 브라우저(오버레이)에서 진행된다. 오버레이와
+  // 홈 화면 앱은 localStorage를 공유하므로, 로그인 완료 시 오버레이 쪽(App.vue)에서
+  // "✕를 눌러 앱으로 돌아가기" 안내를 띄울 수 있도록 시작 시각 표식을 남긴다.
+  if (detectPlatform() === 'ios' && isStandaloneDisplay()) {
+    localStorage.setItem(OAUTH_PWA_RETURN_KEY, String(Date.now()))
+  }
   const { error } = await supabase.auth.signInWithOAuth({
     provider,
     options: { redirectTo: `${window.location.origin}/` },
   })
   if (error) {
     sessionStorage.removeItem(OAUTH_LOGIN_PENDING_KEY)
+    localStorage.removeItem(OAUTH_PWA_RETURN_KEY)
     oauthLoading.value = null
     showMessage(t(getErrorMessageKey(error.code)), 'warning')
   }

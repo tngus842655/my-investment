@@ -731,6 +731,9 @@
     "orDivider": "or",
     "continueWithGoogle": "Continue with Google",
     "continueWithKakao": "Continue with Kakao",
+    "pwaReturnTitle": "Signed in!",
+    "pwaReturnDesc": "Tap the ✕ button in the top-left\nto return to the app.",
+    "pwaReturnDismiss": "Continue here",
     "completeEmail": {
       "title": "Register your email",
       "desc": "We couldn't get an email from your Kakao account. Please register an email address to use the service.",
