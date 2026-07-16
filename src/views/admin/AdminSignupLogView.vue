@@ -8,6 +8,7 @@ import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { getTickerDisplayName } from '@/utils/tickerNames'
 import { getStockPrice } from '@/services/market'
 import { isCrypto as isCryptoItem } from '@/config/marketConfig'
+import ProviderBadges from '@/components/common/ProviderBadges.vue'
 const router = useRouter()
 const loading = ref(true)
 const isAdmin = ref(false)
@@ -21,6 +22,7 @@ interface SignupLog {
 
 const logs = ref<SignupLog[]>([])
 const confirmedMap = ref<Record<string, boolean>>({})
+const providerMap = ref<Record<string, string[]>>({})
 const deleteTarget = ref<SignupLog | null>(null)
 const deleteDialog = ref(false)
 const deleteLoading = ref(false)
@@ -265,12 +267,14 @@ onMounted(async () => {
     return
   }
   isAdmin.value = true
-  const [{ data }, { data: confirmations }] = await Promise.all([
+  const [{ data }, { data: confirmations }, { data: providers }] = await Promise.all([
     supabase.from('signup_log').select('*').order('signed_up_at', { ascending: false }),
     supabase.rpc('admin_get_email_confirmations'),
+    supabase.rpc('admin_get_user_providers'),
   ])
   logs.value = data ?? []
   confirmedMap.value = Object.fromEntries((confirmations ?? []).map((c: { email: string; confirmed: boolean }) => [c.email, c.confirmed]))
+  providerMap.value = Object.fromEntries((providers ?? []).map((p: { email: string; providers: string[] }) => [p.email, p.providers]))
   loading.value = false
 })
 
@@ -311,6 +315,7 @@ const memberStatus = (log: SignupLog): { label: string; color: string; icon: str
               <div class="d-flex align-center ga-2">
                 <v-icon size="15" :color="memberStatus(log).color">{{ memberStatus(log).icon }}</v-icon>
                 <span class="log-email">{{ log.email }}</span>
+                <ProviderBadges :providers="providerMap[log.email]" />
               </div>
               <div class="d-flex align-center ga-2">
                 <v-chip :color="memberStatus(log).color" size="x-small" variant="tonal">
