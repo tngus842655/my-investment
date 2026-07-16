@@ -5,7 +5,7 @@ import { useTheme } from 'vuetify'
 import GlobalSnackbar from '@/components/common/GlobalSnackbar.vue'
 import { useAppTheme } from '@/composables/useAppTheme'
 import { useFontScale } from '@/composables/useFontScale'
-import { supabase, OAUTH_LOGIN_PENDING_KEY, OAUTH_PWA_RETURN_KEY } from '@/services/supabase'
+import { supabase, OAUTH_LOGIN_PENDING_KEY, OAUTH_HANDOFF_NONCE_KEY, OAUTH_HANDOFF_PARAM } from '@/services/supabase'
 import { isAdminEmail } from '@/config/admin'
 import { isStandaloneDisplay } from '@/utils/displayMode'
 
@@ -15,10 +15,12 @@ const { initFontScale } = useFontScale()
 
 // ── iOS 홈 화면 앱(standalone) SNS 로그인 복귀 처리 ──────────────
 // iOS는 standalone에서 외부 도메인(OAuth)으로 나가면 별도 인앱 브라우저(오버레이)를 띄우고,
-// 로그인이 끝나도 앱이 오버레이 안에 뜬 채로 남는다. 오버레이와 홈 화면 앱은 localStorage를
-// 공유하므로 (1) 오버레이에서는 로그인 완료 시 "✕를 눌러 앱으로 돌아가기" 안내를 띄우고,
-// (2) 홈 화면 앱에서는 오버레이가 닫혀 화면이 다시 보일 때 세션을 이어받아 재시동한다.
-const PWA_RETURN_MARKER_MAX_AGE_MS = 10 * 60 * 1000 // 취소 등으로 남은 오래된 표식은 무시
+// 로그인 세션도 오버레이 쪽에만 생긴다(저장소 비공유). 그래서
+// (1) 오버레이: 복귀 URL에 실려 온 nonce로 세션 토큰을 oauth_handoff 티켓(DB, 2분 TTL·
+//     1회용)에 남기고 "✕를 눌러 앱으로 돌아가기" 안내를 띄운다.
+// (2) 홈 화면 앱: 오버레이가 닫혀 화면이 다시 보이면 티켓을 회수해 세션을 복원·재시동한다.
+const handoffNonce = new URLSearchParams(window.location.search).get(OAUTH_HANDOFF_PARAM)
+let handoffTicketSaved = false // SIGNED_IN/INITIAL_SESSION 중복 발화 시 티켓 중복 insert 방지
 const showPwaReturnGuide = ref(false)
 
 // SNS(OAuth) 로그인은 리다이렉트 복귀 후 LoginView를 거치지 않으므로 여기서 login_log를 기록한다.
@@ -29,13 +31,20 @@ const showPwaReturnGuide = ref(false)
 supabase.auth.onAuthStateChange((event, session) => {
   if ((event !== 'SIGNED_IN' && event !== 'INITIAL_SESSION') || !session?.user) return
 
-  // (1) 홈 화면 앱에서 시작한 OAuth가 오버레이(비 standalone)에서 완료된 경우 → 복귀 안내
-  const pwaReturnStartedAt = Number(localStorage.getItem(OAUTH_PWA_RETURN_KEY) ?? 0)
-  if (pwaReturnStartedAt && !isStandaloneDisplay()) {
-    localStorage.removeItem(OAUTH_PWA_RETURN_KEY)
-    if (Date.now() - pwaReturnStartedAt < PWA_RETURN_MARKER_MAX_AGE_MS) {
-      showPwaReturnGuide.value = true
-    }
+  // (1) 오버레이 쪽: 홈 화면 앱이 복귀 URL에 실어 보낸 nonce가 있으면(=iOS standalone에서
+  // 시작한 OAuth) 세션 토큰을 티켓으로 남기고, 저장이 끝난 뒤 복귀 안내를 띄운다.
+  if (handoffNonce && !isStandaloneDisplay() && !handoffTicketSaved) {
+    handoffTicketSaved = true
+    supabase
+      .from('oauth_handoff')
+      .insert({
+        nonce: handoffNonce,
+        refresh_token: session.refresh_token,
+        access_token: session.access_token,
+      })
+      .then(({ error }) => {
+        if (!error) showPwaReturnGuide.value = true
+      })
   }
 
   if (!sessionStorage.getItem(OAUTH_LOGIN_PENDING_KEY)) return
@@ -62,21 +71,51 @@ onMounted(() => {
   initFontScale()
 
   // (2) 홈 화면 앱 쪽: 오버레이가 닫혀 화면이 다시 보이면, OAuth 진행 표식이 있을 때
-  // 공유 localStorage의 세션을 확인해 로그인 상태로 재시동한다. 세션이 없으면(취소·실패)
-  // LoginView가 재마운트되지 않아 잔존하는 표식을 여기서 정리한다.
-  // iOS에서 visibilitychange가 누락되는 경우를 대비해 focus도 함께 듣는다 (핸들러는 멱등).
+  // 세션을 확인해 로그인 상태로 재시동한다. 저장소가 공유되는 환경(안드로이드 TWA 등)은
+  // getSession으로 바로 보이고, 공유되지 않는 iOS는 oauth_handoff 티켓을 회수해 복원한다.
+  // 티켓 insert가 끝나기 전에 ✕를 누를 수 있어 몇 차례 재시도하고, 끝내 세션·티켓이 모두
+  // 없으면(취소·실패) LoginView가 재마운트되지 않아 잔존하는 표식을 여기서 정리한다.
+  // iOS에서 visibilitychange가 누락되는 경우를 대비해 focus도 함께 듣는다.
   if (isStandaloneDisplay()) {
+    let resuming = false
     const resumeFromOAuthOverlay = async () => {
-      if (document.visibilityState !== 'visible') return
+      if (document.visibilityState !== 'visible' || resuming) return
       if (!sessionStorage.getItem(OAUTH_LOGIN_PENDING_KEY)) return
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      if (session) {
-        window.location.reload()
-      } else {
+      resuming = true
+      try {
+        const nonce = sessionStorage.getItem(OAUTH_HANDOFF_NONCE_KEY)
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession()
+          if (session) {
+            sessionStorage.removeItem(OAUTH_HANDOFF_NONCE_KEY)
+            window.location.reload()
+            return
+          }
+          if (nonce) {
+            const { data } = await supabase.rpc('claim_oauth_handoff', { p_nonce: nonce })
+            const ticket = data?.[0]
+            if (ticket) {
+              const { error } = await supabase.auth.setSession({
+                access_token: ticket.access_token,
+                refresh_token: ticket.refresh_token,
+              })
+              if (!error) {
+                // setSession이 SIGNED_IN을 발화해 위 리스너가 login_log를 기록하고,
+                // 재시동하면 라우터 가드가 세션 기준으로 마지막 모듈로 보낸다.
+                sessionStorage.removeItem(OAUTH_HANDOFF_NONCE_KEY)
+                window.location.reload()
+                return
+              }
+            }
+          }
+          await new Promise((resolve) => setTimeout(resolve, 1200))
+        }
         sessionStorage.removeItem(OAUTH_LOGIN_PENDING_KEY)
-        localStorage.removeItem(OAUTH_PWA_RETURN_KEY)
+        sessionStorage.removeItem(OAUTH_HANDOFF_NONCE_KEY)
+      } finally {
+        resuming = false
       }
     }
     document.addEventListener('visibilitychange', resumeFromOAuthOverlay)

@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { supabase, OAUTH_LOGIN_PENDING_KEY, OAUTH_PWA_RETURN_KEY } from '@/services/supabase'
+import { supabase, OAUTH_LOGIN_PENDING_KEY, OAUTH_HANDOFF_NONCE_KEY, OAUTH_HANDOFF_PARAM } from '@/services/supabase'
 import { isStandaloneDisplay } from '@/utils/displayMode'
 import { getErrorMessageKey } from '@/utils/errorMessage'
 import { showMessage } from '@/composables/useSnackbar'
@@ -191,19 +191,22 @@ const signInWithProvider = async (provider: 'google' | 'kakao') => {
   oauthLoading.value = provider
   // 리다이렉트 복귀 후 App.vue의 onAuthStateChange에서 login_log 기록에 사용하는 표식
   sessionStorage.setItem(OAUTH_LOGIN_PENDING_KEY, provider)
-  // iOS 홈 화면 앱에서는 OAuth가 별도 인앱 브라우저(오버레이)에서 진행된다. 오버레이와
-  // 홈 화면 앱은 localStorage를 공유하므로, 로그인 완료 시 오버레이 쪽(App.vue)에서
-  // "✕를 눌러 앱으로 돌아가기" 안내를 띄울 수 있도록 시작 시각 표식을 남긴다.
+  // iOS 홈 화면 앱에서는 OAuth가 별도 인앱 브라우저(오버레이)에서 진행되고 세션도 그쪽에만
+  // 생긴다(저장소 비공유). 오버레이가 세션을 티켓(oauth_handoff)으로 넘겨줄 수 있도록
+  // 일회성 nonce를 복귀 URL에 실어 보내고, 본체는 오버레이가 닫힐 때 티켓을 회수한다(App.vue).
+  let redirectTo = `${window.location.origin}/`
   if (detectPlatform() === 'ios' && isStandaloneDisplay()) {
-    localStorage.setItem(OAUTH_PWA_RETURN_KEY, String(Date.now()))
+    const nonce = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('')
+    sessionStorage.setItem(OAUTH_HANDOFF_NONCE_KEY, nonce)
+    redirectTo = `${redirectTo}?${OAUTH_HANDOFF_PARAM}=${nonce}`
   }
   const { error } = await supabase.auth.signInWithOAuth({
     provider,
-    options: { redirectTo: `${window.location.origin}/` },
+    options: { redirectTo },
   })
   if (error) {
     sessionStorage.removeItem(OAUTH_LOGIN_PENDING_KEY)
-    localStorage.removeItem(OAUTH_PWA_RETURN_KEY)
+    sessionStorage.removeItem(OAUTH_HANDOFF_NONCE_KEY)
     oauthLoading.value = null
     showMessage(t(getErrorMessageKey(error.code)), 'warning')
   }
