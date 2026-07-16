@@ -636,6 +636,7 @@
       "enterPassword": "Please enter your password.",
       "wrongPassword": "Incorrect password.",
       "wrongConfirmText": "Please type \"DELETE\" exactly.",
+      "cannotVerifyAccount": "Couldn't verify your account. Please try again shortly.",
       "deleted": "Account deleted.",
       "deleteError": "An error occurred while deleting your account."
     },

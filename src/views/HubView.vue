@@ -67,9 +67,15 @@ const resetDeleteState = () => {
 
 const openDeleteDialog = async () => {
   resetDeleteState()
-  // email identity가 있으면 비밀번호 계정, 없으면 소셜(카카오/구글) 전용 계정
-  const { data } = await supabase.auth.getUserIdentities()
-  isSocialOnly.value = !(data?.identities ?? []).some((i) => i.provider === 'email')
+  // email identity가 있으면 비밀번호 계정, 없으면 소셜(카카오/구글) 전용 계정.
+  // 조회 실패 시엔 계정 종류를 확정할 수 없으므로, 비밀번호 계정을 소셜로 오인해
+  // 비밀번호 확인을 건너뛰지 않도록 다이얼로그를 열지 않고 재시도를 유도한다.
+  const { data, error } = await supabase.auth.getUserIdentities()
+  if (error || !data?.identities) {
+    showMessage(t('hub.errors.cannotVerifyAccount'), 'error')
+    return
+  }
+  isSocialOnly.value = !data.identities.some((i) => i.provider === 'email')
   deleteStep.value = 1
 }
 
