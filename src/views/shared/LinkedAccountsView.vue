@@ -71,7 +71,28 @@ const disconnect = async (p: ManagedProvider) => {
   }
 }
 
-onMounted(load)
+// linkIdentity 리다이렉트 복귀 시, "이미 다른 계정에 연결됨" 등의 에러는
+// linkIdentity() 즉시 반환값이 아니라 복귀 URL의 에러 파라미터로 돌아온다.
+// (query 또는 hash 어느 쪽에 실릴 수 있어 둘 다 확인)
+const handleLinkRedirectError = () => {
+  const parts = [window.location.search.replace(/^\?/, ''), window.location.hash.replace(/^#/, '')]
+  const params = new URLSearchParams(parts.filter(Boolean).join('&'))
+  const code = params.get('error_code') || params.get('error') || ''
+  const desc = params.get('error_description') || ''
+  if (!code && !desc) return
+  if (/identity_already_exists|already|linked/i.test(`${code} ${desc}`)) {
+    showMessage(t('linkedAccounts.alreadyLinkedElsewhere'), 'warning')
+  } else {
+    showMessage(t('linkedAccounts.connectError'), 'error')
+  }
+  // 새로고침 시 재노출되지 않도록 에러 파라미터 제거
+  window.history.replaceState({}, '', window.location.pathname)
+}
+
+onMounted(() => {
+  handleLinkRedirectError()
+  load()
+})
 </script>
 
 <template>
