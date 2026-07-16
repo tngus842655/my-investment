@@ -734,6 +734,8 @@
     "pwaReturnTitle": "Signed in!",
     "pwaReturnDesc": "Tap the ✕ button in the top-left\nto return to the app.",
     "pwaReturnDismiss": "Continue here",
+    "pwaResuming": "Signing you back in...",
+    "pwaHandoffError": "Failed to hand off the session",
     "completeEmail": {
       "title": "Register your email",
       "desc": "We couldn't get an email from your Kakao account. Please register an email address to use the service.",
