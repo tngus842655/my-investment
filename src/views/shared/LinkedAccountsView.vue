@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { supabase } from '@/services/supabase'
@@ -49,14 +49,25 @@ const connect = async (p: ManagedProvider) => {
   // 성공 시 소셜 인증 페이지로 이동하므로 busy는 해제하지 않는다
 }
 
-const disconnect = async (p: ManagedProvider) => {
-  const identity = identities.value.find((i) => i.provider === p)
-  if (!identity) return
+// 연결 해제 확인 대상 (null이면 다이얼로그 닫힘)
+const confirmProvider = ref<ManagedProvider | null>(null)
+const confirmLabel = computed(() => MANAGED.find((m) => m.provider === confirmProvider.value)?.label ?? '')
+
+const promptDisconnect = (p: ManagedProvider) => {
   // 마지막 로그인 수단은 해제 불가 (로그인 불능 방지)
   if (identities.value.length <= 1) {
     showMessage(t('linkedAccounts.cannotUnlinkLast'), 'warning')
     return
   }
+  confirmProvider.value = p
+}
+
+const disconnect = async () => {
+  const p = confirmProvider.value
+  confirmProvider.value = null
+  if (!p) return
+  const identity = identities.value.find((i) => i.provider === p)
+  if (!identity) return
   busy.value = p
   try {
     const { error } = await supabase.auth.unlinkIdentity(identity)
@@ -135,7 +146,7 @@ onMounted(() => {
           <v-spacer />
           <template v-if="isConnected(m.provider)">
             <v-chip size="small" color="success" variant="tonal">{{ $t('linkedAccounts.connected') }}</v-chip>
-            <v-btn size="small" variant="text" color="error" :loading="busy === m.provider" @click="disconnect(m.provider)">
+            <v-btn size="small" variant="text" color="error" :loading="busy === m.provider" @click="promptDisconnect(m.provider)">
               {{ $t('linkedAccounts.disconnect') }}
             </v-btn>
           </template>
@@ -145,5 +156,20 @@ onMounted(() => {
         </div>
       </template>
     </v-card>
+
+    <!-- 연결 해제 확인 -->
+    <v-dialog :model-value="confirmProvider !== null" max-width="320" @update:model-value="confirmProvider = null">
+      <v-card rounded="xl" class="glass-dialog">
+        <v-card-title class="text-center pt-6">{{ $t('linkedAccounts.disconnectConfirmTitle') }}</v-card-title>
+        <v-card-text class="text-center text-medium-emphasis">
+          {{ $t('linkedAccounts.disconnectConfirmBody', { provider: confirmLabel }) }}
+        </v-card-text>
+        <v-divider />
+        <v-card-actions>
+          <v-btn variant="text" block @click="confirmProvider = null">{{ $t('common.cancel') }}</v-btn>
+          <v-btn color="error" block :loading="busy !== null" @click="disconnect">{{ $t('linkedAccounts.disconnect') }}</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
