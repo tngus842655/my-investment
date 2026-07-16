@@ -5,10 +5,24 @@ import { useTheme } from 'vuetify'
 import GlobalSnackbar from '@/components/common/GlobalSnackbar.vue'
 import { useAppTheme } from '@/composables/useAppTheme'
 import { useFontScale } from '@/composables/useFontScale'
+import { supabase, OAUTH_LOGIN_PENDING_KEY } from '@/services/supabase'
 
 const theme = useTheme()
 const { initTheme } = useAppTheme()
 const { initFontScale } = useFontScale()
+
+// SNS(OAuth) 로그인은 리다이렉트 복귀 후 LoginView를 거치지 않으므로 여기서 login_log를 기록한다.
+// LoginView에서 심어둔 표식(sessionStorage)이 있을 때만 기록해, 탭 포커스 등으로
+// SIGNED_IN 이벤트가 재발화해도 중복 기록되지 않는다. (비밀번호 로그인은 LoginView에서 기록)
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event !== 'SIGNED_IN' || !session?.user) return
+  if (!sessionStorage.getItem(OAUTH_LOGIN_PENDING_KEY)) return
+  sessionStorage.removeItem(OAUTH_LOGIN_PENDING_KEY)
+  supabase
+    .from('login_log')
+    .insert({ user_id: session.user.id, email: session.user.email })
+    .then(() => {})
+})
 
 onMounted(() => {
   initTheme()

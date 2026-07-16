@@ -707,6 +707,8 @@
     "passwordConfirmPlaceholder": "Re-enter your password",
     "login": "Log in",
     "signup": "Sign up",
+    "orDivider": "or",
+    "continueWithGoogle": "Continue with Google",
     "forgotLink": "Forgot your password?",
     "noAccount": "Don't have an account?",
     "signupLink": "Sign up",

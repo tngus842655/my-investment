@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { supabase } from '@/services/supabase'
+import { supabase, OAUTH_LOGIN_PENDING_KEY } from '@/services/supabase'
 import { getErrorMessageKey } from '@/utils/errorMessage'
 import { showMessage } from '@/composables/useSnackbar'
 import { useDesignTokens } from '@/composables/useDesignTokens'
@@ -180,6 +180,25 @@ const onKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Enter' && isLogin.value) signIn()
 }
 
+// ── 구글 로그인 (OAuth 리다이렉트 방식) ──────────────────────
+const googleLoading = ref(false)
+
+const signInWithGoogle = async () => {
+  googleLoading.value = true
+  // 리다이렉트 복귀 후 App.vue의 onAuthStateChange에서 login_log 기록에 사용하는 표식
+  sessionStorage.setItem(OAUTH_LOGIN_PENDING_KEY, 'google')
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: `${window.location.origin}/` },
+  })
+  if (error) {
+    sessionStorage.removeItem(OAUTH_LOGIN_PENDING_KEY)
+    googleLoading.value = false
+    showMessage(t(getErrorMessageKey(error.code)), 'warning')
+  }
+  // 성공 시 구글 인증 페이지로 이동하므로 loading은 해제하지 않는다
+}
+
 // ── 홈 화면에 추가 안내 배너 (iOS / Android 전용) ──────────────
 const A2HS_DISMISSED_KEY = 'fp-a2hs-dismissed'
 const platform = ref<'ios' | 'android' | null>(null)
@@ -354,6 +373,21 @@ onUnmounted(() => {
           <!-- 메인 버튼 -->
           <v-btn color="primary" size="large" rounded="lg" block elevation="0" :loading="loading" class="mt-6" style="font-weight: 700; letter-spacing: 0.03em" @click="isLogin ? signIn() : signUp()">
             {{ isLogin ? $t('auth.login') : $t('auth.signup') }}
+          </v-btn>
+
+          <!-- SNS 로그인 -->
+          <div class="sns-divider mt-5">
+            <span>{{ $t('auth.orDivider') }}</span>
+          </div>
+
+          <v-btn size="large" rounded="lg" block elevation="0" variant="outlined" class="google-btn mt-5" :loading="googleLoading" :disabled="loading" @click="signInWithGoogle">
+            <svg class="google-logo" width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            </svg>
+            {{ $t('auth.continueWithGoogle') }}
           </v-btn>
 
           <v-divider class="my-4" opacity="0.1" />
@@ -554,5 +588,35 @@ onUnmounted(() => {
 
 .forgot-email:hover {
   background: rgba(0, 212, 184, 0.08);
+}
+
+/* ── SNS 로그인 ─────────────────────────────────────────────── */
+.sns-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: rgba(var(--v-theme-on-surface), 0.35);
+  font-size: 0.75rem;
+}
+
+.sns-divider::before,
+.sns-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(var(--v-theme-on-surface), 0.1);
+}
+
+.google-btn {
+  border-color: rgba(var(--v-theme-on-surface), 0.15);
+  color: rgb(var(--v-theme-on-surface));
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.google-logo {
+  margin-right: 8px;
+  flex-shrink: 0;
 }
 </style>
