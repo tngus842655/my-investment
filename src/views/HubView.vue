@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDesignTokens } from '@/composables/useDesignTokens'
 import { useAppTheme } from '@/composables/useAppTheme'
+import { FP_THEME_MAP } from '@/design'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { useUserDataStore } from '@/stores/userData'
@@ -13,13 +14,23 @@ import { useI18n } from 'vue-i18n'
 const router = useRouter()
 const { t } = useI18n()
 const { themeId } = useDesignTokens()
-const { currentThemeId, themes, setTheme } = useAppTheme()
+const { themeSetting, themes, setTheme } = useAppTheme()
 const userDataStore = useUserDataStore()
 const themeSheet = ref(false)
 
 const selectTheme = (id: string) => {
   setTheme(id as Parameters<typeof setTheme>[0])
   themeSheet.value = false
+}
+
+// 시스템 카드 미니 프리뷰 — 라이트/다크 반반 미리보기용 색상
+const systemCardStyle = {
+  '--tc-primary': FP_THEME_MAP.light.colors.primary,
+  '--tc-bg': FP_THEME_MAP.light.colors.background,
+  '--tc-surface': FP_THEME_MAP.light.colors.surface,
+  '--tc-text': '#8A93A0',
+  '--tc-bg-dark': FP_THEME_MAP.dark.colors.background,
+  '--tc-surface-dark': FP_THEME_MAP.dark.colors.surface,
 }
 
 const isAdmin = ref(false)
@@ -298,7 +309,7 @@ onMounted(async () => {
             v-for="t in themes"
             :key="t.id"
             class="theme-card"
-            :class="{ 'theme-card--active': currentThemeId === t.id }"
+            :class="{ 'theme-card--active': themeSetting === t.id }"
             :style="{ '--tc-primary': t.colors.primary, '--tc-bg': t.colors.background, '--tc-surface': t.colors.surface, '--tc-text': t.colors.onSurface }"
             @click="selectTheme(t.id)"
           >
@@ -320,7 +331,37 @@ onMounted(async () => {
               <span class="theme-name">{{ t.label }}</span>
             </div>
 
-            <div v-if="currentThemeId === t.id" class="theme-check">
+            <div v-if="themeSetting === t.id" class="theme-check">
+              <v-icon size="14" color="white">mdi-check</v-icon>
+            </div>
+          </button>
+
+          <!-- 시스템(기기 화면모드) 따라가기 -->
+          <button
+            class="theme-card"
+            :class="{ 'theme-card--active': themeSetting === 'system' }"
+            :style="systemCardStyle"
+            @click="selectTheme('system')"
+          >
+            <div class="theme-preview">
+              <div class="preview-bg preview-bg--system">
+                <div class="preview-card preview-card--system">
+                  <div class="preview-dot preview-dot--primary" />
+                  <div class="preview-lines">
+                    <div class="preview-line preview-line--lg" />
+                    <div class="preview-line preview-line--sm" />
+                  </div>
+                </div>
+                <div class="preview-bar" />
+              </div>
+            </div>
+
+            <div class="theme-card-body">
+              <span class="theme-emoji">🌗</span>
+              <span class="theme-name">{{ $t('hub.themeSystem') }}</span>
+            </div>
+
+            <div v-if="themeSetting === 'system'" class="theme-check">
               <v-icon size="14" color="white">mdi-check</v-icon>
             </div>
           </button>
@@ -581,6 +622,15 @@ onMounted(async () => {
   background: var(--tc-primary);
   opacity: 0.5;
   width: 60%;
+}
+
+/* 시스템 카드 — 라이트/다크 반반 프리뷰 */
+.preview-bg--system {
+  background: linear-gradient(105deg, var(--tc-bg) 50%, var(--tc-bg-dark) 50%);
+}
+
+.preview-card--system {
+  background: linear-gradient(105deg, var(--tc-surface) 50%, var(--tc-surface-dark) 50%);
 }
 
 /* 카드 하단 텍스트 */

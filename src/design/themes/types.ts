@@ -1,5 +1,8 @@
 export type ThemeId = 'light' | 'dark' | 'nature' | 'space' | 'gold'
 
+/** 테마 선택 설정 — 'system'은 기기 화면모드(다크/라이트)를 따라간다 */
+export type ThemeSetting = ThemeId | 'system'
+
 export interface FpColors {
   // ── 브랜드 ──────────────────────────────────
   primary: string

@@ -626,6 +626,7 @@
     "adminPage": "관리자 페이지",
     "themeSheetTitle": "테마 선택",
     "themeSheetDesc": "앱 전체에 적용되는 색상 테마를 선택하세요",
+    "themeSystem": "시스템",
     "errors": {
       "logoutError": "로그아웃 중 오류가 발생했습니다.",
       "enterPassword": "비밀번호를 입력해주세요.",
