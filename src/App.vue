@@ -20,10 +20,13 @@ supabase.auth.onAuthStateChange((event, session) => {
   if (!sessionStorage.getItem(OAUTH_LOGIN_PENDING_KEY)) return
   sessionStorage.removeItem(OAUTH_LOGIN_PENDING_KEY)
   const user = session.user
-  supabase
-    .from('login_log')
-    .insert({ user_id: user.id, email: user.email })
-    .then(() => {})
+  // 관리자 로그인은 기록하지 않는다 (access_log도 관리자를 기록하지 않음 — router 가드)
+  if (!isAdminEmail(user.email)) {
+    supabase
+      .from('login_log')
+      .insert({ user_id: user.id, email: user.email })
+      .then(() => {})
+  }
   // 소셜 신규 가입도 signup_log에 남긴다. record_signup은 이메일 기준 멱등이라
   // 기존 회원(자동 연결 포함)은 no-op, 신규만 insert 된다. 이메일 없는 계정은
   // 이후 CompleteEmailView에서 이메일 등록 시 기록한다.

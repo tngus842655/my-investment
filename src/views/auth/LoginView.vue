@@ -8,6 +8,7 @@ import { showMessage } from '@/composables/useSnackbar'
 import { useDesignTokens } from '@/composables/useDesignTokens'
 import { useLocale } from '@/composables/useLocale'
 import { getLastModule } from '@/utils/lastModule'
+import { isAdminEmail } from '@/config/admin'
 import type { SupportedLocale } from '@/plugins/i18n'
 
 const router = useRouter()
@@ -140,7 +141,8 @@ const signIn = async () => {
     const {
       data: { user },
     } = await supabase.auth.getUser()
-    if (user) {
+    // 관리자 로그인은 기록하지 않는다 (access_log도 관리자를 기록하지 않음 — router 가드)
+    if (user && !isAdminEmail(user.email)) {
       supabase
         .from('login_log')
         .insert({ user_id: user.id, email: user.email })
