@@ -243,12 +243,12 @@ onMounted(() => {
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true
   platform.value = detectPlatform()
 
-  // 홈 화면 앱(standalone)에서는 OAuth 시작 후에도 이 페이지가 그대로 남으므로,
-  // 취소하고 돌아오면 버튼 스피너가 계속 돈다. 화면이 다시 보일 때 해제한다.
+  // 홈 화면 앱(standalone)이나 앱인토스처럼 자체 인앱 브라우저에서 OAuth를 여는 환경에서는
+  // 시작 후에도 이 페이지가 그대로 남으므로, 취소하고 돌아오면 버튼 스피너가 계속 돈다.
+  // 화면이 다시 보일 때 해제한다. standalone 여부와 무관하게 항상 등록해도 안전한데,
+  // 일반 브라우저 탭에서는 리다이렉트가 페이지 이탈(unload)이라 이 리스너 자체가 사라지기 때문이다.
   // (성공 시에는 리다이렉트 복귀로 페이지를 떠나므로 이 화면에 남지 않는다)
-  if (isStandalone) {
-    document.addEventListener('visibilitychange', resetOauthLoadingOnVisible)
-  }
+  document.addEventListener('visibilitychange', resetOauthLoadingOnVisible)
   const dismissed = localStorage.getItem(A2HS_DISMISSED_KEY) === '1'
   showInstallBanner.value = !isStandalone && !dismissed && platform.value !== null
 
