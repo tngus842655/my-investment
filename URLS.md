@@ -42,3 +42,9 @@
 npx wrangler login
 npx wrangler deploy
 firepath / Vite / dist
+
+
+## 
+| 서비스    | 용도                         | URL                          |
+| --------- | --------------------------- | ---------------------------- |
+| PWABuilder | 모바일 앱 배포시 .aab파일 생성 | https://www.remove.bg/ko     |
