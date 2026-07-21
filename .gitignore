@@ -47,3 +47,5 @@ __screenshots__/
 .dev.vars*
 !.dev.vars.example
 !.env.example
+
+.granite
