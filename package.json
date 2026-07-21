@@ -4,8 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "granite dev",
-    "build": "ait build",
+    "dev": "vite",
+    "dev:toss": "granite dev",
+    "build": "run-p type-check \"build-only {@}\" --",
+    "build:toss": "ait build",
     "preview": "npm run build-only && wrangler dev",
     "build-only": "vite build && node -e \"require('fs').copyFileSync('dist/index.html','dist/404.html')\"",
     "type-check": "vue-tsc --build",
@@ -13,7 +15,8 @@
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
     "format": "prettier --write --experimental-cli src/",
-    "deploy": "ait deploy"
+    "deploy": "npm run build-only && wrangler deploy",
+    "deploy:toss": "ait deploy"
   },
   "dependencies": {
     "@apps-in-toss/web-framework": "^2.10.6",
