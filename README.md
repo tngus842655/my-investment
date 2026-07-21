@@ -46,3 +46,13 @@ npm run build
 ```sh
 npm run lint
 ```
+
+### App in Toss (앱인토스) 빌드/개발
+
+일반 웹사이트용 `dev`/`build`/`deploy`와는 별개로, 앱인토스 미니앱용 스크립트가 `:toss` 접미사로 분리되어 있습니다.
+
+```sh
+npm run dev:toss     # 앱인토스 개발 서버 실행 (granite dev)
+npm run build:toss   # 앱인토스 미니앱 빌드 (ait build)
+npm run deploy:toss  # 앱인토스 미니앱 배포 (ait deploy)
+```
