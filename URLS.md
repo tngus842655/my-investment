@@ -43,8 +43,23 @@ npx wrangler login
 npx wrangler deploy
 firepath / Vite / dist
 
+##
 
-## 
-| 서비스    | 용도                         | URL                          |
-| --------- | --------------------------- | ---------------------------- |
-| PWABuilder | 모바일 앱 배포시 .aab파일 생성 | https://www.remove.bg/ko     |
+| 서비스     | 용도                           | URL                      |
+| ---------- | ------------------------------ | ------------------------ |
+| PWABuilder | 모바일 앱 배포시 .aab파일 생성 | https://www.remove.bg/ko |
+
+## 로컬에서 배포 (Android 프로젝트)
+
+1. build.gradle 버전 수정
+   C:\Workspace\FirePath-TWA\app\build.gradle 열기
+   versionCode 3 // +1
+   versionName "1.0.0.3" // 수정
+
+2. CMD에서 명령어 실행
+   cd C:\Workspace\FirePath-TWA
+   gradlew.bat clean
+   gradlew.bat bundleRelease
+
+3. 생성 .aab 파일경로
+   C:\Workspace\FirePath-TWA\app\build\outputs\bundle\release\app-release.aab
