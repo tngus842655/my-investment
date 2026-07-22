@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
+import { recomputeAssetSummary } from '@/services/assetSummary'
 import { getTickerLabel } from '@/utils/tickerNames'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
@@ -165,6 +166,11 @@ const closeNoticeDialog = () => {
 const loadDashboard = async (force = false) => {
   loading.value = true
   try {
+    if (force) {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) await recomputeAssetSummary(session.user.id)
+    }
+
     const [goal, summary, portfolios, rate] = await Promise.all([
       userDataStore.ensureGoals(force),
       userDataStore.ensureAssetSummary(force),
