@@ -7,7 +7,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { Plugin } from 'vite'
 
-import { cloudflare } from "@cloudflare/vite-plugin";
+import { cloudflare } from '@cloudflare/vite-plugin'
 
 const ALLOWED_SCRIPTS: Record<string, string> = {
   'generate-kr-tickers': 'scripts/generate-kr-tickers.mjs',
@@ -30,22 +30,17 @@ function parseTickers(filePath: string, exportName: string): Map<string, string>
 function writeTickers(filePath: string, exportName: string, map: Map<string, string>) {
   const content = readFileSync(filePath, 'utf-8')
   const sorted = [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]))
-  const block = [
-    `export const ${exportName}: Record<string, string> = {`,
-    ...sorted.map(([k, v]) => `  ${k}: '${v.replace(/'/g, "\\'")}',`),
-    `}`,
-  ].join('\n')
-  const replaced = content.replace(
-    new RegExp(`export const ${exportName}[^{]*\\{[\\s\\S]*?\\n\\}`),
-    block,
-  )
+  const block = [`export const ${exportName}: Record<string, string> = {`, ...sorted.map(([k, v]) => `  ${k}: '${v.replace(/'/g, "\\'")}',`), `}`].join('\n')
+  const replaced = content.replace(new RegExp(`export const ${exportName}[^{]*\\{[\\s\\S]*?\\n\\}`), block)
   writeFileSync(filePath, replaced, 'utf-8')
 }
 
 function readBody(req: import('http').IncomingMessage): Promise<Record<string, unknown>> {
   return new Promise((resolve) => {
     let body = ''
-    req.on('data', (chunk: Buffer) => { body += chunk })
+    req.on('data', (chunk: Buffer) => {
+      body += chunk
+    })
     req.on('end', () => resolve(JSON.parse(body || '{}')))
   })
 }
@@ -59,9 +54,14 @@ function adminPlugin(): Plugin {
     configureServer(server) {
       // 스크립트 실행 (SSE 스트리밍)
       server.middlewares.use('/api/admin/run-script', (req, res) => {
-        if (req.method !== 'POST') { res.writeHead(405).end(); return }
+        if (req.method !== 'POST') {
+          res.writeHead(405).end()
+          return
+        }
         let body = ''
-        req.on('data', (chunk: Buffer) => { body += chunk })
+        req.on('data', (chunk: Buffer) => {
+          body += chunk
+        })
         req.on('end', () => {
           const { script } = JSON.parse(body || '{}')
           const scriptPath = ALLOWED_SCRIPTS[script]
@@ -89,9 +89,7 @@ function adminPlugin(): Plugin {
 
         if (req.method === 'GET') {
           const map = parseTickers(usFilePath, 'US_STOCK_NAMES')
-          const list = [...map.entries()]
-            .sort((a, b) => a[0].localeCompare(b[0]))
-            .map(([ticker, name]) => ({ ticker, name }))
+          const list = [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([ticker, name]) => ({ ticker, name }))
           res.end(JSON.stringify(list))
           return
         }
@@ -101,7 +99,10 @@ function adminPlugin(): Plugin {
         if (req.method === 'POST') {
           const ticker = typeof body.ticker === 'string' ? body.ticker : ''
           const name = typeof body.name === 'string' ? body.name : ''
-          if (!ticker || !name) { res.writeHead(400).end(JSON.stringify({ error: '티커와 이름을 입력하세요.' })); return }
+          if (!ticker || !name) {
+            res.writeHead(400).end(JSON.stringify({ error: '티커와 이름을 입력하세요.' }))
+            return
+          }
           const map = parseTickers(usFilePath, 'US_STOCK_NAMES')
           map.set(ticker.toUpperCase().trim(), name.trim())
           writeTickers(usFilePath, 'US_STOCK_NAMES', map)
@@ -111,7 +112,10 @@ function adminPlugin(): Plugin {
 
         if (req.method === 'DELETE') {
           const ticker = typeof body.ticker === 'string' ? body.ticker : ''
-          if (!ticker) { res.writeHead(400).end(); return }
+          if (!ticker) {
+            res.writeHead(400).end()
+            return
+          }
           const map = parseTickers(usFilePath, 'US_STOCK_NAMES')
           map.delete(ticker.toUpperCase().trim())
           writeTickers(usFilePath, 'US_STOCK_NAMES', map)
@@ -126,38 +130,43 @@ function adminPlugin(): Plugin {
 }
 
 export default defineConfig(({ command }) => ({
-  plugins: [vue(), adminPlugin(), VitePWA({
-    registerType: 'autoUpdate',
-    includeAssets: ['icons/*.png'],
-    manifest: {
-      name: 'FirePath',
-      short_name: 'FirePath',
-      description: '나만의 FIRE 목표 관리 플랫폼',
-      theme_color: '#0E8A82',
-      background_color: '#F0F7F6',
-      display: 'standalone',
-      orientation: 'portrait',
-      start_url: '/dashboard',
-      icons: [
-        {
-          src: '/icons/icon-192-v2.png',
-          sizes: '192x192',
-          type: 'image/png',
-        },
-        {
-          src: '/icons/icon-512-v2.png',
-          sizes: '512x512',
-          type: 'image/png',
-        },
-        {
-          src: '/icons/icon-512-v2.png',
-          sizes: '512x512',
-          type: 'image/png',
-          purpose: 'maskable',
-        },
-      ],
-    },
-  }), ...(command === 'build' ? [cloudflare()] : [])],
+  plugins: [
+    vue(),
+    adminPlugin(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['icons/*.png'],
+      manifest: {
+        name: 'FirePath',
+        short_name: 'FirePath',
+        description: '나만의 FIRE 목표 관리 플랫폼',
+        theme_color: '#0E8A82',
+        background_color: '#F0F7F6',
+        display: 'standalone',
+        orientation: 'portrait',
+        start_url: '/dashboard',
+        icons: [
+          {
+            src: '/icons/icon-192-v3.png',
+            sizes: '192x192',
+            type: 'image/png',
+          },
+          {
+            src: '/icons/icon-512-v3.png',
+            sizes: '512x512',
+            type: 'image/png',
+          },
+          {
+            src: '/icons/icon-512-v3.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+      },
+    }),
+    ...(command === 'build' ? [cloudflare()] : []),
+  ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
