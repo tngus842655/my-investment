@@ -68,6 +68,8 @@
     "weight": "Weight",
     "tapHint": "Tap a card to see more details",
     "filterAll": "All",
+    "groupByTicker": "By ticker",
+    "accountsBadge": "{n} accts",
     "totalCount": "{n} total",
     "priceInfoTitle": "Price update timing by asset type",
     "registerTickerName": "Request US stock name mapping",

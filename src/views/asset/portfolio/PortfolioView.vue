@@ -34,6 +34,7 @@ interface PortfolioViewItem extends PortfolioAsset {
   profitRate?: number
   changeRate?: number | null // 전일 대비 등락률(%)
   isPriceFallback?: boolean // 현재가 조회 실패 시 true
+  groupCount?: number // 종목별 묶기 시 합쳐진 계좌(행) 수
 }
 
 const portfolios = ref<PortfolioViewItem[]>([])
@@ -357,7 +358,7 @@ const onSwipeTouchStart = (e: TouchEvent) => {
   swipeTouchStartY.value = e.touches[0]?.clientY ?? 0
   isDraggingSwipe.value = true
 }
-const onSwipeTouchEnd = (e: TouchEvent, id: string, flippable: boolean) => {
+const onSwipeTouchEnd = (e: TouchEvent, id: string, flippable: boolean, swipeable = true) => {
   if (!isDraggingSwipe.value) return
   lastTouchTime = Date.now()
   isDraggingSwipe.value = false
@@ -370,7 +371,8 @@ const onSwipeTouchEnd = (e: TouchEvent, id: string, flippable: boolean) => {
     return
   }
   if (dy > 10 && dy > Math.abs(dx)) return
-  if (dx > SWIPE_THRESHOLD) { swipedId.value = id; flippedId.value = null }
+  // 종목별 묶기 카드(여러 행 합산)는 수정/삭제 대상이 애매하므로 스와이프 열기 제외
+  if (dx > SWIPE_THRESHOLD) { if (!swipeable) return; swipedId.value = id; flippedId.value = null }
   else if (dx < -SWIPE_THRESHOLD / 2 && swipedId.value === id) swipedId.value = null
 }
 const onSwipeMouseDown = (e: MouseEvent) => {
@@ -379,7 +381,7 @@ const onSwipeMouseDown = (e: MouseEvent) => {
   swipeTouchStartY.value = e.clientY
   isDraggingSwipe.value = true
 }
-const onSwipeMouseUp = (e: MouseEvent, id: string, flippable: boolean) => {
+const onSwipeMouseUp = (e: MouseEvent, id: string, flippable: boolean, swipeable = true) => {
   if (Date.now() - lastTouchTime < 700) return // 터치 후 합성 마우스 이벤트 무시
   if (!isDraggingSwipe.value) return
   isDraggingSwipe.value = false
@@ -392,7 +394,7 @@ const onSwipeMouseUp = (e: MouseEvent, id: string, flippable: boolean) => {
     return
   }
   if (dy > 10 && dy > Math.abs(dx)) return
-  if (dx > SWIPE_THRESHOLD) { swipedId.value = id; flippedId.value = null }
+  if (dx > SWIPE_THRESHOLD) { if (!swipeable) return; swipedId.value = id; flippedId.value = null }
   else if (dx < -SWIPE_THRESHOLD / 2 && swipedId.value === id) swipedId.value = null
 }
 
@@ -621,22 +623,62 @@ const accountOptions = computed(() => {
   return ['미지정', ...accounts.filter((a) => a !== '미지정').sort((a, b) => a.localeCompare(b, 'ko'))]
 })
 
-const sortedPortfolios = computed(() => {
-  const base = (() => {
-    if (sortKey.value === 'custom') return portfolios.value
-    const list = [...portfolios.value]
-    switch (sortKey.value) {
-      case 'eval':   return list.sort((a, b) => (b.evaluationAmountBase ?? 0) - (a.evaluationAmountBase ?? 0))
-      case 'profit': return list.sort((a, b) => (b.profitAmountBase ?? 0) - (a.profitAmountBase ?? 0))
-      case 'rate':   return list.sort((a, b) => (b.profitRate ?? 0) - (a.profitRate ?? 0))
-      case 'name': {
-        return list.sort((a, b) => getTickerDisplayName(a.ticker).localeCompare(getTickerDisplayName(b.ticker), 'ko'))
-      }
-      default:       return list
+// ── 종목별 묶기 ───────────────────────────────────
+// 여러 계좌에 흩어진 같은 종목을 한 카드로 합산해서 보기 (표시 전용 — DB 행은 그대로)
+const GROUP_STORAGE_KEY = 'firepath-portfolio-group-ticker'
+const groupByTicker = ref(localStorage.getItem(GROUP_STORAGE_KEY) === 'true')
+const toggleGroupByTicker = () => {
+  groupByTicker.value = !groupByTicker.value
+  localStorage.setItem(GROUP_STORAGE_KEY, String(groupByTicker.value))
+  swipedId.value = null
+  flippedId.value = null
+}
+
+// 같은 티커끼리 수량·평가금액·원가·손익 합산. 평균단가는 수량 가중 평균(종목 통화 기준).
+// 한 계좌뿐인 종목은 원본 행을 그대로 반환해 스와이프 수정/삭제가 계속 동작한다.
+const mergeByTicker = (list: PortfolioViewItem[]): PortfolioViewItem[] => {
+  const map = new Map<string, PortfolioViewItem>()
+  for (const p of list) {
+    const existing = map.get(p.ticker)
+    if (!existing) {
+      map.set(p.ticker, { ...p, groupCount: 1 })
+      continue
     }
-  })()
-  if (!selectedAccount.value) return base
-  return base.filter((p) => (p.account_name ?? '미지정') === selectedAccount.value)
+    const totalQty = existing.quantity + p.quantity
+    if (totalQty > 0) {
+      existing.avg_price = (existing.avg_price * existing.quantity + p.avg_price * p.quantity) / totalQty
+    }
+    existing.quantity = totalQty
+    existing.evaluationAmount = (existing.evaluationAmount ?? 0) + (p.evaluationAmount ?? 0)
+    existing.evaluationAmountBase = (existing.evaluationAmountBase ?? 0) + (p.evaluationAmountBase ?? 0)
+    existing.costBase = (existing.costBase ?? 0) + (p.costBase ?? 0)
+    existing.profitAmountBase = (existing.profitAmountBase ?? 0) + (p.profitAmountBase ?? 0)
+    existing.profitRate = (existing.costBase ?? 0) > 0
+      ? ((existing.profitAmountBase ?? 0) / (existing.costBase ?? 1)) * 100
+      : existing.profitRate
+    existing.isPriceFallback = existing.isPriceFallback || p.isPriceFallback
+    existing.groupCount = (existing.groupCount ?? 1) + 1
+  }
+  // 합쳐진 카드는 원본 행 id와 겹치지 않는 가상 id 부여 (스와이프/플립 키용)
+  return [...map.values()].map((p) => ((p.groupCount ?? 1) > 1 ? { ...p, id: `group:${p.ticker}` } : p))
+}
+
+const sortedPortfolios = computed(() => {
+  let base: PortfolioViewItem[] = selectedAccount.value
+    ? portfolios.value.filter((p) => (p.account_name ?? '미지정') === selectedAccount.value)
+    : portfolios.value
+  if (groupByTicker.value) base = mergeByTicker(base)
+  if (sortKey.value === 'custom') return base
+  const list = [...base]
+  switch (sortKey.value) {
+    case 'eval':   return list.sort((a, b) => (b.evaluationAmountBase ?? 0) - (a.evaluationAmountBase ?? 0))
+    case 'profit': return list.sort((a, b) => (b.profitAmountBase ?? 0) - (a.profitAmountBase ?? 0))
+    case 'rate':   return list.sort((a, b) => (b.profitRate ?? 0) - (a.profitRate ?? 0))
+    case 'name': {
+      return list.sort((a, b) => getTickerDisplayName(a.ticker).localeCompare(getTickerDisplayName(b.ticker), 'ko'))
+    }
+    default:       return list
+  }
 })
 
 const onGlobalMouseUp = () => {
@@ -767,20 +809,30 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- 계좌 필터 -->
+      <!-- 계좌 필터 + 종목별 묶기 (한 줄 고정: 계좌가 많으면 칩 영역만 가로 스크롤) -->
       <div v-if="accountOptions.length > 0" class="account-filter-row mb-2">
         <button
-          class="account-chip"
-          :class="{ 'account-chip-active': selectedAccount === null }"
-          @click="selectedAccount = null"
-        >{{ $t('portfolio.filterAll') }}</button>
-        <button
-          v-for="acc in accountOptions"
-          :key="acc"
-          class="account-chip"
-          :class="{ 'account-chip-active': selectedAccount === acc }"
-          @click="selectedAccount = acc"
-        >{{ displayAccountName(acc) }}</button>
+          class="account-chip group-chip"
+          :class="{ 'account-chip-active': groupByTicker }"
+          @click="toggleGroupByTicker"
+        >
+          <v-icon size="12">mdi-layers-outline</v-icon>{{ $t('portfolio.groupByTicker') }}
+        </button>
+        <div class="chip-divider" />
+        <div class="account-chip-scroll">
+          <button
+            class="account-chip"
+            :class="{ 'account-chip-active': selectedAccount === null }"
+            @click="selectedAccount = null"
+          >{{ $t('portfolio.filterAll') }}</button>
+          <button
+            v-for="acc in accountOptions"
+            :key="acc"
+            class="account-chip"
+            :class="{ 'account-chip-active': selectedAccount === acc }"
+            @click="selectedAccount = acc"
+          >{{ displayAccountName(acc) }}</button>
+        </div>
       </div>
 
       <!-- 정렬 바 -->
@@ -875,9 +927,9 @@ onUnmounted(() => {
             class="swipe-card"
             :style="swipedId === item.id ? `transform: translateX(-${ACTION_WIDTH}px)` : ''"
             @touchstart.passive="(e) => onSwipeTouchStart(e)"
-            @touchend.passive="(e) => onSwipeTouchEnd(e, item.id, !isCashItem(item))"
+            @touchend.passive="(e) => onSwipeTouchEnd(e, item.id, !isCashItem(item), (item.groupCount ?? 1) <= 1)"
             @mousedown="(e) => onSwipeMouseDown(e)"
-            @mouseup="(e) => onSwipeMouseUp(e, item.id, !isCashItem(item))"
+            @mouseup="(e) => onSwipeMouseUp(e, item.id, !isCashItem(item), (item.groupCount ?? 1) <= 1)"
           >
           <!-- 플립 컨테이너: 앞뒤 face를 겹쳐 탭 시 3D 회전 -->
           <div class="flip-inner" :class="{ 'flip-inner--flipped': flippedId === item.id }">
@@ -891,7 +943,7 @@ onUnmounted(() => {
               <div class="d-flex justify-space-between align-center mb-1" style="gap: 6px">
                 <div class="d-flex align-center ga-2" style="min-width: 0; flex: 1">
                   <v-icon
-                    v-if="sortKey === 'custom'"
+                    v-if="sortKey === 'custom' && !groupByTicker"
                     class="drag-handle"
                     size="18"
                     style="
@@ -948,18 +1000,21 @@ onUnmounted(() => {
                       <span class="ticker-name">{{
                         getTickerLabel(item.ticker).name
                       }}</span>
-                      <span v-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
+                      <span v-if="(item.groupCount ?? 1) > 1" class="account-tag ml-1">{{ $t('portfolio.accountsBadge', { n: item.groupCount }) }}</span>
+                      <span v-else-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
                     </template>
                     <template v-else-if="getTickerLabel(item.ticker).showTicker">
                       <span class="ticker-name">{{
                         getTickerLabel(item.ticker).name
                       }}</span>
                       <span v-if="item.currency === 'USD'" class="ticker-sub ml-1">{{ item.ticker }}</span>
-                      <span v-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
+                      <span v-if="(item.groupCount ?? 1) > 1" class="account-tag ml-1">{{ $t('portfolio.accountsBadge', { n: item.groupCount }) }}</span>
+                      <span v-else-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
                     </template>
                     <template v-else>
                       <span class="ticker-name">{{ item.ticker }}</span>
-                      <span v-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
+                      <span v-if="(item.groupCount ?? 1) > 1" class="account-tag ml-1">{{ $t('portfolio.accountsBadge', { n: item.groupCount }) }}</span>
+                      <span v-else-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
                     </template>
                   </div>
                 </div>
@@ -1212,7 +1267,20 @@ onUnmounted(() => {
 .account-filter-row {
   display: flex;
   gap: 6px;
-  flex-wrap: wrap;
+  align-items: center;
+}
+.account-chip-scroll {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  min-width: 0;
+  /* 계좌가 많아도 한 줄 유지 — 칩 영역만 가로 스크롤 (스크롤바 숨김) */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.account-chip-scroll::-webkit-scrollbar {
+  display: none;
 }
 .account-chip {
   padding: 3px 10px;
@@ -1224,6 +1292,19 @@ onUnmounted(() => {
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.5);
   transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.group-chip {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.chip-divider {
+  width: 1px;
+  height: 14px;
+  background: rgba(var(--v-theme-on-surface), 0.12);
+  flex-shrink: 0;
 }
 .account-chip:active { opacity: 0.7; }
 .account-chip-active {

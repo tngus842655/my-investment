@@ -68,6 +68,8 @@
     "weight": "보유비중",
     "tapHint": "카드를 탭하면 상세 정보를 볼 수 있어요",
     "filterAll": "전체",
+    "groupByTicker": "종목별",
+    "accountsBadge": "계좌 {n}",
     "totalCount": "총 {n}건",
     "priceInfoTitle": "자산군별 시세 갱신 안내",
     "registerTickerName": "미국주식 한글표기명 등록요청",
