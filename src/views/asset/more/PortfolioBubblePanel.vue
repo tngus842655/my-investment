@@ -6,9 +6,13 @@ import { getCachedStockQuote } from '@/services/market'
 import { getTickerDisplayName } from '@/utils/tickerNames'
 import { convertMoney } from '@/utils/portfolioMath'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { useAppTheme } from '@/composables/useAppTheme'
 import { getAssetClass, isCash, type AssetClass, type MarketCode } from '@/config/marketConfig'
 
 const { baseCurrency, money } = useBaseCurrency()
+const { currentTheme } = useAppTheme()
+// 밝은 테마(light/nature)면 우주 다크 배경 대신 밝은 배경 사용
+const isDarkTheme = computed(() => currentTheme.value.dark)
 const userDataStore = useUserDataStore()
 
 const loading = ref(true)
@@ -262,7 +266,7 @@ onMounted(loadData)
 </script>
 
 <template>
-  <div class="bubble-panel">
+  <div class="bubble-panel" :class="{ 'bubble-panel--light': !isDarkTheme }">
     <!-- 총 평가금액 + 전일 대비 -->
     <div class="bubble-header" v-if="!loading && bubbles.length">
       <div class="total-label">{{ $t('assetBubble.totalAsset') }}</div>
@@ -284,7 +288,7 @@ onMounted(loadData)
     <template v-else-if="bubbles.length === 0">
       <div class="center-state">
         <v-icon size="56" color="primary" class="mb-3" style="opacity:0.4">mdi-chart-bubble</v-icon>
-        <div style="color: rgba(255,255,255,0.6)">{{ $t('assetBubble.empty') }}</div>
+        <div class="empty-text">{{ $t('assetBubble.empty') }}</div>
       </div>
     </template>
 
@@ -326,9 +330,9 @@ onMounted(loadData)
               <!-- 선택 링 -->
               <circle
                 v-if="selected?.ticker === b.ticker"
+                class="sel-ring"
                 :cx="b.x" :cy="b.y" :r="b.r * 1.04"
                 fill="none"
-                stroke="rgba(255,255,255,0.9)"
                 :stroke-width="b.r * 0.025"
                 pointer-events="none"
               />
@@ -367,7 +371,7 @@ onMounted(loadData)
               <div class="detail-value">{{ money(selected.valueBase, exchangeRate) }}</div>
               <div class="detail-weight">{{ $t('assetBubble.weight') }} {{ weightPct(selected) }}%</div>
             </div>
-            <v-icon size="20" class="detail-chevron" :class="{ 'chevron-open': cardExpanded }" style="color: rgba(255,255,255,0.6)">mdi-chevron-up</v-icon>
+            <v-icon size="20" class="detail-chevron" :class="{ 'chevron-open': cardExpanded }">mdi-chevron-up</v-icon>
           </div>
 
           <v-expand-transition>
@@ -423,7 +427,7 @@ onMounted(loadData)
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  /* 목업과 동일한 우주 느낌 다크 배경 (테마와 무관하게 이 패널은 다크 고정) */
+  /* 우주 느낌 다크 배경 (다크 계열 테마 기본, 밝은 테마는 아래 --light 오버라이드) */
   background:
     radial-gradient(ellipse 120% 80% at 50% 22%, #1a2942 0%, #0e1830 42%, #070c18 100%);
   overflow: hidden;
@@ -582,6 +586,7 @@ onMounted(loadData)
   margin-top: 2px;
 }
 .detail-chevron {
+  color: rgba(255, 255, 255, 0.6);
   transition: transform 0.25s ease;
 }
 .chevron-open {
@@ -642,4 +647,44 @@ onMounted(loadData)
   align-items: center;
   justify-content: center;
 }
+.empty-text {
+  color: rgba(255, 255, 255, 0.6);
+}
+.sel-ring {
+  stroke: rgba(255, 255, 255, 0.9);
+}
+
+/* ── 밝은 테마(light/nature) 오버라이드: 밝은 하늘 배경 + 어두운 텍스트 ── */
+.bubble-panel--light {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 22%, #f2f6fc 0%, #e4ecf7 42%, #d3dfef 100%);
+}
+.bubble-panel--light::before {
+  content: none; /* 별빛 제거 */
+}
+.bubble-panel--light .total-label { color: rgba(30, 41, 59, 0.55); }
+.bubble-panel--light .total-value { color: #1e293b; }
+.bubble-panel--light .total-date { color: rgba(30, 41, 59, 0.45); }
+.bubble-panel--light .chg-up { color: hsl(4, 72%, 46%); }
+.bubble-panel--light .chg-down { color: hsl(212, 72%, 42%); }
+.bubble-panel--light .detail-card {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(30, 41, 59, 0.12);
+}
+.bubble-panel--light .detail-ticker { color: #1e293b; }
+.bubble-panel--light .detail-name { color: rgba(30, 41, 59, 0.6); }
+.bubble-panel--light .detail-value { color: #1e293b; }
+.bubble-panel--light .detail-weight { color: rgba(30, 41, 59, 0.55); }
+.bubble-panel--light .detail-chevron { color: rgba(30, 41, 59, 0.55); }
+.bubble-panel--light .detail-grid {
+  background: rgba(30, 41, 59, 0.1);
+  border-top-color: rgba(30, 41, 59, 0.1);
+}
+.bubble-panel--light .grid-item { background: rgba(255, 255, 255, 0.85); }
+.bubble-panel--light .grid-label { color: rgba(30, 41, 59, 0.55); }
+.bubble-panel--light .grid-value { color: #1e293b; }
+.bubble-panel--light .legend-item { color: rgba(30, 41, 59, 0.7); }
+.bubble-panel--light .legend-note { color: rgba(30, 41, 59, 0.5); }
+.bubble-panel--light .empty-text { color: rgba(30, 41, 59, 0.6); }
+.bubble-panel--light .sel-ring { stroke: rgba(30, 41, 59, 0.55); }
 </style>
