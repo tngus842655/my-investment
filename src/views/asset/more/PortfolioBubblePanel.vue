@@ -49,7 +49,6 @@ const viewBox = ref('0 0 100 100')
 const exchangeRate = ref(1350)
 const totalBase = computed(() => bubbles.value.reduce((s, b) => s + b.valueBase, 0))
 const maxR = computed(() => bubbles.value.reduce((m, b) => Math.max(m, b.r), 0))
-const asOfDate = new Date().toISOString().slice(0, 10).replace(/-/g, '.')
 
 // 버블 탭 → 하단에 상세 정보 카드 표시. 같은 버블 다시 탭하면 해제
 const selected = ref<Bubble | null>(null)
@@ -269,19 +268,18 @@ onMounted(loadData)
   <div class="bubble-panel" :class="{ 'bubble-panel--light': !isDarkTheme }">
     <!-- 총 자산 카드 (평가금액 + 전일 대비 증감) — 자산분포 탭과 통일 -->
     <div class="bubble-header-card" v-if="!loading && bubbles.length">
-      <div class="bh-label">{{ $t('portfolioAnalysis.totalAsset') }}</div>
-      <div class="bh-value">{{ money(totalBase, exchangeRate) }}</div>
-      <div class="bh-meta">
-        <span
-          v-if="dayChange"
-          class="bh-change"
-          :class="dayChange.diff >= 0 ? 'chg-up' : 'chg-down'"
-        >
-          <v-icon size="14">{{ dayChange.diff >= 0 ? 'mdi-menu-up' : 'mdi-menu-down' }}</v-icon>
-          {{ money(Math.abs(dayChange.diff), exchangeRate) }} ({{ dayChange.rate >= 0 ? '+' : '' }}{{ dayChange.rate.toFixed(2) }}%)
-        </span>
-        <span class="bh-date">{{ asOfDate }} {{ $t('assetBubble.asOf') }}</span>
+      <div class="bh-left">
+        <div class="bh-label">{{ $t('portfolioAnalysis.totalAsset') }}</div>
+        <div class="bh-value">{{ money(totalBase, exchangeRate) }}</div>
       </div>
+      <span
+        v-if="dayChange"
+        class="bh-change"
+        :class="dayChange.diff >= 0 ? 'chg-up' : 'chg-down'"
+      >
+        <v-icon size="14">{{ dayChange.diff >= 0 ? 'mdi-menu-up' : 'mdi-menu-down' }}</v-icon>
+        {{ money(Math.abs(dayChange.diff), exchangeRate) }} ({{ dayChange.rate >= 0 ? '+' : '' }}{{ dayChange.rate.toFixed(2) }}%)
+      </span>
     </div>
 
     <template v-if="loading">
@@ -457,32 +455,30 @@ onMounted(loadData)
 .bubble-panel > * { position: relative; z-index: 1; }
 
 .bubble-header-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin: 12px 12px 6px;
-  padding: 14px 18px;
+  padding: 9px 16px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.13);
   backdrop-filter: blur(8px);
-  text-align: center;
+}
+.bh-left {
+  min-width: 0;
 }
 .bh-label {
   font-size: 0.6875rem;
   color: rgba(255, 255, 255, 0.55);
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 .bh-value {
-  font-size: 1.5rem;
+  font-size: 1.375rem;
   font-weight: 800;
   color: #fff;
   line-height: 1.15;
-}
-.bh-meta {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 5px;
-  flex-wrap: wrap;
 }
 .bh-change {
   display: inline-flex;
@@ -490,13 +486,10 @@ onMounted(loadData)
   gap: 1px;
   font-size: 0.8125rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 .chg-up { color: hsl(4, 82%, 64%); }
 .chg-down { color: hsl(212, 82%, 66%); }
-.bh-date {
-  font-size: 0.625rem;
-  color: rgba(255, 255, 255, 0.4);
-}
 
 .bubble-stage {
   flex: 1;
@@ -691,7 +684,6 @@ onMounted(loadData)
 }
 .bubble-panel--light .bh-label { color: rgba(30, 41, 59, 0.6); }
 .bubble-panel--light .bh-value { color: #1e293b; }
-.bubble-panel--light .bh-date { color: rgba(30, 41, 59, 0.45); }
 .bubble-panel--light .chg-up { color: hsl(4, 72%, 46%); }
 .bubble-panel--light .chg-down { color: hsl(212, 72%, 42%); }
 .bubble-panel--light .detail-card {
