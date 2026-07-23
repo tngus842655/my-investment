@@ -371,7 +371,7 @@ onMounted(loadData)
               <div class="detail-value">{{ money(selected.valueBase, exchangeRate) }}</div>
               <div class="detail-weight">{{ $t('assetBubble.weight') }} {{ weightPct(selected) }}%</div>
             </div>
-            <v-icon size="20" class="detail-chevron" :class="{ 'chevron-open': cardExpanded }">mdi-chevron-up</v-icon>
+            <v-icon size="20" class="detail-chevron" :class="{ 'chevron-open': cardExpanded }">mdi-chevron-down</v-icon>
           </div>
 
           <v-expand-transition>
