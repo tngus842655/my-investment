@@ -324,7 +324,7 @@ function formatFull(v: number) {
             </div>
             <div class="d-flex align-center ga-1">
               <span class="legend-dot profit" />
-              <span class="text-medium-emphasis">{{ $t('assetGrowth.profit', { amount: formatShort(Math.max(profitAmount, 0)) }) }}</span>
+              <span class="text-medium-emphasis">{{ $t('assetGrowth.profit', { amount: formatShort(profitAmount) }) }}</span>
             </div>
           </div>
         </v-card>
