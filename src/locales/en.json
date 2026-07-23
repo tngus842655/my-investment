@@ -330,7 +330,10 @@
     "shareNote": "Allocation based on the total value of the selected holdings.",
     "totalAsset": "Total Assets",
     "costBasisNote": "Asset Allocation.",
-    "maxCompare": "You can select up to {n} holdings."
+    "maxCompare": "You can select up to {n} holdings.",
+    "barModeShare": "Share",
+    "barModeProfit": "Return",
+    "profitNote": "Return vs. cost basis per holding"
   },
   "assetBubble": {
     "totalAsset": "Total Value",

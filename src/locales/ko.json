@@ -330,7 +330,10 @@
     "shareNote": "선택한 종목 평가금액 합계를 100%로 한 비중",
     "totalAsset": "총 자산",
     "costBasisNote": "평가금액 기준 비중",
-    "maxCompare": "최대 {n}개까지 선택할 수 있어요."
+    "maxCompare": "최대 {n}개까지 선택할 수 있어요.",
+    "barModeShare": "비중",
+    "barModeProfit": "수익률",
+    "profitNote": "종목별 취득원가 대비 수익률"
   },
   "assetBubble": {
     "totalAsset": "총 평가금액",

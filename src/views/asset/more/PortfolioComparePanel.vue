@@ -144,6 +144,15 @@ const compareRows = computed<CompareRow[]>(() => {
   }))
 })
 
+// 막대 기준 토글: 비중(share) ↔ 수익률(profit)
+const barMode = ref<'share' | 'profit'>('share')
+// 수익률 막대는 선택 종목 중 최대 절댓값을 100%로 잡아 상대 비교 (부호는 색으로 구분)
+const maxAbsProfit = computed(() => {
+  const vals = compareRows.value.map((r) => r.profitRate).filter((v): v is number => v !== null).map(Math.abs)
+  return vals.length ? Math.max(...vals, 1) : 1
+})
+const profitBarWidth = (rate: number | null) => (rate === null ? 0 : (Math.abs(rate) / maxAbsProfit.value) * 100)
+
 const loadData = async () => {
   loading.value = true
   try {
@@ -198,6 +207,19 @@ onMounted(loadData)
       </div>
 
       <div v-else class="compare-card">
+        <div class="bar-mode-toggle mb-3">
+          <button
+            class="bar-mode-btn"
+            :class="{ 'bar-mode-btn-active': barMode === 'share' }"
+            @click="barMode = 'share'"
+          >{{ $t('portfolioAnalysis.barModeShare') }}</button>
+          <button
+            class="bar-mode-btn"
+            :class="{ 'bar-mode-btn-active': barMode === 'profit' }"
+            @click="barMode = 'profit'"
+          >{{ $t('portfolioAnalysis.barModeProfit') }}</button>
+        </div>
+
         <div
           v-for="row in compareRows"
           :key="row.ticker"
@@ -208,7 +230,16 @@ onMounted(loadData)
               <span class="compare-dot" :style="{ background: row.color }" />
               <span class="compare-name">{{ row.label }}</span>
             </div>
-            <span v-if="row.sharePct !== null" class="font-weight-bold" :style="{ color: row.color }">{{ row.sharePct.toFixed(1) }}%</span>
+            <span
+              v-if="barMode === 'share' && row.sharePct !== null"
+              class="font-weight-bold"
+              :style="{ color: row.color }"
+            >{{ row.sharePct.toFixed(1) }}%</span>
+            <span
+              v-else-if="barMode === 'profit' && row.profitRate !== null"
+              class="font-weight-bold"
+              :class="row.profitRate >= 0 ? 'text-success' : 'text-error'"
+            >{{ row.profitRate >= 0 ? '+' : '' }}{{ row.profitRate.toFixed(1) }}%</span>
           </div>
 
           <template v-if="loadingPrices">
@@ -229,13 +260,21 @@ onMounted(loadData)
             </div>
             <div class="compare-bar-wrap">
               <div
+                v-if="barMode === 'share'"
                 class="compare-bar"
                 :style="{ width: (row.sharePct ?? 0) + '%', background: row.color }"
+              />
+              <div
+                v-else
+                class="compare-bar"
+                :style="{ width: profitBarWidth(row.profitRate) + '%', background: (row.profitRate ?? 0) >= 0 ? 'rgb(var(--v-theme-success))' : 'rgb(var(--v-theme-error))' }"
               />
             </div>
           </template>
         </div>
-        <div class="text-medium-emphasis text-center mt-3" style="opacity:0.6">{{ $t('portfolioAnalysis.shareNote') }}</div>
+        <div class="text-medium-emphasis text-center mt-3" style="opacity:0.6">
+          {{ barMode === 'share' ? $t('portfolioAnalysis.shareNote') : $t('portfolioAnalysis.profitNote') }}
+        </div>
       </div>
     </template>
   </div>
@@ -276,6 +315,30 @@ onMounted(loadData)
   border-color: transparent;
   color: #fff;
 }
+.bar-mode-toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+  background: rgba(var(--v-theme-on-surface), 0.06);
+}
+.bar-mode-btn {
+  padding: 5px 16px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(var(--v-theme-on-surface), 0.55);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.bar-mode-btn-active {
+  background: rgb(var(--v-theme-surface));
+  color: rgb(var(--v-theme-primary));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
 .compare-row {
   padding: 14px 0;
 }
