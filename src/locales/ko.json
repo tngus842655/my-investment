@@ -111,6 +111,7 @@
     "totalBuy": "총 매수",
     "totalSell": "총 매도",
     "all": "전체",
+    "allTickers": "종목 전체",
     "buy": "매수",
     "sell": "매도",
     "totalCount": "총 {n}건",
