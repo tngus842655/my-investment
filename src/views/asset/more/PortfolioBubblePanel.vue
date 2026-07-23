@@ -117,8 +117,24 @@ const colorParts = (cr: number | null): { color: string; stroke: string; glow: s
 // 종목명·등락률 텍스트를 넣기에 충분히 큰 원만 텍스트 표시 (작은 원은 생략)
 const showText = (b: Bubble) => b.r >= maxR.value * 0.3
 const showChange = (b: Bubble) => b.r >= maxR.value * 0.26
-const showName = (b: Bubble) => b.r >= maxR.value * 0.55 && b.label !== b.ticker
 const fmtChange = (cr: number | null) => cr === null ? '-' : `${cr >= 0 ? '+' : ''}${cr.toFixed(2)}%`
+
+// 원 안에 안 들어가는 긴 이름은 뒤를 …로 자른다.
+// 폰트·최대너비를 모두 r 배수로 넘기므로 measureText가 화면 배율과 무관하게 비율만으로 판단한다.
+let measureCtx: CanvasRenderingContext2D | null = null
+const truncateToWidth = (text: string, fontPx: number, maxWidth: number): string => {
+  if (!measureCtx) measureCtx = document.createElement('canvas').getContext('2d')
+  if (!measureCtx) return text
+  measureCtx.font = `700 ${fontPx}px system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif`
+  if (measureCtx.measureText(text).width <= maxWidth) return text
+  for (let i = text.length - 1; i > 0; i--) {
+    const candidate = text.slice(0, i) + '…'
+    if (measureCtx.measureText(candidate).width <= maxWidth) return candidate
+  }
+  return '…'
+}
+// 버블 메인 텍스트: 한글명 우선(없으면 티커) — 원 지름의 약 86% 안에 맞춰 표시
+const fitName = (b: Bubble): string => truncateToWidth(b.label, b.r * 0.22, b.r * 1.72)
 
 // ── 원 패킹: 스파이럴 초기배치 후 중력+충돌 완화로 밀집(Circle Packing 느낌) ──
 interface Node { x: number; y: number; r: number }
@@ -341,16 +357,22 @@ onMounted(loadData)
               />
 
               <template v-if="showText(b)">
-                <!-- 이름 서브라벨이 있으면 3줄, 없으면 2줄로 세로 정렬 -->
-                <template v-if="showName(b)">
-                  <text :x="b.x" :y="b.y - b.r * 0.2" text-anchor="middle" class="bubble-ticker" :style="{ fontSize: `${b.r * 0.3}px` }">{{ b.ticker }}</text>
-                  <text :x="b.x" :y="b.y + b.r * 0.04" text-anchor="middle" class="bubble-name" :style="{ fontSize: `${b.r * 0.15}px` }">{{ b.label }}</text>
-                  <text v-if="showChange(b)" :x="b.x" :y="b.y + b.r * 0.34" text-anchor="middle" class="bubble-change" :style="{ fontSize: `${b.r * 0.2}px` }">{{ fmtChange(b.changeRate) }}</text>
-                </template>
-                <template v-else>
-                  <text :x="b.x" :y="b.y - (showChange(b) ? b.r * 0.06 : -b.r * 0.12)" text-anchor="middle" class="bubble-ticker" :style="{ fontSize: `${b.r * 0.34}px` }">{{ b.ticker }}</text>
-                  <text v-if="showChange(b)" :x="b.x" :y="b.y + b.r * 0.34" text-anchor="middle" class="bubble-change" :style="{ fontSize: `${b.r * 0.22}px` }">{{ fmtChange(b.changeRate) }}</text>
-                </template>
+                <!-- 메인: 한글명(없으면 티커), 원 밖으로 넘치면 … 처리 / 아래: 전일 대비 등락률 -->
+                <text
+                  :x="b.x"
+                  :y="showChange(b) ? b.y - b.r * 0.05 : b.y + b.r * 0.07"
+                  text-anchor="middle"
+                  class="bubble-name-main"
+                  :style="{ fontSize: `${b.r * 0.22}px` }"
+                >{{ fitName(b) }}</text>
+                <text
+                  v-if="showChange(b)"
+                  :x="b.x"
+                  :y="b.y + b.r * 0.3"
+                  text-anchor="middle"
+                  class="bubble-change"
+                  :style="{ fontSize: `${b.r * 0.2}px` }"
+                >{{ fmtChange(b.changeRate) }}</text>
               </template>
             </g>
           </g>
@@ -535,18 +557,12 @@ onMounted(loadData)
   50% { transform: scale(1.14); }
 }
 
-.bubble-ticker {
+.bubble-name-main {
   fill: #fff;
   font-weight: 700;
   font-family: inherit;
   pointer-events: none;
   paint-order: stroke;
-}
-.bubble-name {
-  fill: rgba(255, 255, 255, 0.72);
-  font-weight: 500;
-  font-family: inherit;
-  pointer-events: none;
 }
 .bubble-change {
   fill: rgba(255, 255, 255, 0.92);
