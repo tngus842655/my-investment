@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import PortfolioAssetClassPanel from './PortfolioAssetClassPanel.vue'
@@ -15,6 +15,23 @@ const pageNames = computed(() => [
   t('portfolioAnalysis.pageBubble'),
   t('portfolioAnalysis.pageCompare'),
 ])
+
+// 좌우로 넘길 수 있다는 걸 처음 방문 때 1회만 안내 (탭 전환 시 즉시 사라짐)
+const SWIPE_HINT_KEY = 'firepath-portfolio-analysis-swipe-hint'
+const showSwipeHint = ref(false)
+let hintTimer: ReturnType<typeof setTimeout> | null = null
+const dismissHint = () => {
+  if (!showSwipeHint.value) return
+  showSwipeHint.value = false
+  if (hintTimer) { clearTimeout(hintTimer); hintTimer = null }
+}
+onMounted(() => {
+  if (localStorage.getItem(SWIPE_HINT_KEY)) return
+  localStorage.setItem(SWIPE_HINT_KEY, '1')
+  showSwipeHint.value = true
+  hintTimer = setTimeout(dismissHint, 3500)
+})
+watch(page, dismissHint)
 </script>
 
 <template>
@@ -35,6 +52,13 @@ const pageNames = computed(() => [
         <PortfolioComparePanel />
       </v-window-item>
     </v-window>
+
+    <Transition name="hint-fade">
+      <div v-if="showSwipeHint" class="swipe-hint" @click="dismissHint">
+        <v-icon size="16">mdi-gesture-swipe-horizontal</v-icon>
+        <span>{{ $t('portfolioAnalysis.swipeHint') }}</span>
+      </div>
+    </Transition>
 
     <div class="indicator-bar">
       <button
@@ -88,6 +112,36 @@ const pageNames = computed(() => [
 .analysis-window :deep(.v-window__container),
 .analysis-window :deep(.v-window-item) {
   height: 100%;
+}
+
+.swipe-hint {
+  position: absolute;
+  bottom: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 99px;
+  background: rgba(var(--v-theme-primary), 0.92);
+  color: rgb(var(--v-theme-on-primary));
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.hint-fade-enter-active,
+.hint-fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.hint-fade-enter-from,
+.hint-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px);
 }
 
 .indicator-bar {

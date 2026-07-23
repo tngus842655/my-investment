@@ -285,6 +285,8 @@ onMounted(loadData)
   height: 100%;
   overflow-y: auto;
   padding: 16px;
+  /* 종목구성(버블) 탭의 상단 발광 배경과 톤을 맞춰 스와이프 시 이질감 완화 */
+  background: radial-gradient(ellipse 130% 55% at 50% 0%, rgba(var(--v-theme-primary), 0.05), transparent 62%);
 }
 
 .compare-card {

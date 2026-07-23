@@ -165,16 +165,21 @@ onMounted(loadData)
         <div class="chart-wrap">
           <svg viewBox="0 0 240 240" class="donut-svg" @click="hoveredKey = null">
             <circle :cx="CX" :cy="CY" :r="(OR + IR) / 2" fill="none" stroke="rgba(128,128,128,0.08)" :stroke-width="OR - IR" />
-            <path
+            <g
               v-for="(seg, i) in segments"
               :key="seg.key"
-              :d="seg.path"
-              :fill="seg.color"
-              :opacity="hoveredKey && hoveredKey !== seg.key ? 0.35 : 1"
-              class="seg-path"
-              :style="{ '--delay': `${i * 0.06}s`, transform: seg.key === hoveredKey ? 'scale(1.04)' : 'scale(1)' }"
-              @click.stop="toggleKey(seg.key)"
-            />
+              class="seg-enter"
+              :style="{ '--delay': `${i * 0.06}s` }"
+            >
+              <path
+                :d="seg.path"
+                :fill="seg.color"
+                :opacity="hoveredKey && hoveredKey !== seg.key ? 0.35 : 1"
+                class="seg-path"
+                :style="{ transform: seg.key === hoveredKey ? 'scale(1.04)' : 'scale(1)' }"
+                @click.stop="toggleKey(seg.key)"
+              />
+            </g>
             <text x="120" y="108" text-anchor="middle" class="center-label">
               {{ hovered ? hovered.label : $t('portfolioAnalysis.totalAsset') }}
             </text>
@@ -220,6 +225,8 @@ onMounted(loadData)
   height: 100%;
   overflow-y: auto;
   padding: 16px;
+  /* 종목구성(버블) 탭의 상단 발광 배경과 톤을 맞춰 스와이프 시 이질감 완화 */
+  background: radial-gradient(ellipse 130% 55% at 50% 0%, rgba(var(--v-theme-primary), 0.05), transparent 62%);
 }
 
 .chart-card {
@@ -241,11 +248,15 @@ onMounted(loadData)
   display: block;
 }
 
+/* 등장 애니메이션은 래퍼 g에 분리 — 조각의 hover/선택 transform·opacity와 겹치지 않게 함 */
+.seg-enter {
+  transform-origin: 120px 120px;
+  animation: segFadeIn 0.5s ease var(--delay, 0s) both;
+}
 .seg-path {
   transition: opacity 0.2s ease, transform 0.2s ease;
   transform-origin: 120px 120px;
   cursor: pointer;
-  animation: segFadeIn 0.5s ease var(--delay, 0s) both;
 }
 
 @keyframes segFadeIn {

@@ -333,7 +333,8 @@
     "maxCompare": "You can select up to {n} holdings.",
     "barModeShare": "Share",
     "barModeProfit": "Return",
-    "profitNote": "Return vs. cost basis per holding"
+    "profitNote": "Return vs. cost basis per holding",
+    "swipeHint": "Swipe left or right to switch views"
   },
   "assetBubble": {
     "totalAsset": "Total Value",
