@@ -334,7 +334,9 @@
     "barModeShare": "Share",
     "barModeProfit": "Return",
     "profitNote": "Return vs. cost basis per holding",
-    "swipeHint": "Swipe left or right to switch views"
+    "swipeHint": "Swipe left or right to switch views",
+    "groupByType": "Asset Type",
+    "groupByAccount": "Account"
   },
   "assetBubble": {
     "totalAsset": "Total Value",

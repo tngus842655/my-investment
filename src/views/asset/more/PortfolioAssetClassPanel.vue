@@ -6,6 +6,7 @@ import { getCachedStockQuote } from '@/services/market'
 import { convertMoney } from '@/utils/portfolioMath'
 import { useDesignTokens } from '@/composables/useDesignTokens'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { displayAccountName, UNASSIGNED_ACCOUNT } from '@/utils/accountName'
 import { getAssetClass, getMarket, isCash, classMarketToAssetType, displayAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
 
 const { chart } = useDesignTokens()
@@ -28,6 +29,7 @@ interface PortfolioRow {
   currency: 'KRW' | 'USD'
   avg_price: number
   quantity: number
+  account_name: string | null
 }
 
 const assetTypeLabel = (p: PortfolioRow): string => classMarketToAssetType(getAssetClass(p), getMarket(p))
@@ -80,11 +82,18 @@ function buildPath(start: number, end: number): string {
   return `M ${o1.x} ${o1.y} A ${OR} ${OR} 0 ${large} 1 ${o2.x} ${o2.y} L ${i1.x} ${i1.y} A ${IR} ${IR} 0 ${large} 0 ${i2.x} ${i2.y} Z`
 }
 
+// 분포 기준: 자산군(type) ↔ 계좌(account)
+const groupMode = ref<'type' | 'account'>('type')
+const accountKey = (p: PortfolioRow) => p.account_name ?? UNASSIGNED_ACCOUNT
+// 서로 다른 계좌가 2개 이상일 때만 계좌 토글을 노출 (단일 계좌면 100% 한 조각이라 무의미)
+const hasMultipleAccounts = computed(() => new Set(portfolioRows.value.map(accountKey)).size >= 2)
+
 const segments = computed<Seg[]>(() => {
+  const byAccount = groupMode.value === 'account' && hasMultipleAccounts.value
   const map = new Map<string, { label: string; valueKrw: number }>()
   for (const p of portfolioRows.value) {
-    const key = assetTypeLabel(p)
-    const label = displayAssetType(key)
+    const key = byAccount ? accountKey(p) : assetTypeLabel(p)
+    const label = byAccount ? displayAccountName(key) : displayAssetType(key)
     const val = evalRowBase(p)
     const existing = map.get(key)
     if (existing) existing.valueKrw += val
@@ -97,10 +106,13 @@ const segments = computed<Seg[]>(() => {
   const sorted = [...map.entries()].sort((a, b) => b[1].valueKrw - a[1].valueKrw)
 
   let angle = 0
-  return sorted.map(([key, val]) => {
+  return sorted.map(([key, val], i) => {
     const pct = (val.valueKrw / total) * 100
     const sweep = (pct / 100) * 360
-    const color = chart.value.typeColors[key] ?? chart.value.palette[0]!
+    // 계좌별은 고정 색이 없으므로 팔레트를 순서대로 배정, 자산군은 지정 색 사용
+    const color = byAccount
+      ? chart.value.palette[i % chart.value.palette.length]!
+      : (chart.value.typeColors[key] ?? chart.value.palette[0]!)
     const gap = sorted.length > 1 ? GAP_DEG : 0
     const s: Seg = {
       key,
@@ -161,6 +173,19 @@ onMounted(loadData)
     </template>
 
     <template v-else>
+      <div v-if="hasMultipleAccounts" class="group-toggle mb-4">
+        <button
+          class="group-btn"
+          :class="{ 'group-btn-active': groupMode === 'type' }"
+          @click="groupMode = 'type'; hoveredKey = null"
+        >{{ $t('portfolioAnalysis.groupByType') }}</button>
+        <button
+          class="group-btn"
+          :class="{ 'group-btn-active': groupMode === 'account' }"
+          @click="groupMode = 'account'; hoveredKey = null"
+        >{{ $t('portfolioAnalysis.groupByAccount') }}</button>
+      </div>
+
       <div class="chart-card mb-4">
         <div class="chart-wrap">
           <svg viewBox="0 0 240 240" class="donut-svg" @click="hoveredKey = null">
@@ -227,6 +252,30 @@ onMounted(loadData)
   padding: 16px;
   /* 종목구성(버블) 탭의 상단 발광 배경과 톤을 맞춰 스와이프 시 이질감 완화 */
   background: radial-gradient(ellipse 130% 55% at 50% 0%, rgba(var(--v-theme-primary), 0.05), transparent 62%);
+}
+
+.group-toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+  background: rgba(var(--v-theme-on-surface), 0.06);
+}
+.group-btn {
+  padding: 5px 16px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(var(--v-theme-on-surface), 0.55);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.group-btn-active {
+  background: rgb(var(--v-theme-surface));
+  color: rgb(var(--v-theme-primary));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
 .chart-card {
