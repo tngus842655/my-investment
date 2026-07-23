@@ -632,7 +632,7 @@ onUnmounted(() => {
           <option :value="null">{{ $t('transactions.allTickers') }}</option>
           <option v-for="tk in tickerOptions" :key="tk.ticker" :value="tk.ticker">{{ tk.label }}</option>
         </select>
-        <template v-if="accountOptions.length > 0">
+        <div v-if="accountOptions.length > 0" class="account-chip-scroll">
           <button
             class="account-chip"
             :class="{ 'account-chip-active': selectedAccount === null }"
@@ -645,7 +645,7 @@ onUnmounted(() => {
             :class="{ 'account-chip-active': selectedAccount === acc }"
             @click="selectedAccount = acc; closeSwipe()"
           >{{ displayAccountName(acc) }}</button>
-        </template>
+        </div>
       </div>
 
       <!-- 건수 + 날짜 드롭다운 -->
@@ -881,10 +881,23 @@ onUnmounted(() => {
 .account-filter-row {
   display: flex;
   gap: 6px;
-  flex-wrap: wrap;
   align-items: center;
 }
+.account-chip-scroll {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  min-width: 0;
+  /* 계좌가 많아도 한 줄 유지 — 칩 영역만 가로 스크롤 (스크롤바 숨김) */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.account-chip-scroll::-webkit-scrollbar {
+  display: none;
+}
 .ticker-select {
+  flex-shrink: 0;
   height: 26px;
   max-width: 160px;
   padding: 0 24px 0 12px;
@@ -918,6 +931,8 @@ onUnmounted(() => {
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.5);
   transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .account-chip:active { opacity: 0.7; }
 .account-chip-active {
