@@ -54,6 +54,8 @@ export const useUserDataStore = defineStore('userData', {
     goalsLoaded: false,
     assetSummaryLoaded: false,
     portfoliosLoaded: false,
+    // 앱 콜드 스타트 이후 홈에서 최신 시세로 현재자산을 한 번 재계산했는지 (탭 전환 반복 재계산 방지)
+    assetRefreshedThisSession: false,
   }),
   actions: {
     async ensureGoals(force = false) {
@@ -127,6 +129,7 @@ export const useUserDataStore = defineStore('userData', {
       this.goalsLoaded = false
       this.assetSummaryLoaded = false
       this.portfoliosLoaded = false
+      this.assetRefreshedThisSession = false
       setBaseCurrency('KRW')
     },
   },
