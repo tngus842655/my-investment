@@ -3,9 +3,9 @@ import { defineConfig } from '@apps-in-toss/web-framework/config';
 export default defineConfig({
   appName: 'firepath',
   brand: {
-    displayName: 'firepath', // 화면에 노출될 앱의 한글 이름으로 바꿔주세요.
-    primaryColor: '#3182F6', // 화면에 노출될 앱의 기본 색상으로 바꿔주세요.
-    icon: '', // 화면에 노출될 앱의 아이콘 이미지 주소로 바꿔주세요.
+    displayName: '파이어패스', // 앱인토스 콘솔에 제출한 미니앱 이름과 동일
+    primaryColor: '#3182F6',
+    icon: '', // 콘솔에 업로드한 아이콘의 링크(https://static.toss.im/appsintoss/...)를 붙여넣을 것
   },
   web: {
     host: 'localhost',
