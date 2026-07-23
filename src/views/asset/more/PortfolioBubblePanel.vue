@@ -268,7 +268,7 @@ onMounted(loadData)
   <div class="bubble-panel" :class="{ 'bubble-panel--light': !isDarkTheme }">
     <!-- 총 자산 카드 (평가금액 + 전일 대비 증감) — 자산분포 탭과 통일 -->
     <div class="bubble-header-card" v-if="!loading && bubbles.length">
-      <div class="bh-left">
+      <div class="bh-main">
         <div class="bh-label">{{ $t('portfolioAnalysis.totalAsset') }}</div>
         <div class="bh-value">{{ money(totalBase, exchangeRate) }}</div>
       </div>
@@ -455,18 +455,16 @@ onMounted(loadData)
 .bubble-panel > * { position: relative; z-index: 1; }
 
 .bubble-header-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  position: relative;
   margin: 12px 12px 6px;
   padding: 9px 16px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.13);
   backdrop-filter: blur(8px);
+  text-align: center;
 }
-.bh-left {
+.bh-main {
   min-width: 0;
 }
 .bh-label {
@@ -481,6 +479,10 @@ onMounted(loadData)
   line-height: 1.15;
 }
 .bh-change {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   gap: 1px;
