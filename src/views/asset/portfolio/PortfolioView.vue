@@ -630,6 +630,8 @@ const groupByTicker = ref(localStorage.getItem(GROUP_STORAGE_KEY) === 'true')
 const toggleGroupByTicker = () => {
   groupByTicker.value = !groupByTicker.value
   localStorage.setItem(GROUP_STORAGE_KEY, String(groupByTicker.value))
+  // 종목별은 계좌 구분을 무시하고 합치는 모드라, 켜질 때 계좌 필터를 전체로 되돌린다
+  if (groupByTicker.value) selectedAccount.value = null
   swipedId.value = null
   flippedId.value = null
 }
@@ -818,21 +820,24 @@ onUnmounted(() => {
         >
           <v-icon size="12">mdi-layers-outline</v-icon>{{ $t('portfolio.groupByTicker') }}
         </button>
-        <div class="chip-divider" />
-        <div class="account-chip-scroll">
-          <button
-            class="account-chip"
-            :class="{ 'account-chip-active': selectedAccount === null }"
-            @click="selectedAccount = null"
-          >{{ $t('portfolio.filterAll') }}</button>
-          <button
-            v-for="acc in accountOptions"
-            :key="acc"
-            class="account-chip"
-            :class="{ 'account-chip-active': selectedAccount === acc }"
-            @click="selectedAccount = acc"
-          >{{ displayAccountName(acc) }}</button>
-        </div>
+        <!-- 종목별 모드에서는 계좌 필터가 무의미하므로 숨김 (종목별 토글만 남김) -->
+        <template v-if="!groupByTicker">
+          <div class="chip-divider" />
+          <div class="account-chip-scroll">
+            <button
+              class="account-chip"
+              :class="{ 'account-chip-active': selectedAccount === null }"
+              @click="selectedAccount = null"
+            >{{ $t('portfolio.filterAll') }}</button>
+            <button
+              v-for="acc in accountOptions"
+              :key="acc"
+              class="account-chip"
+              :class="{ 'account-chip-active': selectedAccount === acc }"
+              @click="selectedAccount = acc"
+            >{{ displayAccountName(acc) }}</button>
+          </div>
+        </template>
       </div>
 
       <!-- 정렬 바 -->
