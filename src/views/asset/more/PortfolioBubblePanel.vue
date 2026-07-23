@@ -267,16 +267,21 @@ onMounted(loadData)
 
 <template>
   <div class="bubble-panel" :class="{ 'bubble-panel--light': !isDarkTheme }">
-    <!-- 총 평가금액 + 전일 대비 -->
-    <div class="bubble-header" v-if="!loading && bubbles.length">
-      <div class="total-label">{{ $t('assetBubble.totalAsset') }}</div>
-      <div class="total-value">{{ money(totalBase, exchangeRate) }}</div>
-      <div
-        v-if="dayChange"
-        class="total-change"
-        :class="dayChange.diff >= 0 ? 'chg-up' : 'chg-down'"
-      >{{ dayChange.diff >= 0 ? '+' : '-' }}{{ money(Math.abs(dayChange.diff), exchangeRate) }} ({{ dayChange.rate >= 0 ? '+' : '' }}{{ dayChange.rate.toFixed(2) }}%)</div>
-      <div class="total-date">{{ asOfDate }} {{ $t('assetBubble.asOf') }}</div>
+    <!-- 총 자산 카드 (평가금액 + 전일 대비 증감) — 자산분포 탭과 통일 -->
+    <div class="bubble-header-card" v-if="!loading && bubbles.length">
+      <div class="bh-label">{{ $t('portfolioAnalysis.totalAsset') }}</div>
+      <div class="bh-value">{{ money(totalBase, exchangeRate) }}</div>
+      <div class="bh-meta">
+        <span
+          v-if="dayChange"
+          class="bh-change"
+          :class="dayChange.diff >= 0 ? 'chg-up' : 'chg-down'"
+        >
+          <v-icon size="14">{{ dayChange.diff >= 0 ? 'mdi-menu-up' : 'mdi-menu-down' }}</v-icon>
+          {{ money(Math.abs(dayChange.diff), exchangeRate) }} ({{ dayChange.rate >= 0 ? '+' : '' }}{{ dayChange.rate.toFixed(2) }}%)
+        </span>
+        <span class="bh-date">{{ asOfDate }} {{ $t('assetBubble.asOf') }}</span>
+      </div>
     </div>
 
     <template v-if="loading">
@@ -451,26 +456,44 @@ onMounted(loadData)
 }
 .bubble-panel > * { position: relative; z-index: 1; }
 
-.bubble-header {
-  padding: 12px 16px 4px;
-  text-align: right;
+.bubble-header-card {
+  margin: 12px 12px 6px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  backdrop-filter: blur(8px);
+  text-align: center;
 }
-.total-label {
+.bh-label {
   font-size: 0.6875rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 2px;
 }
-.total-value {
-  font-size: 1.125rem;
-  font-weight: 700;
+.bh-value {
+  font-size: 1.5rem;
+  font-weight: 800;
   color: #fff;
+  line-height: 1.15;
 }
-.total-change {
-  font-size: 0.75rem;
-  font-weight: 600;
+.bh-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 5px;
+  flex-wrap: wrap;
+}
+.bh-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  font-size: 0.8125rem;
+  font-weight: 700;
 }
 .chg-up { color: hsl(4, 82%, 64%); }
 .chg-down { color: hsl(212, 82%, 66%); }
-.total-date {
+.bh-date {
   font-size: 0.625rem;
   color: rgba(255, 255, 255, 0.4);
 }
@@ -662,9 +685,13 @@ onMounted(loadData)
 .bubble-panel--light::before {
   content: none; /* 별빛 제거 */
 }
-.bubble-panel--light .total-label { color: rgba(30, 41, 59, 0.55); }
-.bubble-panel--light .total-value { color: #1e293b; }
-.bubble-panel--light .total-date { color: rgba(30, 41, 59, 0.45); }
+.bubble-panel--light .bubble-header-card {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(30, 41, 59, 0.12);
+}
+.bubble-panel--light .bh-label { color: rgba(30, 41, 59, 0.6); }
+.bubble-panel--light .bh-value { color: #1e293b; }
+.bubble-panel--light .bh-date { color: rgba(30, 41, 59, 0.45); }
 .bubble-panel--light .chg-up { color: hsl(4, 72%, 46%); }
 .bubble-panel--light .chg-down { color: hsl(212, 72%, 42%); }
 .bubble-panel--light .detail-card {
