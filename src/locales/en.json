@@ -329,7 +329,6 @@
     "priceFailed": "Failed to fetch price",
     "shareNote": "Allocation based on the total value of the selected holdings.",
     "totalAsset": "Total Assets",
-    "costBasisNote": "Asset Allocation.",
     "maxCompare": "You can select up to {n} holdings.",
     "barModeShare": "Share",
     "barModeProfit": "Return",

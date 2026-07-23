@@ -239,8 +239,6 @@ onMounted(loadData)
           </div>
         </div>
       </div>
-
-      <div class="text-medium-emphasis text-center mt-3" style="opacity:0.6">{{ $t('portfolioAnalysis.costBasisNote') }}</div>
     </template>
   </div>
 </template>
