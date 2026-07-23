@@ -654,10 +654,10 @@ onMounted(loadData)
   stroke: rgba(255, 255, 255, 0.9);
 }
 
-/* ── 밝은 테마(light/nature) 오버라이드: 밝은 하늘 배경 + 어두운 텍스트 ── */
+/* ── 밝은 테마(light/nature) 오버라이드: 자산분포·종목비교 탭과 동일한 배경으로 통일 ──
+   (앱 테마 배경이 그대로 비치도록 투명 + 상단 primary 발광만 얹음) */
 .bubble-panel--light {
-  background:
-    radial-gradient(ellipse 120% 80% at 50% 22%, #f2f6fc 0%, #e4ecf7 42%, #d3dfef 100%);
+  background: radial-gradient(ellipse 130% 55% at 50% 0%, rgba(var(--v-theme-primary), 0.05), transparent 62%);
 }
 .bubble-panel--light::before {
   content: none; /* 별빛 제거 */
