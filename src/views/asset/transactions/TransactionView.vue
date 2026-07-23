@@ -899,7 +899,8 @@ onUnmounted(() => {
 .ticker-select {
   flex-shrink: 0;
   height: 26px;
-  max-width: 160px;
+  width: 106px;
+  max-width: 106px;
   padding: 0 24px 0 12px;
   border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
   border-radius: 20px;
