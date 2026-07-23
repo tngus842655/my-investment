@@ -1,5 +1,5 @@
 // 이 파일은 scripts/generate-crypto-tickers.mjs 로 자동 생성됩니다.
-// 업비트 KRW 마켓 기준 | 마지막 업데이트: 2026-06-26
+// 업비트 KRW 마켓 기준 | 마지막 업데이트: 2026-07-23
 
 export const CRYPTO_NAMES: Record<string, string> = {
   '0G': '제로지',
@@ -12,6 +12,7 @@ export const CRYPTO_NAMES: Record<string, string> = {
   'AERO': '에어로드롬파이낸스',
   'AGLD': '어드벤처골드',
   'AHT': '아하토큰',
+  'AI': '젠신',
   'AKT': '아카시네트워크',
   'ALGO': '알고랜드',
   'ALT': '알트레이어',
@@ -70,11 +71,13 @@ export const CRYPTO_NAMES: Record<string, string> = {
   'CTC': '크레딧코인',
   'CVC': '시빅',
   'CYBER': '사이버',
+  'DATA': '데이터네트워크',
   'DEEP': '딥북',
   'DKA': '디카르고',
   'DOGE': '도지코인',
   'DOOD': '두들즈',
   'DOT': '폴카닷',
+  'DRV': '디라이브',
   'EDGE': '디피니티브',
   'EGLD': '멀티버스엑스',
   'ELF': '엘프',
@@ -114,7 +117,6 @@ export const CRYPTO_NAMES: Record<string, string> = {
   'IO': '아이오넷',
   'IOST': '아이오에스티',
   'IOTA': '아이오타',
-  'IP': '스토리',
   'IQ': '아이큐',
   'IRYS': '아이리스',
   'JST': '저스트',
@@ -158,11 +160,13 @@ export const CRYPTO_NAMES: Record<string, string> = {
   'NEO': '네오',
   'NEWT': '뉴턴프로토콜',
   'NXPC': '넥스페이스',
+  'O': '오원익스체인지',
   'ONDO': '온도파이낸스',
   'ONG': '온톨로지가스',
   'ONT': '온톨로지',
   'OP': '옵티미즘',
   'OPEN': '오픈렛저',
+  'OPG': '오픈그라디언트',
   'ORBS': '오브스',
   'ORCA': '오르카',
   'ORDER': '오덜리',
