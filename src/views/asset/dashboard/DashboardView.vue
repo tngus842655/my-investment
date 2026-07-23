@@ -207,7 +207,11 @@ const loadDashboard = async (force = false) => {
 }
 
 onMounted(() => {
-  loadDashboard()
+  // 앱을 껐다 켠 뒤(콜드 스타트) 홈 첫 진입에만 최신 시세로 현재자산을 재계산한다.
+  // 탭 전환으로 다시 들어올 때는 캐시를 써서 반복 재계산을 막는다.
+  const needsFreshPrices = !userDataStore.assetRefreshedThisSession
+  userDataStore.assetRefreshedThisSession = true
+  loadDashboard(needsFreshPrices)
   checkLatestNotice()
   useRegisterPullToRefresh(() => loadDashboard(true))
 })

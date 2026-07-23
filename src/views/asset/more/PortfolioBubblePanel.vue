@@ -6,9 +6,13 @@ import { getCachedStockQuote } from '@/services/market'
 import { getTickerDisplayName } from '@/utils/tickerNames'
 import { convertMoney } from '@/utils/portfolioMath'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
+import { useAppTheme } from '@/composables/useAppTheme'
 import { getAssetClass, isCash, type AssetClass, type MarketCode } from '@/config/marketConfig'
 
 const { baseCurrency, money } = useBaseCurrency()
+const { currentTheme } = useAppTheme()
+// 밝은 테마(light/nature)면 우주 다크 배경 대신 밝은 배경 사용
+const isDarkTheme = computed(() => currentTheme.value.dark)
 const userDataStore = useUserDataStore()
 
 const loading = ref(true)
@@ -45,7 +49,6 @@ const viewBox = ref('0 0 100 100')
 const exchangeRate = ref(1350)
 const totalBase = computed(() => bubbles.value.reduce((s, b) => s + b.valueBase, 0))
 const maxR = computed(() => bubbles.value.reduce((m, b) => Math.max(m, b.r), 0))
-const asOfDate = new Date().toISOString().slice(0, 10).replace(/-/g, '.')
 
 // 버블 탭 → 하단에 상세 정보 카드 표시. 같은 버블 다시 탭하면 해제
 const selected = ref<Bubble | null>(null)
@@ -114,8 +117,24 @@ const colorParts = (cr: number | null): { color: string; stroke: string; glow: s
 // 종목명·등락률 텍스트를 넣기에 충분히 큰 원만 텍스트 표시 (작은 원은 생략)
 const showText = (b: Bubble) => b.r >= maxR.value * 0.3
 const showChange = (b: Bubble) => b.r >= maxR.value * 0.26
-const showName = (b: Bubble) => b.r >= maxR.value * 0.55 && b.label !== b.ticker
 const fmtChange = (cr: number | null) => cr === null ? '-' : `${cr >= 0 ? '+' : ''}${cr.toFixed(2)}%`
+
+// 원 안에 안 들어가는 긴 이름은 뒤를 …로 자른다.
+// 폰트·최대너비를 모두 r 배수로 넘기므로 measureText가 화면 배율과 무관하게 비율만으로 판단한다.
+let measureCtx: CanvasRenderingContext2D | null = null
+const truncateToWidth = (text: string, fontPx: number, maxWidth: number): string => {
+  if (!measureCtx) measureCtx = document.createElement('canvas').getContext('2d')
+  if (!measureCtx) return text
+  measureCtx.font = `700 ${fontPx}px system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif`
+  if (measureCtx.measureText(text).width <= maxWidth) return text
+  for (let i = text.length - 1; i > 0; i--) {
+    const candidate = text.slice(0, i) + '…'
+    if (measureCtx.measureText(candidate).width <= maxWidth) return candidate
+  }
+  return '…'
+}
+// 버블 메인 텍스트: 한글명 우선(없으면 티커) — 원 지름의 약 86% 안에 맞춰 표시
+const fitName = (b: Bubble): string => truncateToWidth(b.label, b.r * 0.22, b.r * 1.72)
 
 // ── 원 패킹: 스파이럴 초기배치 후 중력+충돌 완화로 밀집(Circle Packing 느낌) ──
 interface Node { x: number; y: number; r: number }
@@ -262,17 +281,21 @@ onMounted(loadData)
 </script>
 
 <template>
-  <div class="bubble-panel">
-    <!-- 총 평가금액 + 전일 대비 -->
-    <div class="bubble-header" v-if="!loading && bubbles.length">
-      <div class="total-label">{{ $t('assetBubble.totalAsset') }}</div>
-      <div class="total-value">{{ money(totalBase, exchangeRate) }}</div>
-      <div
+  <div class="bubble-panel" :class="{ 'bubble-panel--light': !isDarkTheme }">
+    <!-- 총 자산 카드 (평가금액 + 전일 대비 증감) — 자산분포 탭과 통일 -->
+    <div class="bubble-header-card" v-if="!loading && bubbles.length">
+      <div class="bh-main">
+        <div class="bh-label">{{ $t('portfolioAnalysis.totalAsset') }}</div>
+        <div class="bh-value">{{ money(totalBase, exchangeRate) }}</div>
+      </div>
+      <span
         v-if="dayChange"
-        class="total-change"
+        class="bh-change"
         :class="dayChange.diff >= 0 ? 'chg-up' : 'chg-down'"
-      >{{ dayChange.diff >= 0 ? '+' : '-' }}{{ money(Math.abs(dayChange.diff), exchangeRate) }} ({{ dayChange.rate >= 0 ? '+' : '' }}{{ dayChange.rate.toFixed(2) }}%)</div>
-      <div class="total-date">{{ asOfDate }} {{ $t('assetBubble.asOf') }}</div>
+      >
+        <v-icon size="14">{{ dayChange.diff >= 0 ? 'mdi-menu-up' : 'mdi-menu-down' }}</v-icon>
+        {{ money(Math.abs(dayChange.diff), exchangeRate) }} ({{ dayChange.rate >= 0 ? '+' : '' }}{{ dayChange.rate.toFixed(2) }}%)
+      </span>
     </div>
 
     <template v-if="loading">
@@ -284,7 +307,7 @@ onMounted(loadData)
     <template v-else-if="bubbles.length === 0">
       <div class="center-state">
         <v-icon size="56" color="primary" class="mb-3" style="opacity:0.4">mdi-chart-bubble</v-icon>
-        <div style="color: rgba(255,255,255,0.6)">{{ $t('assetBubble.empty') }}</div>
+        <div class="empty-text">{{ $t('assetBubble.empty') }}</div>
       </div>
     </template>
 
@@ -326,24 +349,30 @@ onMounted(loadData)
               <!-- 선택 링 -->
               <circle
                 v-if="selected?.ticker === b.ticker"
+                class="sel-ring"
                 :cx="b.x" :cy="b.y" :r="b.r * 1.04"
                 fill="none"
-                stroke="rgba(255,255,255,0.9)"
                 :stroke-width="b.r * 0.025"
                 pointer-events="none"
               />
 
               <template v-if="showText(b)">
-                <!-- 이름 서브라벨이 있으면 3줄, 없으면 2줄로 세로 정렬 -->
-                <template v-if="showName(b)">
-                  <text :x="b.x" :y="b.y - b.r * 0.2" text-anchor="middle" class="bubble-ticker" :style="{ fontSize: `${b.r * 0.3}px` }">{{ b.ticker }}</text>
-                  <text :x="b.x" :y="b.y + b.r * 0.04" text-anchor="middle" class="bubble-name" :style="{ fontSize: `${b.r * 0.15}px` }">{{ b.label }}</text>
-                  <text v-if="showChange(b)" :x="b.x" :y="b.y + b.r * 0.34" text-anchor="middle" class="bubble-change" :style="{ fontSize: `${b.r * 0.2}px` }">{{ fmtChange(b.changeRate) }}</text>
-                </template>
-                <template v-else>
-                  <text :x="b.x" :y="b.y - (showChange(b) ? b.r * 0.06 : -b.r * 0.12)" text-anchor="middle" class="bubble-ticker" :style="{ fontSize: `${b.r * 0.34}px` }">{{ b.ticker }}</text>
-                  <text v-if="showChange(b)" :x="b.x" :y="b.y + b.r * 0.34" text-anchor="middle" class="bubble-change" :style="{ fontSize: `${b.r * 0.22}px` }">{{ fmtChange(b.changeRate) }}</text>
-                </template>
+                <!-- 메인: 한글명(없으면 티커), 원 밖으로 넘치면 … 처리 / 아래: 전일 대비 등락률 -->
+                <text
+                  :x="b.x"
+                  :y="showChange(b) ? b.y - b.r * 0.05 : b.y + b.r * 0.07"
+                  text-anchor="middle"
+                  class="bubble-name-main"
+                  :style="{ fontSize: `${b.r * 0.22}px` }"
+                >{{ fitName(b) }}</text>
+                <text
+                  v-if="showChange(b)"
+                  :x="b.x"
+                  :y="b.y + b.r * 0.3"
+                  text-anchor="middle"
+                  class="bubble-change"
+                  :style="{ fontSize: `${b.r * 0.2}px` }"
+                >{{ fmtChange(b.changeRate) }}</text>
               </template>
             </g>
           </g>
@@ -367,7 +396,7 @@ onMounted(loadData)
               <div class="detail-value">{{ money(selected.valueBase, exchangeRate) }}</div>
               <div class="detail-weight">{{ $t('assetBubble.weight') }} {{ weightPct(selected) }}%</div>
             </div>
-            <v-icon size="20" class="detail-chevron" :class="{ 'chevron-open': cardExpanded }" style="color: rgba(255,255,255,0.6)">mdi-chevron-up</v-icon>
+            <v-icon size="20" class="detail-chevron" :class="{ 'chevron-open': cardExpanded }">mdi-chevron-down</v-icon>
           </div>
 
           <v-expand-transition>
@@ -423,7 +452,7 @@ onMounted(loadData)
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  /* 목업과 동일한 우주 느낌 다크 배경 (테마와 무관하게 이 패널은 다크 고정) */
+  /* 우주 느낌 다크 배경 (다크 계열 테마 기본, 밝은 테마는 아래 --light 오버라이드) */
   background:
     radial-gradient(ellipse 120% 80% at 50% 22%, #1a2942 0%, #0e1830 42%, #070c18 100%);
   overflow: hidden;
@@ -447,29 +476,44 @@ onMounted(loadData)
 }
 .bubble-panel > * { position: relative; z-index: 1; }
 
-.bubble-header {
-  padding: 12px 16px 4px;
-  text-align: right;
+.bubble-header-card {
+  position: relative;
+  margin: 12px 12px 6px;
+  padding: 9px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  backdrop-filter: blur(8px);
+  text-align: center;
 }
-.total-label {
+.bh-main {
+  min-width: 0;
+}
+.bh-label {
   font-size: 0.6875rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 1px;
 }
-.total-value {
-  font-size: 1.125rem;
-  font-weight: 700;
+.bh-value {
+  font-size: 1.375rem;
+  font-weight: 800;
   color: #fff;
+  line-height: 1.15;
 }
-.total-change {
-  font-size: 0.75rem;
-  font-weight: 600;
+.bh-change {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 .chg-up { color: hsl(4, 82%, 64%); }
 .chg-down { color: hsl(212, 82%, 66%); }
-.total-date {
-  font-size: 0.625rem;
-  color: rgba(255, 255, 255, 0.4);
-}
 
 .bubble-stage {
   flex: 1;
@@ -513,18 +557,12 @@ onMounted(loadData)
   50% { transform: scale(1.14); }
 }
 
-.bubble-ticker {
+.bubble-name-main {
   fill: #fff;
   font-weight: 700;
   font-family: inherit;
   pointer-events: none;
   paint-order: stroke;
-}
-.bubble-name {
-  fill: rgba(255, 255, 255, 0.72);
-  font-weight: 500;
-  font-family: inherit;
-  pointer-events: none;
 }
 .bubble-change {
   fill: rgba(255, 255, 255, 0.92);
@@ -582,6 +620,7 @@ onMounted(loadData)
   margin-top: 2px;
 }
 .detail-chevron {
+  color: rgba(255, 255, 255, 0.6);
   transition: transform 0.25s ease;
 }
 .chevron-open {
@@ -642,4 +681,47 @@ onMounted(loadData)
   align-items: center;
   justify-content: center;
 }
+.empty-text {
+  color: rgba(255, 255, 255, 0.6);
+}
+.sel-ring {
+  stroke: rgba(255, 255, 255, 0.9);
+}
+
+/* ── 밝은 테마(light/nature) 오버라이드: 자산분포·종목비교 탭과 동일한 배경으로 통일 ──
+   (앱 테마 배경이 그대로 비치도록 투명 + 상단 primary 발광만 얹음) */
+.bubble-panel--light {
+  background: radial-gradient(ellipse 130% 55% at 50% 0%, rgba(var(--v-theme-primary), 0.05), transparent 62%);
+}
+.bubble-panel--light::before {
+  content: none; /* 별빛 제거 */
+}
+.bubble-panel--light .bubble-header-card {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(30, 41, 59, 0.12);
+}
+.bubble-panel--light .bh-label { color: rgba(30, 41, 59, 0.6); }
+.bubble-panel--light .bh-value { color: #1e293b; }
+.bubble-panel--light .chg-up { color: hsl(4, 72%, 46%); }
+.bubble-panel--light .chg-down { color: hsl(212, 72%, 42%); }
+.bubble-panel--light .detail-card {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(30, 41, 59, 0.12);
+}
+.bubble-panel--light .detail-ticker { color: #1e293b; }
+.bubble-panel--light .detail-name { color: rgba(30, 41, 59, 0.6); }
+.bubble-panel--light .detail-value { color: #1e293b; }
+.bubble-panel--light .detail-weight { color: rgba(30, 41, 59, 0.55); }
+.bubble-panel--light .detail-chevron { color: rgba(30, 41, 59, 0.55); }
+.bubble-panel--light .detail-grid {
+  background: rgba(30, 41, 59, 0.1);
+  border-top-color: rgba(30, 41, 59, 0.1);
+}
+.bubble-panel--light .grid-item { background: rgba(255, 255, 255, 0.85); }
+.bubble-panel--light .grid-label { color: rgba(30, 41, 59, 0.55); }
+.bubble-panel--light .grid-value { color: #1e293b; }
+.bubble-panel--light .legend-item { color: rgba(30, 41, 59, 0.7); }
+.bubble-panel--light .legend-note { color: rgba(30, 41, 59, 0.5); }
+.bubble-panel--light .empty-text { color: rgba(30, 41, 59, 0.6); }
+.bubble-panel--light .sel-ring { stroke: rgba(30, 41, 59, 0.55); }
 </style>

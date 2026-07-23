@@ -2,17 +2,25 @@
 import { ref, computed, onMounted } from 'vue'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { useUserDataStore } from '@/stores/userData'
+import { getCachedStockQuote } from '@/services/market'
 import { convertMoney } from '@/utils/portfolioMath'
 import { useDesignTokens } from '@/composables/useDesignTokens'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
-import { getAssetClass, getMarket, classMarketToAssetType, displayAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
+import { displayAccountName, UNASSIGNED_ACCOUNT } from '@/utils/accountName'
+import { getAssetClass, getMarket, isCash, classMarketToAssetType, displayAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
 
 const { chart } = useDesignTokens()
 const { baseCurrency, money } = useBaseCurrency()
 const userDataStore = useUserDataStore()
 
 const loading = ref(true)
+// 조각 선택 상태 (탭하면 선택 유지, 다시 탭하면 해제 — 종목구성 탭과 동일한 조작감)
 const hoveredKey = ref<string | null>(null)
+const toggleKey = (key: string) => {
+  hoveredKey.value = hoveredKey.value === key ? null : key
+}
+// 티커별 현재가 (기준통화 아님 — 종목 통화 기준). 미조회/실패는 null → 원가 폴백
+const priceByTicker = ref<Map<string, number | null>>(new Map())
 
 interface PortfolioRow {
   ticker: string
@@ -21,12 +29,26 @@ interface PortfolioRow {
   currency: 'KRW' | 'USD'
   avg_price: number
   quantity: number
+  account_name: string | null
 }
 
 const assetTypeLabel = (p: PortfolioRow): string => classMarketToAssetType(getAssetClass(p), getMarket(p))
 const portfolioRows = ref<PortfolioRow[]>([])
 const exchangeRate = ref(1350)
 const formatMoney = (v: number) => money(v, exchangeRate.value, 'bare')
+
+// 종목 한 줄의 기준통화 평가금액 (종목구성 탭과 동일 공식). 현금·시세 실패는 원가/잔액 기준.
+const evalRowBase = (p: PortfolioRow): number => {
+  const costNative = p.avg_price * p.quantity
+  if (isCash(p)) return convertMoney(costNative, p.currency, baseCurrency.value, exchangeRate.value)
+  const price = priceByTicker.value.get(p.ticker) ?? null
+  const isCryptoNonUsd = getAssetClass(p) === 'crypto' && p.currency !== 'USD'
+  const currentPriceNative = price !== null && price > 0
+    ? (isCryptoNonUsd ? convertMoney(price, 'USD', p.currency, exchangeRate.value) : price)
+    : null
+  const valueNative = currentPriceNative !== null ? currentPriceNative * p.quantity : costNative
+  return convertMoney(valueNative, p.currency, baseCurrency.value, exchangeRate.value)
+}
 
 interface Seg {
   key: string
@@ -60,12 +82,19 @@ function buildPath(start: number, end: number): string {
   return `M ${o1.x} ${o1.y} A ${OR} ${OR} 0 ${large} 1 ${o2.x} ${o2.y} L ${i1.x} ${i1.y} A ${IR} ${IR} 0 ${large} 0 ${i2.x} ${i2.y} Z`
 }
 
+// 분포 기준: 자산군(type) ↔ 계좌(account)
+const groupMode = ref<'type' | 'account'>('type')
+const accountKey = (p: PortfolioRow) => p.account_name ?? UNASSIGNED_ACCOUNT
+// 서로 다른 계좌가 2개 이상일 때만 계좌 토글을 노출 (단일 계좌면 100% 한 조각이라 무의미)
+const hasMultipleAccounts = computed(() => new Set(portfolioRows.value.map(accountKey)).size >= 2)
+
 const segments = computed<Seg[]>(() => {
+  const byAccount = groupMode.value === 'account' && hasMultipleAccounts.value
   const map = new Map<string, { label: string; valueKrw: number }>()
   for (const p of portfolioRows.value) {
-    const key = assetTypeLabel(p)
-    const label = displayAssetType(key)
-    const val = convertMoney(p.avg_price * p.quantity, p.currency, baseCurrency.value, exchangeRate.value)
+    const key = byAccount ? accountKey(p) : assetTypeLabel(p)
+    const label = byAccount ? displayAccountName(key) : displayAssetType(key)
+    const val = evalRowBase(p)
     const existing = map.get(key)
     if (existing) existing.valueKrw += val
     else map.set(key, { label, valueKrw: val })
@@ -77,10 +106,13 @@ const segments = computed<Seg[]>(() => {
   const sorted = [...map.entries()].sort((a, b) => b[1].valueKrw - a[1].valueKrw)
 
   let angle = 0
-  return sorted.map(([key, val]) => {
+  return sorted.map(([key, val], i) => {
     const pct = (val.valueKrw / total) * 100
     const sweep = (pct / 100) * 360
-    const color = chart.value.typeColors[key] ?? chart.value.palette[0]!
+    // 계좌별은 고정 색이 없으므로 팔레트를 순서대로 배정, 자산군은 지정 색 사용
+    const color = byAccount
+      ? chart.value.palette[i % chart.value.palette.length]!
+      : (chart.value.typeColors[key] ?? chart.value.palette[0]!)
     const gap = sorted.length > 1 ? GAP_DEG : 0
     const s: Seg = {
       key,
@@ -95,7 +127,7 @@ const segments = computed<Seg[]>(() => {
   })
 })
 
-const totalKrw = computed(() => portfolioRows.value.reduce((s, p) => s + convertMoney(p.avg_price * p.quantity, p.currency, baseCurrency.value, exchangeRate.value), 0))
+const totalKrw = computed(() => portfolioRows.value.reduce((s, p) => s + evalRowBase(p), 0))
 const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.value) ?? null)
 
 const loadData = async () => {
@@ -104,6 +136,19 @@ const loadData = async () => {
     const [rows, rate] = await Promise.all([userDataStore.ensurePortfolios(), getCachedExchangeRate()])
     portfolioRows.value = rows as PortfolioRow[]
     exchangeRate.value = rate
+
+    // 현금 외 종목만 티커별로 현재가 조회 (종목구성 탭과 공유되는 60초 시세 캐시 사용)
+    const uniqueTickers = new Map<string, PortfolioRow>()
+    for (const p of portfolioRows.value) {
+      if (!isCash(p) && !uniqueTickers.has(p.ticker)) uniqueTickers.set(p.ticker, p)
+    }
+    const entries = [...uniqueTickers.entries()]
+    const prices = await Promise.all(
+      entries.map(([, row]) => getCachedStockQuote(row.ticker, row).then((q) => q.price).catch(() => null)),
+    )
+    const priceMap = new Map<string, number | null>()
+    entries.forEach(([ticker], i) => priceMap.set(ticker, prices[i] ?? null))
+    priceByTicker.value = priceMap
   } finally {
     loading.value = false
   }
@@ -128,23 +173,38 @@ onMounted(loadData)
     </template>
 
     <template v-else>
+      <div v-if="hasMultipleAccounts" class="group-toggle mb-4">
+        <button
+          class="group-btn"
+          :class="{ 'group-btn-active': groupMode === 'type' }"
+          @click="groupMode = 'type'; hoveredKey = null"
+        >{{ $t('portfolioAnalysis.groupByType') }}</button>
+        <button
+          class="group-btn"
+          :class="{ 'group-btn-active': groupMode === 'account' }"
+          @click="groupMode = 'account'; hoveredKey = null"
+        >{{ $t('portfolioAnalysis.groupByAccount') }}</button>
+      </div>
+
       <div class="chart-card mb-4">
         <div class="chart-wrap">
-          <svg viewBox="0 0 240 240" class="donut-svg">
+          <svg viewBox="0 0 240 240" class="donut-svg" @click="hoveredKey = null">
             <circle :cx="CX" :cy="CY" :r="(OR + IR) / 2" fill="none" stroke="rgba(128,128,128,0.08)" :stroke-width="OR - IR" />
-            <path
+            <g
               v-for="(seg, i) in segments"
               :key="seg.key"
-              :d="seg.path"
-              :fill="seg.color"
-              :opacity="hoveredKey && hoveredKey !== seg.key ? 0.35 : 1"
-              class="seg-path"
-              :style="{ '--delay': `${i * 0.06}s`, transform: seg.key === hoveredKey ? 'scale(1.04)' : 'scale(1)' }"
-              @mouseenter="hoveredKey = seg.key"
-              @mouseleave="hoveredKey = null"
-              @touchstart.passive="hoveredKey = seg.key"
-              @touchend.passive="hoveredKey = null"
-            />
+              class="seg-enter"
+              :style="{ '--delay': `${i * 0.06}s` }"
+            >
+              <path
+                :d="seg.path"
+                :fill="seg.color"
+                :opacity="hoveredKey && hoveredKey !== seg.key ? 0.35 : 1"
+                class="seg-path"
+                :style="{ transform: seg.key === hoveredKey ? 'scale(1.04)' : 'scale(1)' }"
+                @click.stop="toggleKey(seg.key)"
+              />
+            </g>
             <text x="120" y="108" text-anchor="middle" class="center-label">
               {{ hovered ? hovered.label : $t('portfolioAnalysis.totalAsset') }}
             </text>
@@ -164,8 +224,7 @@ onMounted(loadData)
           :key="seg.key"
           class="legend-row"
           :class="{ 'legend-dimmed': hoveredKey && hoveredKey !== seg.key, 'legend-active': hoveredKey === seg.key }"
-          @mouseenter="hoveredKey = seg.key"
-          @mouseleave="hoveredKey = null"
+          @click="toggleKey(seg.key)"
         >
           <div class="legend-dot" :style="{ background: seg.color }" />
           <div class="legend-info">
@@ -180,8 +239,6 @@ onMounted(loadData)
           </div>
         </div>
       </div>
-
-      <div class="text-medium-emphasis text-center mt-3" style="opacity:0.6">{{ $t('portfolioAnalysis.costBasisNote') }}</div>
     </template>
   </div>
 </template>
@@ -191,6 +248,32 @@ onMounted(loadData)
   height: 100%;
   overflow-y: auto;
   padding: 16px;
+  /* 종목구성(버블) 탭의 상단 발광 배경과 톤을 맞춰 스와이프 시 이질감 완화 */
+  background: radial-gradient(ellipse 130% 55% at 50% 0%, rgba(var(--v-theme-primary), 0.05), transparent 62%);
+}
+
+.group-toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+  background: rgba(var(--v-theme-on-surface), 0.06);
+}
+.group-btn {
+  padding: 5px 16px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(var(--v-theme-on-surface), 0.55);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.group-btn-active {
+  background: rgb(var(--v-theme-surface));
+  color: rgb(var(--v-theme-primary));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
 .chart-card {
@@ -212,11 +295,15 @@ onMounted(loadData)
   display: block;
 }
 
+/* 등장 애니메이션은 래퍼 g에 분리 — 조각의 hover/선택 transform·opacity와 겹치지 않게 함 */
+.seg-enter {
+  transform-origin: 120px 120px;
+  animation: segFadeIn 0.5s ease var(--delay, 0s) both;
+}
 .seg-path {
   transition: opacity 0.2s ease, transform 0.2s ease;
   transform-origin: 120px 120px;
   cursor: pointer;
-  animation: segFadeIn 0.5s ease var(--delay, 0s) both;
 }
 
 @keyframes segFadeIn {

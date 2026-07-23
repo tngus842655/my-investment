@@ -50,7 +50,32 @@ const selectedYear = ref<number | null>(null)
 const selectedMonth = ref<number | null>(null)
 const selectedAccount = ref<string | null>(null)
 const accountOptions = ref<string[]>([])
-const accountPortfolioIds = ref<string[]>([])
+const selectedTicker = ref<string | null>(null)
+// 종목 필터 옵션 산출 + 계좌/종목 → portfolio_id 매핑용 (현금 제외)
+interface FilterPortfolio { id: string; ticker: string; account_name: string | null }
+const portfolioList = ref<FilterPortfolio[]>([])
+
+const tickerOptions = computed(() => {
+  const seen = new Set<string>()
+  const opts: { ticker: string; label: string }[] = []
+  for (const p of portfolioList.value) {
+    if (seen.has(p.ticker)) continue
+    seen.add(p.ticker)
+    opts.push({ ticker: p.ticker, label: getTickerDisplayName(p.ticker) })
+  }
+  return opts.sort((a, b) => a.label.localeCompare(b.label, 'ko'))
+})
+
+// 계좌·종목 필터를 교집합으로 반영한 portfolio_id 목록 (둘 다 없으면 null → 조건 미적용)
+const filterPortfolioIds = computed<string[] | null>(() => {
+  const acc = selectedAccount.value
+  const tk = selectedTicker.value
+  if (!acc && !tk) return null
+  let ids = portfolioList.value
+  if (acc) ids = ids.filter((p) => (p.account_name ?? '미지정') === acc)
+  if (tk) ids = ids.filter((p) => p.ticker === tk)
+  return ids.map((p) => p.id)
+})
 
 const yearOptions = ref<number[]>([])
 const monthOptions = ref<number[]>([])
@@ -61,8 +86,10 @@ const loadAccountOptions = async () => {
   accountOptions.value = accounts.length > 1
     ? ['미지정', ...accounts.filter((a) => a !== '미지정').sort((a, b) => a.localeCompare(b, 'ko'))]
     : []
-  // 초기에는 전체
-  accountPortfolioIds.value = portfolios.map((p) => p.id)
+  // 종목 필터·portfolio_id 매핑용 (거래내역은 현금 제외라 현금 종목은 제외)
+  portfolioList.value = portfolios
+    .filter((p) => !isCashItem(p))
+    .map((p) => ({ id: p.id, ticker: p.ticker, account_name: p.account_name }))
 }
 
 const loadYearOptions = async () => {
@@ -109,6 +136,11 @@ const parsedDateFilter = computed<string | null>(() => {
   return null
 })
 
+// 어떤 필터든 걸려 있으면 빈 상태를 "검색 결과 없음"으로 안내 (추가 버튼 숨김)
+const isFiltered = computed(() =>
+  !!parsedDateFilter.value || filter.value !== 'ALL' || !!selectedTicker.value || !!selectedAccount.value,
+)
+
 const addDialog = ref(false)
 const editDialog = ref(false)
 const deleteDialog = ref(false)
@@ -139,8 +171,8 @@ async function buildQuery(from: number, to: number) {
     .range(from, to)
 
   if (filter.value !== 'ALL') q = q.eq('transaction_type', filter.value)
-  if (selectedAccount.value && accountPortfolioIds.value.length > 0)
-    q = q.in('portfolio_id', accountPortfolioIds.value)
+  if (filterPortfolioIds.value && filterPortfolioIds.value.length > 0)
+    q = q.in('portfolio_id', filterPortfolioIds.value)
   const df = parsedDateFilter.value
   if (df) {
     if (df.length === 7) {
@@ -230,8 +262,8 @@ const loadTotals = async () => {
     .neq('transaction_type', 'INITIAL')
 
   if (filter.value !== 'ALL') q = q.eq('transaction_type', filter.value)
-  if (selectedAccount.value && accountPortfolioIds.value.length > 0)
-    q = q.in('portfolio_id', accountPortfolioIds.value)
+  if (filterPortfolioIds.value && filterPortfolioIds.value.length > 0)
+    q = q.in('portfolio_id', filterPortfolioIds.value)
   const df = parsedDateFilter.value
   if (df) {
     if (df.length === 7) {
@@ -286,11 +318,7 @@ watch(parsedDateFilter, () => {
   resetAndLoad()
   loadTotals()
 })
-watch(selectedAccount, async (acc) => {
-  const portfolios = await userDataStore.ensurePortfolios()
-  accountPortfolioIds.value = (
-    acc ? portfolios.filter((p) => (p.account_name ?? '미지정') === acc) : portfolios
-  ).map((p) => p.id)
+watch([selectedAccount, selectedTicker], () => {
   resetAndLoad()
   loadTotals()
 })
@@ -592,20 +620,32 @@ onUnmounted(() => {
         </button>
       </div>
 
-      <!-- 계좌 필터 -->
-      <div v-if="accountOptions.length > 0" class="account-filter-row mb-3">
-        <button
-          class="account-chip"
-          :class="{ 'account-chip-active': selectedAccount === null }"
-          @click="selectedAccount = null; closeSwipe()"
-        >{{ $t('transactions.all') }}</button>
-        <button
-          v-for="acc in accountOptions"
-          :key="acc"
-          class="account-chip"
-          :class="{ 'account-chip-active': selectedAccount === acc }"
-          @click="selectedAccount = acc; closeSwipe()"
-        >{{ displayAccountName(acc) }}</button>
+      <!-- 종목 필터 (드롭다운) + 계좌 필터 (칩) -->
+      <div v-if="tickerOptions.length > 1 || accountOptions.length > 0" class="account-filter-row mb-3">
+        <select
+          v-if="tickerOptions.length > 1"
+          v-model="selectedTicker"
+          class="ticker-select"
+          :class="{ 'ticker-select-active': selectedTicker }"
+          @change="closeSwipe()"
+        >
+          <option :value="null">{{ $t('transactions.allTickers') }}</option>
+          <option v-for="tk in tickerOptions" :key="tk.ticker" :value="tk.ticker">{{ tk.label }}</option>
+        </select>
+        <div v-if="accountOptions.length > 0" class="account-chip-scroll">
+          <button
+            class="account-chip"
+            :class="{ 'account-chip-active': selectedAccount === null }"
+            @click="selectedAccount = null; closeSwipe()"
+          >{{ $t('transactions.all') }}</button>
+          <button
+            v-for="acc in accountOptions"
+            :key="acc"
+            class="account-chip"
+            :class="{ 'account-chip-active': selectedAccount === acc }"
+            @click="selectedAccount = acc; closeSwipe()"
+          >{{ displayAccountName(acc) }}</button>
+        </div>
       </div>
 
       <!-- 건수 + 날짜 드롭다운 -->
@@ -635,13 +675,13 @@ onUnmounted(() => {
             >mdi-swap-horizontal</v-icon
           >
           <div class="font-weight-medium text-medium-emphasis">
-            {{ parsedDateFilter || filter !== 'ALL' ? $t('transactions.emptySearch') : $t('transactions.emptyNone') }}
+            {{ isFiltered ? $t('transactions.emptySearch') : $t('transactions.emptyNone') }}
           </div>
           <div class="text-disabled mt-1">
-            {{ parsedDateFilter || filter !== 'ALL' ? $t('transactions.emptySearchHint') : $t('transactions.emptyNoneHint') }}
+            {{ isFiltered ? $t('transactions.emptySearchHint') : $t('transactions.emptyNoneHint') }}
           </div>
           <v-btn
-            v-if="!parsedDateFilter && filter === 'ALL'"
+            v-if="!isFiltered"
             color="primary"
             variant="tonal"
             rounded="lg"
@@ -841,7 +881,46 @@ onUnmounted(() => {
 .account-filter-row {
   display: flex;
   gap: 6px;
-  flex-wrap: wrap;
+  align-items: center;
+}
+.account-chip-scroll {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  min-width: 0;
+  /* 계좌가 많아도 한 줄 유지 — 칩 영역만 가로 스크롤 (스크롤바 숨김) */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.account-chip-scroll::-webkit-scrollbar {
+  display: none;
+}
+.ticker-select {
+  flex-shrink: 0;
+  height: 26px;
+  width: 106px;
+  max-width: 106px;
+  padding: 0 24px 0 12px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
+  border-radius: 20px;
+  color: rgb(var(--v-theme-on-surface));
+  font-size: 0.6875rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24'%3E%3Cpath fill='%23888' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-color: transparent;
+  text-overflow: ellipsis;
+}
+/* 종목 선택됨 강조 (미선택 시 기본 테두리 유지) */
+.ticker-select-active {
+  border-color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-primary));
+  background-color: rgba(var(--v-theme-primary), 0.07);
 }
 .account-chip {
   padding: 3px 10px;
@@ -853,6 +932,8 @@ onUnmounted(() => {
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.5);
   transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .account-chip:active { opacity: 0.7; }
 .account-chip-active {

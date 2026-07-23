@@ -68,6 +68,8 @@
     "weight": "Weight",
     "tapHint": "Tap a card to see more details",
     "filterAll": "All",
+    "groupByTicker": "By ticker",
+    "accountsBadge": "{n} accts",
     "totalCount": "{n} total",
     "priceInfoTitle": "Price update timing by asset type",
     "registerTickerName": "Request US stock name mapping",
@@ -109,6 +111,7 @@
     "totalBuy": "Total Bought",
     "totalSell": "Total Sold",
     "all": "All",
+    "allTickers": "All tickers",
     "buy": "Buy",
     "sell": "Sell",
     "totalCount": "{n} total",
@@ -329,8 +332,13 @@
     "priceFailed": "Failed to fetch price",
     "shareNote": "Allocation based on the total value of the selected holdings.",
     "totalAsset": "Total Assets",
-    "costBasisNote": "Asset Allocation.",
-    "maxCompare": "You can select up to {n} holdings."
+    "maxCompare": "You can select up to {n} holdings.",
+    "barModeShare": "Share",
+    "barModeProfit": "Return",
+    "profitNote": "Return vs. cost basis per holding",
+    "swipeHint": "Swipe left or right to switch views",
+    "groupByType": "Asset Type",
+    "groupByAccount": "Account"
   },
   "assetBubble": {
     "totalAsset": "Total Value",
