@@ -54,5 +54,4 @@ npm run lint
 ```sh
 npm run dev:toss     # 앱인토스 개발 서버 실행 (granite dev)
 npm run build:toss   # 앱인토스 미니앱 빌드 (ait build)
-npm run deploy:toss  # 앱인토스 미니앱 배포 (ait deploy)
 ```
