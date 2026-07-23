@@ -2,17 +2,24 @@
 import { ref, computed, onMounted } from 'vue'
 import { getCachedExchangeRate } from '@/services/exchangeRateCache'
 import { useUserDataStore } from '@/stores/userData'
+import { getCachedStockQuote } from '@/services/market'
 import { convertMoney } from '@/utils/portfolioMath'
 import { useDesignTokens } from '@/composables/useDesignTokens'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
-import { getAssetClass, getMarket, classMarketToAssetType, displayAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
+import { getAssetClass, getMarket, isCash, classMarketToAssetType, displayAssetType, type AssetClass, type MarketCode } from '@/config/marketConfig'
 
 const { chart } = useDesignTokens()
 const { baseCurrency, money } = useBaseCurrency()
 const userDataStore = useUserDataStore()
 
 const loading = ref(true)
+// 조각 선택 상태 (탭하면 선택 유지, 다시 탭하면 해제 — 종목구성 탭과 동일한 조작감)
 const hoveredKey = ref<string | null>(null)
+const toggleKey = (key: string) => {
+  hoveredKey.value = hoveredKey.value === key ? null : key
+}
+// 티커별 현재가 (기준통화 아님 — 종목 통화 기준). 미조회/실패는 null → 원가 폴백
+const priceByTicker = ref<Map<string, number | null>>(new Map())
 
 interface PortfolioRow {
   ticker: string
@@ -27,6 +34,19 @@ const assetTypeLabel = (p: PortfolioRow): string => classMarketToAssetType(getAs
 const portfolioRows = ref<PortfolioRow[]>([])
 const exchangeRate = ref(1350)
 const formatMoney = (v: number) => money(v, exchangeRate.value, 'bare')
+
+// 종목 한 줄의 기준통화 평가금액 (종목구성 탭과 동일 공식). 현금·시세 실패는 원가/잔액 기준.
+const evalRowBase = (p: PortfolioRow): number => {
+  const costNative = p.avg_price * p.quantity
+  if (isCash(p)) return convertMoney(costNative, p.currency, baseCurrency.value, exchangeRate.value)
+  const price = priceByTicker.value.get(p.ticker) ?? null
+  const isCryptoNonUsd = getAssetClass(p) === 'crypto' && p.currency !== 'USD'
+  const currentPriceNative = price !== null && price > 0
+    ? (isCryptoNonUsd ? convertMoney(price, 'USD', p.currency, exchangeRate.value) : price)
+    : null
+  const valueNative = currentPriceNative !== null ? currentPriceNative * p.quantity : costNative
+  return convertMoney(valueNative, p.currency, baseCurrency.value, exchangeRate.value)
+}
 
 interface Seg {
   key: string
@@ -65,7 +85,7 @@ const segments = computed<Seg[]>(() => {
   for (const p of portfolioRows.value) {
     const key = assetTypeLabel(p)
     const label = displayAssetType(key)
-    const val = convertMoney(p.avg_price * p.quantity, p.currency, baseCurrency.value, exchangeRate.value)
+    const val = evalRowBase(p)
     const existing = map.get(key)
     if (existing) existing.valueKrw += val
     else map.set(key, { label, valueKrw: val })
@@ -95,7 +115,7 @@ const segments = computed<Seg[]>(() => {
   })
 })
 
-const totalKrw = computed(() => portfolioRows.value.reduce((s, p) => s + convertMoney(p.avg_price * p.quantity, p.currency, baseCurrency.value, exchangeRate.value), 0))
+const totalKrw = computed(() => portfolioRows.value.reduce((s, p) => s + evalRowBase(p), 0))
 const hovered = computed(() => segments.value.find((s) => s.key === hoveredKey.value) ?? null)
 
 const loadData = async () => {
@@ -104,6 +124,19 @@ const loadData = async () => {
     const [rows, rate] = await Promise.all([userDataStore.ensurePortfolios(), getCachedExchangeRate()])
     portfolioRows.value = rows as PortfolioRow[]
     exchangeRate.value = rate
+
+    // 현금 외 종목만 티커별로 현재가 조회 (종목구성 탭과 공유되는 60초 시세 캐시 사용)
+    const uniqueTickers = new Map<string, PortfolioRow>()
+    for (const p of portfolioRows.value) {
+      if (!isCash(p) && !uniqueTickers.has(p.ticker)) uniqueTickers.set(p.ticker, p)
+    }
+    const entries = [...uniqueTickers.entries()]
+    const prices = await Promise.all(
+      entries.map(([, row]) => getCachedStockQuote(row.ticker, row).then((q) => q.price).catch(() => null)),
+    )
+    const priceMap = new Map<string, number | null>()
+    entries.forEach(([ticker], i) => priceMap.set(ticker, prices[i] ?? null))
+    priceByTicker.value = priceMap
   } finally {
     loading.value = false
   }
@@ -130,7 +163,7 @@ onMounted(loadData)
     <template v-else>
       <div class="chart-card mb-4">
         <div class="chart-wrap">
-          <svg viewBox="0 0 240 240" class="donut-svg">
+          <svg viewBox="0 0 240 240" class="donut-svg" @click="hoveredKey = null">
             <circle :cx="CX" :cy="CY" :r="(OR + IR) / 2" fill="none" stroke="rgba(128,128,128,0.08)" :stroke-width="OR - IR" />
             <path
               v-for="(seg, i) in segments"
@@ -140,10 +173,7 @@ onMounted(loadData)
               :opacity="hoveredKey && hoveredKey !== seg.key ? 0.35 : 1"
               class="seg-path"
               :style="{ '--delay': `${i * 0.06}s`, transform: seg.key === hoveredKey ? 'scale(1.04)' : 'scale(1)' }"
-              @mouseenter="hoveredKey = seg.key"
-              @mouseleave="hoveredKey = null"
-              @touchstart.passive="hoveredKey = seg.key"
-              @touchend.passive="hoveredKey = null"
+              @click.stop="toggleKey(seg.key)"
             />
             <text x="120" y="108" text-anchor="middle" class="center-label">
               {{ hovered ? hovered.label : $t('portfolioAnalysis.totalAsset') }}
@@ -164,8 +194,7 @@ onMounted(loadData)
           :key="seg.key"
           class="legend-row"
           :class="{ 'legend-dimmed': hoveredKey && hoveredKey !== seg.key, 'legend-active': hoveredKey === seg.key }"
-          @mouseenter="hoveredKey = seg.key"
-          @mouseleave="hoveredKey = null"
+          @click="toggleKey(seg.key)"
         >
           <div class="legend-dot" :style="{ background: seg.color }" />
           <div class="legend-info">

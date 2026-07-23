@@ -54,14 +54,17 @@ const holdings = computed<Holding[]>(() => {
       map.set(p.ticker, { quantity: p.quantity, costNative, currency: p.currency, assetClass: getAssetClass(p) })
     }
   }
-  return [...map.entries()].map(([ticker, v]) => ({
-    ticker,
-    label: getTickerDisplayName(ticker),
-    assetClass: v.assetClass,
-    currency: v.currency,
-    quantity: v.quantity,
-    costKrw: convertMoney(v.costNative, v.currency, baseCurrency.value, exchangeRate.value),
-  }))
+  return [...map.entries()]
+    .map(([ticker, v]) => ({
+      ticker,
+      label: getTickerDisplayName(ticker),
+      assetClass: v.assetClass,
+      currency: v.currency,
+      quantity: v.quantity,
+      costKrw: convertMoney(v.costNative, v.currency, baseCurrency.value, exchangeRate.value),
+    }))
+    // 큰 종목부터 고르기 쉽도록 원가 기준 내림차순 정렬
+    .sort((a, b) => b.costKrw - a.costKrw)
 })
 
 const compareTickers = ref<string[]>([])
@@ -147,6 +150,10 @@ const loadData = async () => {
     const [rows, rate] = await Promise.all([userDataStore.ensurePortfolios(), getCachedExchangeRate()])
     portfolioRows.value = rows as PortfolioRow[]
     exchangeRate.value = rate
+    // 진입 즉시 비교 결과가 보이도록 상위(원가 큰) 종목을 최대 3개 자동 선택
+    if (compareTickers.value.length === 0) {
+      compareTickers.value = holdings.value.slice(0, Math.min(3, holdings.value.length)).map((h) => h.ticker)
+    }
     loadAllPrices()
   } finally {
     loading.value = false
