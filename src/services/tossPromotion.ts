@@ -37,14 +37,10 @@ const visitedKey = (userId: string) => `fp-toss-promo-visited:${userId}`
 export const hasVisitedCategory = (userId: string) =>
   localStorage.getItem(visitedKey(userId)) === '1'
 
-/**
- * 서비스 카테고리(자산관리/가계부) 진입 기록.
- * 이번 진입으로 조건이 처음 충족됐으면 true를 반환한다(수령 안내를 한 번만 띄우기 위함).
- */
+/** 서비스 카테고리(자산관리/가계부) 진입 기록 */
 export const markCategoryVisited = (userId: string) => {
-  if (!isPromotionAvailable() || hasVisitedCategory(userId)) return false
+  if (!isPromotionAvailable() || hasVisitedCategory(userId)) return
   localStorage.setItem(visitedKey(userId), '1')
-  return true
 }
 
 /** 이 계정의 프로모션 지급 상태. 이력이 없으면 null */

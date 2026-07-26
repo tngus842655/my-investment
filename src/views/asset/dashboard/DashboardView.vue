@@ -8,6 +8,7 @@ import { recomputeAssetSummary } from '@/services/assetSummary'
 import { getTickerLabel } from '@/utils/tickerNames'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
+import TossPromotionCard from '@/components/TossPromotionCard.vue'
 import { useI18n } from 'vue-i18n'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { convertMoney } from '@/utils/portfolioMath'
@@ -233,6 +234,9 @@ onUnmounted(clearPullToRefresh)
         </button>
       </div>
     </div>
+
+    <!-- 앱인토스 프로모션 (토스 앱에서만 노출) -->
+    <TossPromotionCard />
 
     <!-- 스켈레톤 -->
     <template v-if="loading">
