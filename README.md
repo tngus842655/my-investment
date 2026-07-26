@@ -64,12 +64,14 @@ npm run build:toss   # 앱인토스 미니앱 빌드 (ait build)
 
 ```sh
 # Windows(cmd)는 rmdir /s /q dist
-rm -rf dist && npm run build:toss && npm run deploy:toss
+rm -rf dist && npm run build:toss
 ```
 
-`dist`를 먼저 지우는 이유: `ait build`는 `dist/web/index.html`이 이미 있으면 **`vite build`를 건너뛰고 기존 번들을 그대로 재사용**합니다. 지우지 않으면 `.env`를 바꿔도 예전 번들이 배포됩니다.
+빌드가 끝나면 프로젝트 루트에 **`firepath.ait`** 가 생깁니다. 이 파일을 **앱인토스 콘솔에 직접 업로드**하면 배포됩니다.
 
-`ait deploy`는 빌드를 하지 않습니다. 패키지 루트의 `*.ait` 파일을 찾아 업로드만 하므로, `build:toss` 없이 `deploy:toss`만 실행하면 예전 아티팩트가 올라가거나 `.ait` 파일이 없다는 에러가 납니다.
+`dist`를 먼저 지우는 이유: `ait build`는 `dist/web/index.html`이 이미 있으면 **`vite build`를 건너뛰고 기존 번들을 그대로 재사용**합니다. 지우지 않으면 `.env`를 바꿔도 예전 번들이 그대로 패키징됩니다.
+
+`npm run deploy:toss`(=`ait deploy`)는 콘솔 업로드 대신 CLI로 올리는 방법인데, **앱인토스 배포 API 키가 필요**합니다(`ait token add`로 등록하거나 실행 시 프롬프트 입력). 키를 쓰지 않는다면 콘솔 업로드 방식만 쓰면 됩니다. 참고로 `ait deploy`는 빌드를 하지 않고 루트의 `*.ait`만 업로드합니다.
 
 - 달성 조건: 로그인 후 서비스 카테고리(자산관리 또는 가계부) 진입
 - 지급: 허브 화면의 "받기" 버튼 → `grantPromotionReward` 브리지 호출
