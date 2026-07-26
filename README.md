@@ -74,5 +74,6 @@ rm -rf dist && npm run build:toss
 `npm run deploy:toss`(=`ait deploy`)는 콘솔 업로드 대신 CLI로 올리는 방법인데, **앱인토스 배포 API 키가 필요**합니다(`ait token add`로 등록하거나 실행 시 프롬프트 입력). 키를 쓰지 않는다면 콘솔 업로드 방식만 쓰면 됩니다. 참고로 `ait deploy`는 빌드를 하지 않고 루트의 `*.ait`만 업로드합니다.
 
 - 달성 조건: 로그인 후 서비스 카테고리(자산관리 또는 가계부) 진입
+  - 조건을 처음 충족한 순간 "허브에서 받아가세요" 스낵바를 한 번 띄웁니다. 카테고리 화면에 들어온 유저가 허브로 돌아가야 받을 수 있다는 걸 알 방법이 없기 때문입니다.
 - 지급: 허브 화면의 "받기" 버튼 → `grantPromotionReward` 브리지 호출
 - 중복 방지: `toss_promotion_rewards` 테이블 (자세한 내용은 **TABLE.md** 참고)

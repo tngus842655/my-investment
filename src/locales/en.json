@@ -643,6 +643,7 @@
       "title": "Get {amount} Toss Points",
       "guide": "Browse Assets or Budget once to unlock it.",
       "ready": "You're all set! Claim it now.",
+      "unlocked": "You're all set! Claim your {amount} on the hub screen.",
       "claim": "Claim {amount}",
       "success": "{amount} Toss Points have been credited.",
       "already": "You've already received this promotion.",
