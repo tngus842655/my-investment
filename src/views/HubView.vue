@@ -162,17 +162,22 @@ const LOGO_WIDE: Partial<Record<string, string>> = {
 const logoWide = computed(() => LOGO_WIDE[themeId.value] ?? null)
 
 // 앱인토스 프로모션 — 토스 앱에서만 노출. 로그인 후 서비스 카테고리를 둘러보면 토스포인트 지급
-const promoVisible = ref(false)
-const promoReady = ref(false)
+//   hidden  : 노출 안 함 (토스 앱이 아니거나 이미 지급 완료)
+//   locked  : 아직 서비스 카테고리를 둘러보지 않음
+//   ready   : 조건 충족, 받기 가능
+//   pending : 지급 결과를 알 수 없음 → 확인 경로 안내 (콘솔 가이드 요구사항)
+const promoState = ref<'hidden' | 'locked' | 'ready' | 'pending'>('hidden')
 const promoLoading = ref(false)
 
 const initPromotion = async (userId: string) => {
   if (!isPromotionAvailable()) return
   const status = await fetchRewardStatus(userId)
-  // 이미 지급됐거나(GRANTED) 지급 여부를 알 수 없는 상태(PENDING)면 카드를 노출하지 않는다
-  if (status === 'GRANTED' || status === 'PENDING') return
-  promoReady.value = hasVisitedCategory(userId)
-  promoVisible.value = true
+  if (status === 'GRANTED') return
+  if (status === 'PENDING') {
+    promoState.value = 'pending'
+    return
+  }
+  promoState.value = hasVisitedCategory(userId) ? 'ready' : 'locked'
 }
 
 const claimPromo = async () => {
@@ -180,18 +185,18 @@ const claimPromo = async () => {
   const result = await claimReward()
   promoLoading.value = false
 
-  if (result === 'FAILED') {
-    showMessage(t('hub.promo.failed'), 'error')
-    return
-  }
-
-  promoVisible.value = false
   if (result === 'GRANTED') {
+    promoState.value = 'hidden'
     showMessage(t('hub.promo.success', { amount: PROMOTION_AMOUNT }), 'success')
   } else if (result === 'ALREADY') {
+    promoState.value = 'hidden'
     showMessage(t('hub.promo.already'), 'warning')
-  } else {
+  } else if (result === 'UNKNOWN') {
+    // 지급됐는지 알 수 없는 상태 — 카드를 닫지 않고 확인 경로를 안내한다
+    promoState.value = 'pending'
     showMessage(t('hub.promo.unknown'), 'warning')
+  } else {
+    showMessage(t('hub.promo.failed'), 'error')
   }
 }
 
@@ -217,27 +222,54 @@ onMounted(async () => {
     </div>
 
     <!-- 앱인토스 프로모션 (토스 앱에서만 노출) -->
-    <div v-if="promoVisible" class="glass-card promo-card pa-3 mb-2">
+    <div v-if="promoState !== 'hidden'" class="glass-card promo-card pa-3 mb-2">
       <div class="d-flex align-center ga-3">
         <div class="hub-icon"><v-icon size="22" color="primary">mdi-gift-outline</v-icon></div>
         <div>
-          <div class="font-weight-medium">{{ $t('hub.promo.title', { amount: PROMOTION_AMOUNT }) }}</div>
+          <div class="font-weight-medium">
+            {{ promoState === 'pending' ? $t('hub.promo.pendingTitle') : $t('hub.promo.title', { amount: PROMOTION_AMOUNT }) }}
+          </div>
           <div class="promo-desc">
-            {{ promoReady ? $t('hub.promo.ready') : $t('hub.promo.guide') }}
+            {{ promoState === 'pending' ? $t('hub.promo.pendingDesc') : promoState === 'ready' ? $t('hub.promo.ready') : $t('hub.promo.guide') }}
           </div>
         </div>
       </div>
+
+      <!-- 지급 결과를 알 수 없는 상태 — 적립 내역 확인 경로와 문의 경로를 안내 -->
       <v-btn
+        v-if="promoState === 'pending'"
+        variant="tonal"
         color="primary"
         rounded="lg"
         block
         class="mt-3"
-        :disabled="!promoReady"
-        :loading="promoLoading"
-        @click="claimPromo"
+        prepend-icon="mdi-message-text-outline"
+        @click="router.push('/feedback')"
       >
-        {{ $t('hub.promo.claim', { amount: PROMOTION_AMOUNT }) }}
+        {{ $t('hub.feedback') }}
       </v-btn>
+
+      <template v-else>
+        <v-btn
+          color="primary"
+          rounded="lg"
+          block
+          class="mt-3"
+          :disabled="promoState !== 'ready'"
+          :loading="promoLoading"
+          @click="claimPromo"
+        >
+          {{ $t('hub.promo.claim', { amount: PROMOTION_AMOUNT }) }}
+        </v-btn>
+
+        <!-- 지급 시점·조건·제한 및 중단 가능성 고지 (앱인토스 프로모션 필수 고지 항목) -->
+        <ul class="promo-notice mt-3">
+          <li>{{ $t('hub.promo.noticeWhen') }}</li>
+          <li>{{ $t('hub.promo.noticeCondition') }}</li>
+          <li>{{ $t('hub.promo.noticeLimit') }}</li>
+          <li>{{ $t('hub.promo.noticeStop') }}</li>
+        </ul>
+      </template>
     </div>
 
     <div class="d-flex flex-column ga-2">
@@ -560,6 +592,18 @@ onMounted(async () => {
   font-size: 0.75rem;
   color: var(--fp-text-secondary);
   margin-top: 2px;
+}
+
+.promo-notice {
+  list-style: none;
+  padding: 0;
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.promo-notice li::before {
+  content: '· ';
 }
 
 .hub-icon {

@@ -63,11 +63,15 @@ export type ClaimResult =
 // 브리지 호출 자체가 실패한 경우까지 포함한 지급 결과
 type GrantResult = Awaited<ReturnType<typeof grantPromotionReward>> | 'BRIDGE_ERROR'
 
-// 성공 응답이면 리워드 키, 아니면 null
-const successKeyOf = (result: GrantResult) =>
-  typeof result === 'object' && 'key' in result && !('errorCode' in result)
-    ? String(result.key)
-    : null
+// 성공 응답이면 리워드 키, 아니면 null.
+// SDK 타입은 성공을 `{ key }`로 정의하지만 콘솔 가이드는 `resultType === 'SUCCESS'`로 판별하라고
+// 안내한다(서버 지급 API 응답일 가능성). 어느 쪽이 와도 성공으로 인정한다.
+const successKeyOf = (result: GrantResult) => {
+  if (typeof result !== 'object' || 'errorCode' in result) return null
+  if ('key' in result) return String(result.key)
+  if ('resultType' in result && result.resultType === 'SUCCESS') return 'SUCCESS'
+  return null
+}
 
 // 실패 원인 코드. null이면 지급됐는지 알 수 없다는 뜻이다.
 const errorCodeOf = (result: GrantResult) => {

@@ -646,8 +646,14 @@
       "claim": "Claim {amount}",
       "success": "{amount} Toss Points have been credited.",
       "already": "You've already received this promotion.",
-      "unknown": "We're still confirming the result. Please check back shortly.",
-      "failed": "Couldn't credit the reward. Please try again shortly."
+      "unknown": "We're still confirming the result.",
+      "failed": "Couldn't credit the reward. Please try again shortly.",
+      "pendingTitle": "Confirming the result",
+      "pendingDesc": "You can check your Toss Points history under Benefits → Toss Points in the Toss app. If it wasn't credited, let us know via Send feedback.",
+      "noticeWhen": "When: credited immediately after you tap Claim",
+      "noticeCondition": "Requirement: sign in, then open Assets or Budget",
+      "noticeLimit": "One reward per account. Not granted on withdrawal or abuse.",
+      "noticeStop": "This promotion may end without prior notice."
     },
     "errors": {
       "logoutError": "An error occurred while logging out.",
