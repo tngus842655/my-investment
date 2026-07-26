@@ -1,9 +1,6 @@
-import {
-  getAnonymousKey,
-  getOperationalEnvironment,
-  grantPromotionReward,
-} from '@apps-in-toss/web-framework'
+import { getAnonymousKey, grantPromotionReward } from '@apps-in-toss/web-framework'
 import { supabase } from '@/services/supabase'
+import { isTossApp } from '@/services/tossApp'
 
 // 앱인토스 콘솔에서 발급받은 프로모션 코드.
 // 브리지 호출 인자로 그대로 실려 번들에 노출되는 값이라 비밀값은 아니다.
@@ -11,22 +8,6 @@ const PROMOTION_CODE = import.meta.env.VITE_TOSS_PROMOTION_CODE ?? ''
 
 // 지급할 토스포인트 금액. 콘솔에 등록한 1회 지급 금액과 같아야 한다.
 export const PROMOTION_AMOUNT = 10
-
-// 브리지 상수는 토스 앱(및 샌드박스) 웹뷰만 주입한다.
-// 일반 브라우저·PWA·안드로이드 TWA에서는 호출 자체가 throw하므로 이걸로 환경을 판별한다.
-let tossApp: boolean | null = null
-
-const isTossApp = () => {
-  if (tossApp === null) {
-    try {
-      getOperationalEnvironment()
-      tossApp = true
-    } catch {
-      tossApp = false
-    }
-  }
-  return tossApp
-}
 
 /** 프로모션을 진행할 수 있는 환경인지 (토스 앱 + 프로모션 코드 설정됨) */
 export const isPromotionAvailable = () => PROMOTION_CODE !== '' && isTossApp()
@@ -37,14 +18,10 @@ const visitedKey = (userId: string) => `fp-toss-promo-visited:${userId}`
 export const hasVisitedCategory = (userId: string) =>
   localStorage.getItem(visitedKey(userId)) === '1'
 
-/**
- * 서비스 카테고리(자산관리/가계부) 진입 기록.
- * 이번 진입으로 조건이 처음 충족됐으면 true를 반환한다(수령 안내를 한 번만 띄우기 위함).
- */
+/** 서비스 카테고리(자산관리/가계부) 진입 기록 */
 export const markCategoryVisited = (userId: string) => {
-  if (!isPromotionAvailable() || hasVisitedCategory(userId)) return false
+  if (!isPromotionAvailable() || hasVisitedCategory(userId)) return
   localStorage.setItem(visitedKey(userId), '1')
-  return true
 }
 
 /** 이 계정의 프로모션 지급 상태. 이력이 없으면 null */

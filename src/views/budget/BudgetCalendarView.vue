@@ -10,6 +10,7 @@ import { loadRatesToBase, toBaseAmount, formatBudgetAmount, formatBudgetSumBare 
 import type { BudgetType } from '@/types/budget'
 import type { CurrencyCode } from '@/config/marketConfig'
 import BudgetEntryAddDialog from './BudgetEntryAddDialog.vue'
+import TossPromotionCard from '@/components/TossPromotionCard.vue'
 import BudgetMonthYearCard from './BudgetMonthYearCard.vue'
 
 interface EntryRow {
@@ -357,6 +358,9 @@ const onContainerClick = (e: MouseEvent) => {
         </button>
       </div>
     </div>
+
+    <!-- 앱인토스 프로모션 (토스 앱에서만 노출) -->
+    <TossPromotionCard />
 
     <!-- 월/연도 이동 -->
     <div class="d-flex align-center justify-space-between mb-3">
