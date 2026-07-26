@@ -2,7 +2,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { isAdminEmail } from '@/config/admin'
 import { setLastModule, getLastModule } from '@/utils/lastModule'
-import { markCategoryVisited } from '@/services/tossPromotion'
+import { PROMOTION_AMOUNT, markCategoryVisited } from '@/services/tossPromotion'
+import { showMessage } from '@/composables/useSnackbar'
+import { i18n } from '@/plugins/i18n'
 import budgetRoutes from './budget.routes'
 
 import LoginView from '@/views/auth/LoginView.vue'
@@ -349,8 +351,12 @@ router.beforeEach(async (to) => {
 
   // 앱인토스 프로모션 — 서비스 카테고리(자산관리/가계부) 진입 기록.
   // 리다이렉트 분기가 모두 끝난 지점이라 실제로 진입한 경우에만 기록된다.
+  // 조건을 처음 충족한 순간에만 안내를 띄운다 — 카테고리 화면에 들어온 유저는
+  // 허브로 돌아가야 받을 수 있다는 걸 알 방법이 없기 때문.
   if (session && (to.meta.module === 'asset' || to.meta.module === 'budget')) {
-    markCategoryVisited(session.user.id)
+    if (markCategoryVisited(session.user.id)) {
+      showMessage(i18n.global.t('hub.promo.unlocked', { amount: PROMOTION_AMOUNT }))
+    }
   }
 
   return true
