@@ -60,7 +60,16 @@ npm run build:toss   # 앱인토스 미니앱 빌드 (ait build)
 
 콘솔에서 발급받은 프로모션 코드를 **로컬 `.env`** 의 `VITE_TOSS_PROMOTION_CODE`에 넣으면, 토스 앱에서 접속한 유저에게만 허브 화면에 프로모션 카드가 노출됩니다. 코드가 비어 있거나 일반 브라우저·PWA·안드로이드 앱(TWA)에서는 카드가 노출되지 않습니다.
 
-`VITE_*` 값은 Vite가 빌드 시점에 번들에 박아넣습니다. `ait deploy`가 로컬에서 `vite build`를 돌려 그 결과물을 토스 서버에 업로드하는 구조이므로, **프로모션 코드를 바꾸면 `npm run deploy:toss`로 재배포해야** 반영됩니다. Vercel 등 웹 배포 환경변수에는 넣지 않아도 됩니다.
+`VITE_*` 값은 Vite가 빌드 시점에 번들에 박아넣고, 그 번들이 토스 서버로 올라갑니다. 그래서 **프로모션 코드를 바꾸면 반드시 다시 빌드하고 배포해야** 반영됩니다. Vercel 등 웹 배포 환경변수에는 넣지 않아도 됩니다(미니앱은 Vercel을 거치지 않습니다).
+
+```sh
+# Windows(cmd)는 rmdir /s /q dist
+rm -rf dist && npm run build:toss && npm run deploy:toss
+```
+
+`dist`를 먼저 지우는 이유: `ait build`는 `dist/web/index.html`이 이미 있으면 **`vite build`를 건너뛰고 기존 번들을 그대로 재사용**합니다. 지우지 않으면 `.env`를 바꿔도 예전 번들이 배포됩니다.
+
+`ait deploy`는 빌드를 하지 않습니다. 패키지 루트의 `*.ait` 파일을 찾아 업로드만 하므로, `build:toss` 없이 `deploy:toss`만 실행하면 예전 아티팩트가 올라가거나 `.ait` 파일이 없다는 에러가 납니다.
 
 - 달성 조건: 로그인 후 서비스 카테고리(자산관리 또는 가계부) 진입
 - 지급: 허브 화면의 "받기" 버튼 → `grantPromotionReward` 브리지 호출

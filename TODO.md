@@ -13,8 +13,19 @@
    돌려 `dist/web`을 zip으로 묶어 토스 서버에 업로드하는 구조라(미니앱은 Vercel을 거치지 않음),
    `VITE_*` 값은 **로컬 빌드 시점에 번들에 박힌다**. 웹 배포본은 토스 브리지가 없어 카드 자체가 안 뜬다.
 4. **토스 앱에서 테스트 코드로 수령 플로우 검증** — 콘솔의 "테스트 프로모션 코드를 API로 호출" 단계.
-   일반 브라우저에서는 카드가 노출되지 않으므로 `npm run dev:toss` 또는 `npm run deploy:toss` 배포본으로 확인.
+   일반 브라우저에서는 카드가 노출되지 않으므로 `npm run dev:toss` 또는 미니앱 배포본으로 확인.
    카드는 **허브 화면(`/hub`)** 에만 있고, 자산관리나 가계부를 한 번 들어갔다 와야 버튼이 활성화된다.
+
+   배포는 **빌드 → 배포 2단계**이고, `dist`를 먼저 지워야 한다:
+
+   ```sh
+   rm -rf dist && npm run build:toss && npm run deploy:toss   # Windows(cmd): rmdir /s /q dist
+   ```
+
+   - `ait build`는 `dist/web/index.html`이 있으면 `vite build`를 **건너뛰고 기존 번들을 재사용**한다
+     → `dist`를 안 지우면 `.env`를 바꿔도 예전 번들이 배포된다
+   - `ait deploy`는 빌드를 하지 않고 패키지 루트의 `*.ait`만 업로드한다
+     → `build:toss` 없이 `deploy:toss`만 돌리면 예전 아티팩트가 올라간다
 5. **검토 요청 → 승인 → 시작하기** (콘솔, 검토 영업일 2~3일). 운영 코드는 **테스트 코드에서 `TEST_`
    접두어를 뗀 값**이다(`tossPromotion_intro.md` 201행). `.env`를 교체하고 **`npm run deploy:toss`
    재배포**해야 반영된다(빌드 시점에 박히는 값이라 재배포 필수).
