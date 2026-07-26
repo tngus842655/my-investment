@@ -30,6 +30,8 @@ USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'email') = 'admin
 | record_signup(user_email)   | LoginView.vue (로그인/가입)   | SECURITY DEFINER. signup_log에 신규 insert 또는 탈퇴 이력 재활성화     |
 | save_daily_asset_snapshot() | FireHistoryView.vue, pg_cron  | asset_history에 당일 스냅샷 upsert (아래 pg_cron 항목 참고)          |
 | admin_get_email_confirmations() | AdminSignupLogView.vue (가입 이력) | SECURITY DEFINER. 관리자만 호출 가능. auth.users의 이메일별 인증 여부(email_confirmed_at) 반환 |
+| claim_toss_promotion(p_promotion_code, p_amount, p_toss_user_key) | tossPromotion.ts (프로모션 수령) | SECURITY DEFINER. 지급 전 예약. `'OK'`(예약 성공) 또는 `'ALREADY'`(중복 참여) 반환 |
+| complete_toss_promotion(p_promotion_code, p_reward_key, p_error_code) | tossPromotion.ts (프로모션 수령) | SECURITY DEFINER. PENDING → GRANTED/FAILED 전이. PENDING 상태에서만 전이되므로 재수령 불가 |
 
 ### pg_cron
 
@@ -300,3 +302,31 @@ END;
 | 관리자 delete          | DELETE | 관리자만 삭제 가능                                                  |
 
 새 공지 작성 시 대시보드에 최초 1회 팝업 노출. "마지막으로 본 공지 id"는 서버 동기화 없이 로컬스토리지에만 저장(기기별).
+
+#### toss_promotion_rewards
+
+앱인토스 프로모션(토스포인트) 지급 이력. 지급 자체는 미니앱 클라이언트의 브리지 호출(`grantPromotionReward`)로만 가능하므로, 중복 지급은 이 테이블의 유니크 인덱스 + "예약(PENDING) → 지급 → 결과 확정" 순서로 막는다.
+
+| 컬럼명         | 타입        | 설명                                                          |
+| -------------- | ----------- | ------------------------------------------------------------- |
+| id             | uuid        | PK                                                            |
+| user_id        | uuid        | auth.users FK                                                 |
+| promotion_code | text        | 앱인토스 콘솔에서 발급받은 프로모션 코드                        |
+| toss_user_key  | text        | `getAnonymousKey()` 해시. 같은 토스 계정의 중복 수령 차단용       |
+| amount         | integer     | 지급 금액(토스포인트)                                          |
+| status         | text        | PENDING(예약) / GRANTED(지급완료) / FAILED(지급실패, 재시도 가능) |
+| reward_key     | text        | 지급 성공 시 토스가 돌려준 리워드 키                            |
+| error_code     | text        | 지급 실패 시 에러 코드                                         |
+| created_at     | timestamptz |                                                               |
+| updated_at     | timestamptz |                                                               |
+
+**유니크 인덱스:** `(user_id, promotion_code)` — 계정당 1회 / `(toss_user_key, promotion_code)` where toss_user_key is not null — 같은 토스 계정으로 앱 계정을 여러 개 만들어 중복 수령하는 것 차단
+
+**RLS 정책 (toss_promotion_rewards 테이블):**
+
+| 정책명        | 커맨드 | 설명                                                     |
+| ------------- | ------ | -------------------------------------------------------- |
+| 본인 select   | SELECT | 본인 이력만 조회 가능                                     |
+| 관리자 select | SELECT | 관리자는 전체 조회 가능                                   |
+
+INSERT/UPDATE 정책은 두지 않는다 — 기록은 `claim_toss_promotion` / `complete_toss_promotion` RPC(SECURITY DEFINER)를 통해서만 이뤄진다. 지급 여부를 알 수 없는 결과(`'ERROR'`)는 PENDING으로 남겨 재시도를 막는다(이중 지급 방지).

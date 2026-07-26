@@ -55,3 +55,24 @@ npm run lint
 npm run dev:toss     # 앱인토스 개발 서버 실행 (granite dev)
 npm run build:toss   # 앱인토스 미니앱 빌드 (ait build)
 ```
+
+#### 프로모션 (토스포인트 지급)
+
+콘솔에서 발급받은 프로모션 코드를 **로컬 `.env`** 의 `VITE_TOSS_PROMOTION_CODE`에 넣으면, 토스 앱에서 접속한 유저에게만 허브 화면에 프로모션 카드가 노출됩니다. 코드가 비어 있거나 일반 브라우저·PWA·안드로이드 앱(TWA)에서는 카드가 노출되지 않습니다.
+
+`VITE_*` 값은 Vite가 빌드 시점에 번들에 박아넣고, 그 번들이 토스 서버로 올라갑니다. 그래서 **프로모션 코드를 바꾸면 반드시 다시 빌드하고 배포해야** 반영됩니다. Vercel 등 웹 배포 환경변수에는 넣지 않아도 됩니다(미니앱은 Vercel을 거치지 않습니다).
+
+```sh
+# Windows(cmd)는 rmdir /s /q dist
+rm -rf dist && npm run build:toss
+```
+
+빌드가 끝나면 프로젝트 루트에 **`firepath.ait`** 가 생깁니다. 이 파일을 **앱인토스 콘솔에 직접 업로드**하면 배포됩니다.
+
+`dist`를 먼저 지우는 이유: `ait build`는 `dist/web/index.html`이 이미 있으면 **`vite build`를 건너뛰고 기존 번들을 그대로 재사용**합니다. 지우지 않으면 `.env`를 바꿔도 예전 번들이 그대로 패키징됩니다.
+
+`npm run deploy:toss`(=`ait deploy`)는 콘솔 업로드 대신 CLI로 올리는 방법인데, **앱인토스 배포 API 키가 필요**합니다(`ait token add`로 등록하거나 실행 시 프롬프트 입력). 키를 쓰지 않는다면 콘솔 업로드 방식만 쓰면 됩니다. 참고로 `ait deploy`는 빌드를 하지 않고 루트의 `*.ait`만 업로드합니다.
+
+- 달성 조건: 로그인 후 서비스 카테고리(자산관리 또는 가계부) 진입
+- 지급: 허브 화면의 "받기" 버튼 → `grantPromotionReward` 브리지 호출
+- 중복 방지: `toss_promotion_rewards` 테이블 (자세한 내용은 **TABLE.md** 참고)
