@@ -6,14 +6,24 @@
 
 2026-07-26 Claude 코드 작업 완료 (허브 화면 프로모션 카드 + 중복 방지 테이블/RPC). 남은 것:
 
-1. **SQL 실행**: `supabase/migrations/20260726_01_toss_promotion_rewards.sql`
-2. **`.env`에 프로모션 코드 등록**: `VITE_TOSS_PROMOTION_CODE=<콘솔에서 발급받은 코드>`
-   (테스트 코드로 먼저 검증 → 실제 코드로 교체. 배포 환경 환경변수에도 각각 넣어야 함)
-3. **콘솔 지급 금액 확인**: 코드의 `PROMOTION_AMOUNT`(10)와 콘솔의 1회 지급 금액이 같아야 함
-   (`src/services/tossPromotion.ts`)
-4. **비즈 월렛 예산 충전** — 잔액이 없으면 지급 시 `4112` 에러
-5. **토스 앱(또는 샌드박스)에서 실제 수령 플로우 검증** — 일반 브라우저에서는 카드가 아예 노출되지 않으므로
-   `npm run dev:toss` 또는 미니앱 배포본으로 확인해야 함
+1. ~~**SQL 실행**: `supabase/migrations/20260726_01_toss_promotion_rewards.sql`~~ (2026-07-26 실행 완료)
+2. ~~**콘솔 지급 금액 확인**~~ — 콘솔 1회 지급 금액 10원 = 코드의 `PROMOTION_AMOUNT` 확인 완료
+3. **로컬 `.env`에 프로모션 코드 등록**: `VITE_TOSS_PROMOTION_CODE=<콘솔 코드>`
+   ⚠️ **Vercel·Netlify·Cloudflare 환경변수에는 넣을 필요 없다.** `ait deploy`는 로컬에서 `vite build`를
+   돌려 `dist/web`을 zip으로 묶어 토스 서버에 업로드하는 구조라(미니앱은 Vercel을 거치지 않음),
+   `VITE_*` 값은 **로컬 빌드 시점에 번들에 박힌다**. 웹 배포본은 토스 브리지가 없어 카드 자체가 안 뜬다.
+4. **토스 앱에서 테스트 코드로 수령 플로우 검증** — 콘솔의 "테스트 프로모션 코드를 API로 호출" 단계.
+   일반 브라우저에서는 카드가 노출되지 않으므로 `npm run dev:toss` 또는 `npm run deploy:toss` 배포본으로 확인.
+   카드는 **허브 화면(`/hub`)** 에만 있고, 자산관리나 가계부를 한 번 들어갔다 와야 버튼이 활성화된다.
+5. **검토 요청 → 승인 → 시작하기** (콘솔). 승인 후 운영 코드를 확인해서 `.env`를 교체하고
+   **`npm run deploy:toss` 재배포**해야 반영된다(빌드 시점에 박히는 값이라 재배포 필수).
+6. **비즈 월렛 예산 충전** — 운영 시작 전 확인. 잔액이 없으면 지급 시 `4112` 에러
+
+테스트 이력을 지우고 다시 받아보려면(같은 계정으로 재수령 테스트):
+
+```sql
+DELETE FROM toss_promotion_rewards WHERE promotion_code LIKE 'TEST_%';
+```
 
 ### 🔍 사용자 검증만 남음
 
