@@ -9,7 +9,6 @@ import { useDesignTokens } from '@/composables/useDesignTokens'
 import { useLocale } from '@/composables/useLocale'
 import { getLastModule } from '@/utils/lastModule'
 import { isAdminEmail } from '@/config/admin'
-import { isTossApp, TOSS_OAUTH_REDIRECT, schemeDiagnostic } from '@/services/tossApp'
 import type { SupportedLocale } from '@/plugins/i18n'
 
 const router = useRouter()
@@ -191,11 +190,9 @@ const signInWithProvider = async (provider: 'google' | 'kakao') => {
   oauthLoading.value = provider
   // 리다이렉트 복귀 후 App.vue의 onAuthStateChange에서 login_log 기록에 사용하는 표식
   sessionStorage.setItem(OAUTH_LOGIN_PENDING_KEY, provider)
-  // 토스 미니앱은 웹뷰 origin으로 리다이렉트가 돌아오지 못한다.
-  // 인증이 별도 브라우저에서 끝나므로 딥링크로 미니앱을 다시 열어 세션을 복원한다(tossApp.ts).
   const { error } = await supabase.auth.signInWithOAuth({
     provider,
-    options: { redirectTo: isTossApp() ? TOSS_OAUTH_REDIRECT : `${window.location.origin}/` },
+    options: { redirectTo: `${window.location.origin}/` },
   })
   if (error) {
     sessionStorage.removeItem(OAUTH_LOGIN_PENDING_KEY)
@@ -242,10 +239,6 @@ onMounted(() => {
   // 마지막 모듈로 보내 이 화면이 마운트되지 않으므로(=여기 오면 로그인 안 된 상태), 잔존 표식을
   // 제거해 이후 비밀번호 로그인 시 App.vue가 login_log를 중복 기록하지 않도록 한다.
   sessionStorage.removeItem(OAUTH_LOGIN_PENDING_KEY)
-
-  // 미니앱 SNS 로그인 딥링크 복원이 실패했으면 진입 스킴 구조를 알려준다.
-  // 토스가 파라미터를 어떤 형태로 넘기는지 확인하기 위한 임시 진단 — 검증 끝나면 제거할 것.
-  if (schemeDiagnostic.value) showMessage(schemeDiagnostic.value, 'warning')
 
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true
   platform.value = detectPlatform()

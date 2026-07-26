@@ -43,6 +43,30 @@
 DELETE FROM toss_promotion_rewards WHERE promotion_code LIKE 'TEST_%';
 ```
 
+### 🔴 토스 미니앱 SNS(구글·카카오) 로그인 불가 — 미해결
+
+**증상**: 미니앱에서 구글·카카오 로그인을 하면 겉으로는 로그인되지만 세션이 미니앱에 남지 않는다.
+프로모션 카드도 안 보이고, 앱을 다시 열면 로그아웃 상태다. 이메일+비밀번호 로그인은 정상.
+
+**원인**: 미니앱 웹뷰 origin은 Supabase Redirect URLs에 없어서 `redirectTo`가 거부되고 Site URL
+(`firepath.me`)로 떨어진다. 게다가 토스는 OAuth를 **별도 인앱 브라우저**로 띄우므로, 인증이 끝나면
+유저는 미니앱이 아니라 **웹 버전에 로그인된 상태**로 남는다. UI가 같아서 알아채기 어렵고,
+토스 브리지가 없어 프로모션 카드만 사라진다.
+
+**시도했으나 실패 (2026-07-26) — 다시 시도하지 말 것**:
+`redirectTo`를 `intoss://firepath/`로 바꿔 딥링크로 세션을 복원하려 했으나 불가능했다.
+- `getSchemeUri()`는 문서상 **"처음에 화면에 진입한 스킴 값"** 이고 페이지 이동은 반영되지 않는다.
+  실기기에서 확인한 값도 실행 스킴(`intoss://firepath?_deploymentId=...`)뿐이고 토큰이 없었다.
+- 실행 중인 미니앱에 딥링크가 도착했을 때 받을 **이벤트 API가 SDK에 없다**
+  (이벤트 브리지는 광고·구매·위치·safeArea뿐).
+- 부작용으로 SNS 로그인이 1탭 → 2탭이 되어 되돌렸다. `isTossApp()`만 `tossApp.ts`에 남겼다.
+
+**해야 할 일 (정공법)**: **토스 로그인(`appLogin`) 도입.** 콘솔에 "토스 로그인" 메뉴가 이미 있다.
+- `appLogin()` → `{ authorizationCode, referrer }` → Edge Function에서 토스 API로 교환
+- 기존 계정 매핑은 `getConsentedUserData()`로 `USER_EMAIL`을 동의 기반 취득해 연결 가능
+- 그 뒤 Supabase 세션 발급(admin API)
+- 미니앱에서는 SNS 버튼 대신 "토스로 계속하기"를 노출하는 구성이 자연스럽다
+
 **서버 지급(Server-to-Server) 방식은 채택하지 않았다.** 비게임 미니앱은 서버에서 포인트를 지급하는
 방식도 쓸 수 있지만(요청 위변조 방지에 유리), **토스 로그인 구현이 전제**다. 이 앱은 Supabase Auth
 (이메일·구글·카카오)를 쓰므로 토스 로그인을 새로 붙여야 해서 현재는 클라이언트 브리지 방식으로 구현했다.
