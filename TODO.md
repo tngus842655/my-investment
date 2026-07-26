@@ -14,7 +14,10 @@
    `VITE_*` 값은 **로컬 빌드 시점에 번들에 박힌다**. 웹 배포본은 토스 브리지가 없어 카드 자체가 안 뜬다.
 4. **토스 앱에서 테스트 코드로 수령 플로우 검증** — 콘솔의 "테스트 프로모션 코드를 API로 호출" 단계.
    일반 브라우저에서는 카드가 노출되지 않으므로 `npm run dev:toss` 또는 미니앱 배포본으로 확인.
-   카드는 **허브 화면(`/hub`)** 에만 있고, 자산관리나 가계부를 한 번 들어갔다 와야 버튼이 활성화된다.
+   카드는 **허브 + 대시보드 + 가계부 홈** 3곳에 있다(`TossPromotionCard.vue`). 허브에서는 아직
+   카테고리를 안 둘러봤으면 버튼이 비활성이고, 대시보드·가계부에서는 바로 활성이다.
+   (초기에 허브에만 뒀더니 `lastModule`이 있는 기존 회원은 로그인 후 대시보드로 직행해
+   카드를 볼 수 없었다 — 커밋 `f62e8c7`에서 수정)
 
    배포 방법 (콘솔 업로드 방식):
 
@@ -34,8 +37,13 @@
 6. **비즈 월렛 예산 충전** — **최소 30만 원 ~ 최대 3,000만 원**, 신용카드 결제.
    잔액이 없으면 지급 시 `4112` 에러. 종료 시 남은 예산은 비즈 월렛으로 환급된다.
 7. **혜택 탭 노출로 등록했다면 이동 URL 확인** — 형식은 `intoss://firepath/hub`.
-   프로모션 카드는 허브 화면에만 있으므로 다른 화면으로 보내면 유저가 카드를 못 찾는다.
+   카드가 대시보드·가계부에도 있어서 예전만큼 치명적이진 않지만, 허브로 보내는 게 가장 자연스럽다.
    (미노출로 등록한 경우 → 나중에 노출로 바꾸려면 **새 프로모션 등록**이 필요하고 수정으로는 불가)
+
+> **중요 — 검수 통과 ≠ 프로모션 시작.** "시작하기"는 수동 버튼이고 누르기 전까지 유저에게 노출되지
+> 않는다. 그래서 **위 3~5번(검수 통과)은 지금 이메일 로그인으로 끝내두고, 아래 SNS 로그인 문제는
+> 병행 처리**하는 게 낫다. 검수 대기(2~3영업일)와 개발 시간이 겹쳐 일정이 압축된다.
+> 프로모션 종료일은 2026.08.26.
 
 테스트 이력을 지우고 다시 받아보려면(같은 계정으로 재수령 테스트):
 
@@ -61,11 +69,49 @@ DELETE FROM toss_promotion_rewards WHERE promotion_code LIKE 'TEST_%';
   (이벤트 브리지는 광고·구매·위치·safeArea뿐).
 - 부작용으로 SNS 로그인이 1탭 → 2탭이 되어 되돌렸다. `isTossApp()`만 `tossApp.ts`에 남겼다.
 
+**왜 프로모션에 치명적인가 (2026-07-26 확인)**: 이메일 가입은 Resend **무료 플랜(월 3,000통,
+하루 100통 한도)** 을 쓰고 있어서 프로모션 유입을 감당할 수 없다. 유료 전환은 $20/월(50,000통)로
+예산 대비 사소하지만, **돈으로 풀리지 않는 문제가 따로 있다** — 미니앱 신규 유저가 이메일 인증을
+하려면 `미니앱 이탈 → 메일 확인 → 링크 클릭(웹이 열림) → 미니앱 복귀`를 거쳐야 한다.
+10원 받으려고 이걸 할 사람은 거의 없다(`tossPromotion_intro.md` 265~266행이 경고하는 이탈 지점).
+→ **결론: 미니앱에 마찰 없는 신규 가입 경로가 없으면 프로모션의 신규 유입 효과가 안 난다.**
+
 **해야 할 일 (정공법)**: **토스 로그인(`appLogin`) 도입.** 콘솔에 "토스 로그인" 메뉴가 이미 있다.
-- `appLogin()` → `{ authorizationCode, referrer }` → Edge Function에서 토스 API로 교환
-- 기존 계정 매핑은 `getConsentedUserData()`로 `USER_EMAIL`을 동의 기반 취득해 연결 가능
-- 그 뒤 Supabase 세션 발급(admin API)
-- 미니앱에서는 SNS 버튼 대신 "토스로 계속하기"를 노출하는 구성이 자연스럽다
+이메일을 **한 통도 보내지 않으므로** Resend 한도와 무관해지고, 원탭이라 전환율도 최대가 된다.
+
+```
+appLogin()                    → { authorizationCode, referrer }
+Edge Function(service_role)   → 토스 API로 인가코드 교환 → 사용자 식별
+getConsentedUserData()        → USER_EMAIL (동의 기반)
+admin.createUser({ email, email_confirm: true })   ← 확인 메일 발송 안 함
+  또는 기존 계정이면 admin.generateLink({ type:'magiclink', email }) → hashed_token
+verifyOtp({ token_hash })     → 미니앱에 세션 확립
+```
+
+검증된 근거: `createUser()`는 확인 메일을 보내지 않고(`GoTrueAdminApi.d.ts:264`) `email_confirm`
+옵션이 있다(`types.d.ts:438`). `generateLink()`도 링크만 생성하고 발송하지 않으며 magiclink는
+유저가 없으면 생성까지 처리한다(같은 파일 148~150행). Supabase에 토스 provider는 없지만 **필요하지도
+않다** — Supabase Auth의 OAuth 경로를 아예 쓰지 않는 구조다.
+
+**이메일이 꼭 필요한 이유 (실측)**: 핵심 데이터는 전부 `user_id`(uuid) 기준이지만, 아래는 이메일이
+없으면 깨진다. 그래서 `USER_EMAIL` 취득이 선택이 아니라 필수다.
+- 본인 의견 조회 `.eq('email', ...)` — `FeedbackView.vue:88`, `AssetLayout.vue:86`
+- `record_signup(user_email)` (이메일 기준 멱등), `login_log`·`access_log`의 `email NOT NULL`
+- 관리자 판별 `isAdminEmail()` + RLS 6개 파일의 `jwt.claims ->> 'email'`
+- **세션 발급 자체** — `generateLink({ email })`에 이메일 필수
+
+**선행 조건 / 리스크**
+1. **토스 로그인 문서가 필요하다.** 인가코드를 어떤 엔드포인트에 어떻게 교환하는지 모른다
+   (개발자센터 도메인이 Claude 세션에서 차단됨). `tossPromotion_intro.md`처럼 URL 끝에 `.md`를
+   붙여 저장해 올려줄 것: `https://developers-apps-in-toss.toss.im/login/intro.md`
+   → **문서 없이 착수하면 콘솔 설정 단계에서 막힌다. 추측으로 시작하지 말 것.**
+2. **콘솔 설정**: `oauth2ClientId` 발급(없으면 SDK가 `"oauth2ClientId 설정이 필요합니다"`로 throw),
+   그리고 `getConsentedUserData`용 **동의문 등록**(에러 코드에 `TERMS_NOT_SET`, `INVALID_REQUEST`는
+   "termsUrl이 없거나 HTTPS 회사 도메인이 아닌 경우"). 동의문은 `PrivacyPolicyView` 재활용 여지 있음.
+3. **유저가 이메일 제공을 거부**(`USER_DECLINED`)하면 기존 `CompleteEmailView`로 폴백.
+   단 이 화면은 `updateUser({email}, {emailRedirectTo})`로 **확인 메일을 발송**하므로
+   (`CompleteEmailView.vue:28-31`) Resend를 소모한다. 소수라 한도 위협은 아니지만 인지할 것.
+4. 미니앱에서는 SNS 버튼 대신 "토스로 계속하기"를 노출하는 구성이 자연스럽다.
 
 **서버 지급(Server-to-Server) 방식은 채택하지 않았다.** 비게임 미니앱은 서버에서 포인트를 지급하는
 방식도 쓸 수 있지만(요청 위변조 방지에 유리), **토스 로그인 구현이 전제**다. 이 앱은 Supabase Auth
