@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { isAdminEmail } from '@/config/admin'
 import { setLastModule, getLastModule } from '@/utils/lastModule'
+import { markCategoryVisited } from '@/services/tossPromotion'
 import budgetRoutes from './budget.routes'
 
 import LoginView from '@/views/auth/LoginView.vue'
@@ -344,6 +345,12 @@ router.beforeEach(async (to) => {
   // 인증된 일반 유저 페이지 접속 로그 (관리자 및 로그인 페이지 제외)
   if (session && !isAdminEmail(session.user.email) && to.meta.requiresAuth) {
     logAccess(session.user.id, session.user.email ?? '', to.path)
+  }
+
+  // 앱인토스 프로모션 — 서비스 카테고리(자산관리/가계부) 진입 기록.
+  // 리다이렉트 분기가 모두 끝난 지점이라 실제로 진입한 경우에만 기록된다.
+  if (session && (to.meta.module === 'asset' || to.meta.module === 'budget')) {
+    markCategoryVisited(session.user.id)
   }
 
   return true

@@ -639,6 +639,16 @@
     "themeSheetTitle": "테마 선택",
     "themeSheetDesc": "앱 전체에 적용되는 색상 테마를 선택하세요",
     "themeSystem": "시스템",
+    "promo": {
+      "title": "토스포인트 {amount}원 받기",
+      "guide": "자산관리나 가계부를 한 번 둘러보면 받을 수 있어요.",
+      "ready": "조건을 채웠어요! 지금 받아가세요.",
+      "claim": "{amount}원 받기",
+      "success": "토스포인트 {amount}원을 지급했어요.",
+      "already": "이미 받은 프로모션이에요.",
+      "unknown": "지급 결과를 확인하는 중이에요. 잠시 후 다시 확인해주세요.",
+      "failed": "지급에 실패했어요. 잠시 후 다시 시도해주세요."
+    },
     "errors": {
       "logoutError": "로그아웃 중 오류가 발생했습니다.",
       "enterPassword": "비밀번호를 입력해주세요.",

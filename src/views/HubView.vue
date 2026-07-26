@@ -9,6 +9,13 @@ import { showMessage } from '@/composables/useSnackbar'
 import { useUserDataStore } from '@/stores/userData'
 import { isAdminEmail } from '@/config/admin'
 import { serviceMenuOpen, settingsMenuOpen } from '@/composables/useHubMenuState'
+import {
+  PROMOTION_AMOUNT,
+  claimReward,
+  fetchRewardStatus,
+  hasVisitedCategory,
+  isPromotionAvailable,
+} from '@/services/tossPromotion'
 import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
@@ -154,11 +161,48 @@ const LOGO_WIDE: Partial<Record<string, string>> = {
 }
 const logoWide = computed(() => LOGO_WIDE[themeId.value] ?? null)
 
+// 앱인토스 프로모션 — 토스 앱에서만 노출. 로그인 후 서비스 카테고리를 둘러보면 토스포인트 지급
+const promoVisible = ref(false)
+const promoReady = ref(false)
+const promoLoading = ref(false)
+
+const initPromotion = async (userId: string) => {
+  if (!isPromotionAvailable()) return
+  const status = await fetchRewardStatus(userId)
+  // 이미 지급됐거나(GRANTED) 지급 여부를 알 수 없는 상태(PENDING)면 카드를 노출하지 않는다
+  if (status === 'GRANTED' || status === 'PENDING') return
+  promoReady.value = hasVisitedCategory(userId)
+  promoVisible.value = true
+}
+
+const claimPromo = async () => {
+  promoLoading.value = true
+  const result = await claimReward()
+  promoLoading.value = false
+
+  if (result === 'FAILED') {
+    showMessage(t('hub.promo.failed'), 'error')
+    return
+  }
+
+  promoVisible.value = false
+  if (result === 'GRANTED') {
+    showMessage(t('hub.promo.success', { amount: PROMOTION_AMOUNT }), 'success')
+  } else if (result === 'ALREADY') {
+    showMessage(t('hub.promo.already'), 'warning')
+  } else {
+    showMessage(t('hub.promo.unknown'), 'warning')
+  }
+}
+
 const showBack = ref(false)
 onMounted(async () => {
   showBack.value = window.history.state?.back != null && window.history.state.back !== '/'
   const { data: { user } } = await supabase.auth.getUser()
-  if (user) await fetchUnreadFeedbackCount(user)
+  if (user) {
+    await fetchUnreadFeedbackCount(user)
+    await initPromotion(user.id)
+  }
 })
 </script>
 
@@ -170,6 +214,30 @@ onMounted(async () => {
       </button>
       <img v-if="logoWide" :src="logoWide" class="header-logo-wide" alt="FIREPATH" />
       <div v-else class="font-weight-bold text-h6">Fire Path</div>
+    </div>
+
+    <!-- 앱인토스 프로모션 (토스 앱에서만 노출) -->
+    <div v-if="promoVisible" class="glass-card promo-card pa-3 mb-2">
+      <div class="d-flex align-center ga-3">
+        <div class="hub-icon"><v-icon size="22" color="primary">mdi-gift-outline</v-icon></div>
+        <div>
+          <div class="font-weight-medium">{{ $t('hub.promo.title', { amount: PROMOTION_AMOUNT }) }}</div>
+          <div class="promo-desc">
+            {{ promoReady ? $t('hub.promo.ready') : $t('hub.promo.guide') }}
+          </div>
+        </div>
+      </div>
+      <v-btn
+        color="primary"
+        rounded="lg"
+        block
+        class="mt-3"
+        :disabled="!promoReady"
+        :loading="promoLoading"
+        @click="claimPromo"
+      >
+        {{ $t('hub.promo.claim', { amount: PROMOTION_AMOUNT }) }}
+      </v-btn>
     </div>
 
     <div class="d-flex flex-column ga-2">
@@ -482,6 +550,16 @@ onMounted(async () => {
 
 .hub-card {
   cursor: pointer;
+}
+
+.promo-card {
+  border-color: rgba(var(--v-theme-primary), 0.4);
+}
+
+.promo-desc {
+  font-size: 0.75rem;
+  color: var(--fp-text-secondary);
+  margin-top: 2px;
 }
 
 .hub-icon {

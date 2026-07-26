@@ -639,6 +639,16 @@
     "themeSheetTitle": "Choose a Theme",
     "themeSheetDesc": "Select a color theme applied across the app",
     "themeSystem": "System",
+    "promo": {
+      "title": "Get {amount} Toss Points",
+      "guide": "Browse Assets or Budget once to unlock it.",
+      "ready": "You're all set! Claim it now.",
+      "claim": "Claim {amount}",
+      "success": "{amount} Toss Points have been credited.",
+      "already": "You've already received this promotion.",
+      "unknown": "We're still confirming the result. Please check back shortly.",
+      "failed": "Couldn't credit the reward. Please try again shortly."
+    },
     "errors": {
       "logoutError": "An error occurred while logging out.",
       "enterPassword": "Please enter your password.",
