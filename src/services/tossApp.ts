@@ -59,16 +59,18 @@ export const restoreSessionFromSchemeUri = async () => {
   try {
     uri = getSchemeUri()
   } catch {
+    schemeDiagnostic.value = 'getSchemeUri() 호출 실패'
     return
   }
-  if (!uri || !uri.includes('#')) return
 
-  const params = new URLSearchParams(uri.slice(uri.indexOf('#') + 1))
+  const params = new URLSearchParams(uri.includes('#') ? uri.slice(uri.indexOf('#') + 1) : '')
   const accessToken = params.get('access_token')
   const refreshToken = params.get('refresh_token')
 
+  // 토큰을 못 받았으면 토스가 진입 스킴을 어떤 형태로 넘겼는지 무조건 남긴다.
+  // (fragment를 통째로 버리는 경우까지 잡으려면 조건 없이 기록해야 한다)
   if (!accessToken || !refreshToken) {
-    schemeDiagnostic.value = describeSchemeUri(uri)
+    schemeDiagnostic.value = uri ? describeSchemeUri(uri) : '진입 스킴 없음'
     return
   }
 
