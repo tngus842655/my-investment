@@ -30,6 +30,7 @@ USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'email') = 'admin
 | record_signup(user_email)   | LoginView.vue (로그인/가입)   | SECURITY DEFINER. signup_log에 신규 insert 또는 탈퇴 이력 재활성화     |
 | save_daily_asset_snapshot() | FireHistoryView.vue, pg_cron  | asset_history에 당일 스냅샷 upsert (아래 pg_cron 항목 참고)          |
 | admin_get_email_confirmations() | AdminSignupLogView.vue (가입 이력) | SECURITY DEFINER. 관리자만 호출 가능. auth.users의 이메일별 인증 여부(email_confirmed_at) 반환 |
+| admin_get_user_providers()  | AdminSignupLogView.vue (가입 이력) | SECURITY DEFINER. 관리자만 호출 가능. 이메일별 로그인 수단 배열 반환. 토스 계정은 `createUser`로 만들어져 auth.identities에 `email`로만 남으므로, `toss_identities`를 UNION해 `'toss'`를 함께 넣는다 |
 | claim_toss_promotion(p_promotion_code, p_amount, p_toss_user_key) | tossPromotion.ts (프로모션 수령) | SECURITY DEFINER. 지급 전 예약. `'OK'`(예약 성공) 또는 `'ALREADY'`(중복 참여) 반환 |
 | complete_toss_promotion(p_promotion_code, p_reward_key, p_error_code) | tossPromotion.ts (프로모션 수령) | SECURITY DEFINER. PENDING → GRANTED/FAILED 전이. PENDING 상태에서만 전이되므로 재수령 불가 |
 

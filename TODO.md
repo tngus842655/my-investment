@@ -150,6 +150,17 @@ verifyOtp({ token_hash })   → 미니앱에 세션 확립
 - [ ] **미니앱 재업로드** — `rm -rf dist && npm run build:toss` (위 프로모션 절의 `dist` 함정 참고).
   이번엔 `dist`가 안 지워지면 프로모션 코드는 멀쩡한데 이 수정만 빠진 번들이 올라가니 더 헷갈린다
 
+**관리자 화면에 토스 가입 배지 추가 (2026-07-27)**
+
+토스 계정은 Edge Function이 `admin.createUser`로 만들어 `auth.identities`에 provider가 `email`로만
+남는다. 그래서 `admin_get_user_providers()`가 이메일 가입자와 구분해 주지 못했다. `toss_identities`
+매핑을 UNION으로 붙여 `'toss'`를 함께 반환하도록 고쳤고, 배지는 토스 파란색 `mdi-alpha-t-circle`로
+표시한다. 토스가 있으면 `email` 배지는 숨긴다(가입 경로를 보여주는 배지라서).
+**기존 토스 가입자도 매핑이 이미 있어 백필 없이 바로 보인다.**
+
+- [ ] **SQL 실행: `supabase/migrations/20260727_03_admin_get_user_providers_toss.sql`**
+- [ ] **웹 배포** — 관리자 화면은 웹에서 보므로 미니앱 재업로드는 필요 없다
+
 **2026-07-27 실기기 테스트 결과 — 로그인 경로 검증 완료**
 - ✅ **`Deno.createHttpClient`(mTLS)가 Supabase Edge Runtime에서 정상 동작한다.** 최대 리스크 해소.
   Cloudflare Worker로 옮길 필요 없다
