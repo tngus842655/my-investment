@@ -60,7 +60,30 @@ ETF 상세 정보(현재가/52주 고저/CAGR/MDD/변동성/배당률/운용보�
 - **응답**: `{ success: true }`
 - **로직**: 이메일로 대상 유저를 찾아 `auth.admin.updateUserById`로 비밀번호 변경.
 
+#### toss-login
+
+토스 로그인. 미니앱에서 받은 인가 코드를 Supabase 세션으로 바꿔준다. `src/services/tossLogin.ts`에서 호출. 소스: `supabase/functions/toss-login.ts`
+
+- **인증**: 없음 (세션을 만드는 것이 목적이라 호출 시점에 세션이 없다). 위조 방지는 인가 코드를 토스 서버에 교환해 보는 것으로 이뤄진다.
+- **파라미터**: `{ authorizationCode, referrer, email? }` (`email`은 토스가 이메일을 주지 않아 유저가 직접 입력한 경우에만)
+- **응답**: `{ tokenHash, email }` / `{ needsEmail: true }` / `{ error }`
+- **로직**: mTLS로 `generate-token` → `login-me` 호출 → `userKey` 확보. ① `toss_identities`에 매핑이 있으면 그 계정, ② 없으면 토스가 준 이메일(AES-256-GCM 복호화)로 기존 계정 매칭, ③ 이메일이 없으면 `needsEmail`을 돌려주고 클라이언트가 입력받아 재요청. 계정은 `admin.createUser({ email_confirm: true })`로 만들어 **확인 메일을 보내지 않고**, `admin.generateLink({ type: 'magiclink' })`의 `hashed_token`만 돌려준다(발송 없음). 클라이언트가 `verifyOtp`로 세션을 세운다.
+- **거부 조건**: 관리자 이메일은 자동 연결 대상에서 제외(`admin_not_allowed`). 유저가 **직접 입력한** 이메일이 기존 계정과 겹치면 계정 가로채기가 되므로 거부(`email_conflict`) — 토스가 준 이메일은 토스 계정 등록값이라 이 제한을 두지 않는다.
+
+#### toss-disconnect
+
+회원탈퇴 시 토스 쪽 로그인 연결 해제. `HubView.vue`의 탈퇴 플로우에서 계정 삭제 직전에 호출. 소스: `supabase/functions/toss-disconnect.ts`
+
+- **인증**: `Authorization` 헤더로 호출자 세션 확인
+- **파라미터**: 없음 (세션 유저의 `toss_identities` 매핑을 사용)
+- **응답**: `{ success: boolean }`
+- **로직**: mTLS로 `remove-by-user-key` 호출. 토스로 가입하지 않은 계정이면 아무것도 하지 않고 성공 반환. 서비스가 직접 이 API를 호출한 경우 연결 끊기 콜백은 오지 않는다.
+
 ### 공통 환경변수
 
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`: admin-delete-user, admin-reset-password에서 사용
 - `FINNHUB_API_KEY`: stock-price에서 해외주식/암호화폐 조회 시 사용
+- `TOSS_MTLS_CERT`, `TOSS_MTLS_KEY`: toss-login, toss-disconnect. 앱인토스 콘솔 > mTLS 인증서에서 발급받은 PEM 내용을 그대로 넣는다
+- `TOSS_DECRYPT_KEY`, `TOSS_DECRYPT_AAD`: toss-login. 콘솔 토스 로그인 설정의 '이메일로 복호화 키 받기'로 받는다
+
+> toss-login은 호출 시점에 사용자 세션이 없지만, `supabase.functions.invoke`가 anon key를 Authorization 헤더로 실어 보내므로 게이트웨이 JWT 검증은 그대로 통과한다. `--no-verify-jwt`는 필요 없다. (나중에 연결 끊기 콜백을 켜면, 그건 토스가 Basic 헤더로 직접 호출하므로 그 함수만 검증을 꺼야 한다.)

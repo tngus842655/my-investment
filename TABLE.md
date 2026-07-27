@@ -330,3 +330,24 @@ END;
 | 관리자 select | SELECT | 관리자는 전체 조회 가능                                   |
 
 INSERT/UPDATE 정책은 두지 않는다 — 기록은 `claim_toss_promotion` / `complete_toss_promotion` RPC(SECURITY DEFINER)를 통해서만 이뤄진다. 지급 여부를 알 수 없는 결과(`'ERROR'`)는 PENDING으로 남겨 재시도를 막는다(이중 지급 방지).
+
+#### toss_identities
+
+토스 로그인 계정 매핑. 토스가 주는 `userKey`(앱 단위 고유 식별자)와 앱 계정을 1:1로 연결한다. 이메일만으로 매칭하면 유저가 토스 프로필 이메일을 바꿨을 때 같은 사람에게 계정이 하나 더 생기므로, `userKey`를 1순위 식별자로 둔다.
+
+| 컬럼명        | 타입        | 설명                                            |
+| ------------- | ----------- | ----------------------------------------------- |
+| user_id       | uuid        | PK, auth.users FK                               |
+| toss_user_key | text        | UNIQUE. `login-me` 응답의 `userKey`              |
+| created_at    | timestamptz |                                                 |
+
+`toss_promotion_rewards.toss_user_key`와는 **다른 값**이다. 프로모션 쪽은 `getAnonymousKey()`의 해시이고, 이쪽은 토스 로그인의 `userKey`다. 문서상 anon 해시는 "토스 서버 API 호출용 키가 아니"라고 명시돼 있어 서로 매칭되지 않는다.
+
+**RLS 정책 (toss_identities 테이블):**
+
+| 정책명        | 커맨드 | 설명                    |
+| ------------- | ------ | ----------------------- |
+| 본인 select   | SELECT | 본인 매핑만 조회 가능    |
+| 관리자 select | SELECT | 관리자는 전체 조회 가능  |
+
+INSERT/UPDATE 정책은 두지 않는다 — 기록은 `toss-login` Edge Function(service_role)에서만 이뤄진다.
