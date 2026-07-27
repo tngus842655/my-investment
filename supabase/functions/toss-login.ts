@@ -211,5 +211,7 @@ Deno.serve(async (req) => {
     console.error('toss_identities 저장 실패', mapError.code, mapError.message, mapError.details)
   }
 
-  return json({ tokenHash: link.properties.hashed_token, email })
+  // isNew: 이번 호출에서 계정이 새로 만들어졌는지. 클라이언트가 기기에 남은
+  // '마지막 사용 모듈' 기록을 지우는 데 쓴다(신규 계정은 이력이 없어야 한다).
+  return json({ tokenHash: link.properties.hashed_token, email, isNew: !isExisting })
 })
