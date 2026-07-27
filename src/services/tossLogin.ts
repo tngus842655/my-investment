@@ -1,6 +1,5 @@
 import { appLogin } from '@apps-in-toss/web-framework'
 import { supabase } from '@/services/supabase'
-import { clearLastModule } from '@/utils/lastModule'
 
 // 토스 로그인. 미니앱에서만 동작한다.
 //
@@ -40,11 +39,6 @@ const attempt = async (email?: string): Promise<AttemptResult> => {
     console.error('verifyOtp 실패', sessionError.code, sessionError.message)
     return 'SESSION_FAILED'
   }
-
-  // 신규 계정이면 기기에 남은 '마지막 사용 모듈'을 지운다. 이 기록은 기기 단위라,
-  // 같은 기기에서 전에 가계부를 썼으면 새 계정이 곧바로 가계부로 들어가 버린다.
-  if (data.isNew) clearLastModule()
-
   return 'OK'
 }
 
