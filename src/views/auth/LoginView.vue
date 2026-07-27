@@ -294,7 +294,8 @@ onMounted(() => {
   // (성공 시에는 리다이렉트 복귀로 페이지를 떠나므로 이 화면에 남지 않는다)
   document.addEventListener('visibilitychange', resetOauthLoadingOnVisible)
   const dismissed = localStorage.getItem(A2HS_DISMISSED_KEY) === '1'
-  showInstallBanner.value = !isStandalone && !dismissed && platform.value !== null
+  // 미니앱에서는 홈 화면 추가가 불가능하고 Safari 공유 버튼도 없어서 안내 자체가 성립하지 않는다
+  showInstallBanner.value = !isStandalone && !dismissed && platform.value !== null && !tossOnly
 
   if (platform.value === 'android') {
     window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)

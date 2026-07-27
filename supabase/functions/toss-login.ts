@@ -105,22 +105,28 @@ Deno.serve(async (req) => {
     return json({ error: 'authorizationCode, referrer required' }, 400)
   }
 
-  const token = successOf(
-    await tossPost('/api-partner/v1/apps-in-toss/user/oauth2/generate-token', {
-      authorizationCode,
-      referrer,
-    }),
-  )
+  // 실패 원인을 대시보드 로그에서 바로 볼 수 있게 남긴다.
+  // 인가 코드·토큰·이메일 같은 민감값은 찍지 않는다.
+  const tokenRes = await tossPost('/api-partner/v1/apps-in-toss/user/oauth2/generate-token', {
+    authorizationCode,
+    referrer,
+  })
+  const token = successOf(tokenRes)
   if (!token?.accessToken) {
+    console.error('generate-token 실패', JSON.stringify(tokenRes))
     return json({ error: 'toss_token_failed' }, 502)
   }
 
-  const me = successOf(
-    await tossGet('/api-partner/v1/apps-in-toss/user/oauth2/login-me', String(token.accessToken)),
+  const meRes = await tossGet(
+    '/api-partner/v1/apps-in-toss/user/oauth2/login-me',
+    String(token.accessToken),
   )
+  const me = successOf(meRes)
   if (!me?.userKey) {
+    console.error('login-me 실패', JSON.stringify(meRes))
     return json({ error: 'toss_user_failed' }, 502)
   }
+  console.log('login-me 성공', JSON.stringify({ scope: me.scope, hasEmail: me.email !== null }))
   const tossUserKey = String(me.userKey)
 
   const admin = createClient(
@@ -144,8 +150,12 @@ Deno.serve(async (req) => {
 
   // 2순위: 토스가 준 이메일로 매칭. 이메일은 앱 전반에서 준-key로 쓰이므로
   // 같은 이메일이면 같은 회원으로 본다.
-  if (email === null) {
-    email = typeof me.email === 'string' ? await decrypt(me.email) : null
+  if (email === null && typeof me.email === 'string') {
+    email = await decrypt(me.email).catch((e) => {
+      // AAD가 'TOSS'가 아니거나 복호화 키가 틀리면 여기로 온다
+      console.error('이메일 복호화 실패', String(e))
+      return null
+    })
   }
 
   // 토스 계정에 이메일이 없으면(토스 가입 시 필수 항목이 아니다) 유저에게 직접 받는다.
@@ -166,6 +176,7 @@ Deno.serve(async (req) => {
   const { error: createError } = await admin.auth.admin.createUser({ email, email_confirm: true })
   const isExisting = createError?.code === 'email_exists'
   if (createError && !isExisting) {
+    console.error('createUser 실패', createError.code, createError.message)
     return json({ error: 'signup_failed' }, 500)
   }
 
@@ -181,8 +192,10 @@ Deno.serve(async (req) => {
     email,
   })
   if (linkError || !link.properties?.hashed_token || !link.user) {
+    console.error('generateLink 실패', linkError?.code, linkError?.message)
     return json({ error: 'session_failed' }, 500)
   }
+  console.log('세션 발급 완료', JSON.stringify({ isExisting, hadIdentity: identity !== null }))
 
   // 매핑 저장(멱등). 이미 다른 계정에 연결된 userKey면 유니크 제약에 걸려 실패하는데,
   // 그 경우 세션은 정상 발급하고 매핑만 기존 것을 유지한다.
