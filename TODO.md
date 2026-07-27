@@ -115,18 +115,33 @@ verifyOtp({ token_hash })   → 미니앱에 세션 확립
 미니앱 배포는 수동 업로드라 순서만 지키면 된다.
 
 **사용자가 할 일 (콘솔 · 배포)**
-1. **SQL 실행**: `supabase/migrations/20260727_01_toss_identities.sql`
+1. ~~**SQL 실행**: `supabase/migrations/20260727_01_toss_identities.sql`~~ (2026-07-27 실행 완료)
 2. **콘솔 > 토스 로그인**: 약관 동의 → 동의 항목에서 **이메일(USER_EMAIL)만** 선택
    → 이름·성별 외 항목을 고르면 **연결 끊기 콜백이 필수**가 된다(`login-intro.md:70`). 지금은 불필요
-3. **콘솔 > 약관 등록**: 개인정보 수집·이용 동의는 `https://firepath.me/privacy-policy` 사용 가능.
-   **서비스 이용약관 페이지는 아직 없어서 새로 만들어야 한다** (정적 `public/legal/terms.html` 권장 —
-   토스 약관 웹뷰는 앱 밖 브라우저라 SPA 라우트를 넣으면 번들이 통째로 로드된다)
+   (2026-07-27 확인: 국적·휴대전화번호·CI는 '사용 안함'으로 되어 있음. 이름·성별도 확인할 것)
+3. **콘솔 > 약관 등록** — 파트너사가 직접 등록해야 하는 건 3개다(`login-intro.md:99`).
+   토스 필수 약관(TOSS 간편 로그인 서비스 이용약관 / 개인정보 제3자 제공 동의)은 자동 포함이다.
+
+   | 약관 | URL |
+   | --- | --- |
+   | 서비스 이용약관 (필수) | `https://firepath.me/legal/terms.html` ← **웹 배포 후 사용 가능** |
+   | 개인정보 수집·이용 동의 (필수) | `https://firepath.me/privacy-policy` |
+   | 마케팅 정보 수신 동의 (선택) | 등록 완료 |
+
+   ⚠️ 처음에 '서비스 이용약관' 항목의 URL을 `privacy-policy`로 넣어뒀었는데, 제목·유형은 이용약관인데
+   열면 개인정보처리방침이 나와 내용이 맞지 않는다. 문서가 "모든 약관 링크가 정확히 연결되고 화면에
+   명확하게 노출되는지 확인하라"고 못박고 있어(`login-intro.md:112`) 검수 반려 소지가 있었다.
+   → 이용약관 페이지를 신설했다(`public/legal/terms.html`). **투자 정보 면책 조항(제6조)이 핵심.**
+   정적 HTML이라 빌드 시 `dist/legal/terms.html`로 그대로 복사된다(빌드로 확인 완료).
+   법률 문서라 문서도 자문을 권장한다(`login-intro.md:92-95`) — **표준 문안 기반 초안이므로 직접 검토할 것.**
+   영문판은 만들지 않았다(토스 심사는 국내용).
 4. **콘솔 > mTLS 인증서 > 발급받기** → cert/key PEM 다운로드
 5. **콘솔 > 토스 로그인 > '이메일로 복호화 키 받기'** → 복호화 키 + AAD 수신
 6. **Supabase 시크릿 등록**: `TOSS_MTLS_CERT`, `TOSS_MTLS_KEY`, `TOSS_DECRYPT_KEY`, `TOSS_DECRYPT_AAD`
 7. **Edge Function 배포**: `toss-login`, `toss-disconnect`
-8. **검수 요청** — 체크리스트 문서(`https://developers-apps-in-toss.toss.im/checklist/login.md`)를
-   아직 안 받았다. 제출 전에 올려줄 것
+8. **검수 요청**
+   (검토 체크리스트 문서를 찾아봤으나 `/checklist/login.md`는 404다. 구현에 필요한 정보는
+   `toss-docs/`의 문서로 이미 충분하므로 더 찾지 않기로 했다)
 
 **남은 리스크 / 확인 필요**
 1. 🔴 **`Deno.createHttpClient`가 Supabase Edge Runtime에서 동작하는지 미검증.** mTLS는 여기로만
