@@ -4,6 +4,7 @@
   <h3>1. Personal Information We Collect</h3>
   <ul>
     <li>Account information: email address, encrypted password</li>
+    <li>Social login information: the email address and profile information (such as your name) provided when you sign in with Google, Kakao, or Toss</li>
     <li>Service usage data: investment goals, asset holdings and transaction history, budget income/expense records</li>
     <li>Access logs: access timestamps and pages visited</li>
     <li>User feedback: the title and content you enter when submitting feedback</li>
