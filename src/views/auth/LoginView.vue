@@ -9,6 +9,8 @@ import { useDesignTokens } from '@/composables/useDesignTokens'
 import { useLocale } from '@/composables/useLocale'
 import { getLastModule } from '@/utils/lastModule'
 import { isAdminEmail } from '@/config/admin'
+import { isTossApp } from '@/services/tossApp'
+import { signInWithToss } from '@/services/tossLogin'
 import type { SupportedLocale } from '@/plugins/i18n'
 
 const router = useRouter()
@@ -138,48 +140,90 @@ const signIn = async () => {
       return
     }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    // 관리자 로그인은 기록하지 않는다 (access_log도 관리자를 기록하지 않음 — router 가드)
-    if (user && !isAdminEmail(user.email)) {
-      supabase
-        .from('login_log')
-        .insert({ user_id: user.id, email: user.email })
-        .then(() => {})
-    }
-    if (!user) return
-
-    // 로그인 화면에서 언어를 직접 바꾼 경우에만 계정 DB에 반영 — 이후 ensureGoals()가
-    // DB 값을 로컬보다 우선 적용하므로, 여기서 먼저 써두지 않으면 로그인 직후 이전 DB 값으로 되돌아간다.
-    if (localeChangedManually) {
-      await supabase.from('investment_goals').update({ locale: locale.value }).eq('user_id', user.id)
-    }
-
-    const lastModule = getLastModule()
-
-    if (lastModule === 'budget') {
-      router.push('/budget')
-      return
-    }
-    if (lastModule === null) {
-      router.push('/hub')
-      return
-    }
-
-    const { data: goal } = await supabase.from('investment_goals').select('id').eq('user_id', user.id).maybeSingle()
-    if (!goal) {
-      router.push('/goalSettings')
-      return
-    }
-    router.push('/dashboard')
+    await afterLogin()
   } finally {
     loading.value = false
   }
 }
 
+// 세션이 세워진 뒤의 공통 처리 (이메일 로그인 · 토스 로그인 공용)
+const afterLogin = async () => {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  // 관리자 로그인은 기록하지 않는다 (access_log도 관리자를 기록하지 않음 — router 가드)
+  if (user && !isAdminEmail(user.email)) {
+    supabase
+      .from('login_log')
+      .insert({ user_id: user.id, email: user.email })
+      .then(() => {})
+  }
+  if (!user) return
+
+  // 로그인 화면에서 언어를 직접 바꾼 경우에만 계정 DB에 반영 — 이후 ensureGoals()가
+  // DB 값을 로컬보다 우선 적용하므로, 여기서 먼저 써두지 않으면 로그인 직후 이전 DB 값으로 되돌아간다.
+  if (localeChangedManually) {
+    await supabase.from('investment_goals').update({ locale: locale.value }).eq('user_id', user.id)
+  }
+
+  const lastModule = getLastModule()
+
+  if (lastModule === 'budget') {
+    router.push('/budget')
+    return
+  }
+  if (lastModule === null) {
+    router.push('/hub')
+    return
+  }
+
+  const { data: goal } = await supabase.from('investment_goals').select('id').eq('user_id', user.id).maybeSingle()
+  if (!goal) {
+    router.push('/goalSettings')
+    return
+  }
+  router.push('/dashboard')
+}
+
 const onKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Enter' && isLogin.value) signIn()
+}
+
+// ── 토스 로그인 (미니앱 전용) ─────────────────────────────────
+// 앱인토스 정책상 미니앱에서는 토스 로그인만 쓸 수 있어서(login-intro.md:22),
+// 미니앱에서는 이메일·구글·카카오 로그인을 노출하지 않는다.
+const tossOnly = isTossApp()
+const tossLoading = ref(false)
+const tossEmailMode = ref(false) // 토스 계정에 이메일이 없어 직접 입력받는 중
+const tossEmail = ref('')
+const tossEmailForm = ref()
+
+const loginWithToss = async (email?: string) => {
+  tossLoading.value = true
+  try {
+    const result = await signInWithToss(email)
+    if (result === 'NEEDS_EMAIL') {
+      tossEmailMode.value = true
+      return
+    }
+    if (result === 'EMAIL_CONFLICT') {
+      showMessage(t('auth.toss.emailConflict'), 'warning')
+      return
+    }
+    if (result === 'FAILED') {
+      showMessage(t('auth.toss.failed'), 'error')
+      return
+    }
+    await afterLogin()
+  } finally {
+    tossLoading.value = false
+  }
+}
+
+const submitTossEmail = async () => {
+  const { valid } = await tossEmailForm.value.validate()
+  if (!valid) return
+  await loginWithToss(tossEmail.value)
 }
 
 // ── SNS 로그인 (OAuth 리다이렉트 방식) ───────────────────────
@@ -310,8 +354,29 @@ onUnmounted(() => {
 
       <!-- 폼 카드 -->
       <div class="login-card">
+        <!-- 토스 미니앱 — 토스 로그인만 노출 -->
+        <template v-if="tossOnly">
+          <!-- 토스 계정에 이메일이 없는 경우에만 직접 입력받는다 -->
+          <template v-if="tossEmailMode">
+            <div class="forgot-wrap">
+              <div class="forgot-title">{{ $t('auth.toss.emailTitle') }}</div>
+              <div class="forgot-desc mt-3">{{ $t('auth.toss.emailDesc') }}</div>
+            </div>
+            <v-form ref="tossEmailForm" class="mt-4" @keydown.enter.prevent="submitTossEmail">
+              <v-text-field v-model="tossEmail" type="email" :rules="emailRules" :placeholder="$t('auth.emailPlaceholder')" variant="outlined" density="comfortable" hide-details="auto" autocomplete="email" maxlength="254" bg-color="transparent" />
+            </v-form>
+            <v-btn color="primary" size="large" rounded="lg" block elevation="0" :loading="tossLoading" class="mt-4" style="font-weight: 700" @click="submitTossEmail">
+              {{ $t('auth.toss.emailSubmit') }}
+            </v-btn>
+          </template>
+
+          <v-btn v-else size="large" rounded="lg" block elevation="0" variant="flat" class="toss-btn" :loading="tossLoading" @click="loginWithToss()">
+            {{ $t('auth.toss.continue') }}
+          </v-btn>
+        </template>
+
         <!-- 비밀번호 찾기 -->
-        <template v-if="isForgot">
+        <template v-else-if="isForgot">
           <template v-if="!forgotSent">
             <div class="forgot-wrap">
               <v-icon size="40" color="primary" class="mb-4">mdi-lock-question</v-icon>
@@ -639,6 +704,14 @@ onUnmounted(() => {
   border-color: rgba(var(--v-theme-on-surface), 0.15);
   color: rgb(var(--v-theme-on-surface));
   font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.toss-btn {
+  background: #3182f6 !important;
+  color: #fff !important;
+  font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: none;
 }

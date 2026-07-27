@@ -5,6 +5,7 @@ import { useDesignTokens } from '@/composables/useDesignTokens'
 import { useAppTheme } from '@/composables/useAppTheme'
 import { FP_THEME_MAP } from '@/design'
 import { supabase } from '@/services/supabase'
+import { disconnectToss } from '@/services/tossLogin'
 import { showMessage } from '@/composables/useSnackbar'
 import { useUserDataStore } from '@/stores/userData'
 import { isAdminEmail } from '@/config/admin'
@@ -114,6 +115,9 @@ const deleteAccount = async () => {
         return
       }
     }
+
+    // 계정 삭제 전에 토스 로그인 연결도 끊는다 (삭제되면 매핑이 CASCADE로 사라져 못 끊는다)
+    await disconnectToss()
 
     const { error } = await supabase.rpc('delete_user_account')
     if (error) throw error

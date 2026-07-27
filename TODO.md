@@ -76,42 +76,72 @@ DELETE FROM toss_promotion_rewards WHERE promotion_code LIKE 'TEST_%';
 10원 받으려고 이걸 할 사람은 거의 없다(`tossPromotion_intro.md` 265~266행이 경고하는 이탈 지점).
 → **결론: 미니앱에 마찰 없는 신규 가입 경로가 없으면 프로모션의 신규 유입 효과가 안 난다.**
 
-**해야 할 일 (정공법)**: **토스 로그인(`appLogin`) 도입.** 콘솔에 "토스 로그인" 메뉴가 이미 있다.
+**해야 할 일 (정공법)**: **토스 로그인(`appLogin`) 도입.** 2026-07-27 Claude 코드 작업 완료.
 이메일을 **한 통도 보내지 않으므로** Resend 한도와 무관해지고, 원탭이라 전환율도 최대가 된다.
+공식 문서 사본은 **`toss-docs/`** 폴더에 있다(README에 색인). 아래 행 번호는 그 파일들 기준.
 
 ```
-appLogin()                    → { authorizationCode, referrer }
-Edge Function(service_role)   → 토스 API로 인가코드 교환 → 사용자 식별
-getConsentedUserData()        → USER_EMAIL (동의 기반)
+appLogin()                  → { authorizationCode, referrer }
+toss-login Edge Function    → generate-token → login-me (mTLS 필수)
+                            → userKey + 이메일(AES-256-GCM 암호화)
 admin.createUser({ email, email_confirm: true })   ← 확인 메일 발송 안 함
-  또는 기존 계정이면 admin.generateLink({ type:'magiclink', email }) → hashed_token
-verifyOtp({ token_hash })     → 미니앱에 세션 확립
+admin.generateLink({ type:'magiclink', email })    → hashed_token (발송 안 함)
+verifyOtp({ token_hash })   → 미니앱에 세션 확립
 ```
 
-검증된 근거: `createUser()`는 확인 메일을 보내지 않고(`GoTrueAdminApi.d.ts:264`) `email_confirm`
-옵션이 있다(`types.d.ts:438`). `generateLink()`도 링크만 생성하고 발송하지 않으며 magiclink는
-유저가 없으면 생성까지 처리한다(같은 파일 148~150행). Supabase에 토스 provider는 없지만 **필요하지도
-않다** — Supabase Auth의 OAuth 경로를 아예 쓰지 않는 구조다.
+**계정 매칭 순서** (중복 계정 방지 — 이메일을 준-key로 쓰는 구조라 같은 이메일이면 같은 회원):
+1. `toss_identities`에 `userKey` 매핑이 있으면 그 계정
+2. 없으면 토스가 준 이메일로 기존 계정 매칭 → 매핑 추가
+3. 이메일도 없으면(토스 가입 시 필수 항목이 아님) 미니앱 안에서 직접 입력받아 신규 생성
 
-**이메일이 꼭 필요한 이유 (실측)**: 핵심 데이터는 전부 `user_id`(uuid) 기준이지만, 아래는 이메일이
-없으면 깨진다. 그래서 `USER_EMAIL` 취득이 선택이 아니라 필수다.
-- 본인 의견 조회 `.eq('email', ...)` — `FeedbackView.vue:88`, `AssetLayout.vue:86`
-- `record_signup(user_email)` (이메일 기준 멱등), `login_log`·`access_log`의 `email NOT NULL`
-- 관리자 판별 `isAdminEmail()` + RLS 6개 파일의 `jwt.claims ->> 'email'`
-- **세션 발급 자체** — `generateLink({ email })`에 이메일 필수
+3번에서 유저가 **직접 입력한** 이메일이 기존 계정과 겹치면 **거부**한다. 소유 확인이 전혀 없어
+아무 이메일이나 타이핑해 남의 계정을 가로챌 수 있기 때문. 토스가 준 이메일은 토스 계정 등록값이라
+이 제한을 두지 않는다(단 문서상 "점유 인증은 하지 않은 값" — `login-develop.md:250`).
+관리자 이메일은 토스 자동 연결 대상에서 제외한다(회원 삭제·비밀번호 초기화 권한 때문).
 
-**선행 조건 / 리스크**
-1. **토스 로그인 문서가 필요하다.** 인가코드를 어떤 엔드포인트에 어떻게 교환하는지 모른다
-   (개발자센터 도메인이 Claude 세션에서 차단됨). `tossPromotion_intro.md`처럼 URL 끝에 `.md`를
-   붙여 저장해 올려줄 것: `https://developers-apps-in-toss.toss.im/login/intro.md`
-   → **문서 없이 착수하면 콘솔 설정 단계에서 막힌다. 추측으로 시작하지 말 것.**
-2. **콘솔 설정**: `oauth2ClientId` 발급(없으면 SDK가 `"oauth2ClientId 설정이 필요합니다"`로 throw),
-   그리고 `getConsentedUserData`용 **동의문 등록**(에러 코드에 `TERMS_NOT_SET`, `INVALID_REQUEST`는
-   "termsUrl이 없거나 HTTPS 회사 도메인이 아닌 경우"). 동의문은 `PrivacyPolicyView` 재활용 여지 있음.
-3. **유저가 이메일 제공을 거부**(`USER_DECLINED`)하면 기존 `CompleteEmailView`로 폴백.
-   단 이 화면은 `updateUser({email}, {emailRedirectTo})`로 **확인 메일을 발송**하므로
-   (`CompleteEmailView.vue:28-31`) Resend를 소모한다. 소수라 한도 위협은 아니지만 인지할 것.
-4. 미니앱에서는 SNS 버튼 대신 "토스로 계속하기"를 노출하는 구성이 자연스럽다.
+**이메일이 꼭 필요한 이유 (2026-07-27 재확인)**: 핵심 데이터(포트폴리오·거래·목표·가계부)는 전부
+`user_id` 기준이라 멀쩡하지만, 아래는 이메일이 없으면 깨진다.
+- **세션 발급 자체** — `generateLink({ email })`에 이메일 필수. supabase-js에 "이 유저로 세션
+  만들기" API가 없어서 우회 불가. 즉 "이메일 없이 가입"은 현실적으로 "가짜 이메일로 가입"이 된다
+- 본인 의견이 **영원히 안 보임** — RLS가 `email = jwt.claims->>'email'`(`feedback_v2.sql:21,28,31`),
+  이메일이 null이면 NULL 비교라 항상 거짓. 호출부 `FeedbackView.vue:88,100`,
+  `AssetLayout.vue:86`, `HubView.vue:143`
+- `login_log`·`access_log`의 `email NOT NULL` → 빈 문자열로 쌓여 관리자 화면에서 식별 불가
+- `record_signup(user_email)`이 호출되지 않아 가입 이력·잔존율 집계에서 누락(`App.vue:34`)
+
+**미니앱에서는 토스 로그인만 쓸 수 있다** (`login-intro.md:22`, 정책). 그래서 `isTossApp()`이면
+이메일·구글·카카오 버튼을 전부 숨긴다. 되돌리려면 `LoginView.vue`의 `tossOnly` 하나만 지우면 된다.
+⚠️ **토스 로그인이 콘솔에서 승인되기 전에 이 빌드를 미니앱에 올리면 로그인이 아예 막힌다.**
+미니앱 배포는 수동 업로드라 순서만 지키면 된다.
+
+**사용자가 할 일 (콘솔 · 배포)**
+1. **SQL 실행**: `supabase/migrations/20260727_01_toss_identities.sql`
+2. **콘솔 > 토스 로그인**: 약관 동의 → 동의 항목에서 **이메일(USER_EMAIL)만** 선택
+   → 이름·성별 외 항목을 고르면 **연결 끊기 콜백이 필수**가 된다(`login-intro.md:70`). 지금은 불필요
+3. **콘솔 > 약관 등록**: 개인정보 수집·이용 동의는 `https://firepath.me/privacy-policy` 사용 가능.
+   **서비스 이용약관 페이지는 아직 없어서 새로 만들어야 한다** (정적 `public/legal/terms.html` 권장 —
+   토스 약관 웹뷰는 앱 밖 브라우저라 SPA 라우트를 넣으면 번들이 통째로 로드된다)
+4. **콘솔 > mTLS 인증서 > 발급받기** → cert/key PEM 다운로드
+5. **콘솔 > 토스 로그인 > '이메일로 복호화 키 받기'** → 복호화 키 + AAD 수신
+6. **Supabase 시크릿 등록**: `TOSS_MTLS_CERT`, `TOSS_MTLS_KEY`, `TOSS_DECRYPT_KEY`, `TOSS_DECRYPT_AAD`
+7. **Edge Function 배포**: `toss-login`, `toss-disconnect`
+8. **검수 요청** — 체크리스트 문서(`https://developers-apps-in-toss.toss.im/checklist/login.md`)를
+   아직 안 받았다. 제출 전에 올려줄 것
+
+**남은 리스크 / 확인 필요**
+1. 🔴 **`Deno.createHttpClient`가 Supabase Edge Runtime에서 동작하는지 미검증.** mTLS는 여기로만
+   붙일 수 있는데 Deno 불안정 API라 런타임에서 막힐 수 있다. 막히면 **Cloudflare Worker의 mTLS
+   바인딩**(`wrangler mtls-certificate upload` + `mtls_certificates`)으로 옮긴다. 이미 wrangler를
+   쓰고 있지만 현재 `wrangler.jsonc`는 정적 에셋만 서빙해서 Worker 엔트리를 새로 만들어야 한다
+2. `remove-by-user-key`에 Bearer 토큰이 필요한지 문서가 모호하다(포맷에는 있고 예시에는 없음).
+   현재 mTLS만으로 호출하도록 구현했다. 401이 나면 accessToken을 저장해뒀다가 함께 보내야 한다
+3. 로그인 화면의 "홈 화면에 추가" 배너가 미니앱에서도 뜬다(기존 동작). 미니앱은 홈 화면 추가가
+   불가능하므로 어색하다. 이번 변경 범위 밖이라 손대지 않았다
+
+**탈출구 (일정이 위험해지면)**: `getAnonymousKey()`는 **mTLS·서버·약관·검수 전부 없이** 미니앱
+안에서 고유 식별자를 준다(`user-hash-key-develop.md:8`, 이미 `tossPromotion.ts`에서 사용 중).
+다만 이메일을 못 받아 합성 이메일을 써야 하고, 그러면 같은 사람이 웹에서 실제 이메일로 가입했을 때
+계정이 둘로 갈린다 — 없애려던 중복이 그대로 생긴다. 최후의 수단으로만.
 
 **서버 지급(Server-to-Server) 방식은 채택하지 않았다.** 비게임 미니앱은 서버에서 포인트를 지급하는
 방식도 쓸 수 있지만(요청 위변조 방지에 유리), **토스 로그인 구현이 전제**다. 이 앱은 Supabase Auth
