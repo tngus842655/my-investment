@@ -166,7 +166,7 @@ const afterLogin = async () => {
     await supabase.from('investment_goals').update({ locale: locale.value }).eq('user_id', user.id)
   }
 
-  const lastModule = getLastModule()
+  const lastModule = getLastModule(user.id)
 
   if (lastModule === 'budget') {
     router.push('/budget')

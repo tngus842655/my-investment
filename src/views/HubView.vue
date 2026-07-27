@@ -57,7 +57,9 @@ const deletePasswordError = ref('')
 const deleteConfirmText = ref('')
 const deleteConfirmError = ref('')
 // 비밀번호 없는 소셜 전용 계정 여부 — 비밀번호 재인증 대신 '삭제' 입력으로 확인
+// 비밀번호가 없는 계정(소셜 전용 · 토스). 비밀번호 재인증 대신 이메일 입력으로 확인한다.
 const isSocialOnly = ref(false)
+const accountEmail = ref('')
 const deleteLoading = ref(false)
 
 const resetDeleteState = () => {
@@ -77,7 +79,19 @@ const openDeleteDialog = async () => {
     showMessage(t('hub.errors.cannotVerifyAccount'), 'error')
     return
   }
-  isSocialOnly.value = !data.identities.some((i) => i.provider === 'email')
+
+  // 토스 계정은 서버에서 admin.createUser로 만들어져 email identity가 붙지만 비밀번호가 없다.
+  // identity만 보면 비밀번호 계정으로 판정돼 탈퇴가 아예 불가능해진다.
+  const { data: tossIdentity } = await supabase
+    .from('toss_identities')
+    .select('user_id')
+    .maybeSingle()
+
+  isSocialOnly.value = !data.identities.some((i) => i.provider === 'email') || tossIdentity !== null
+  if (isSocialOnly.value) {
+    const { data: userData } = await supabase.auth.getUser()
+    accountEmail.value = userData.user?.email ?? ''
+  }
   deleteStep.value = 1
 }
 
@@ -87,10 +101,12 @@ const closeDeleteDialog = () => {
 }
 
 const deleteAccount = async () => {
-  // 소셜 전용 계정은 '삭제' 입력으로, 비밀번호 계정은 비밀번호 재인증으로 본인 확인
+  // 비밀번호 없는 계정은 계정 이메일 입력으로, 비밀번호 계정은 비밀번호 재인증으로 본인 확인
   if (isSocialOnly.value) {
-    if (deleteConfirmText.value.trim().toLowerCase() !== t('hub.deleteConfirmWord').toLowerCase()) {
-      deleteConfirmError.value = t('hub.errors.wrongConfirmText')
+    // 이메일이 비어 있으면 빈 입력과 일치해 확인 없이 삭제될 수 있다. 되돌릴 수 없는 작업이라 막는다.
+    const typed = deleteConfirmText.value.trim().toLowerCase()
+    if (typed === '' || typed !== accountEmail.value.toLowerCase()) {
+      deleteConfirmError.value = t('hub.errors.wrongConfirmEmail')
       return
     }
   } else if (!deletePassword.value) {
@@ -310,15 +326,16 @@ onMounted(async () => {
               aria-hidden="true"
             />
             <div class="text-medium-emphasis text-center mb-4">
-              {{ isSocialOnly ? $t('hub.confirmTextBody') : $t('hub.passwordConfirmBody') }}
+              {{ isSocialOnly ? $t('hub.emailConfirmBody') : $t('hub.passwordConfirmBody') }}
             </div>
+            <div v-if="isSocialOnly" class="text-center font-weight-bold mb-3">{{ accountEmail }}</div>
             <v-text-field
               v-if="isSocialOnly"
               v-model="deleteConfirmText"
-              type="text"
+              type="email"
               autocomplete="off"
-              :label="$t('hub.confirmTextLabel')"
-              :placeholder="$t('hub.deleteConfirmWord')"
+              :label="$t('hub.emailConfirmLabel')"
+              :placeholder="accountEmail"
               variant="outlined"
               density="compact"
               rounded="lg"

@@ -274,6 +274,9 @@ let goalCheckedUserId: string | null = null
 // 앱 최초 진입(홈 화면 아이콘 등으로 PWA start_url 진입) 여부 — 최초 1회만 마지막 모듈로 리다이렉트
 let isInitialNavigation = true
 
+// beforeEach가 조회한 세션의 사용자 id — afterEach에서 계정 단위로 모듈을 기록할 때 쓴다
+let currentUserId: string | null = null
+
 // 페이지별 마지막 접속 기록 캐시 (1시간 내 중복 방지)
 const lastAccessedAt: Record<string, number> = {}
 const ACCESS_LOG_INTERVAL_MS = 60 * 60 * 1000 // 1시간
@@ -306,10 +309,14 @@ router.beforeEach(async (to) => {
     return '/completeEmail'
   }
 
+  // 마지막 사용 모듈 기록은 계정 단위인데 afterEach에는 세션이 없다.
+  // 매 내비게이션마다 beforeEach가 세션을 조회하므로 그 값을 넘겨 쓴다.
+  currentUserId = session?.user.id ?? null
+
   if (isInitialNavigation) {
     isInitialNavigation = false
     if (to.path === '/dashboard' && session) {
-      const lastModule = getLastModule()
+      const lastModule = getLastModule(session.user.id)
       if (lastModule === 'budget') return '/budget'
     }
   }
@@ -318,7 +325,7 @@ router.beforeEach(async (to) => {
   // 안드로이드 앱(TWA) Start URL이 '/'라 앱을 열 때마다 로그인 폼이 떠서 로그아웃된 것처럼 보이던 문제 해결.
   // 로그아웃 플로우는 전부 signOut 완료 후 '/'로 이동하므로(세션 없음) 이 분기를 타지 않는다.
   if (to.path === '/' && session) {
-    const lastModule = getLastModule()
+    const lastModule = getLastModule(session.user.id)
     if (lastModule === 'budget') return '/budget'
     if (lastModule === 'asset') return '/dashboard'
     return '/hub'
@@ -365,7 +372,9 @@ router.beforeEach(async (to) => {
 // 마지막으로 사용한 모듈(자산관리/가계부) 기록 — 다음 로그인 시 자동 진입에 사용
 router.afterEach((to) => {
   const module = to.meta.module
-  if (module === 'asset' || module === 'budget') setLastModule(module)
+  if ((module === 'asset' || module === 'budget') && currentUserId !== null) {
+    setLastModule(currentUserId, module)
+  }
 })
 
 // 목표 설정 저장 후 캐시 갱신용 export
