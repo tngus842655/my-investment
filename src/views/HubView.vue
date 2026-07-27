@@ -103,7 +103,9 @@ const closeDeleteDialog = () => {
 const deleteAccount = async () => {
   // 비밀번호 없는 계정은 계정 이메일 입력으로, 비밀번호 계정은 비밀번호 재인증으로 본인 확인
   if (isSocialOnly.value) {
-    if (deleteConfirmText.value.trim().toLowerCase() !== accountEmail.value.toLowerCase()) {
+    // 이메일이 비어 있으면 빈 입력과 일치해 확인 없이 삭제될 수 있다. 되돌릴 수 없는 작업이라 막는다.
+    const typed = deleteConfirmText.value.trim().toLowerCase()
+    if (typed === '' || typed !== accountEmail.value.toLowerCase()) {
       deleteConfirmError.value = t('hub.errors.wrongConfirmEmail')
       return
     }
