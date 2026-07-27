@@ -743,6 +743,10 @@
     "title": "개인정보처리방침",
     "effectiveDate": "시행일자 2026년 7월 8일"
   },
+  "terms": {
+    "title": "서비스 이용약관",
+    "effectiveDate": "시행일자 2026년 7월 27일"
+  },
   "auth": {
     "emailLabel": "이메일",
     "passwordLabel": "비밀번호",
@@ -782,6 +786,7 @@
     "alreadyRegistered": "이미 가입된 이메일입니다.",
     "signupError": "회원가입 중 오류가 발생했습니다.",
     "privacyPolicy": "개인정보처리방침",
+    "termsOfService": "이용약관",
     "close": "닫기",
     "installTitle": "홈 화면에 추가하고 앱처럼 사용해보세요",
     "installIosDesc": "Safari 하단 공유(⬆) 버튼을 누른 뒤 '홈 화면에 추가'를 선택해주세요",

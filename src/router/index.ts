@@ -38,6 +38,7 @@ import AdminAccessHistoryView from '@/views/admin/AdminAccessHistoryView.vue'
 import AdminNoticesView from '@/views/admin/AdminNoticesView.vue'
 import NoticesView from '@/views/shared/NoticesView.vue'
 import PrivacyPolicyView from '@/views/shared/PrivacyPolicyView.vue'
+import TermsView from '@/views/shared/TermsView.vue'
 import ResetPasswordView from '@/views/auth/ResetPasswordView.vue'
 import CompleteEmailView from '@/views/auth/CompleteEmailView.vue'
 import LinkedAccountsView from '@/views/shared/LinkedAccountsView.vue'
@@ -54,6 +55,11 @@ const router = createRouter({
       path: '/privacy-policy',
       name: 'privacyPolicy',
       component: PrivacyPolicyView,
+    },
+    {
+      path: '/terms',
+      name: 'terms',
+      component: TermsView,
     },
     {
       path: '/reset-password',

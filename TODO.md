@@ -124,20 +124,26 @@ verifyOtp({ token_hash })   → 미니앱에 세션 확립
 
    | 약관 | URL |
    | --- | --- |
-   | 서비스 이용약관 (필수) | `https://firepath.me/legal/terms.html` ← **웹 배포 후 사용 가능** |
+   | 서비스 이용약관 (필수) | `https://firepath.me/terms` ← **웹 배포 후 사용 가능** |
    | 개인정보 수집·이용 동의 (필수) | `https://firepath.me/privacy-policy` |
    | 마케팅 정보 수신 동의 (선택) | 등록 완료 |
 
    ⚠️ 처음에 '서비스 이용약관' 항목의 URL을 `privacy-policy`로 넣어뒀었는데, 제목·유형은 이용약관인데
    열면 개인정보처리방침이 나와 내용이 맞지 않는다. 문서가 "모든 약관 링크가 정확히 연결되고 화면에
    명확하게 노출되는지 확인하라"고 못박고 있어(`login-intro.md:112`) 검수 반려 소지가 있었다.
-   → 이용약관 페이지를 신설했다(`public/legal/terms.html`). **투자 정보 면책 조항(제6조)이 핵심.**
-   정적 HTML이라 빌드 시 `dist/legal/terms.html`로 그대로 복사된다(빌드로 확인 완료).
+   → 이용약관 페이지를 신설했다(`/terms`). **투자 정보 면책 조항(제6조)이 핵심.**
+   개인정보처리방침과 같은 구조·같은 경로 규칙으로 맞췄다 —
+   `TermsView.vue` + `TermsContentKo/En.vue` (ko/en 둘 다 있음), 라우트는 `/privacy-policy`와
+   나란히 최상위. 로그인 화면 하단에 "이용약관 · 개인정보처리방침" 링크를 나란히 뒀다.
+   (처음엔 정적 `public/legal/terms.html`로 만들었다가, 개인정보처리방침이 이미 SPA 라우트라
+   경로 규칙이 어긋나서 SPA 라우트로 통일했다)
    법률 문서라 문서도 자문을 권장한다(`login-intro.md:92-95`) — **표준 문안 기반 초안이므로 직접 검토할 것.**
-   영문판은 만들지 않았다(토스 심사는 국내용).
 4. **콘솔 > mTLS 인증서 > 발급받기** → cert/key PEM 다운로드
 5. **콘솔 > 토스 로그인 > '이메일로 복호화 키 받기'** → 복호화 키 + AAD 수신
-6. **Supabase 시크릿 등록**: `TOSS_MTLS_CERT`, `TOSS_MTLS_KEY`, `TOSS_DECRYPT_KEY`, `TOSS_DECRYPT_AAD`
+6. **Supabase 시크릿 등록** — 이름이 정확해야 한다(함수가 이 이름으로 읽는다):
+   `TOSS_MTLS_CERT`(.crt 내용), `TOSS_MTLS_KEY`(.key 내용), `TOSS_DECRYPT_KEY`(메일로 받은 키).
+   `TOSS_DECRYPT_AAD`는 등록 불필요 — 메일에 AAD가 오지 않아 문서 PHP 예제의 `TOSS`를 코드 기본값으로 뒀다.
+   복호화가 실패하면 채널톡으로 AAD 값을 문의하고 이 시크릿으로 덮어쓸 것
 7. **Edge Function 배포**: `toss-login`, `toss-disconnect`
 8. **검수 요청**
    (검토 체크리스트 문서를 찾아봤으나 `/checklist/login.md`는 404다. 구현에 필요한 정보는
