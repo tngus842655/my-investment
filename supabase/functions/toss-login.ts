@@ -173,8 +173,12 @@ Deno.serve(async (req) => {
 
   // 신규면 계정 생성. email_confirm으로 두면 확인 메일이 나가지 않는다.
   // 이미 있으면 email_exists로 실패하고, 그건 기존 회원이라는 뜻이다.
+  // 이미 가입된 이메일인지 판별. supabase-js 버전에 따라 code가 안 실려 오는 경우가 있어
+  // 메시지도 함께 본다 — 여기서 오판하면 기존 회원을 신규로 취급하게 된다.
   const { error: createError } = await admin.auth.admin.createUser({ email, email_confirm: true })
-  const isExisting = createError?.code === 'email_exists'
+  const isExisting =
+    createError !== null &&
+    (createError.code === 'email_exists' || /already been registered|already exists/i.test(createError.message))
   if (createError && !isExisting) {
     console.error('createUser 실패', createError.code, createError.message)
     return json({ error: 'signup_failed' }, 500)
@@ -199,9 +203,13 @@ Deno.serve(async (req) => {
 
   // 매핑 저장(멱등). 이미 다른 계정에 연결된 userKey면 유니크 제약에 걸려 실패하는데,
   // 그 경우 세션은 정상 발급하고 매핑만 기존 것을 유지한다.
-  await admin
+  const { error: mapError } = await admin
     .from('toss_identities')
     .upsert({ user_id: link.user.id, toss_user_key: tossUserKey }, { onConflict: 'user_id' })
+  if (mapError) {
+    // 매핑이 안 쌓이면 다음 로그인에서 userKey로 계정을 못 찾아 이메일 매칭에만 의존하게 된다
+    console.error('toss_identities 저장 실패', mapError.code, mapError.message, mapError.details)
+  }
 
   return json({ tokenHash: link.properties.hashed_token, email })
 })
