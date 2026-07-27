@@ -769,7 +769,13 @@
       "conflictDesc": "This email is already registered with another login method (Google or email). Please sign in with that method instead.",
       "error": "Something went wrong while registering your email. Please try again shortly.",
       "existingHint": "Already signed up with email or Google?",
-      "logout": "Sign in to your existing account"
+      "logout": "Sign in to your existing account",
+      "noEmailNotice": "You can't use the service without registering an email.",
+      "deleteAccount": "Delete account",
+      "deleteConfirmTitle": "Delete your account?",
+      "deleteConfirmBody": "All data linked to this account will be permanently deleted and cannot be recovered.",
+      "deleted": "Your account has been deleted.",
+      "deleteError": "Something went wrong while deleting your account. Please try again shortly."
     },
     "forgotLink": "Forgot your password?",
     "noAccount": "Don't have an account?",
