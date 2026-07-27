@@ -140,7 +140,10 @@ verifyOtp({ token_hash })   → 미니앱에 세션 확립
    법률 문서라 문서도 자문을 권장한다(`login-intro.md:92-95`) — **표준 문안 기반 초안이므로 직접 검토할 것.**
 4. **콘솔 > mTLS 인증서 > 발급받기** → cert/key PEM 다운로드
 5. **콘솔 > 토스 로그인 > '이메일로 복호화 키 받기'** → 복호화 키 + AAD 수신
-6. **Supabase 시크릿 등록**: `TOSS_MTLS_CERT`, `TOSS_MTLS_KEY`, `TOSS_DECRYPT_KEY`, `TOSS_DECRYPT_AAD`
+6. **Supabase 시크릿 등록** — 이름이 정확해야 한다(함수가 이 이름으로 읽는다):
+   `TOSS_MTLS_CERT`(.crt 내용), `TOSS_MTLS_KEY`(.key 내용), `TOSS_DECRYPT_KEY`(메일로 받은 키).
+   `TOSS_DECRYPT_AAD`는 등록 불필요 — 메일에 AAD가 오지 않아 문서 PHP 예제의 `TOSS`를 코드 기본값으로 뒀다.
+   복호화가 실패하면 채널톡으로 AAD 값을 문의하고 이 시크릿으로 덮어쓸 것
 7. **Edge Function 배포**: `toss-login`, `toss-disconnect`
 8. **검수 요청**
    (검토 체크리스트 문서를 찾아봤으나 `/checklist/login.md`는 404다. 구현에 필요한 정보는

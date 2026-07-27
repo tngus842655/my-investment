@@ -84,6 +84,7 @@ ETF 상세 정보(현재가/52주 고저/CAGR/MDD/변동성/배당률/운용보�
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`: admin-delete-user, admin-reset-password에서 사용
 - `FINNHUB_API_KEY`: stock-price에서 해외주식/암호화폐 조회 시 사용
 - `TOSS_MTLS_CERT`, `TOSS_MTLS_KEY`: toss-login, toss-disconnect. 앱인토스 콘솔 > mTLS 인증서에서 발급받은 PEM 내용을 그대로 넣는다
-- `TOSS_DECRYPT_KEY`, `TOSS_DECRYPT_AAD`: toss-login. 콘솔 토스 로그인 설정의 '이메일로 복호화 키 받기'로 받는다
+- `TOSS_DECRYPT_KEY`: toss-login. 콘솔 토스 로그인 설정의 '이메일로 복호화 키 받기'로 받는다
+- `TOSS_DECRYPT_AAD`: toss-login. **등록하지 않아도 된다** — 문서는 AAD를 복호화 키와 함께 메일로 준다고 하는데 실제로는 키만 오고, 문서의 PHP 예제가 `TOSS`로 하드코딩해 둬서 코드도 그 값을 기본으로 쓴다. 나중에 다른 값을 안내받으면 이 시크릿으로 덮어쓴다
 
 > toss-login은 호출 시점에 사용자 세션이 없지만, `supabase.functions.invoke`가 anon key를 Authorization 헤더로 실어 보내므로 게이트웨이 JWT 검증은 그대로 통과한다. `--no-verify-jwt`는 필요 없다. (나중에 연결 끊기 콜백을 켜면, 그건 토스가 Basic 헤더로 직접 호출하므로 그 함수만 검증을 꺼야 한다.)

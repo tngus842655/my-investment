@@ -62,9 +62,14 @@ const successOf = (res: { resultType?: string; success?: unknown }) =>
 
 const b64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0))
 
+// 문서는 AAD를 복호화 키와 함께 메일로 준다고 하는데 실제로는 키만 온다.
+// 문서의 PHP 예제가 AAD를 'TOSS'로 하드코딩해 둔 걸로 보아 고정값으로 보인다.
+// 다른 값을 받게 되면 TOSS_DECRYPT_AAD 시크릿으로 덮어쓸 수 있게 열어둔다.
+const AAD = Deno.env.get('TOSS_DECRYPT_AAD') ?? 'TOSS'
+
 // 사용자 정보는 AES-256-GCM으로 암호화되어 온다. 암호문 앞 12바이트가 IV이고 나머지는
 // 암호문+태그(16바이트)라, WebCrypto가 기대하는 형태와 같아 IV만 떼어내면 된다.
-// 복호화 키와 AAD는 콘솔의 '이메일로 복호화 키 받기'로 발급받는다.
+// 복호화 키는 콘솔의 '이메일로 복호화 키 받기'로 발급받는다.
 const decrypt = async (encrypted: string) => {
   const raw = b64(encrypted)
   const key = await crypto.subtle.importKey(
@@ -78,7 +83,7 @@ const decrypt = async (encrypted: string) => {
     {
       name: 'AES-GCM',
       iv: raw.slice(0, 12),
-      additionalData: new TextEncoder().encode(Deno.env.get('TOSS_DECRYPT_AAD')!),
+      additionalData: new TextEncoder().encode(AAD),
       tagLength: 128,
     },
     key,
