@@ -149,24 +149,22 @@ verifyOtp({ token_hash })   → 미니앱에 세션 확립
    (검토 체크리스트 문서를 찾아봤으나 `/checklist/login.md`는 404다. 구현에 필요한 정보는
    `toss-docs/`의 문서로 이미 충분하므로 더 찾지 않기로 했다)
 
-**2026-07-27 실기기 첫 테스트 결과**
+**2026-07-27 실기기 테스트 결과 — 로그인 경로 검증 완료**
 - ✅ **`Deno.createHttpClient`(mTLS)가 Supabase Edge Runtime에서 정상 동작한다.** 최대 리스크 해소.
   Cloudflare Worker로 옮길 필요 없다
-- ✅ **AAD는 `TOSS`가 맞다.** 이메일 복호화가 성공했다(로그인이 됐다는 게 그 증거)
-- ⚠️ **최초 가입 시 1탭으로 로그인되지 않고 2탭이 필요했다.** Invocations 로그상 POST 2건 모두
-  `200`이라 서버는 두 번 다 세션 토큰을 정상 발급했고, 클라이언트의 `verifyOtp`가 **첫 번째에만**
-  실패했다. 두 호출의 유일한 차이는 첫 호출에서 계정이 막 생성됐다는 것 — 생성 직후 발급한
-  magiclink 토큰을 곧바로 검증하면서 나는 타이밍 문제로 보인다.
-  → **모든 신규 가입자가 반드시 지나는 경로**라 그냥 둘 수 없어서, 세션 확립 실패에 한해
-  **한 번만 자동 재시도**하도록 했다(`tossLogin.ts`의 `signInWithToss`). 이미 동의한 유저는
-  `appLogin()`이 창 없이 즉시 반환하므로 체감 마찰은 없다.
-  **근본 원인은 아직 미상이다.** 원인 파악용으로 Edge Function과 클라이언트에 로그를 넣어뒀으니
-  (`generate-token`/`login-me`/복호화/`createUser`/`generateLink` 실패 지점 + `verifyOtp` 에러 코드)
-  다음 신규 가입 때 로그를 확인하고, 원인을 잡으면 재시도 코드는 걷어낼 것
+- ✅ **AAD는 `TOSS`가 맞다.** `TOSS_DECRYPT_AAD` 시크릿 없이 이메일 복호화가 성공한다
+- ✅ **신규 가입** — `세션 발급 완료 {"isExisting":false,"hadIdentity":false}`
+- ✅ **재로그인** — `세션 발급 완료 {"isExisting":true,"hadIdentity":true}`.
+  `toss_identities` 매핑 저장·조회가 정상 동작한다
+- ✅ scope 확인 — `login-me 성공 {"scope":"user_email,user_name","hasEmail":true}`
+- 첫 시도(14:43)에서 1탭이 아닌 2탭이 필요했으나 **이후 3번의 로그인에서 재현되지 않았다.**
+  Invocations 로그상 호출이 1건씩만 찍혀 자동 재시도가 돈 것도 아니다(재시도가 돌면 2건).
+  일시적 현상으로 보이나, 신규 가입은 모든 유저가 지나는 경로라 재시도는 안전망으로 남겨둔다
+  (`tossLogin.ts`의 `signInWithToss` — 세션 확립 실패에만 1회, 평소엔 돌지 않는다)
 
-  재현 방법: 토스 앱 > 설정 > 인증 및 보안 > 토스로 로그인한 서비스 > 연결 끊기 **+**
-  Supabase Auth > Users에서 해당 계정 삭제(연결 끊기만으로는 `toss_identities` 매핑이 남아
-  '기존 계정' 경로를 타서 재현되지 않는다)
+**아직 실제로 돌려보지 않은 경로**
+- **회원탈퇴 시 토스 연결 해제**(`toss-disconnect`) — 테스트 계정으로 한 번 눌러볼 것
+- **토스 계정에 이메일이 없는 경우**의 이메일 입력 화면 — 재현이 어려워 미확인
 
 **남은 리스크 / 확인 필요**
 1. `remove-by-user-key`에 Bearer 토큰이 필요한지 문서가 모호하다(포맷에는 있고 예시에는 없음).
