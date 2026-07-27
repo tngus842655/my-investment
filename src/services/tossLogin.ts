@@ -12,12 +12,10 @@ export type TossLoginResult =
   | 'EMAIL_CONFLICT' // 입력한 이메일이 이미 다른 계정에서 사용 중
   | 'FAILED'
 
-/**
- * @param email 토스가 이메일을 주지 않아 유저가 직접 입력한 경우에만 전달한다.
- *              (인가 코드는 일회성이라 이때 appLogin을 다시 호출하는데, 이미 동의한
- *               유저에게는 창 없이 즉시 반환되므로 추가 마찰이 없다)
- */
-export const signInWithToss = async (email?: string): Promise<TossLoginResult> => {
+// 세션 확립까지 실패한 경우만 재시도 대상이라 내부에서만 쓰는 값
+type AttemptResult = TossLoginResult | 'SESSION_FAILED'
+
+const attempt = async (email?: string): Promise<AttemptResult> => {
   const login = await appLogin().catch(() => null)
   if (!login) return 'FAILED'
 
@@ -37,7 +35,27 @@ export const signInWithToss = async (email?: string): Promise<TossLoginResult> =
     token_hash: data.tokenHash,
     type: 'magiclink',
   })
-  return sessionError ? 'FAILED' : 'OK'
+  if (sessionError) {
+    console.error('verifyOtp 실패', sessionError.code, sessionError.message)
+    return 'SESSION_FAILED'
+  }
+  return 'OK'
+}
+
+/**
+ * @param email 토스가 이메일을 주지 않아 유저가 직접 입력한 경우에만 전달한다.
+ *
+ * 최초 가입(계정이 막 생성된 직후)에서 첫 verifyOtp가 실패하는 경우가 관측돼(2026-07-27)
+ * 세션 확립 실패에 한해 한 번만 다시 시도한다. 인가 코드는 일회성이라 appLogin부터 다시 부르는데,
+ * 이미 동의한 유저에게는 창 없이 즉시 반환되므로 유저가 체감하는 마찰은 없다.
+ * 원인을 특정하면 이 재시도는 걷어낼 것.
+ */
+export const signInWithToss = async (email?: string): Promise<TossLoginResult> => {
+  const first = await attempt(email)
+  if (first !== 'SESSION_FAILED') return first
+
+  const second = await attempt(email)
+  return second === 'SESSION_FAILED' ? 'FAILED' : second
 }
 
 /** 회원탈퇴 시 토스 쪽 로그인 연결도 해제. 실패해도 탈퇴는 계속 진행한다. */
