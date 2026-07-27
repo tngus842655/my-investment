@@ -129,6 +129,17 @@ verifyOtp({ token_hash })   → 미니앱에 세션 확립
 **아직 남은 것**
 - **웹 배포** — `/terms`가 열려야 콘솔 약관 링크가 유효하다. 검수자가 열어볼 수 있으니 앱 검토 전에 끝낼 것
 - **`toss-login` 브랜치 main 머지**
+- **SQL 실행: `supabase/migrations/20260727_02_backfill_signup_log.sql`** — 아래 누락 버그의 기존 가입자 백필
+
+**토스 가입자가 관리자 가입 이력에 안 보이던 버그 (2026-07-27 수정)**
+
+토스 로그인만 `record_signup`을 부르지 않아 `signup_log`에 기록이 안 남았다. 이메일 가입은
+`signUp()`에서, 구글·카카오는 `App.vue`의 `onAuthStateChange`에서 남기는데, 토스는 둘 다 아니다 —
+`App.vue`의 핸들러가 `OAUTH_LOGIN_PENDING_KEY` 표식이 있을 때만 동작하는데 그 표식은
+리다이렉트 방식인 구글·카카오만 심고, 토스는 `verifyOtp`로 같은 페이지에서 세션을 세우기 때문.
+`auth.users`·`toss_identities`·`login_log`에는 정상적으로 남아 있었고 `signup_log`만 비어서,
+가입 이력·오늘 가입자 수·잔존율 통계·탈퇴자 집계가 전부 토스 가입자를 누락했다.
+→ 세션이 서는 공통 지점인 `LoginView.vue`의 `afterLogin()`에서 호출하도록 수정.
 
 **2026-07-27 실기기 테스트 결과 — 로그인 경로 검증 완료**
 - ✅ **`Deno.createHttpClient`(mTLS)가 Supabase Edge Runtime에서 정상 동작한다.** 최대 리스크 해소.

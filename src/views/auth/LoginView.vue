@@ -157,6 +157,11 @@ const afterLogin = async () => {
       .from('login_log')
       .insert({ user_id: user.id, email: user.email })
       .then(() => {})
+    // 토스 로그인은 리다이렉트가 없어 App.vue의 OAuth 경로(sessionStorage 표식)를 타지 않고,
+    // 이메일 가입처럼 signUp()을 거치지도 않아 signup_log에 아무것도 안 남았다.
+    // 세션이 서는 공통 지점인 여기서 남긴다. record_signup은 이메일 기준 멱등이라
+    // 이미 기록된 이메일 로그인은 no-op이다.
+    if (user.email) supabase.rpc('record_signup', { user_email: user.email }).then(() => {})
   }
   if (!user) return
 
