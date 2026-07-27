@@ -500,6 +500,8 @@ onUnmounted(() => {
       </div>
 
       <div class="text-center mt-4">
+        <RouterLink to="/terms" class="privacy-link">{{ $t('auth.termsOfService') }}</RouterLink>
+        <span class="privacy-sep">·</span>
         <RouterLink to="/privacy-policy" class="privacy-link">{{ $t('auth.privacyPolicy') }}</RouterLink>
       </div>
     </div>
@@ -550,6 +552,12 @@ onUnmounted(() => {
   font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.4);
   text-decoration: none;
+}
+
+.privacy-sep {
+  font-size: 0.75rem;
+  color: rgba(var(--v-theme-on-surface), 0.25);
+  margin: 0 6px;
 }
 
 .brand-logo {

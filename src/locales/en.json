@@ -743,6 +743,10 @@
     "title": "Privacy Policy",
     "effectiveDate": "Effective Date: July 8, 2026"
   },
+  "terms": {
+    "title": "Terms of Service",
+    "effectiveDate": "Effective Date: July 27, 2026"
+  },
   "auth": {
     "emailLabel": "Email",
     "passwordLabel": "Password",
@@ -782,6 +786,7 @@
     "alreadyRegistered": "This email is already registered.",
     "signupError": "An error occurred during sign up.",
     "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
     "close": "Close",
     "installTitle": "Add to your home screen and use it like an app",
     "installIosDesc": "Tap the Share (⬆) button at the bottom of Safari, then choose 'Add to Home Screen'",
