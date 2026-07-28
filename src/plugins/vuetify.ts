@@ -2,8 +2,6 @@ import 'vuetify/styles'
 import '@mdi/font/css/materialdesignicons.css'
 
 import { createVuetify } from 'vuetify'
-import * as components from 'vuetify/components'
-import * as directives from 'vuetify/directives'
 import { FP_THEMES } from '@/design'
 import type { FpTheme } from '@/design'
 
@@ -29,9 +27,9 @@ function toVuetifyTheme(t: FpTheme) {
   }
 }
 
+// 컴포넌트·디렉티브는 전역 등록하지 않는다 — vite.config.ts의 vite-plugin-vuetify가
+// 템플릿에서 실제 쓰는 것만 골라 import 한다 (전역 등록 시 전체가 번들에 포함됨).
 export default createVuetify({
-  components,
-  directives,
   theme: {
     defaultTheme: 'dark',
     themes: Object.fromEntries(FP_THEMES.map((t) => [t.id, toVuetifyTheme(t)])),

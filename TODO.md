@@ -256,6 +256,34 @@ DELETE FROM signup_log WHERE email = '<지운 계정 이메일>';
 
 ---
 
+## ✅ 완료된 작업 (2026-07-28) — 성능 개선 1차
+
+상세 분석·측정치·함정은 **PERFORMANCE.md** 참고 (성능 작업 이어서 할 때 먼저 읽을 것).
+
+- **라우터 코드 스플리팅** (`src/router/index.ts`, `budget.routes.ts`) — 뷰 43개를 전부 정적 import
+  하던 것을 라우트 단위 동적 import로 전환. 공개 진입점 `LoginView`만 정적 유지.
+- **`price_cache` 서버 캐시** (`supabase/functions/stock-price.ts`, 마이그레이션 `20260728_01`) —
+  종목마다 Yahoo/Finnhub를 라이브로 때리던 것에 전역 캐시 테이블(TTL 60초)을 앞에 붙였다.
+  캐시 실패 시 그대로 외부 API로 폴백하므로 테이블 없이 함수만 배포돼도 안 깨진다.
+  **트레이드오프**: 수동 새로고침이라도 60초 내 재조회는 캐시값을 받는다.
+- **Vuetify 트리셰이킹** (`vite.config.ts`, `src/plugins/vuetify.ts`) — `import * as components`로
+  전 컴포넌트를 전역 등록하던 것을 `vite-plugin-vuetify`의 `autoImport`로 교체. 실사용 34종만 포함.
+- **대시보드 논블로킹** (`DashboardView.vue`) — `recomputeAssetSummary`를 `await`한 뒤 렌더하던 것을,
+  저장된 값으로 먼저 그리고 재계산은 백그라운드로 돌린 뒤 현재자산만 갱신하도록 변경.
+  재계산 중에는 금액 자리에 플레이스홀더를 둔다(지난번 시세 기준 값을 그대로 노출하지 않기 위해).
+
+**측정**: 초기 전송량(gzip) 655 kB → 308 kB (53% 감소).
+
+**⚠️ `vite-plugin-vuetify`의 `styles: 'none'`은 `import 'vuetify/styles'`까지 제거한다.** 이걸 모르고
+설정했다가 컴포넌트 스타일과 유틸리티 클래스가 전부 사라진 채로 타입 체크·빌드가 통과했다.
+기본값(`styles: true`)을 쓸 것. 자세한 검증 방법은 PERFORMANCE.md 5절.
+
+**남은 성능 작업** (급하지 않음, PERFORMANCE.md 7절)
+1. MDI 폰트 축소 — 7,460개 중 122개만 사용. ~450 kB 절감 가능하나 122곳 수정이라 diff가 크다
+2. 시세 배치 조회 — `price_cache` 적용으로 가치가 불확실해졌다. 자산 화면 체감 확인 후 판단할 것
+
+---
+
 ## ✅ 완료된 작업 (2026-07-13) — 안드로이드 앱 로그인 풀림 수정
 
 - **앱 재실행 시 로그인 화면이 뜨던 문제 수정** (`src/router/index.ts`) — 안드로이드 .aab 업데이트에서
