@@ -19,6 +19,8 @@ const router = useRouter()
 const { t } = useI18n()
 const userDataStore = useUserDataStore()
 const loading = ref(true)
+// 화면은 저장된 값으로 이미 그려졌고, 최신 시세로 현재자산을 재계산하는 중인 상태
+const refreshingAsset = ref(false)
 const hideAsset = ref(localStorage.getItem('firepath-hide-asset') === 'true')
 
 const toggleHideAsset = () => {
@@ -164,14 +166,28 @@ const closeNoticeDialog = () => {
   noticeDialog.value = false
 }
 
+// 최신 시세로 현재자산을 다시 계산한다.
+// 보유종목 수만큼 시세 API를 타서 느리므로 화면 렌더를 막지 않고 뒤에서 돌린다.
+// 보유수량·평균단가는 시세와 무관하니 현금 합계·상위 종목은 다시 계산할 필요가 없고,
+// asset_summary에서 온 현재자산만 갱신하면 된다.
+const refreshCurrentAsset = async () => {
+  // 새로고침을 연달아 당기면 재계산이 겹쳐 시세 API 호출이 배로 늘어난다
+  if (refreshingAsset.value) return
+  refreshingAsset.value = true
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) return
+    await recomputeAssetSummary(session.user.id)
+    const summary = await userDataStore.ensureAssetSummary(true)
+    currentAsset.value = summary?.current_asset ?? 0
+  } finally {
+    refreshingAsset.value = false
+  }
+}
+
 const loadDashboard = async (force = false) => {
   loading.value = true
   try {
-    if (force) {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) await recomputeAssetSummary(session.user.id)
-    }
-
     const [goal, summary, portfolios, rate] = await Promise.all([
       userDataStore.ensureGoals(force),
       userDataStore.ensureAssetSummary(force),
@@ -205,6 +221,9 @@ const loadDashboard = async (force = false) => {
   } finally {
     loading.value = false
   }
+
+  // 시세 재계산은 화면이 그려진 뒤 백그라운드로 돌린다 (완료되면 현재자산만 바뀐다)
+  if (force) void refreshCurrentAsset()
 }
 
 onMounted(() => {
@@ -272,6 +291,8 @@ onUnmounted(clearPullToRefresh)
         </div>
         <div class="hero-amount font-weight-bold mb-1 text-center">
           <span v-if="hideAsset" class="asset-hidden">{{ $t('dashboard.hideAmount') }}</span>
+          <!-- 저장된 값은 지난번 시세 기준이라, 재계산 중에는 숫자 대신 자리만 잡아 둔다 -->
+          <div v-else-if="refreshingAsset" class="hero-amount-pending" />
           <span v-else-if="displayedCurrentAsset > 0">{{ fmtFull(displayedCurrentAsset) }}</span>
           <span v-else>-</span>
         </div>
@@ -514,6 +535,27 @@ onUnmounted(clearPullToRefresh)
   font-size: 1.75rem;
   line-height: 1.2;
   color: rgb(var(--v-theme-on-surface));
+}
+
+/* 재계산 중 금액 자리 표시 — .hero-amount와 같은 높이(1.75rem × 1.2)라 레이아웃이 밀리지 않는다 */
+.hero-amount-pending {
+  height: 2.1rem;
+  width: 60%;
+  max-width: 220px;
+  margin: 0 auto;
+  border-radius: 8px;
+  background: rgba(var(--v-theme-on-surface), 0.08);
+  animation: hero-amount-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes hero-amount-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
 }
 
 /* 도넛 */
