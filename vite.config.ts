@@ -1,6 +1,7 @@
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import vuetify from 'vite-plugin-vuetify'
 import { VitePWA } from 'vite-plugin-pwa'
 import { spawn } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
@@ -132,6 +133,10 @@ function adminPlugin(): Plugin {
 export default defineConfig(({ command }) => ({
   plugins: [
     vue(),
+    // 템플릿에서 실제로 쓰는 Vuetify 컴포넌트만 import 하도록 자동 변환한다.
+    // styles: 'none' — 스타일은 기존대로 plugins/vuetify.ts의 'vuetify/styles'(전체 CSS)가 담당한다.
+    // 컴포넌트별 CSS를 따로 주입하면 그 전체 CSS와 중복되므로 꺼 둔다.
+    vuetify({ autoImport: true, styles: 'none' }),
     adminPlugin(),
     VitePWA({
       registerType: 'autoUpdate',
