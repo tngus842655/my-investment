@@ -134,9 +134,9 @@ export default defineConfig(({ command }) => ({
   plugins: [
     vue(),
     // 템플릿에서 실제로 쓰는 Vuetify 컴포넌트만 import 하도록 자동 변환한다.
-    // styles: 'none' — 스타일은 기존대로 plugins/vuetify.ts의 'vuetify/styles'(전체 CSS)가 담당한다.
-    // 컴포넌트별 CSS를 따로 주입하면 그 전체 CSS와 중복되므로 꺼 둔다.
-    vuetify({ autoImport: true, styles: 'none' }),
+    // styles는 기본값(true)을 쓴다 — 'none'으로 두면 plugins/vuetify.ts의
+    // `import 'vuetify/styles'`까지 제거돼 컴포넌트 스타일과 유틸리티 클래스가 전부 사라진다.
+    vuetify({ autoImport: true }),
     adminPlugin(),
     VitePWA({
       registerType: 'autoUpdate',
