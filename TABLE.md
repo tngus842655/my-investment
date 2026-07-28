@@ -352,3 +352,18 @@ INSERT/UPDATE 정책은 두지 않는다 — 기록은 `claim_toss_promotion` / 
 | 관리자 select | SELECT | 관리자는 전체 조회 가능  |
 
 INSERT/UPDATE 정책은 두지 않는다 — 기록은 `toss-login` Edge Function(service_role)에서만 이뤄진다.
+
+#### price_cache
+
+종목 시세 서버 캐시. `stock-price` Edge Function이 Yahoo/Finnhub를 호출하기 전에 여기를 먼저 조회한다. 보유종목 수만큼 시세 API가 호출돼 자산 화면이 종목 수에 비례해 느려지던 문제를 완화한다. **사용자별 데이터가 아닌 전역 캐시라 다른 테이블과 달리 `user_id` FK가 없다.**
+
+| 컬럼명         | 타입        | 설명                                        |
+| -------------- | ----------- | ------------------------------------------- |
+| cache_key      | text        | PK. `{ticker}|{market}|{stock\|crypto}` 형식 |
+| price          | numeric     | 현재가                                       |
+| previous_close | numeric     | 전일종가 (못 구하면 NULL)                    |
+| updated_at     | timestamptz | 캐시 기록 시각. TTL 판정에 사용              |
+
+TTL은 Edge Function의 `CACHE_TTL_MS`(60초)로 관리한다. 행은 티커 단위로 upsert되므로 보유 종목 종류만큼만 쌓이고 계속 덮어써진다(별도 정리 작업 불필요).
+
+**RLS 정책 (price_cache 테이블):** 정책을 두지 않는다 — `stock-price` Edge Function(service_role)만 읽고 쓴다. service_role은 RLS를 우회하므로 정책 없이 동작하고, 클라이언트(anon/authenticated)는 접근할 수 없다.

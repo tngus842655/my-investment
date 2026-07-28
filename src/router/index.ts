@@ -6,42 +6,6 @@ import { markCategoryVisited } from '@/services/tossPromotion'
 import budgetRoutes from './budget.routes'
 
 import LoginView from '@/views/auth/LoginView.vue'
-import HubView from '@/views/HubView.vue'
-import GoalSettingsView from '@/views/asset/dashboard/GoalSettingsView.vue'
-import AssetLayout from '@/layouts/AssetLayout.vue'
-import DashboardView from '@/views/asset/dashboard/DashboardView.vue'
-import PortfolioView from '@/views/asset/portfolio/PortfolioView.vue'
-import TransactionView from '@/views/asset/transactions/TransactionView.vue'
-import AnalysisView from '@/views/asset/analysis/AnalysisView.vue'
-import MoreView from '@/views/asset/more/MoreView.vue'
-import PortfolioAnalysisView from '@/views/asset/more/PortfolioAnalysisView.vue'
-import BadgesView from '@/views/asset/more/BadgesView.vue'
-import FireSimulatorView from '@/views/asset/more/FireSimulatorView.vue'
-import FireHistoryView from '@/views/asset/more/FireHistoryView.vue'
-import AssetGrowthView from '@/views/asset/more/AssetGrowthView.vue'
-import DividendCalendarView from '@/views/asset/more/DividendCalendarView.vue'
-import EtfAnalysisView from '@/views/asset/more/EtfAnalysisView.vue'
-import EtfBacktestView from '@/views/asset/more/EtfBacktestView.vue'
-import FeedbackView from '@/views/shared/FeedbackView.vue'
-import ReleaseNotesView from '@/views/shared/ReleaseNotesView.vue'
-import ChangePasswordView from '@/views/shared/ChangePasswordView.vue'
-import DisplaySettingsView from '@/views/shared/DisplaySettingsView.vue'
-import AdminView from '@/views/admin/AdminView.vue'
-import AdminResetPasswordView from '@/views/admin/AdminResetPasswordView.vue'
-import AdminSignupLogView from '@/views/admin/AdminSignupLogView.vue'
-import AdminStatsView from '@/views/admin/AdminStatsView.vue'
-import AdminMembersView from '@/views/admin/AdminMembersView.vue'
-import AdminDataView from '@/views/admin/AdminDataView.vue'
-import AdminTickerView from '@/views/admin/AdminTickerView.vue'
-import AdminFeedbackView from '@/views/admin/AdminFeedbackView.vue'
-import AdminAccessHistoryView from '@/views/admin/AdminAccessHistoryView.vue'
-import AdminNoticesView from '@/views/admin/AdminNoticesView.vue'
-import NoticesView from '@/views/shared/NoticesView.vue'
-import PrivacyPolicyView from '@/views/shared/PrivacyPolicyView.vue'
-import TermsView from '@/views/shared/TermsView.vue'
-import ResetPasswordView from '@/views/auth/ResetPasswordView.vue'
-import CompleteEmailView from '@/views/auth/CompleteEmailView.vue'
-import LinkedAccountsView from '@/views/shared/LinkedAccountsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -54,213 +18,213 @@ const router = createRouter({
     {
       path: '/privacy-policy',
       name: 'privacyPolicy',
-      component: PrivacyPolicyView,
+      component: () => import('@/views/shared/PrivacyPolicyView.vue'),
     },
     {
       path: '/terms',
       name: 'terms',
-      component: TermsView,
+      component: () => import('@/views/shared/TermsView.vue'),
     },
     {
       path: '/reset-password',
       name: 'resetPassword',
-      component: ResetPasswordView,
+      component: () => import('@/views/auth/ResetPasswordView.vue'),
     },
     {
       path: '/completeEmail',
       name: 'completeEmail',
-      component: CompleteEmailView,
+      component: () => import('@/views/auth/CompleteEmailView.vue'),
     },
     {
       path: '/hub',
       name: 'hub',
-      component: HubView,
+      component: () => import('@/views/HubView.vue'),
       meta: { requiresAuth: true, label: '허브' },
     },
     ...budgetRoutes,
     {
       path: '/admin',
       name: 'admin',
-      component: AdminView,
+      component: () => import('@/views/admin/AdminView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
       path: '/admin/reset-password',
       name: 'adminResetPassword',
-      component: AdminResetPasswordView,
+      component: () => import('@/views/admin/AdminResetPasswordView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
       path: '/admin/access-history',
       name: 'adminAccessHistory',
-      component: AdminAccessHistoryView,
+      component: () => import('@/views/admin/AdminAccessHistoryView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
       path: '/admin/signup-log',
       name: 'adminSignupLog',
-      component: AdminSignupLogView,
+      component: () => import('@/views/admin/AdminSignupLogView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
       path: '/admin/stats',
       name: 'adminStats',
-      component: AdminStatsView,
+      component: () => import('@/views/admin/AdminStatsView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
       path: '/admin/members',
       name: 'adminMembers',
-      component: AdminMembersView,
+      component: () => import('@/views/admin/AdminMembersView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
       path: '/admin/data',
       name: 'adminData',
-      component: AdminDataView,
+      component: () => import('@/views/admin/AdminDataView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
       path: '/admin/tickers',
       name: 'adminTickers',
-      component: AdminTickerView,
+      component: () => import('@/views/admin/AdminTickerView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
       path: '/admin/feedback',
       name: 'adminFeedback',
-      component: AdminFeedbackView,
+      component: () => import('@/views/admin/AdminFeedbackView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
       path: '/admin/notices',
       name: 'adminNotices',
-      component: AdminNoticesView,
+      component: () => import('@/views/admin/AdminNoticesView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
       path: '/goalSettings',
       name: 'goalSettings',
-      component: GoalSettingsView,
+      component: () => import('@/views/asset/dashboard/GoalSettingsView.vue'),
       meta: { requiresAuth: true, label: '목표 설정' },
     },
     {
       path: '/feedback',
       name: 'feedback',
-      component: FeedbackView,
+      component: () => import('@/views/shared/FeedbackView.vue'),
       meta: { requiresAuth: true, label: '피드백' },
     },
     {
       path: '/change-password',
       name: 'changePassword',
-      component: ChangePasswordView,
+      component: () => import('@/views/shared/ChangePasswordView.vue'),
       meta: { requiresAuth: true, label: '비밀번호 변경' },
     },
     {
       path: '/linked-accounts',
       name: 'linkedAccounts',
-      component: LinkedAccountsView,
+      component: () => import('@/views/shared/LinkedAccountsView.vue'),
       meta: { requiresAuth: true, label: '소셜 로그인 연결' },
     },
     {
       path: '/display-settings',
       name: 'displaySettings',
-      component: DisplaySettingsView,
+      component: () => import('@/views/shared/DisplaySettingsView.vue'),
       meta: { requiresAuth: true, label: '화면 설정' },
     },
     {
       path: '/release-notes',
       name: 'releaseNotes',
-      component: ReleaseNotesView,
+      component: () => import('@/views/shared/ReleaseNotesView.vue'),
       meta: { requiresAuth: true, label: '개발자 노트' },
     },
     {
       path: '/notices',
       name: 'notices',
-      component: NoticesView,
+      component: () => import('@/views/shared/NoticesView.vue'),
       meta: { requiresAuth: true, label: '공지사항' },
     },
     {
       path: '/',
-      component: AssetLayout,
+      component: () => import('@/layouts/AssetLayout.vue'),
       meta: { requiresAuth: true, requiresGoal: true, module: 'asset' },
       children: [
         {
           path: 'dashboard',
           name: 'dashboard',
-          component: DashboardView,
+          component: () => import('@/views/asset/dashboard/DashboardView.vue'),
           meta: { label: '홈' },
         },
         {
           path: 'portfolio',
           name: 'portfolio',
-          component: PortfolioView,
+          component: () => import('@/views/asset/portfolio/PortfolioView.vue'),
           meta: { label: '자산' },
         },
         {
           path: 'transactions',
           name: 'transactions',
-          component: TransactionView,
+          component: () => import('@/views/asset/transactions/TransactionView.vue'),
           meta: { label: '기록' },
         },
         {
           path: 'analysis',
           name: 'analysis',
-          component: AnalysisView,
+          component: () => import('@/views/asset/analysis/AnalysisView.vue'),
           meta: { label: '예측' },
         },
         {
           path: 'more',
           name: 'more',
-          component: MoreView,
+          component: () => import('@/views/asset/more/MoreView.vue'),
           meta: { label: '더보기' },
         },
         {
           path: 'portfolio-analysis',
           name: 'portfolioAnalysis',
-          component: PortfolioAnalysisView,
+          component: () => import('@/views/asset/more/PortfolioAnalysisView.vue'),
           meta: { label: '포트폴리오 분석' },
         },
         {
           path: 'badges',
           name: 'badges',
-          component: BadgesView,
+          component: () => import('@/views/asset/more/BadgesView.vue'),
           meta: { label: '뱃지' },
         },
         {
           path: 'fire-simulator',
           name: 'fireSimulator',
-          component: FireSimulatorView,
+          component: () => import('@/views/asset/more/FireSimulatorView.vue'),
           meta: { label: 'FIRE 시뮬레이터' },
         },
         {
           path: 'fire-history',
           name: 'fireHistory',
-          component: FireHistoryView,
+          component: () => import('@/views/asset/more/FireHistoryView.vue'),
           meta: { label: 'FIRE 히스토리' },
         },
         {
           path: 'asset-growth',
           name: 'assetGrowth',
-          component: AssetGrowthView,
+          component: () => import('@/views/asset/more/AssetGrowthView.vue'),
           meta: { label: '자산 성장' },
         },
         {
           path: 'dividend-calendar',
           name: 'dividendCalendar',
-          component: DividendCalendarView,
+          component: () => import('@/views/asset/more/DividendCalendarView.vue'),
           meta: { label: '배당 캘린더' },
         },
         {
           path: 'etf-analysis',
           name: 'etfAnalysis',
-          component: EtfAnalysisView,
+          component: () => import('@/views/asset/more/EtfAnalysisView.vue'),
           meta: { label: 'ETF 분석' },
         },
         {
           path: 'etf-backtest',
           name: 'etfBacktest',
-          component: EtfBacktestView,
+          component: () => import('@/views/asset/more/EtfBacktestView.vue'),
           meta: { label: 'ETF 백테스트' },
         },
       ],
