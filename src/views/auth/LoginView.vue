@@ -11,6 +11,7 @@ import { getLastModule } from '@/utils/lastModule'
 import { isAdminEmail } from '@/config/admin'
 import { isTossApp } from '@/services/tossApp'
 import { signInWithToss } from '@/services/tossLogin'
+import { isNativeApp } from '@/services/nativeApp'
 import type { SupportedLocale } from '@/plugins/i18n'
 
 const router = useRouter()
@@ -239,10 +240,13 @@ const signInWithProvider = async (provider: 'google' | 'kakao') => {
   oauthLoading.value = provider
   // 리다이렉트 복귀 후 App.vue의 onAuthStateChange에서 login_log 기록에 사용하는 표식
   sessionStorage.setItem(OAUTH_LOGIN_PENDING_KEY, provider)
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider,
-    options: { redirectTo: `${window.location.origin}/` },
-  })
+  // 네이티브 앱은 웹뷰 안에서 인증 페이지를 열면 구글이 차단하므로 시스템 브라우저로 우회한다
+  const { error } = isNativeApp()
+    ? { error: await (await import('@/services/nativeAuth')).openNativeOAuth(provider) }
+    : await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: `${window.location.origin}/` },
+      })
   if (error) {
     sessionStorage.removeItem(OAUTH_LOGIN_PENDING_KEY)
     oauthLoading.value = null
@@ -299,8 +303,10 @@ onMounted(() => {
   // (성공 시에는 리다이렉트 복귀로 페이지를 떠나므로 이 화면에 남지 않는다)
   document.addEventListener('visibilitychange', resetOauthLoadingOnVisible)
   const dismissed = localStorage.getItem(A2HS_DISMISSED_KEY) === '1'
-  // 미니앱에서는 홈 화면 추가가 불가능하고 Safari 공유 버튼도 없어서 안내 자체가 성립하지 않는다
-  showInstallBanner.value = !isStandalone && !dismissed && platform.value !== null && !tossOnly
+  // 미니앱에서는 홈 화면 추가가 불가능하고 Safari 공유 버튼도 없어서 안내 자체가 성립하지 않는다.
+  // 네이티브 앱은 이미 설치된 상태인 데다 웹뷰에 beforeinstallprompt가 오지 않아 버튼이 먹통이 된다.
+  showInstallBanner.value =
+    !isStandalone && !dismissed && platform.value !== null && !tossOnly && !isNativeApp()
 
   if (platform.value === 'android') {
     window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
