@@ -2,6 +2,7 @@
 {
   "extends": "@tsconfig/node24/tsconfig.json",
   "include": [
+    "capacitor.config.*",
     "vite.config.*",
     "vitest.config.*",
     "cypress.config.*",

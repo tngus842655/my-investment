@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { supabase } from '@/services/supabase'
 import { showMessage } from '@/composables/useSnackbar'
+import { isNativeApp } from '@/services/nativeApp'
 import type { UserIdentity } from '@supabase/supabase-js'
+import type { PluginListenerHandle } from '@capacitor/core'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -33,10 +35,13 @@ const isConnected = (p: ManagedProvider) => identities.value.some((i) => i.provi
 
 const connect = async (p: ManagedProvider) => {
   busy.value = p
-  const { error } = await supabase.auth.linkIdentity({
-    provider: p,
-    options: { redirectTo: `${window.location.origin}/linked-accounts` },
-  })
+  // 네이티브 앱은 웹뷰 안에서 인증 페이지를 열면 구글이 차단하므로 시스템 브라우저로 우회한다
+  const { error } = isNativeApp()
+    ? { error: await (await import('@/services/nativeAuth')).openNativeLinkIdentity(p) }
+    : await supabase.auth.linkIdentity({
+        provider: p,
+        options: { redirectTo: `${window.location.origin}/linked-accounts` },
+      })
   if (error) {
     busy.value = null
     // 해당 소셜 계정이 이미 다른 앱 계정에 연결돼 있으면 연결 불가
@@ -100,9 +105,24 @@ const handleLinkRedirectError = () => {
   window.history.replaceState({}, '', window.location.pathname)
 }
 
-onMounted(() => {
+// 네이티브 앱은 연결이 시스템 브라우저에서 끝나고 앱으로 돌아오므로, 웹처럼 페이지가 다시
+// 로드되지 않는다. 앱이 다시 앞으로 나올 때 연결 목록을 새로 읽어 결과를 반영한다.
+let resumeListener: PluginListenerHandle | null = null
+
+onMounted(async () => {
   handleLinkRedirectError()
   load()
+  if (isNativeApp()) {
+    const { App } = await import('@capacitor/app')
+    resumeListener = await App.addListener('resume', () => {
+      busy.value = null
+      load()
+    })
+  }
+})
+
+onUnmounted(() => {
+  resumeListener?.remove()
 })
 </script>
 

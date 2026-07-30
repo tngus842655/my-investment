@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FirePath</string>
+    <string name="title_activity_main">FirePath</string>
+    <string name="package_name">com.firepath.app</string>
+    <string name="custom_url_scheme">com.firepath.app</string>
+</resources>
