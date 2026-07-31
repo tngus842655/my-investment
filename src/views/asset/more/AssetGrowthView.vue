@@ -40,10 +40,26 @@ onMounted(async () => {
     if (histRes.error) throw histRes.error
     exchangeRate.value = rate
     // 기준통화 변경 이전의 스냅샷은 행별 통화가 다를 수 있어 표시 시점 환율로 환산 (GLOBALIZATION.md 2-4 정책)
-    history.value = (histRes.data ?? []).map((p: HistoryPoint & { base_currency?: string }) => ({
+    const points = (histRes.data ?? []).map((p: HistoryPoint & { base_currency?: string }) => ({
       ...p,
       current_asset: Math.round(convertMoney(p.current_asset, p.base_currency ?? 'KRW', baseCurrency.value, rate)),
     }))
+
+    // asset_history는 pg_cron(KST 자정)과 자산 화면 진입 시에만 upsert돼, 리포트가 마지막 스냅샷
+    // 시점까지만 보였다(=전일 최종자산). 오늘 자 점을 현재 자산으로 채워 지금 시점까지 반영한다.
+    // recorded_at은 DB의 CURRENT_DATE(UTC)로 기록되므로 여기서도 UTC 기준 날짜를 써야 같은 날로 맞물린다.
+    // 오늘 행이 이미 있어도 그 시점 값이라 현재가보다 오래됐으므로 덮어쓴다.
+    // asset_summary는 과거 스냅샷과 달리 항상 현재 기준통화로 재계산돼 저장되므로 환산하지 않는다
+    // (아래 currentAssetNow도 같은 이유로 그대로 쓴다).
+    const todayAsset = summary?.current_asset ?? 0
+    if (todayAsset > 0) {
+      const today = new Date().toISOString().slice(0, 10)
+      const last = points[points.length - 1]
+      if (last?.recorded_at === today) last.current_asset = todayAsset
+      else points.push({ recorded_at: today, current_asset: todayAsset })
+    }
+    history.value = points
+
     monthlyInvestment.value = goal?.monthly_investment ?? 0
     annualReturn.value = goal?.annual_return ?? null
     currentAssetNow.value = summary?.current_asset ?? 0
