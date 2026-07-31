@@ -51,6 +51,13 @@ firepath / Vite / dist
 
 ## 로컬에서 배포 (Android 프로젝트)
 
+⚠️ **2026-07-31부터 TWA에서 Capacitor로 전환했다. 아래 예전 절차는 더 이상 쓰지 않는다.**
+`C:\Workspace\FirePath-TWA` 에서 빌드하면 크롬을 띄우는 예전 앱이 그대로 나온다.
+빌드는 이 저장소의 `my-investment\android` 에서 하고, 절차는 **CAPACITOR.md** 4절 참고.
+
+<details>
+<summary>예전 TWA 빌드 절차 (사용 중지)</summary>
+
 1. build.gradle 버전 수정
    C:\Workspace\FirePath-TWA\app\build.gradle 열기
    versionCode 3 // +1
@@ -63,3 +70,5 @@ firepath / Vite / dist
 
 3. 생성 .aab 파일경로
    C:\Workspace\FirePath-TWA\app\build\outputs\bundle\release\app-release.aab
+
+</details>
