@@ -4,6 +4,7 @@ import type { AuthError, Provider } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 import { NATIVE_AUTH_REDIRECT } from './nativeApp'
 import { showMessage } from '@/composables/useSnackbar'
+import { getLastModule } from '@/utils/lastModule'
 import router from '@/router'
 
 /**
@@ -49,13 +50,23 @@ export const initNativeAuthListener = () => {
     const code = params.get('code')
 
     if (code) {
-      const { error } = await supabase.auth.exchangeCodeForSession(code)
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code)
       if (error) {
         // 실패를 조용히 삼키면 로그인 화면에 그대로 멈춰 있어 원인을 알 수 없다
-        showMessage(`로그인 실패 (교환): ${error.message}`, 'error')
+        showMessage(`로그인 실패: ${error.message}`, 'error')
       } else if (router.currentRoute.value.name !== 'linkedAccounts') {
         // 계정 연결은 이미 연결 화면에 머물러 있으므로 이동시키지 않는다.
-        await router.replace('/')
+        //
+        // 웹은 OAuth 복귀가 페이지 재진입이라 라우터 가드가 알아서 목적지로 보내지만,
+        // 앱은 로그인 화면(/)에 그대로 머물러 있어 replace('/')가 같은 경로로 취급돼 무시된다.
+        // (세션은 정상적으로 만들어져서, 앱을 껐다 켜면 로그인된 상태로 들어가진다)
+        // 그래서 가드의 "/ + 세션 → 마지막 사용 모듈" 규칙과 같은 판단을 여기서 직접 해 이동시킨다.
+        // ⚠️ router/index.ts의 '/' 분기, LoginView의 afterLogin과 같은 규칙이므로 함께 유지할 것.
+        const userId = data.session?.user.id
+        const lastModule = userId ? getLastModule(userId) : null
+        await router.replace(
+          lastModule === 'budget' ? '/budget' : lastModule === 'asset' ? '/dashboard' : '/hub',
+        )
       }
     } else {
       // 인증은 끝났는데 코드가 안 왔다 — 제공자나 Supabase가 에러를 실어 보낸 경우
