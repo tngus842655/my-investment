@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- assets/icon.png 의 둥근 사각형 내부 가장자리 평균색. 적응형 아이콘 배경으로 쓰여
+         런처 마스크 안쪽을 채운다 — 아트워크와 색이 같아야 경계가 안 보인다. -->
+    <color name="ic_launcher_background">#141518</color>
 </resources>
