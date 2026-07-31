@@ -417,7 +417,7 @@ const formatUnitPrice = (t: Transaction) => {
   }
   // ko 외 로케일: 단가는 정밀도 유지를 위해 1억 미만은 콤마 전체 표기, 이상은 국제 축약
   if (!isKoLocale()) return formatMoneyIn(p, 'KRW', p >= 100000000 ? 'short' : 'full')
-  if (p >= 10000) return `${Math.round(p / 10000).toLocaleString()}만`
+  // 단가는 '만' 단위로 줄이면 73,500원이 "7만"이 되어 실제 체결가를 알 수 없다. 1원 단위로 전부 표기한다
   return Math.round(p).toLocaleString()
 }
 
