@@ -11,12 +11,17 @@ const corsHeaders = {
 // 종목 수에 비례해 느려졌다. 같은 티커는 여러 사용자·여러 화면이 공유하므로 서버에 캐시한다.
 const CACHE_TTL_MS = 60 * 1000
 
+// 상위 API(야후·Finnhub) 장애 시 만료된 캐시라도 내려줄 최대 나이.
+// 시세가 조금 오래된 것이 화면이 통째로 비는 것보다 낫지만, 무제한으로 두면 몇 주 전 가격을
+// 현재가처럼 보여주게 되므로 상한을 둔다. 이보다 오래됐으면 기존대로 에러를 낸다.
+const STALE_FALLBACK_MAX_AGE_MS = 24 * 60 * 60 * 1000
+
 const supabaseUrl = Deno.env.get('SUPABASE_URL')
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 // 캐시는 부가 기능이라 환경변수가 없으면(또는 테이블 배포 전이면) 캐시 없이 그대로 동작한다.
 const cacheDb = supabaseUrl && serviceRoleKey ? createClient(supabaseUrl, serviceRoleKey) : null
 
-const readCache = async (key: string): Promise<Quote | null> => {
+const readCache = async (key: string, maxAgeMs: number): Promise<Quote | null> => {
   if (!cacheDb) return null
   try {
     const { data } = await cacheDb
@@ -25,7 +30,7 @@ const readCache = async (key: string): Promise<Quote | null> => {
       .eq('cache_key', key)
       .maybeSingle()
     if (!data) return null
-    if (Date.now() - new Date(data.updated_at).getTime() >= CACHE_TTL_MS) return null
+    if (Date.now() - new Date(data.updated_at).getTime() >= maxAgeMs) return null
     return { price: Number(data.price), previousClose: data.previous_close === null ? null : Number(data.previous_close) }
   } catch {
     return null
@@ -122,17 +127,28 @@ Deno.serve(async (req) => {
     const cacheKey = `${ticker}|${resolvedMarket ?? ''}|${isCrypto ? 'crypto' : 'stock'}`
 
     // 서픽스가 있는 시장(KR/JP/CN)은 Yahoo, 그 외(US 주식·ETF, 암호화폐)는 Finnhub
-    let quote = await readCache(cacheKey)
+    let stale = false
+    let quote = await readCache(cacheKey, CACHE_TTL_MS)
     if (!quote) {
-      quote = !isCrypto && suffixes.length > 0 ? await fetchYahooPrice(ticker, suffixes) : await fetchFinnhubPrice(ticker, isCrypto)
-      await writeCache(cacheKey, quote)
+      try {
+        quote = !isCrypto && suffixes.length > 0 ? await fetchYahooPrice(ticker, suffixes) : await fetchFinnhubPrice(ticker, isCrypto)
+        await writeCache(cacheKey, quote)
+      } catch (fetchError) {
+        // 상위 API 장애. 자산 유형별로 소스가 하나뿐이라(US·코인→Finnhub, KR/JP/CN→Yahoo)
+        // 한쪽이 죽으면 해당 종목이 전부 실패하므로, 만료된 캐시라도 있으면 그걸로 응답한다.
+        quote = await readCache(cacheKey, STALE_FALLBACK_MAX_AGE_MS)
+        if (!quote) throw fetchError
+        stale = true
+      }
     }
 
     // 등락률(%) = (현재가 - 전일종가) / 전일종가 * 100. 전일종가 없으면 null
     const changeRate = quote.previousClose ? ((quote.price - quote.previousClose) / quote.previousClose) * 100 : null
 
     return new Response(
-      JSON.stringify({ ticker, price: quote.price, previousClose: quote.previousClose, changeRate }),
+      // stale: 상위 API 장애로 만료된 캐시를 내려준 응답. 현재 프론트에서 쓰는 곳은 없고,
+      // 나중에 "시세 지연" 표시를 붙이거나 로그로 장애를 확인할 때 쓸 수 있게 함께 내려준다.
+      JSON.stringify({ ticker, price: quote.price, previousClose: quote.previousClose, changeRate, stale }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   } catch (error) {
