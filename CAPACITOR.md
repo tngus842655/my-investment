@@ -102,8 +102,28 @@ npx @capacitor/assets generate --android
 
 ### 4-4. .aab 빌드 (서명 필요)
 
-`android/` 에서 기존 TWA와 **같은 키로** 서명해야 한다. 서명 설정을 아직 옮기지 않았다면
-`android/app/build.gradle`의 `signingConfigs`에 기존 keystore 경로·비밀번호를 넣는다.
+> ⚠️ **예전 TWA 프로젝트(`C:\Workspace\FirePath-TWA`)에서 빌드하면 안 된다.** 그건 크롬을 띄우는
+> 예전 앱이라, 버전만 올려 올리면 이번 변경이 전혀 반영되지 않는다. 반드시 이 저장소의
+> `my-investment/android` 에서 빌드할 것.
+
+**서명키 설정 (최초 1회)** — 기존 TWA와 **같은 키**로 서명해야 한다. 다른 키면 "업로드 인증서가
+일치하지 않습니다"로 거부된다. 예전 프로젝트 폴더에서 keystore 파일(`*.keystore` 또는 `*.jks`,
+PWABuilder는 보통 `signing.keystore`)을 찾아 경로를 적는다.
+
+`android/keystore.properties` 파일을 만든다 (gitignore 처리되어 커밋되지 않는다):
+
+```properties
+storeFile=C:/Workspace/FirePath-TWA/signing.keystore
+storePassword=<기존 비밀번호>
+keyAlias=<기존 alias>
+keyPassword=<기존 키 비밀번호>
+```
+
+> 경로 구분자는 `\` 대신 `/`를 쓴다(`.properties`에서 `\`는 이스케이프 문자).
+> 이 파일이 없으면 서명 없이 빌드되므로, 업로드용 빌드 전에 반드시 만들어야 한다.
+
+**빌드** — JDK 21이 필요하다 (`sourceCompatibility JavaVersion.VERSION_21`). 낮으면
+`invalid source release: 21` 로 실패한다. `java -version` 으로 확인할 것.
 
 ```bash
 cd android
@@ -112,8 +132,6 @@ cd android
 ```
 
 산출물: `android/app/build/outputs/bundle/release/app-release.aab`
-
-> keystore 파일과 비밀번호는 **저장소에 커밋하지 말 것** (`android/.gitignore`에서 `*.jks`, `*.keystore` 차단).
 
 ### 4-5. 업로드
 
@@ -124,6 +142,20 @@ cd android
 ---
 
 ## 5. 실기기 검증 항목
+
+### 먼저 — 설치된 앱이 TWA인지 Capacitor인지 판별
+
+`server.url` 방식이라 **화면만 봐서는 구분이 안 된다.** 버전 번호도 예전 프로젝트에서 올릴 수 있어
+확실한 근거가 못 된다. 아래 둘로 판별한다.
+
+| 확인 | TWA (예전) | Capacitor (현재) |
+| --- | --- | --- |
+| 로그인 화면 "홈 화면에 추가" 배너 | **보임** | **없음** |
+| 구글 로그인 | 화면 안에서 그대로 넘어감 | **브라우저 창이 따로 떴다가** 앱으로 복귀 |
+
+배너 판별이 확실한 이유: 배너는 `isNativeApp()`이 참일 때만 숨기는데, 그건 Capacitor 브리지
+(`window.androidBridge`)가 주입돼야만 참이 된다. TWA에는 그 브리지가 없다.
+
 
 웹뷰 안에서만 드러나는 문제가 있어 **실기기 확인이 필요하다.** 타입 체크·빌드로는 잡히지 않는다.
 

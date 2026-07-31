@@ -191,11 +191,9 @@ const totalLabel = computed(() => {
       ? v.toLocaleString('en-US')
       : v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
   }
-  // ko 외 로케일은 한글 단위 대신 국제 축약 표기
-  if (!isKoLocale()) return formatMoneyIn(v, 'KRW', 'short')
-  if (v >= 100000000) return `${Math.floor(v / 100000000)}억원`
-  if (v >= 10000) return `${Math.round(v / 10000).toLocaleString()}만원`
-  return `${Math.round(v).toLocaleString()}원`
+  // 총액을 '만원'으로 줄이면 1,234,567원이 "123만원"이 되어 입력값 확인용으로 쓸 수 없다.
+  // formatMoneyIn의 'full'이 로케일별 1원 단위 표기를 담당한다 (ko: 1,234,567원 / 그 외: ₩1,234,567)
+  return formatMoneyIn(v, 'KRW', 'full')
 })
 
 const MIN_TX_DATE = '2000-01-01'

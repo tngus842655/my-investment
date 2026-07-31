@@ -1,0 +1,3 @@
+# cap sync가 이 폴더에 capacitor.config.json / capacitor.plugins.json 을 생성한다.
+# 내용물은 전부 gitignore 대상이라, 이 파일이 없으면 git이 빈 폴더를 추적하지 않아
+# 클론한 곳에서 'ENOENT: capacitor.config.json' 으로 cap sync가 실패한다.

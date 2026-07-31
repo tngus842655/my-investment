@@ -7,9 +7,10 @@ Supabase Edge Functions 정리. 실제 소스는 각 파일로 관리되므로 `
 주식/ETF/암호화폐 현재가 조회. `src/services/market.ts`에서 호출. 소스: `supabase/functions/stock-price.ts`
 
 - **파라미터**: `{ ticker, asset_class, market, currency }` (구버전 프론트 하위호환으로 `asset_type`(한글)만 보내는 요청도 인식 — 국내주식/ETF+KRW/6자리 티커→KR, 그 외→US로 유추)
-- **응답**: `{ ticker, price }`
+- **응답**: `{ ticker, price, previousClose, changeRate, stale }` (`stale`은 아래 폴백으로 만료 캐시를 내려준 경우 `true`)
 - **로직**: `asset_class === 'crypto'`면 Finnhub `BINANCE:{ticker}USDT`. 그 외에는 `market`의 야후 서픽스 맵(KR→`.KS`/`.KQ`, JP→`.T`, CN→`.SS`/`.SZ`, 프론트 `marketConfig.ts`와 동일)으로 분기 — 서픽스가 있는 시장은 Yahoo Finance chart API를 서픽스 순서대로 시도, 서픽스가 없는 시장(US)은 Finnhub API 사용 (`FINNHUB_API_KEY` 환경변수 필요).
 - **캐시**: 외부 API를 호출하기 전에 `price_cache` 테이블을 먼저 본다(TTL 60초, `CACHE_TTL_MS`). 자산 화면은 보유종목 수만큼 이 함수를 동시 호출하는데 종목마다 외부 API 왕복이 들어가 종목이 늘수록 느려졌다. 같은 티커를 여러 사용자·여러 화면이 공유하므로 서버에 캐시한다. 캐시 조회/저장은 실패해도 응답에 영향을 주지 않고 그대로 외부 API를 탄다(테이블 배포 전이나 환경변수 누락 시에도 동작). 스키마는 **TABLE.md** 참고.
+- **장애 폴백**: 외부 API 조회가 실패하면 **만료된 캐시라도 있으면 그것으로 응답**하고 `stale: true`를 함께 내려준다(`STALE_FALLBACK_MAX_AGE_MS`, 24시간). 자산 유형별 소스가 하나뿐이라(US·암호화폐→Finnhub, KR/JP/CN→Yahoo) 한쪽이 죽으면 해당 종목이 전부 500으로 떨어져 자산 화면이 통째로 비던 문제 때문에 추가했다(2026-07-31 Finnhub 장애로 실제 발생). 24시간을 넘겼거나 캐시 자체가 없으면 기존대로 원래 에러 메시지와 함께 500을 반환한다.
 
 #### exchange-rate
 
