@@ -3,6 +3,7 @@ import { Browser } from '@capacitor/browser'
 import type { AuthError, Provider } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 import { NATIVE_AUTH_REDIRECT } from './nativeApp'
+import { showMessage } from '@/composables/useSnackbar'
 import router from '@/router'
 
 /**
@@ -44,13 +45,22 @@ export const initNativeAuthListener = () => {
   App.addListener('appUrlOpen', async ({ url }) => {
     if (!url.startsWith(NATIVE_AUTH_REDIRECT)) return
 
-    const code = new URLSearchParams(url.split('?')[1] ?? '').get('code')
+    const params = new URLSearchParams(url.split('?')[1] ?? '')
+    const code = params.get('code')
+
     if (code) {
       const { error } = await supabase.auth.exchangeCodeForSession(code)
-      // 계정 연결은 이미 연결 화면에 머물러 있으므로 이동시키지 않는다.
-      if (!error && router.currentRoute.value.name !== 'linkedAccounts') {
+      if (error) {
+        // 실패를 조용히 삼키면 로그인 화면에 그대로 멈춰 있어 원인을 알 수 없다
+        showMessage(`로그인 실패 (교환): ${error.message}`, 'error')
+      } else if (router.currentRoute.value.name !== 'linkedAccounts') {
+        // 계정 연결은 이미 연결 화면에 머물러 있으므로 이동시키지 않는다.
         await router.replace('/')
       }
+    } else {
+      // 인증은 끝났는데 코드가 안 왔다 — 제공자나 Supabase가 에러를 실어 보낸 경우
+      const reason = params.get('error_description') ?? params.get('error') ?? '인증 코드 없음'
+      showMessage(`로그인 실패 (복귀): ${reason}`, 'error')
     }
 
     // 커스텀 탭 정리는 마지막에 한다. 딥링크가 이미 앱을 앞으로 불러낸 뒤라 화면상 차이는 없고,
