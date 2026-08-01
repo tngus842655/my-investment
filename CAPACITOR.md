@@ -85,10 +85,16 @@ versionName "2.0.0"
 ### 4-3. 네이티브 프로젝트 동기화
 
 `capacitor.config.ts`나 플러그인을 바꿨을 때만 필요하다.
+(`@capawesome/capacitor-app-update`를 추가한 뒤로 `android/capacitor.settings.gradle`과
+`android/app/capacitor.build.gradle`에 그 항목이 들어가 있어야 한다 — 8절 참고)
 
 ```bash
-npx cap sync android
+npm run build:android      # = vue-tsc --build + cap sync android
 ```
+
+> `build:android`에 `vite build`는 **일부러 넣지 않았다.** `server.url`을 쓰므로 앱은 로컬 `dist`가
+> 아니라 배포된 웹을 띄운다. 여기서 빌드한 `dist`는 `.aab`에 들어가긴 해도 실행 시 쓰이지 않는다.
+> **앱 화면 내용을 바꾸려면 `npm run deploy`(웹 배포)를 해야 한다** — `build:android`로는 안 바뀐다.
 
 앱 아이콘을 바꿨다면 (`assets/icon.png` 가 원본, `public/icons/icon-512-v3.png` 사본):
 
@@ -133,6 +139,17 @@ cd android
 
 산출물: `android/app/build/outputs/bundle/release/app-release.aab`
 
+**R8(코드 축소·난독화)이 켜져 있다** (`minifyEnabled true`). 끄면 매핑 파일이 안 생겨서 플레이 콘솔이
+업로드마다 "이 App Bundle 유형과 연결된 가독화 파일이 없습니다" 경고를 띄운다. 켜두면 AGP가
+`mapping.txt`를 `.aab` 안에 같이 넣어주므로 경고가 사라지고, 콘솔에서 크래시 스택도 원래 이름으로 보인다.
+
+> ⚠️ R8은 **런타임에만 드러나는 문제**를 만들 수 있다. 리플렉션으로 로드되는 클래스가 잘려나가는 게
+> 대표적인데, Capacitor 플러그인은 `capacitor-android`가 `consumerProguardFiles`로 넣어주는
+> `-keep public class * extends com.getcapacitor.Plugin { *; }` 가 지켜주고, 웹뷰 JS 브리지는 AGP 기본
+> `proguard-android.txt`의 `@JavascriptInterface` 규칙이 지켜준다. 그래도 **릴리스 빌드를 실기기에
+> 설치해 5절 체크리스트를 한 번 돌려본 뒤 업로드할 것.** 문제가 생기면 `minifyEnabled false`로 되돌리면
+> 되고, 그때는 경고가 다시 뜨지만 업로드 자체는 막히지 않는다(경고일 뿐 오류가 아니다).
+
 ### 4-5. 업로드
 
 플레이 콘솔 → **비공개 테스트 트랙** → 새 버전 만들기 → .aab 업로드.
@@ -171,8 +188,12 @@ cd android
 - [ ] 소셜 계정 연결(`/linked-accounts`)이 동작하는가
 - [ ] 런처 아이콘이 FirePath 아이콘으로 보이는가 (배경색이 어색하지 않은가 — 4-3절 참고)
 - [ ] 앱 사용 후 **플레이 콘솔 통계에 일일 활성 사용자가 잡히는가** ← 이번 변경의 핵심 목적
+- [ ] **업데이트 안내 팝업** — 더 높은 versionCode를 테스트 트랙에 올린 뒤, 낮은 버전이 깔린 기기에서
+      앱을 켰을 때 팝업이 뜨는가 (8절 참고. 로컬 빌드로는 확인이 안 된다)
+- [ ] ⚠️ **R8을 켠 뒤 첫 릴리스 빌드**라면 위 항목을 `bundleRelease` 산출물로 한 번 더 돌려볼 것.
+      디버그 빌드는 R8을 타지 않아 여기서 걸러지지 않는다 (4-4절 참고)
 
-마지막 항목은 반영까지 하루 이상 걸린다. 여기서 숫자가 잡히기 시작하면 원인 분석이 맞았다는 뜻이다.
+플레이 콘솔 통계 항목은 반영까지 하루 이상 걸린다. 여기서 숫자가 잡히기 시작하면 원인 분석이 맞았다는 뜻이다.
 
 ---
 
@@ -182,7 +203,8 @@ cd android
   동작하므로 재방문 시 캐시는 살아 있다.
 - **웹 번들 비용**: `@capacitor/core`(gzip 약 3.1 KB)가 웹·앱인토스 번들에도 포함된다. `supabase.ts`가
   클라이언트 생성 시점에 `isNativeApp()`을 동기로 필요로 하기 때문이다. 나머지 네이티브 전용 코드
-  (`nativeAuth`, `@capacitor/app`, `@capacitor/browser`)는 동적 import라 앱에서만 내려받는다.
+  (`nativeAuth`, `appUpdate`, `AppUpdateDialog`, `@capacitor/app`, `@capacitor/browser`,
+  `@capawesome/capacitor-app-update`)는 동적 import라 앱에서만 내려받는다.
 - **정책 4.3(최소 기능)**: 콘텐츠 심사에서 "웹사이트 껍데기" 지적을 받을 여지는 남아 있다. 실기능 42화면
   규모라 위험은 낮다고 보지만, 지적받으면 네이티브 플러그인(푸시 알림, 생체인증 등)으로 보강한다.
 
@@ -198,3 +220,51 @@ cd android
 
 프로덕션 신청서에도 "테스터를 어떻게 모집했는지 / 어떤 피드백을 받아 무엇을 고쳤는지"를 구체적으로 적어야
 한다. 빈칸이나 형식적인 답변은 거절 사유가 된다.
+
+---
+
+## 8. 앱 업데이트 안내 팝업
+
+새 `.aab`를 올렸을 때 **안드로이드 앱 사용자에게만** "새 버전이 나왔어요" 팝업을 띄운다. 필수가 아니라
+선택이며, "나중에"를 누르면 **같은 버전은 24시간 동안 다시 묻지 않는다.**
+
+### 왜 버전 번호를 우리가 관리하지 않나
+
+앱은 자기 versionCode만 알지 스토어의 최신 버전은 모른다. 그래서 "최신 버전 값"을 웹 상수나 DB에 두는
+방법을 먼저 검토했는데, 둘 다 **웹 배포가 먼저이고 플레이 심사가 나중**이라는 순서(4절) 때문에 심사가
+끝나기 전에 팝업이 떠서 "스토어에 갔는데 업데이트 버튼이 없는" 상태가 생긴다.
+
+Google Play In-App Updates API(`@capawesome/capacitor-app-update`)는 플레이가 직접 업데이트 유무를
+판정하므로 이 문제가 없다. **실제로 내려받을 수 있게 된 시점부터만** 안내가 뜨고, 새 버전을 낼 때마다
+고쳐야 할 값이 없다.
+
+### 구성
+
+| 파일 | 역할 |
+| --- | --- |
+| `src/services/appUpdate.ts` | 업데이트 조회(`getAppUpdateInfo`), 24시간 스누즈, 스토어 열기 |
+| `src/components/common/AppUpdateDialog.vue` | 팝업 UI + 앱 시작·복귀 시 검사 |
+| `src/App.vue` | `isNativeApp()`일 때만 위 컴포넌트를 렌더 (동적 import) |
+
+- 웹·PWA·앱인토스는 `isNativeApp()`이 false라 렌더 자체가 안 되고, 청크도 내려받지 않는다.
+- 검사 시점은 **앱 시작 시 + 백그라운드에서 돌아올 때**(`appStateChange`). 앱을 완전히 종료하지 않는
+  사용자에게도 24시간 뒤 안내가 닿게 하기 위함이다.
+- "업데이트"를 눌러도 스누즈를 남긴다. 스토어에 갔다가 업데이트하지 않고 돌아오면 복귀 검사가 곧바로
+  다시 띄우기 때문이다.
+- 화면에 버전 번호를 적지 않는다. 안드로이드는 새 버전의 `versionName`을 주지 않고
+  (`availableVersionName`은 iOS 전용) `versionCode` 숫자만 오는데, 그건 사용자에게 의미가 없다.
+
+### ⚠️ 확인 방법 — 로컬 빌드로는 안 된다
+
+In-App Updates API는 **플레이스토어를 통해 설치된 빌드**에서만 동작한다. `./gradlew` 로 만든 디버그
+빌드나 사이드로드 설치본에서는 조회가 실패하고, 그때는 팝업을 띄우지 않고 조용히 넘어간다(정상 동작).
+
+실제 확인은 이렇게 한다:
+
+1. 이 팝업이 들어간 빌드를 테스트 트랙에 올린다 (예: `versionCode 7`)
+2. 그 버전을 스토어에서 설치한다
+3. 더 높은 버전(`versionCode 8`)을 같은 트랙에 올리고 심사가 끝날 때까지 기다린다
+4. 기기에서 앱을 켜면 팝업이 떠야 한다
+
+> **이 기능은 다음 릴리스부터 동작한다.** 지금 설치돼 있는 `versionCode 6`에는 이 코드가 없으므로,
+> 6 사용자는 7로 올라온 것을 안내받지 못한다. 7 이상을 쓰는 사용자부터 적용된다.

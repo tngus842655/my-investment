@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { defineAsyncComponent, onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 import { useTheme } from 'vuetify'
 import GlobalSnackbar from '@/components/common/GlobalSnackbar.vue'
@@ -7,6 +7,14 @@ import { useAppTheme } from '@/composables/useAppTheme'
 import { useFontScale } from '@/composables/useFontScale'
 import { supabase, OAUTH_LOGIN_PENDING_KEY } from '@/services/supabase'
 import { isAdminEmail } from '@/config/admin'
+import { isNativeApp } from '@/services/nativeApp'
+
+// 플레이스토어 업데이트 안내. 웹·PWA·앱인토스에는 필요 없는 화면이라 v-if로 렌더를 막고
+// 동적 import로 묶어, 안드로이드 앱에서만 청크를 내려받게 한다.
+const AppUpdateDialog = defineAsyncComponent(
+  () => import('@/components/common/AppUpdateDialog.vue'),
+)
+const nativeApp = isNativeApp()
 
 const theme = useTheme()
 const { initTheme } = useAppTheme()
@@ -46,6 +54,7 @@ onMounted(() => {
   <div class="app-bg" :class="theme.global.name.value">
     <RouterView />
     <GlobalSnackbar />
+    <AppUpdateDialog v-if="nativeApp" />
   </div>
 </template>
 

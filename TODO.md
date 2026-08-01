@@ -2,6 +2,31 @@
 
 ## 🔴 해야 할 것
 
+### 앱 업데이트 안내 팝업 — 다음 .aab 빌드가 필요하다
+
+코드 작업은 완료(`src/services/appUpdate.ts`, `AppUpdateDialog.vue`, `App.vue`). 자세한 내용은
+**CAPACITOR.md 8절** 참고.
+
+네이티브 플러그인(`@capawesome/capacitor-app-update`)을 추가했으므로 **웹 배포만으로는 반영되지
+않는다.** `npx cap sync android` 는 이미 돌려서 gradle 파일에 반영해 뒀고, 남은 것은:
+
+```bash
+npm install                # 새 플러그인 받기 (빼먹으면 gradle 빌드가 실패한다)
+npm run deploy             # 웹 배포 — 팝업 UI·로직은 웹 코드다
+npm run build:android      # 타입 체크 + cap sync
+# android/app/build.gradle 의 versionCode 를 7 이상으로 올린 뒤
+cd android && ./gradlew clean && ./gradlew bundleRelease
+```
+
+그다음 테스트 트랙에 올리고, 그 버전을 스토어에서 설치한 뒤 다시 더 높은 버전을 올려서
+**팝업이 뜨는지 실기기 확인**.
+
+> 확인은 반드시 스토어로 설치한 빌드에서 해야 한다. In-App Updates API는 로컬 디버그 빌드나
+> 사이드로드 설치본에서는 동작하지 않는다(팝업이 안 뜨는 게 정상).
+>
+> 그리고 **이 기능은 다음 릴리스부터 동작한다.** 지금 깔려 있는 `versionCode 6`에는 이 코드가
+> 없어서 7 출시를 안내받지 못한다. 7 이상 사용자부터 적용된다.
+
 ### 앱인토스 프로모션 — 남은 것은 "시작하기" 하나
 
 코드 작업은 2026-07-26 완료(허브·대시보드·가계부 3곳의 프로모션 카드 + 중복 방지 테이블/RPC),
