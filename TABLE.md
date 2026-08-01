@@ -1,6 +1,19 @@
 # TABLE.md
 
-Supabase 테이블 스키마 정리. 모든 테이블은 `user_id → auth.users` FK를 가지며 user 삭제 시 CASCADE 된다. `public` 스키마의 모든 테이블은 RLS(rowsecurity)가 켜져 있다.
+Supabase 테이블 스키마 정리. 대부분의 테이블은 `user_id → auth.users` FK를 가지며 user 삭제 시 CASCADE 된다. `public` 스키마의 모든 테이블은 RLS(rowsecurity)가 켜져 있다.
+
+> ⚠️ **예외 — `feedback` / `signup_log` 는 `user_id` 가 없다.** `email` 로만 연결돼 있어 **계정을 지워도
+> CASCADE로 함께 지워지지 않는다.** 탈퇴 후에도 가입 이력과 받은 피드백을 남겨 직접 관리하려는
+> **의도적인 설계**다 (`delete_user_account()` 도 `signup_log` 는 지우지 않고 `deleted_at` 만 찍는다).
+> 그래서 계정 데이터를 완전히 지우려면 `auth.users` 삭제와 별개로 이 두 테이블을 email 기준으로
+> 직접 지워야 한다.
+>
+> ```sql
+> DELETE FROM public.feedback   WHERE lower(email) = '<대상 이메일>';
+> DELETE FROM public.signup_log WHERE lower(email) = '<대상 이메일>';
+> ```
+>
+> `price_cache` 도 예외지만 이유가 다르다 — 사용자별 데이터가 아닌 전역 캐시라 `user_id` 자체가 없다.
 
 ### RLS 정책 작성 주의사항
 
