@@ -10,9 +10,16 @@
 네이티브 플러그인(`@capawesome/capacitor-app-update`)을 추가했으므로 **웹 배포만으로는 반영되지
 않는다.** `npx cap sync android` 는 이미 돌려서 gradle 파일에 반영해 뒀고, 남은 것은:
 
-1. `android/app/build.gradle` 의 `versionCode` 를 7 이상으로 올리기
-2. `.aab` 재빌드 → 테스트 트랙 업로드
-3. 그 버전을 스토어에서 설치한 뒤, 다시 더 높은 버전을 올려서 **팝업이 뜨는지 실기기 확인**
+```bash
+npm install                # 새 플러그인 받기 (빼먹으면 gradle 빌드가 실패한다)
+npm run deploy             # 웹 배포 — 팝업 UI·로직은 웹 코드다
+npm run build:android      # 타입 체크 + cap sync
+# android/app/build.gradle 의 versionCode 를 7 이상으로 올린 뒤
+cd android && ./gradlew clean && ./gradlew bundleRelease
+```
+
+그다음 테스트 트랙에 올리고, 그 버전을 스토어에서 설치한 뒤 다시 더 높은 버전을 올려서
+**팝업이 뜨는지 실기기 확인**.
 
 > 확인은 반드시 스토어로 설치한 빌드에서 해야 한다. In-App Updates API는 로컬 디버그 빌드나
 > 사이드로드 설치본에서는 동작하지 않는다(팝업이 안 뜨는 게 정상).

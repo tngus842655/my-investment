@@ -89,8 +89,12 @@ versionName "2.0.0"
 `android/app/capacitor.build.gradle`에 그 항목이 들어가 있어야 한다 — 8절 참고)
 
 ```bash
-npx cap sync android
+npm run build:android      # = vue-tsc --build + cap sync android
 ```
+
+> `build:android`에 `vite build`는 **일부러 넣지 않았다.** `server.url`을 쓰므로 앱은 로컬 `dist`가
+> 아니라 배포된 웹을 띄운다. 여기서 빌드한 `dist`는 `.aab`에 들어가긴 해도 실행 시 쓰이지 않는다.
+> **앱 화면 내용을 바꾸려면 `npm run deploy`(웹 배포)를 해야 한다** — `build:android`로는 안 바뀐다.
 
 앱 아이콘을 바꿨다면 (`assets/icon.png` 가 원본, `public/icons/icon-512-v3.png` 사본):
 
