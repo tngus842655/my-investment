@@ -139,6 +139,17 @@ cd android
 
 산출물: `android/app/build/outputs/bundle/release/app-release.aab`
 
+**R8(코드 축소·난독화)이 켜져 있다** (`minifyEnabled true`). 끄면 매핑 파일이 안 생겨서 플레이 콘솔이
+업로드마다 "이 App Bundle 유형과 연결된 가독화 파일이 없습니다" 경고를 띄운다. 켜두면 AGP가
+`mapping.txt`를 `.aab` 안에 같이 넣어주므로 경고가 사라지고, 콘솔에서 크래시 스택도 원래 이름으로 보인다.
+
+> ⚠️ R8은 **런타임에만 드러나는 문제**를 만들 수 있다. 리플렉션으로 로드되는 클래스가 잘려나가는 게
+> 대표적인데, Capacitor 플러그인은 `capacitor-android`가 `consumerProguardFiles`로 넣어주는
+> `-keep public class * extends com.getcapacitor.Plugin { *; }` 가 지켜주고, 웹뷰 JS 브리지는 AGP 기본
+> `proguard-android.txt`의 `@JavascriptInterface` 규칙이 지켜준다. 그래도 **릴리스 빌드를 실기기에
+> 설치해 5절 체크리스트를 한 번 돌려본 뒤 업로드할 것.** 문제가 생기면 `minifyEnabled false`로 되돌리면
+> 되고, 그때는 경고가 다시 뜨지만 업로드 자체는 막히지 않는다(경고일 뿐 오류가 아니다).
+
 ### 4-5. 업로드
 
 플레이 콘솔 → **비공개 테스트 트랙** → 새 버전 만들기 → .aab 업로드.
@@ -179,6 +190,8 @@ cd android
 - [ ] 앱 사용 후 **플레이 콘솔 통계에 일일 활성 사용자가 잡히는가** ← 이번 변경의 핵심 목적
 - [ ] **업데이트 안내 팝업** — 더 높은 versionCode를 테스트 트랙에 올린 뒤, 낮은 버전이 깔린 기기에서
       앱을 켰을 때 팝업이 뜨는가 (8절 참고. 로컬 빌드로는 확인이 안 된다)
+- [ ] ⚠️ **R8을 켠 뒤 첫 릴리스 빌드**라면 위 항목을 `bundleRelease` 산출물로 한 번 더 돌려볼 것.
+      디버그 빌드는 R8을 타지 않아 여기서 걸러지지 않는다 (4-4절 참고)
 
 플레이 콘솔 통계 항목은 반영까지 하루 이상 걸린다. 여기서 숫자가 잡히기 시작하면 원인 분석이 맞았다는 뜻이다.
 

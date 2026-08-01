@@ -43,7 +43,11 @@ android {
             if (keystorePropertiesFile.exists()) {
                 signingConfig signingConfigs.release
             }
-            minifyEnabled false
+            // R8을 켜야 매핑 파일(mapping.txt)이 생기고, AGP가 그걸 .aab에 같이 넣어준다.
+            // 끄면 플레이 콘솔이 업로드할 때마다 "가독화 파일이 없습니다" 경고를 띄운다.
+            // 리플렉션으로 로드되는 Capacitor 플러그인은 capacitor-android가 consumerProguardFiles로
+            // 넣어주는 규칙(`-keep public class * extends com.getcapacitor.Plugin`)이 지켜준다.
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
