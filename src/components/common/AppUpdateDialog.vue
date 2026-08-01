@@ -42,7 +42,7 @@ onMounted(() => {
 <template>
   <v-dialog v-model="dialog" max-width="360" persistent>
     <v-card rounded="xl" class="glass-dialog">
-      <v-card-title class="d-flex align-center ga-2 pt-5 px-5">
+      <v-card-title class="d-flex align-center ga-2 pt-5 px-5 update-title">
         <v-icon color="primary" size="20">mdi-cellphone-arrow-down</v-icon>
         <span class="font-weight-bold">{{ $t('appUpdate.title') }}</span>
       </v-card-title>
@@ -60,6 +60,13 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* v-card-title은 기본이 한 줄 고정(white-space: nowrap + text-overflow: ellipsis)이라
+   영문 제목이 "A new version is availab…"으로 잘린다. 두 줄로 넘어가게 푼다. */
+.update-title {
+  white-space: normal;
+  line-height: 1.35;
+}
+
 .glass-dialog {
   background: rgb(var(--v-theme-surface)) !important;
   border: 1px solid rgba(var(--v-theme-on-surface), 0.08) !important;
