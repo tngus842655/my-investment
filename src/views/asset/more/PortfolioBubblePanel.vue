@@ -81,25 +81,6 @@ const fmtNative = (v: number | null, currency: 'KRW' | 'USD'): string => {
 }
 const fmtQty = (v: number): string => v.toLocaleString('en-US', { maximumFractionDigits: 8 })
 
-// 전일 대비 총 증감액·증감률 (등락률을 아는 종목만 집계 — 현금/미조회 종목은 변동 0으로 간주)
-const dayChange = computed(() => {
-  let diff = 0
-  let hasAny = false
-  let prevTotal = 0
-  for (const b of bubbles.value) {
-    if (b.changeRate === null) {
-      prevTotal += b.valueBase
-      continue
-    }
-    const prev = b.valueBase / (1 + b.changeRate / 100)
-    diff += b.valueBase - prev
-    prevTotal += prev
-    hasAny = true
-  }
-  if (!hasAny || prevTotal <= 0) return null
-  return { diff, rate: (diff / prevTotal) * 100 }
-})
-
 // 등락률 → 색상 (한국식: 상승 빨강 / 하락 파랑 / 보합·미조회 회색), 변동폭이 클수록 진하게.
 const colorParts = (cr: number | null): { color: string; stroke: string; glow: string } => {
   const neutral = cr === null || Math.abs(cr) < 0.005
@@ -282,20 +263,12 @@ onMounted(loadData)
 
 <template>
   <div class="bubble-panel" :class="{ 'bubble-panel--light': !isDarkTheme }">
-    <!-- 총 자산 카드 (평가금액 + 전일 대비 증감) — 자산분포 탭과 통일 -->
+    <!-- 총 자산 카드 (평가금액) — 자산분포 탭과 통일 -->
     <div class="bubble-header-card" v-if="!loading && bubbles.length">
       <div class="bh-main">
         <div class="bh-label">{{ $t('portfolioAnalysis.totalAsset') }}</div>
         <div class="bh-value">{{ money(totalBase, exchangeRate) }}</div>
       </div>
-      <span
-        v-if="dayChange"
-        class="bh-change"
-        :class="dayChange.diff >= 0 ? 'chg-up' : 'chg-down'"
-      >
-        <v-icon size="14">{{ dayChange.diff >= 0 ? 'mdi-menu-up' : 'mdi-menu-down' }}</v-icon>
-        {{ money(Math.abs(dayChange.diff), exchangeRate) }} ({{ dayChange.rate >= 0 ? '+' : '' }}{{ dayChange.rate.toFixed(2) }}%)
-      </span>
     </div>
 
     <template v-if="loading">
@@ -499,18 +472,6 @@ onMounted(loadData)
   font-weight: 800;
   color: #fff;
   line-height: 1.15;
-}
-.bh-change {
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  gap: 1px;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  white-space: nowrap;
 }
 .chg-up { color: hsl(4, 82%, 64%); }
 .chg-down { color: hsl(212, 82%, 66%); }
