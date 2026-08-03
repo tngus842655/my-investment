@@ -1005,21 +1005,18 @@ onUnmounted(() => {
                       <span class="ticker-name">{{
                         getTickerLabel(item.ticker).name
                       }}</span>
-                      <span v-if="(item.groupCount ?? 1) > 1" class="account-tag ml-1">{{ $t('portfolio.accountsBadge', { n: item.groupCount }) }}</span>
-                      <span v-else-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
+                      <span v-if="!groupByTicker && item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
                     </template>
                     <template v-else-if="getTickerLabel(item.ticker).showTicker">
                       <span class="ticker-name">{{
                         getTickerLabel(item.ticker).name
                       }}</span>
                       <span v-if="item.currency === 'USD'" class="ticker-sub ml-1">{{ item.ticker }}</span>
-                      <span v-if="(item.groupCount ?? 1) > 1" class="account-tag ml-1">{{ $t('portfolio.accountsBadge', { n: item.groupCount }) }}</span>
-                      <span v-else-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
+                      <span v-if="!groupByTicker && item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
                     </template>
                     <template v-else>
                       <span class="ticker-name">{{ item.ticker }}</span>
-                      <span v-if="(item.groupCount ?? 1) > 1" class="account-tag ml-1">{{ $t('portfolio.accountsBadge', { n: item.groupCount }) }}</span>
-                      <span v-else-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
+                      <span v-if="!groupByTicker && item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
                     </template>
                   </div>
                 </div>
