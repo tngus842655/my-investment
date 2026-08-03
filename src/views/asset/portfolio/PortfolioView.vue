@@ -1005,21 +1005,18 @@ onUnmounted(() => {
                       <span class="ticker-name">{{
                         getTickerLabel(item.ticker).name
                       }}</span>
-                      <span v-if="(item.groupCount ?? 1) > 1" class="account-tag ml-1">{{ $t('portfolio.accountsBadge', { n: item.groupCount }) }}</span>
-                      <span v-else-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
+                      <span v-if="!groupByTicker && item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
                     </template>
                     <template v-else-if="getTickerLabel(item.ticker).showTicker">
                       <span class="ticker-name">{{
                         getTickerLabel(item.ticker).name
                       }}</span>
                       <span v-if="item.currency === 'USD'" class="ticker-sub ml-1">{{ item.ticker }}</span>
-                      <span v-if="(item.groupCount ?? 1) > 1" class="account-tag ml-1">{{ $t('portfolio.accountsBadge', { n: item.groupCount }) }}</span>
-                      <span v-else-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
+                      <span v-if="!groupByTicker && item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
                     </template>
                     <template v-else>
                       <span class="ticker-name">{{ item.ticker }}</span>
-                      <span v-if="(item.groupCount ?? 1) > 1" class="account-tag ml-1">{{ $t('portfolio.accountsBadge', { n: item.groupCount }) }}</span>
-                      <span v-else-if="item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
+                      <span v-if="!groupByTicker && item.account_name && item.account_name !== '미지정'" class="account-tag ml-1">{{ truncateAccount(item.account_name) }}</span>
                     </template>
                   </div>
                 </div>
@@ -1191,12 +1188,10 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
-  /* 공간이 부족하면 종목명이 먼저 …으로 잘리도록 (서브/계좌 태그보다 우선 축소) */
+  /* 공간이 부족하면 종목명이 먼저 …으로 잘리도록 (서브/계좌 태그보다 우선 축소).
+     고정 상한을 두지 않아 남는 공간을 다 쓰고 실제로 모자랄 때만 …으로 잘린다.
+     카드 폭 자체는 .flip-inner 의 minmax(0, 1fr) 이 확정해 준다 */
   flex-shrink: 1;
-  /* 아주 긴 종목명은 이 상한에서 무조건 …으로 자름 (카드 밖 삐져나감 방지).
-     "KODEX 미국나스닥100" 같은 일반 이름은 유지하고 "KODEX 200타겟위클리커버드콜"
-     처럼 과하게 긴 이름만 잘리는 값. 더 좁은 화면에서는 flex-shrink로 더 줄어듦 */
-  max-width: 8.5rem;
 }
 
 .card-amount {
@@ -1455,6 +1450,10 @@ onUnmounted(() => {
   position: relative;
   /* 앞/뒷면 face를 같은 그리드 셀에 겹침 */
   display: grid;
+  /* minmax(0, 1fr): 트랙 최소값을 0으로 고정해 카드 폭을 확정시킨다. 이게 없으면
+     face의 min-width:auto 때문에 긴 종목명의 min-content가 그대로 트랙을 밀어
+     카드가 컨테이너 밖으로 넓어지고 수익률 칩이 잘린다 (.summary-grid와 같은 이유) */
+  grid-template-columns: minmax(0, 1fr);
   /* 앞뒤 높이를 고정으로 동일하게 맞춤. rem이라 폰트 스케일에 연동됨
      (16px 기준 64px) */
   height: 4rem;
