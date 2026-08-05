@@ -9,6 +9,7 @@ import { getTickerLabel } from '@/utils/tickerNames'
 import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
 import TossPromotionCard from '@/components/TossPromotionCard.vue'
+import TossBannerAd from '@/components/TossBannerAd.vue'
 import { useI18n } from 'vue-i18n'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { convertMoney } from '@/utils/portfolioMath'
@@ -401,6 +402,9 @@ onUnmounted(clearPullToRefresh)
           </div>
         </div>
       </div>
+
+      <!-- 앱인토스 배너 광고 (토스 앱에서만 노출) -->
+      <TossBannerAd />
 
       <!-- 투자 현황 미니 리스트 -->
       <div class="glass-card pa-4">
