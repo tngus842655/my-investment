@@ -77,3 +77,19 @@ rm -rf dist && npm run build:toss
   - 조건을 처음 충족한 순간 "허브에서 받아가세요" 스낵바를 한 번 띄웁니다. 카테고리 화면에 들어온 유저가 허브로 돌아가야 받을 수 있다는 걸 알 방법이 없기 때문입니다.
 - 지급: 허브 화면의 "받기" 버튼 → `grantPromotionReward` 브리지 호출
 - 중복 방지: `toss_promotion_rewards` 테이블 (자세한 내용은 **TABLE.md** 참고)
+
+#### 배너 광고 (인앱 광고)
+
+콘솔에서 발급받은 배너 광고 그룹 ID를 **로컬 `.env`** 의 `VITE_TOSS_AD_GROUP_ID`에 넣으면, 토스 앱에서 접속한 유저에게만 배너가 노출됩니다. 값이 비어 있거나 일반 브라우저·PWA·안드로이드 앱(TWA)에서는 노출되지 않습니다. 프로모션 코드와 마찬가지로 빌드 시점에 번들에 박히는 값이라, **ID를 바꾸면 반드시 다시 빌드·배포해야** 반영됩니다.
+
+- 구현: `src/services/tossAds.ts`(환경 판별) + `src/components/TossBannerAd.vue`(`TossAds.attachBanner`)
+- 배치: 대시보드(스탯 카드 ↔ 투자 현황 카드 사이), 가계부 캘린더(요약 카드 ↔ 캘린더 사이). 화면당 1개.
+
+**테스트는 실제 토스 앱에서만 가능합니다.** 샌드박스는 인앱 광고를 지원하지 않아, `npm run dev:toss`로 띄운 로컬·샌드박스에서는 배너가 뜨지 않습니다. `rm -rf dist && npm run build:toss`로 만든 `firepath.ait`를 콘솔에 올린 뒤 콘솔의 QR로 열어서 확인해야 합니다.
+
+개발·테스트 중에는 반드시 테스트용 ID를 씁니다. 운영 ID로 테스트하거나 본인이 반복 노출·클릭을 만들면 비정상 트래픽으로 보아 광고 제한·정산 보류 대상이 됩니다.
+
+- 리스트형(문구 강조): `ait-ad-test-banner-id`
+- 피드형(이미지 강조): `ait-ad-test-native-image-id`
+
+광고 UI(색·글꼴·문구·"Ad" 표기)는 SDK가 그리는 그대로 두어야 하고, 광고 영역을 주기적으로 새로고침해서도 안 됩니다. `TossBannerAd`는 화면 진입 때 한 번 붙이고 떠날 때 `destroy()`만 합니다. 전체 정책은 **`toss-docs/in-app-ad.md`** 참고.
