@@ -7,7 +7,7 @@ import { isTossApp } from '@/services/tossApp'
 const PROMOTION_CODE = import.meta.env.VITE_TOSS_PROMOTION_CODE ?? ''
 
 // 지급할 토스포인트 금액. 콘솔에 등록한 1회 지급 금액과 같아야 한다.
-export const PROMOTION_AMOUNT = 10
+export const PROMOTION_AMOUNT = 50
 
 /** 프로모션을 진행할 수 있는 환경인지 (토스 앱 + 프로모션 코드 설정됨) */
 export const isPromotionAvailable = () => PROMOTION_CODE !== '' && isTossApp()
