@@ -107,3 +107,22 @@ BEGIN
   DELETE FROM auth.users WHERE id = auth.uid();
 END;
 $$;
+
+-- 살아있는 이력 백필.
+-- 이관은 탈퇴 시점에 일어나므로, 백필이 없으면 이미 받아간 사람은 "다음 탈퇴" 때 비로소
+-- 보관된다. 즉 반복 수령 중인 계정에 한 사이클을 더 내주게 된다. 지금 시점의 이력을 미리
+-- 넣어두면 다음 재가입부터 바로 막힌다.
+--
+-- 살아있는 계정의 동작은 바뀌지 않는다. 이미 toss_promotion_rewards에 행이 있는 계정은
+-- 원래도 (user_id, promotion_code) 유니크로 ALREADY였고, FAILED는 보관 이력이 있어도
+-- 재시도가 허용되기 때문이다. 차이가 생기는 건 탈퇴 후 재가입 경로뿐이다.
+INSERT INTO toss_promotion_reward_archive
+  (toss_user_key, promotion_code, amount, status, reward_key)
+SELECT toss_user_key, promotion_code, amount, status, reward_key
+FROM toss_promotion_rewards
+WHERE toss_user_key IS NOT NULL
+ON CONFLICT (toss_user_key, promotion_code) DO UPDATE
+  SET amount      = EXCLUDED.amount,
+      status      = EXCLUDED.status,
+      reward_key  = EXCLUDED.reward_key,
+      archived_at = now();
