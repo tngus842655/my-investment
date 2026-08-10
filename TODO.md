@@ -151,7 +151,12 @@ DELETE FROM toss_promotion_rewards WHERE promotion_code LIKE 'TEST_%';
 
 **한계** (알고 넘어가는 것):
 
-- 이 마이그레이션 이전에 이미 탈퇴한 계정의 이력은 복구할 수 없다. 그때 사라진 행은 DB에 흔적이
+- **적용 시점에 이미 탈퇴 상태인 계정은 한 번 더 받는다.** 탈퇴와 함께 `toss_user_key`가 지워져
+  백필이 주워담을 게 없기 때문이다. 그 계정이 재가입해 수령하는 순간까지는 식별할 방법이 자체가
+  없고, **그 다음 탈퇴에서 보관되어 영구 차단된다.** 즉 반복 수령 중인 사람이 지금 탈퇴 상태라면
+  추가 손실은 50원 1회로 끝난다. (지급을 claim 시점에 보관하도록 바꿔도 이 1회는 못 막는다 —
+  키를 알게 되는 시점 자체가 수령 시점이다.)
+- 이 마이그레이션 이전에 이미 탈퇴한 계정의 과거 이력은 복구할 수 없다. 사라진 행은 DB에 흔적이
   없어서 과거 재수령을 조회로 잡아낼 방법도 없다. 콘솔 소진액과
   `SELECT sum(amount) FROM toss_promotion_rewards WHERE status = 'GRANTED'` 차액으로 추정만 된다.
 - `admin-delete-user` Edge Function은 `auth.admin.deleteUser()`를 직접 호출해 이 RPC를 거치지
