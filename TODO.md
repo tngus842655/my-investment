@@ -157,8 +157,20 @@ DELETE FROM toss_promotion_rewards WHERE promotion_code LIKE 'TEST_%';
   추가 손실은 50원 1회로 끝난다. (지급을 claim 시점에 보관하도록 바꿔도 이 1회는 못 막는다 —
   키를 알게 되는 시점 자체가 수령 시점이다.)
 - 이 마이그레이션 이전에 이미 탈퇴한 계정의 과거 이력은 복구할 수 없다. 사라진 행은 DB에 흔적이
-  없어서 과거 재수령을 조회로 잡아낼 방법도 없다. 콘솔 소진액과
-  `SELECT sum(amount) FROM toss_promotion_rewards WHERE status = 'GRANTED'` 차액으로 추정만 된다.
+  없어서 과거 재수령을 조회로 잡아낼 방법도 없다. 콘솔 소진액과의 차액으로 추정만 되는데,
+  **반드시 `promotion_code`로 스코프를 걸어야 한다** — 이 테이블에는 옛 10원 코드와 `TEST_` 코드
+  행이 함께 살아 있고, `TEST_`는 실제 포인트가 차감되지 않아 콘솔 소진액에 잡히지 않는다.
+  코드 구분 없이 합계를 내면 세 종류가 섞여 비교가 무의미해진다.
+
+  ```sql
+  -- 코드별로 쪼개서 봐야 콘솔과 비교할 수 있다
+  SELECT promotion_code, status, count(*) AS 건수, sum(amount) AS 합계, min(amount) AS 단가
+  FROM toss_promotion_rewards
+  GROUP BY promotion_code, status
+  ORDER BY promotion_code, status;
+  ```
+
+  `콘솔 소진액 ÷ 50 − (운영 코드의 GRANTED 건수)` = 탈퇴로 사라진 지급 건수.
 - `admin-delete-user` Edge Function은 `auth.admin.deleteUser()`를 직접 호출해 이 RPC를 거치지
   않으므로, 관리자가 지운 계정의 이력은 지금도 CASCADE로 사라진다. 관리자만 쓸 수 있는 경로라
   일단 두었다.
