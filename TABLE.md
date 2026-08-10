@@ -39,12 +39,12 @@ USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'email') = 'admin
 
 | 함수명                     | 호출 위치                    | 설명                                                             |
 | --------------------------- | ----------------------------- | ------------------------------------------------------------------ |
-| delete_user_account()       | MoreView.vue (회원탈퇴)       | SECURITY DEFINER. signup_log.deleted_at 기록 후 auth.users 삭제(CASCADE) |
+| delete_user_account()       | MoreView.vue (회원탈퇴)       | SECURITY DEFINER. signup_log.deleted_at 기록 → 프로모션 이력을 toss_promotion_reward_archive로 이관 → auth.users 삭제(CASCADE) |
 | record_signup(user_email)   | LoginView.vue (로그인/가입)   | SECURITY DEFINER. signup_log에 신규 insert 또는 탈퇴 이력 재활성화     |
 | save_daily_asset_snapshot() | FireHistoryView.vue, pg_cron  | asset_history에 당일 스냅샷 upsert (아래 pg_cron 항목 참고)          |
 | admin_get_email_confirmations() | AdminSignupLogView.vue (가입 이력) | SECURITY DEFINER. 관리자만 호출 가능. auth.users의 이메일별 인증 여부(email_confirmed_at) 반환 |
 | admin_get_user_providers()  | AdminSignupLogView.vue, AdminAccessHistoryView.vue | SECURITY DEFINER. 관리자만 호출 가능. 이메일별로 **쓸 수 있는 로그인 수단** 배열(`google`/`kakao`/`toss`/`password`) 반환. 토스 계정은 `createUser`로 만들어져 auth상 이메일 가입자와 구분이 안 되므로, `toss_identities` 매핑 유무로 `toss`를 넣고 생성 시각 간격으로 `password` 여부를 판정한다 (마이그레이션 주석 참고) |
-| claim_toss_promotion(p_promotion_code, p_amount, p_toss_user_key) | tossPromotion.ts (프로모션 수령) | SECURITY DEFINER. 지급 전 예약. `'OK'`(예약 성공) 또는 `'ALREADY'`(중복 참여) 반환 |
+| claim_toss_promotion(p_promotion_code, p_amount, p_toss_user_key) | tossPromotion.ts (프로모션 수령) | SECURITY DEFINER. 지급 전 예약. `'OK'`(예약 성공) 또는 `'ALREADY'`(중복 참여 — 살아있는 이력 또는 탈퇴 계정의 보관 이력) 반환 |
 | complete_toss_promotion(p_promotion_code, p_reward_key, p_error_code) | tossPromotion.ts (프로모션 수령) | SECURITY DEFINER. PENDING → GRANTED/FAILED 전이. PENDING 상태에서만 전이되므로 재수령 불가 |
 
 ### pg_cron
@@ -344,6 +344,27 @@ END;
 | 관리자 select | SELECT | 관리자는 전체 조회 가능                                   |
 
 INSERT/UPDATE 정책은 두지 않는다 — 기록은 `claim_toss_promotion` / `complete_toss_promotion` RPC(SECURITY DEFINER)를 통해서만 이뤄진다. 지급 여부를 알 수 없는 결과(`'ERROR'`)는 PENDING으로 남겨 재시도를 막는다(이중 지급 방지).
+
+#### toss_promotion_reward_archive
+
+탈퇴한 계정의 프로모션 지급 이력. **`auth.users` FK를 두지 않아 계정이 사라져도 남는다.**
+
+`toss_promotion_rewards`는 `user_id`가 `auth.users`를 `ON DELETE CASCADE`로 참조해서, 탈퇴하면 지급 이력이 통째로 사라졌다. 여기엔 중복 수령 차단의 근거인 `toss_user_key`도 들어 있어서, 재가입하면 유니크 인덱스 두 개가 모두 무력화돼 같은 토스 계정이 몇 번이든 다시 받을 수 있었다. `getAnonymousKey()` 해시는 앱 계정 삭제와 무관하게 같은 값이라, 그 키를 담은 이력을 계정 수명에서 떼어내 보관한다.
+
+| 컬럼명         | 타입        | 설명                                            |
+| -------------- | ----------- | ----------------------------------------------- |
+| toss_user_key  | text        | PK(promotion_code와 복합). `getAnonymousKey()` 해시 |
+| promotion_code | text        | PK(toss_user_key와 복합)                          |
+| amount         | integer     | 지급 금액(토스포인트)                            |
+| status         | text        | 탈퇴 시점의 상태. PENDING / GRANTED / FAILED      |
+| reward_key     | text        | 지급 성공 시 토스가 돌려준 리워드 키              |
+| archived_at    | timestamptz | 보관 시각(= 탈퇴 시각)                            |
+
+**RLS 정책:** 없다. RLS는 켜되 정책을 두지 않아 PostgREST 경로로는 아무도 읽을 수 없다. 탈퇴한 사용자의 이력이라 조회할 본인이 없고, 기록·판정은 전부 SECURITY DEFINER 함수 안에서만 일어난다. 관리자는 대시보드(service_role)로 조회한다.
+
+기록은 `delete_user_account()`가 계정 삭제 직전에 옮기고, 판정은 `claim_toss_promotion()`이 예약 전에 `status <> 'FAILED'`인 행을 찾아 `'ALREADY'`를 반환하는 식이다. FAILED는 지급된 적이 없으므로 재시도를 막지 않는다(살아있는 이력과 같은 기준). `toss_user_key`가 NULL인 이력(SDK 2.4.5 미만)은 재가입을 식별할 방법이 없어 보관하지 않는다.
+
+> ⚠️ 이 경로는 **앱의 회원탈퇴(`delete_user_account`)만** 커버한다. `admin-delete-user` Edge Function은 `auth.admin.deleteUser()`를 직접 호출해 이 RPC를 거치지 않으므로, 관리자가 지운 계정의 이력은 지금도 CASCADE로 사라진다.
 
 #### toss_identities
 
