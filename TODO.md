@@ -32,69 +32,41 @@ cd android && ./gradlew clean && ./gradlew bundleRelease
 > 그리고 **이 기능은 다음 릴리스부터 동작한다.** 지금 깔려 있는 `versionCode 6`에는 이 코드가
 > 없어서 7 출시를 안내받지 못한다. 7 이상 사용자부터 적용된다.
 
-### 앱인토스 프로모션 — 50원 출시·시작
+### 앱인토스 프로모션 — 조기종료 (2026-08-17 결정)
 
-10원 프로모션은 참여 저조로 2026-08-06 종료. 조건은 그대로 두고 금액만 **50원**으로 새로 등록해
-같은 날 승인까지 끝났다. 소스에서 바뀐 것은 `tossPromotion.ts`의 `PROMOTION_AMOUNT` 한 줄(10 → 50)뿐이고,
-이 상수가 브리지 `amount`·RPC `p_amount`·카드 문구 `{amount}` 세 곳으로 흘러간다.
+10원(참여 저조로 08-06 종료)에 이어 50원도 유입이 저조해 **조기종료**하기로 했다.
+**소스는 고치지 않는다** — 카드 노출(허브/대시보드/가계부 3곳)과 라우터 가드의 방문 기록이 전부
+`isPromotionAvailable()`(= 코드가 비어 있으면 false) 뒤에 있어서, `.env`의
+`VITE_TOSS_PROMOTION_CODE`를 비운 번들만 올리면 저절로 꺼진다. 카드·서비스·테이블·RPC는
+다음 프로모션 가능성에 대비해 그대로 둔다.
 
-**지급 조건**: 라우터 가드가 `to.meta.module`이 `asset`/`budget`인 화면 진입을 기록한다.
-`/budget`은 진입 즉시 충족, `/dashboard`는 `requiresGoal` 때문에 목표자산 설정이 선행돼야 한다
-→ 실질적으로 "가계부 진입 또는 투자 목표 설정". `/goalSettings`에는 `module` 메타가 없어 목표
-설정 화면 자체로는 충족되지 않는다.
+**종료 순서 — 번들 출시가 먼저, 콘솔 종료가 나중.** 카드 노출 조건에 "진행 중" 확인이 없어서
+콘솔만 먼저 종료하면 카드가 남은 채 [받기]가 실패한다. 브리지가 에러 코드 없이 `'ERROR'`만
+돌려주면 `errorCodeOf`가 null이라 **PENDING인 채로 남고 재시도가 영구히 막힌다**(재시도는
+FAILED에서만 허용).
 
-**콘솔 등록 내용** (2026-08-06 승인)
-
-| 항목 | 값 |
-| --- | --- |
-| 프로모션 이름 | 회원가입 후 서비스 카테고리 둘러보면 50원 지급 |
-| 혜택탭 미션 이름 | 서비스 이용하기 |
-| 지급 금액 | 50원 (1인 1회 — 앱이 계정당 평생 1회로 막는다) |
-| 1인 하루 최대 지급 금액 | 50원 ← **어뷰징 최후 방어선.** 토스가 서버에서 강제한다 |
-| 전체 예산 | 99,900원 |
-| 이동 URL | `intoss://firepath` |
-
-지급 금액은 콘솔 "수정"으로 못 바꾼다(수정은 사실상 예산 증액용). 새로 등록해야 하고 그러면
-**프로모션 코드도 새로 발급된다.** 코드는 콘솔 상세에서 확인한다 — `.env`는 gitignore이고 이
-레포는 공개라 코드를 커밋하지 않는다.
-
-**남은 순서**
-
-1. ~~콘솔 등록 → 검토 요청~~ / ~~테스트 빌드 지급 검증~~ / ~~운영 빌드~~ (2026-08-06 완료)
-2. `firepath.ait` 콘솔 업로드 → **검수 진행 중** → 출시
-3. **출시되면 곧바로** 콘솔에서 **[프로모션 시작하기]** — 아래 경고 참고
-4. ~~테스트 이력 정리~~ (2026-08-10 완료)
-
-> ⚠️ **출시와 [시작하기] 사이를 벌리지 말 것.** 카드 노출 조건은 `PROMOTION_CODE !== '' &&
-> isTossApp()` 뿐이라 프로모션이 `진행 전`이어도 카드가 뜬다. 그 사이에 [받기]를 누르면
-> `claim_toss_promotion`이 PENDING 행을 먼저 만들고 지급이 실패하는데, 브리지가 에러 코드 없이
-> `'ERROR'`만 돌려주면 `errorCodeOf`가 null이라 **PENDING인 채로 남고 재시도가 영구히 막힌다**
-> (재시도는 FAILED에서만 허용). 걸린 사람이 생기면 아래 SQL로 풀어준다.
->
-> ```sql
-> UPDATE toss_promotion_rewards
-> SET status = 'FAILED', error_code = 'MANUAL_RESET', updated_at = now()
-> WHERE promotion_code = '<운영 코드>' AND status = 'PENDING';
-> ```
-
-**기존 10원 수령자도 50원을 다시 받는다.** 중복 차단이 `(user_id, promotion_code)` /
-`(toss_user_key, promotion_code)` 기준이라 코드가 바뀌면 완전히 별개 이력이다. 새 프로모션이니
-그대로 두기로 했다(2026-08-06 결정). 막으려면 RPC가 코드와 무관하게 이전 GRANTED 이력을 보도록
-고쳐야 한다.
-
-**옛 이력을 지우지 말 것.** 누가 10원을 받았는지의 유일한 기록이고, 클레임이 들어오면 참여 기록을
-확인해 파트너사가 처리해야 한다.
-
-테스트 이력을 지우고 다시 받아보려면 **두 테이블 다** 지워야 한다:
+1. [ ] 로컬 `.env`의 `VITE_TOSS_PROMOTION_CODE`를 빈값으로
+2. [ ] `rm -rf dist && npm run build:toss` — **`dist`를 안 지우면 예전 번들이 재사용된다**(아래
+   함정 절). 업로드 전 `grep -r "<운영 코드>" dist/web/assets/*.js`가 빈 결과인지 확인
+3. [ ] `firepath.ait` 콘솔 업로드 → 검수 → 출시 — 출시 즉시 전원이 새 번들을 받아 카드가 사라진다
+4. [ ] **출시 직후** 콘솔에서 **[종료하기]** — 남은 예산은 비즈 월렛으로 자동 환급(반영이 늦어질
+   수 있음). 혜택 탭 미션 노출도 종료해야 사라지므로 출시와 사이를 벌리지 말 것
+5. [ ] PENDING 잔여 확인 — 출시 전에 [받기]를 눌러 걸린 사람이 있으면 아래 SQL로 풀어준다
 
 ```sql
-DELETE FROM toss_promotion_rewards        WHERE promotion_code LIKE 'TEST_%';
-DELETE FROM toss_promotion_reward_archive WHERE promotion_code LIKE 'TEST_%';
+UPDATE toss_promotion_rewards
+SET status = 'FAILED', error_code = 'MANUAL_RESET', updated_at = now()
+WHERE promotion_code = '<운영 코드>' AND status = 'PENDING';
 ```
 
-> ⚠️ 재수령 차단(2026-08-10)이 들어간 뒤로는 **보관 테이블까지** 지워야 한다. 백필이 `TEST_` 행도
-> 함께 보관했기 때문에, 원본만 지우면 `claim_toss_promotion`이 보관 이력을 보고 `'ALREADY'`를
-> 돌려줘 같은 `TEST_` 코드로 재테스트가 안 된다.
+> 급하면 콘솔 [종료하기]를 먼저 해도 된다 — 지급 차단은 토스 서버가 강제하므로 돈은 안 샌다.
+> 대신 새 번들 출시까지 카드가 계속 떠서 실패·PENDING 이력이 쌓이므로 5번 정리가 필수가 된다.
+> 운영 코드는 콘솔 상세에서 확인한다 — `.env`는 gitignore이고 이 레포는 공개라 커밋하지 않는다.
+
+**이력을 지우지 말 것.** 10원·50원 수령 기록(`toss_promotion_rewards`)과 탈퇴자 보관 이력
+(`toss_promotion_reward_archive`)은 클레임이 들어오면 참여 기록을 확인해 파트너사가 처리해야
+하는 유일한 근거다. 종료 후에도 보존한다. `TEST_` 이력으로 재테스트하려면 **두 테이블 다**
+지워야 한다는 점(재수령 차단 백필이 `TEST_` 행도 보관했다)도 그대로다.
 
 ### 프로모션 재수령 차단 — 남은 것
 
@@ -102,7 +74,8 @@ DELETE FROM toss_promotion_reward_archive WHERE promotion_code LIKE 'TEST_%';
 
 - [ ] **개인정보처리방침에 참여 이력 보관 근거·기간 추가** — 보관 테이블에 탈퇴자의
   `getAnonymousKey()` 해시가 남는다(이메일·이름 없음). "부정 재수령 방지 목적" 근거와
-  보관기간(예: 프로모션 종료 시까지)을 넣어둘 것
+  보관기간을 넣어둘 것. 조기종료(2026-08-17) 뒤에도 클레임 대응용으로 이력을 보존하므로
+  "프로모션 종료 시까지"로는 못 쓴다 — 클레임 처리 여지가 끝나는 시점으로 잡을 것
 - [ ] (선택) **`admin-delete-user` Edge Function도 이력 보관** — 이 함수는 `auth.admin.deleteUser()`를
   직접 호출해 `delete_user_account` RPC를 거치지 않아, 관리자가 지운 계정 이력은 CASCADE로 사라진다.
   관리자 전용 경로라 일단 두기로 했다(2026-08-10 결정)
