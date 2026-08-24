@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { isAdminEmail } from '@/config/admin'
 import { activeRefreshHandler } from '@/composables/usePullToRefresh'
+import { isTossApp } from '@/services/tossApp'
 
 const router = useRouter()
 const route = useRoute()
@@ -108,10 +109,13 @@ const tabs = [
 ]
 
 const isActive = (tabRoute: string) => route.path === tabRoute
+
+// 앱인토스 검수 요건: 탭바는 토스 기본 하단 탭과 겹치지 않는 플로팅 형태여야 함
+const tossFloating = isTossApp()
 </script>
 
 <template>
-  <div class="app-layout">
+  <div class="app-layout" :class="{ 'toss-floating': tossFloating }">
     <main
       ref="contentRef"
       class="app-content"
@@ -296,6 +300,25 @@ const isActive = (tabRoute: string) => route.path === tabRoute
   border-radius: 50%;
   background: rgb(var(--v-theme-error));
   border: 2px solid rgb(var(--v-theme-surface));
+}
+
+/* ── 앱인토스 플로팅 탭바 ──────────────────────────
+   토스 미니앱 브랜딩 가이드: 탭바는 토스 기본 하단 탭과 형태가 겹치지 않도록
+   하단에서 띄운 플로팅(알약) 형태여야 함. 테마별 box-shadow/border 오버라이드보다
+   뒤에 선언해 소스 순서로 우선 적용한다. */
+.toss-floating .app-content {
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+}
+
+.toss-floating .bottom-nav {
+  left: 16px;
+  right: 16px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  height: 67px;
+  padding-bottom: 0;
+  border-top: none;
+  border-radius: 999px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.14);
 }
 
 </style>

@@ -45,6 +45,13 @@ cd android && ./gradlew clean && ./gradlew bundleRelease
 돌려주면 `errorCodeOf`가 null이라 **PENDING인 채로 남고 재시도가 영구히 막힌다**(재시도는
 FAILED에서만 허용).
 
+**2026-08-17 제출분 검수 반려** — 사유: "탭바를 사용하는 경우 토스 미니앱 브랜딩 가이드에 맞는
+플로팅 형태로 구현해야 한다". 직전 검수(08-06)까지는 같은 탭바로 통과했으므로 최근 추가된 기준으로
+보인다(가이드도 `design/consumer-ux-guide`로 통합 개편됨 — 플로팅 형태 유지, 탭 2~5개 요건).
+2026-08-24에 `AssetLayout.vue`·`BudgetLayout.vue`에서 `isTossApp()`일 때만 탭바를 하단에서 띄운
+플로팅(알약) 형태로 바꾸는 수정을 넣었다. 웹/PWA는 기존 고정형 유지. **아래 2번 빌드는 이 수정이
+포함된 소스로 다시 빌드해 재검수 요청할 것.**
+
 1. [ ] 로컬 `.env`의 `VITE_TOSS_PROMOTION_CODE`를 빈값으로
 2. [ ] `rm -rf dist && npm run build:toss` — **`dist`를 안 지우면 예전 번들이 재사용된다**(아래
    함정 절). 업로드 전 `grep -r "<운영 코드>" dist/web/assets/*.js`가 빈 결과인지 확인
