@@ -63,13 +63,14 @@ SNS 로그인이 동작하려면 **Supabase 대시보드에 딥링크를 등록�
 
 ## 4. 빌드 절차
 
-### 4-1. 웹 배포 먼저
+### 4-1. 웹 배포 먼저 (Vercel)
 
 앱은 배포된 웹을 띄우므로 **웹이 최신이어야 한다.**
 
-```bash
-npm run deploy          # Cloudflare Workers
-```
+⚠️ 앱이 띄우는 `firepath.me`는 **Vercel**이 서빙한다 (2026-08-29 응답 헤더 `Server: Vercel`로 확인).
+`npm run deploy`는 Cloudflare Workers(`firepath.tngus842655.workers.dev`)로만 배포되고
+**firepath.me에는 반영되지 않는다.** 깃 푸시 자동 배포도 아니어서, 푸시만 하고 Vercel 배포를
+안 하면 앱 화면은 그대로다. 배포는 Vercel 대시보드에서 진행한다.
 
 ### 4-2. versionCode 올리기
 

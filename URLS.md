@@ -8,6 +8,9 @@
 | Netlify            | https://firepath-v1.netlify.app/          |
 | Cloudflare Workers | https://firepath.tngus842655.workers.dev/ |
 
+**실서비스 도메인 `firepath.me`는 Vercel에 연결돼 있다** (2026-08-29 응답 헤더로 확인).
+안드로이드 앱·PWA 사용자에게 반영되는 배포는 Vercel뿐이고, Netlify·Cloudflare는 예비 URL이다.
+
 ---
 
 ## ⚙️ 개발 인프라
@@ -37,7 +40,7 @@
 | remove.bg | 이미지 배경 제거 | https://www.remove.bg/ko     |
 | Flaticon  | 아이콘           | https://www.flaticon.com/kr/ |
 
-## Cloudflare 수동배포
+## Cloudflare 수동배포 (⚠️ workers.dev 전용 — firepath.me에는 반영 안 됨)
 
 npx wrangler login
 npx wrangler deploy
@@ -106,7 +109,8 @@ firepath / Vite / dist
 
 ### 매번 하는 배포
 
-1. **웹 먼저 배포** — 앱이 `server.url`로 배포된 웹(`firepath.me`)을 띄우므로 웹이 최신이어야 한다.
+1. **웹 먼저 배포 (Vercel)** — 앱이 `server.url`로 배포된 웹(`firepath.me`)을 띄우므로 웹이 최신이어야 한다.
+   firepath.me는 Vercel이 서빙한다 — `npm run deploy`(Cloudflare)로는 반영되지 않는다. CAPACITOR.md 4-1절 참고.
 
 2. **versionCode 올리기** — `android\app\build.gradle`
    ```gradle
