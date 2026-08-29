@@ -42,11 +42,18 @@ export const showAdmobBanner = async () => {
   try {
     await ensureInit()
     if (claims <= 0) return // 초기화를 기다리는 사이 화면을 떠났으면 띄우지 않는다
+    // 배너를 쓰는 두 화면(대시보드·가계부 캘린더)은 하단 고정 탭바 레이아웃 안에 있다.
+    // margin 없이 띄우면 배너가 탭바를 덮어 네비게이션이 막히므로, 탭바가 차지하는
+    // 높이(safe-area 포함)를 재서 그만큼 위에 띄운다. CSS px == dp라 그대로 넘기면 된다.
+    const nav = document.querySelector('.bottom-nav')
+    const margin = nav
+      ? Math.max(0, Math.round(window.innerHeight - nav.getBoundingClientRect().top))
+      : 0
     await AdMob.showBanner({
       adId: BANNER_AD_UNIT_ID,
       adSize: BannerAdSize.ADAPTIVE_BANNER,
       position: BannerAdPosition.BOTTOM_CENTER,
-      margin: 0,
+      margin,
     })
   } catch {
     // 광고 초기화·로드 실패가 앱 동작을 막으면 안 된다
