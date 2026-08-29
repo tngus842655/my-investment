@@ -10,6 +10,7 @@ import { useUserDataStore } from '@/stores/userData'
 import { useRegisterPullToRefresh, clearPullToRefresh } from '@/composables/usePullToRefresh'
 import TossPromotionCard from '@/components/TossPromotionCard.vue'
 import TossBannerAd from '@/components/TossBannerAd.vue'
+import AdmobBannerAd from '@/components/AdmobBannerAd.vue'
 import { useI18n } from 'vue-i18n'
 import { useBaseCurrency } from '@/composables/useBaseCurrency'
 import { convertMoney } from '@/utils/portfolioMath'
@@ -405,6 +406,8 @@ onUnmounted(clearPullToRefresh)
 
       <!-- 앱인토스 배너 광고 (토스 앱에서만 노출) -->
       <TossBannerAd />
+      <!-- 애드몹 배너 광고 (구글플레이 앱에서만, 화면 하단 오버레이) -->
+      <AdmobBannerAd />
 
       <!-- 투자 현황 미니 리스트 -->
       <div class="glass-card pa-4">

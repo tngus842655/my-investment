@@ -12,6 +12,7 @@ import type { CurrencyCode } from '@/config/marketConfig'
 import BudgetEntryAddDialog from './BudgetEntryAddDialog.vue'
 import TossPromotionCard from '@/components/TossPromotionCard.vue'
 import TossBannerAd from '@/components/TossBannerAd.vue'
+import AdmobBannerAd from '@/components/AdmobBannerAd.vue'
 import BudgetMonthYearCard from './BudgetMonthYearCard.vue'
 
 interface EntryRow {
@@ -414,6 +415,8 @@ const onContainerClick = (e: MouseEvent) => {
 
     <!-- 앱인토스 배너 광고 (토스 앱에서만 노출) -->
     <TossBannerAd />
+    <!-- 애드몹 배너 광고 (구글플레이 앱에서만, 화면 하단 오버레이) -->
+    <AdmobBannerAd />
 
     <div v-if="loading" class="d-flex justify-center py-8">
       <v-progress-circular indeterminate color="primary" size="28" />

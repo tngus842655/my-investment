@@ -32,6 +32,12 @@
             </intent-filter>
         </activity>
 
+        <!-- 애드몹 앱 ID (광고 단위 ID와 다른 ~ 형식 값). 이 메타데이터가 없으면
+             구글 광고 SDK가 초기화 시점에 앱을 크래시시킨다. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-9942492825878908~1159289524" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
