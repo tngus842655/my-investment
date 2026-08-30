@@ -282,7 +282,7 @@ onMounted(loadData)
     <div v-else style="width: 100%; max-width: 480px">
       <!-- 헤더 -->
       <div class="d-flex align-center mb-6">
-        <v-btn v-if="isEditMode" icon="mdi-arrow-left" variant="text" size="small" class="mr-2" style="color: rgb(var(--v-theme-on-surface))" @click="cancel" />
+        <v-btn v-if="isEditMode" icon="mdi-arrow-left" variant="text" size="small" class="back-btn mr-2" style="color: rgb(var(--v-theme-on-surface))" @click="cancel" />
         <div>
           <div class="font-weight-bold" style="color: rgb(var(--v-theme-on-surface))">
             {{ isEditMode ? $t('goalSettings.editTitle') : $t('goalSettings.createTitle') }}

@@ -227,7 +227,7 @@ onMounted(loadData)
     <!-- 헤더 -->
     <div class="d-flex align-center justify-space-between mb-6">
       <div class="d-flex align-center ga-2">
-        <v-btn icon="mdi-arrow-left" variant="text" size="small" class="mr-1" style="color: rgb(var(--v-theme-on-surface))" @click="router.back()" />
+        <v-btn icon="mdi-arrow-left" variant="text" size="small" class="back-btn mr-1" style="color: rgb(var(--v-theme-on-surface))" @click="router.back()" />
         <div>
           <div class="font-weight-bold">{{ $t('fireSim.title') }}</div>
           <div class="text-medium-emphasis">{{ $t('fireSim.subtitle') }}</div>

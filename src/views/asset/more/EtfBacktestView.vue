@@ -417,7 +417,7 @@ const yearlyRows = computed(() =>
   <v-container class="pa-4 pa-sm-6">
     <!-- 헤더 -->
     <div class="d-flex align-center ga-2 mb-5">
-      <v-btn icon variant="text" size="small" @click="router.back()">
+      <v-btn class="back-btn" icon variant="text" size="small" @click="router.back()">
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <div class="flex-grow-1">

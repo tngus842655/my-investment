@@ -334,12 +334,37 @@ onUnmounted(() => {
       </div>
 
       <!-- 브랜드 -->
-      <div class="text-center mb-10">
+      <div class="text-center" :class="tossOnly ? 'mb-4' : 'mb-10'">
         <img v-if="logoMain" :src="logoMain" class="brand-logo mx-auto mb-2" alt="FIREPATH" />
         <template v-if="!logoMain">
           <div class="brand-title">FIREPATH</div>
           <div class="brand-sub mt-2">Financial Independence, Retire Early</div>
         </template>
+      </div>
+
+      <!-- 토스 미니앱 인트로 — 로그인을 누르기 전에 어떤 서비스인지 알 수 있어야 한다.
+           앱인토스 검수 요건(비게임 출시 체크리스트 · 토스 로그인):
+           "토스 로그인을 사용하는 경우, 어떤 서비스인지 알 수 있도록 인트로 페이지에서
+           서비스 설명을 제공해요."
+           문구는 콘솔 앱 정보에 등록한 소개글과 같은 내용으로 맞춘다. -->
+      <div v-if="tossOnly" class="intro-card mb-4">
+        <div class="intro-title">{{ $t('auth.toss.introTitle') }}</div>
+        <div class="intro-sub mt-1">{{ $t('auth.toss.introSub') }}</div>
+        <div class="intro-desc mt-3">{{ $t('auth.toss.introDesc') }}</div>
+        <div class="intro-features mt-4">
+          <div class="intro-feature">
+            <v-icon size="16" color="primary">mdi-check-circle</v-icon>
+            <span>{{ $t('auth.toss.introFeature1') }}</span>
+          </div>
+          <div class="intro-feature">
+            <v-icon size="16" color="primary">mdi-check-circle</v-icon>
+            <span>{{ $t('auth.toss.introFeature2') }}</span>
+          </div>
+          <div class="intro-feature">
+            <v-icon size="16" color="primary">mdi-check-circle</v-icon>
+            <span>{{ $t('auth.toss.introFeature3') }}</span>
+          </div>
+        </div>
       </div>
 
       <!-- 홈 화면에 추가 안내 배너 -->
@@ -601,6 +626,52 @@ onUnmounted(() => {
   font-size: 0.8125rem;
   color: rgba(var(--v-theme-on-surface), 0.4);
   letter-spacing: 0.02em;
+}
+
+/* 토스 미니앱 인트로 — 로그인 전 서비스 설명 (앱인토스 검수 요건) */
+.intro-card {
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.06);
+  border-radius: 20px;
+  padding: 20px;
+}
+
+.intro-title {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.intro-sub {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgb(var(--v-theme-primary));
+}
+
+.intro-desc {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+}
+
+.intro-features {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.intro-feature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+  color: rgba(var(--v-theme-on-surface), 0.75);
+}
+
+/* 인트로가 붙는 미니앱에서는 로고를 줄여 로그인 버튼이 첫 화면 밖으로 밀리지 않게 한다 */
+.toss-app .brand-logo {
+  width: 120px;
+  height: 120px;
 }
 
 .login-card {

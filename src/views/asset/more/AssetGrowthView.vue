@@ -257,7 +257,7 @@ function formatFull(v: number) {
     <!-- 헤더 -->
     <div class="d-flex align-center justify-space-between mb-6">
       <div class="d-flex align-center ga-2">
-        <v-btn icon size="small" variant="text" @click="router.back()">
+        <v-btn class="back-btn" icon size="small" variant="text" @click="router.back()">
           <v-icon>mdi-arrow-left</v-icon>
         </v-btn>
         <div>

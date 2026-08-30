@@ -69,7 +69,7 @@ const submit = async () => {
 <template>
   <v-container class="pa-4" style="max-width: 480px">
     <div class="d-flex align-center ga-2 mb-6">
-      <v-btn icon variant="text" size="small" @click="router.back()">
+      <v-btn class="back-btn" icon variant="text" size="small" @click="router.back()">
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <div class="font-weight-bold">{{ $t('changePassword.title') }}</div>

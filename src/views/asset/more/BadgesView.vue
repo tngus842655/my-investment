@@ -103,7 +103,7 @@ onMounted(loadData)
   <v-container class="pa-4 pa-sm-6">
     <!-- 헤더 -->
     <div class="d-flex align-center ga-2 mb-6">
-      <v-btn icon="mdi-arrow-left" variant="text" size="small" class="mr-1" style="color: rgb(var(--v-theme-on-surface))" @click="router.back()" />
+      <v-btn icon="mdi-arrow-left" variant="text" size="small" class="back-btn mr-1" style="color: rgb(var(--v-theme-on-surface))" @click="router.back()" />
       <div>
         <div class="font-weight-bold">{{ $t('badges.title') }}</div>
         <div class="text-medium-emphasis">{{ $t('badges.subtitle') }}</div>

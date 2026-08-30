@@ -220,7 +220,7 @@ const notes = [
 <template>
   <v-container class="pa-4 pa-sm-6">
     <div class="d-flex align-center ga-3 mb-6">
-      <v-btn icon variant="text" size="small" @click="router.back()">
+      <v-btn class="back-btn" icon variant="text" size="small" @click="router.back()">
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <div>

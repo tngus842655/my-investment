@@ -381,7 +381,7 @@ const refreshData = async () => {
   <v-container class="pa-4 pa-sm-6">
     <!-- 헤더 -->
     <div class="d-flex align-center ga-2 mb-6">
-      <v-btn icon size="small" variant="text" @click="router.back()">
+      <v-btn class="back-btn" icon size="small" variant="text" @click="router.back()">
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <div>

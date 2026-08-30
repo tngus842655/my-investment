@@ -37,7 +37,7 @@ watch(page, dismissHint)
 <template>
   <div class="analysis-page">
     <div class="analysis-header">
-      <v-btn icon="mdi-arrow-left" variant="text" size="small" style="color: rgb(var(--v-theme-on-surface))" @click="router.back()" />
+      <v-btn class="back-btn" icon="mdi-arrow-left" variant="text" size="small" style="color: rgb(var(--v-theme-on-surface))" @click="router.back()" />
       <div class="header-title">{{ $t('portfolioAnalysis.title') }}</div>
     </div>
 

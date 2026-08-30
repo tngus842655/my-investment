@@ -821,6 +821,12 @@
     },
     "toss": {
       "continue": "Continue with Toss",
+      "introTitle": "Firepath",
+      "introSub": "Asset management for financial independence",
+      "introDesc": "Firepath helps you record your assets, set a goal, and track where you stand. Sign in with Toss to pick up where you left off.",
+      "introFeature1": "Keep your holdings and investment records in one place",
+      "introFeature2": "See your progress and the time left to your goal",
+      "introFeature3": "Track income and spending with the budget book",
       "emailTitle": "Register your email",
       "emailDesc": "Your Toss account has no email. Please register an email address to use the service.",
       "emailSubmit": "Register and continue",
